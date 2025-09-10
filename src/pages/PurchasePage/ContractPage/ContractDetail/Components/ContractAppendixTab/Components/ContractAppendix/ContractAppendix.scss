@@ -1,0 +1,135 @@
+.contract-appendix-wrapper {
+  height: 100%;
+  overflow-y: auto;
+  margin-top: 0;
+
+  .contract-appendix__list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    > button {
+      align-self: flex-start;
+    }
+  }
+
+  .contract-appendix__list-action-icon {
+    width: 100%;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: transparent;
+    background-color: transparent;
+
+    svg {
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  .contract-appendix__list :global(.text-in-table-cell) {
+    margin: 12px 0;
+    white-space: pre-wrap;
+  }
+
+  .empty-contract-appendix {
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #dfe1e6;
+    border-radius: 6px;
+    background-color: #fafbfc;
+  }
+
+  .empty-contract-appendix__wrapper {
+    display: flex;
+    gap: 24px;
+  }
+
+  .empty-contract-appendix__container {
+    display: flex;
+    flex-direction: column;
+    align-self: center;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .no-contract-appendix-text {
+    color: #7a869a;
+  }
+
+  .expandable-appendix-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 4px 16px 16px 88px;
+    background-color: var(--color-white);
+
+    .header-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    .general-info {
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--palette-base-neutral-3);
+
+      .row_top {
+        background-color: var(--palette-base-neutral-2);
+      }
+
+      .item_row {
+        border-bottom: 1px solid var(--palette-base-neutral-3);
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        .item_col {
+          padding: 16px;
+          border-right: 1px solid var(--palette-base-neutral-3);
+          display: flex;
+          flex-direction: column;
+
+          &:last-child {
+            border-right: none;
+          }
+
+          .label {
+            font-size: 12px;
+            font-weight: 400;
+            line-height: 20px;
+            color: var(--palette-base-neutral-7);
+          }
+
+          .value {
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 20px;
+            color: var(--palette-base-neutral-10);
+          }
+        }
+      }
+    }
+
+    .ant-collapse-content-box {
+      padding: 0px 12px !important;
+    }
+  }
+
+  .ant-table-body {
+    border-bottom-left-radius: 8px !important;
+    border-bottom-right-radius: 8px !important;
+    border-bottom: 1px solid var(--palette-base-neutral-3) !important;
+  }
+}
+
+.contract-appendix-tab {
+  &.contract-appendix-tab {
+    margin-top: 0px;
+  }
+}

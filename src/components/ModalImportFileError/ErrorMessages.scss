@@ -1,0 +1,17 @@
+.error_messages_container {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+
+  img {
+    margin-top: 2px;
+  }
+
+  span {
+    color: var(--color-text-tertiary);
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+  }
+}

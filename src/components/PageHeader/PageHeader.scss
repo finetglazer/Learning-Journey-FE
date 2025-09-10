@@ -1,0 +1,203 @@
+.page-header {
+  background-color: #ffffff;
+  background-image: linear-gradient(0deg, #ffffff, rgba(255, 255, 255, 0.3)),
+    radial-gradient(
+        50% 537.24% at 100% 100%,
+        rgba(182, 0, 0, 0.2) 0%,
+        rgba(182, 0, 0, 0) 100%
+      )
+      /* warning: gradient uses a rotation that is not supported by CSS and may not behave as expected */,
+    radial-gradient(
+        100% 1074.48% at 0% 0%,
+        rgba(255, 111, 0, 0.15) 0%,
+        rgba(255, 111, 0, 0) 100%
+      )
+      /* warning: gradient uses a rotation that is not supported by CSS and may not behave as expected */,
+    radial-gradient(
+        50% 537.24% at 0% 0%,
+        rgba(255, 229, 183, 0.2) 0%,
+        rgba(255, 229, 183, 0) 100%
+      )
+      /* warning: gradient uses a rotation that is not supported by CSS and may not behave as expected */,
+    radial-gradient(
+        25.75% 298.28% at 56.41% 319.83%,
+        rgba(255, 38, 0, 0.3) 0%,
+        rgba(255, 38, 0, 0) 100%
+      )
+      /* warning: gradient uses a rotation that is not supported by CSS and may not behave as expected */,
+    radial-gradient(
+      65.89% 36.56% at 50% 100%,
+      rgba(255, 38, 0, 0.03) 0%,
+      rgba(255, 38, 0, 0) 100%
+    ),
+    radial-gradient(
+      50% 100% at 0% 0%,
+      rgba(255, 255, 255, 0.25) 0%,
+      rgba(255, 255, 255, 0) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.505) 30%,
+      #ffffff 100%
+    );
+
+  position: absolute;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  top: 0px;
+  z-index: 100;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+
+  &:not(.has-tabs) {
+    height: 92px !important;
+  }
+
+  &.is-view {
+    border-radius: 0;
+  }
+
+  &.has-tabs {
+    height: 124px !important;
+  }
+
+  .button-place {
+    margin-top: 16px;
+    margin-right: 16px;
+  }
+
+  .breadcrumb {
+    list-style: none;
+    margin: 0;
+
+    li {
+      display: inline;
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 400;
+      color: var(--color-text-tertiary);
+
+      a {
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 400;
+        line-height: 16px;
+        color: var(--color-primary);
+        cursor: pointer;
+      }
+
+      .breadcrumb-active {
+        font-size: 12px;
+        font-weight: 400;
+        line-height: 16px;
+        color: var(--color-text-tertiary);
+      }
+
+      .ic-breadcrumb {
+        margin: 0 6px;
+      }
+    }
+  }
+
+  &__title {
+    font-size: 20px;
+    line-height: 32px;
+    font-weight: 600;
+    text-align: left;
+    color: var(--color-text);
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    width: 100%;
+    display: flex;
+    align-items: center;
+
+    &_back {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+    }
+  }
+
+  &.page-header__with-sidebar {
+    width: calc(100% - 200px) !important;
+    right: 0px;
+  }
+
+  &.page-header__tabs {
+    height: 140px !important;
+  }
+
+  &.page-header--dark {
+    background-color: #161616;
+    height: 146px;
+
+    .ant-breadcrumb {
+      color: #ffffff;
+
+      .ant-breadcrumb-separator {
+        color: #ffffff;
+      }
+    }
+
+    .page-header__title {
+      color: #ffffff;
+    }
+
+    .breadcrumb {
+      li {
+        a {
+          font-size: 12px;
+          font-weight: 400;
+          line-height: 16px;
+          color: var(--color-primary);
+        }
+
+        &.breadcrumb-active {
+          font-size: 12px;
+          font-weight: 400;
+          line-height: 16px;
+          color: var(--color-text-tertiary);
+        }
+      }
+    }
+  }
+
+  &.page-header--primary {
+    background-color: var(--color-primary);
+    height: 146px;
+
+    .ant-breadcrumb {
+      color: #ffffff;
+
+      .ant-breadcrumb-separator {
+        color: #ffffff;
+      }
+    }
+
+    .page-header__title {
+      color: #ffffff;
+    }
+
+    .breadcrumb {
+      li {
+        color: #ffffff;
+
+        &.breadcrumb-active {
+          color: #0f62fe;
+        }
+      }
+    }
+  }
+
+  .group-action {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+}

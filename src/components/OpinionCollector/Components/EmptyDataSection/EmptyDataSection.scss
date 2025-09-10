@@ -1,0 +1,32 @@
+.empty_data_section {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  padding: 24px;
+  background-color: var(--palette-base-neutral-1);
+  border: 1px dashed #d9dadb;
+  border-radius: 6px;
+
+  .body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    justify-content: flex-start;
+    text-align: left;
+    align-items: flex-start;
+
+    span {
+      font-weight: 400;
+      font-size: 14px;
+      line-height: 20px;
+      color: var(--palette-base-neutral-6);
+      white-space: pre-line;
+    }
+
+    .btn-opinion.disabled {
+      cursor: not-allowed;
+    }
+  }
+}

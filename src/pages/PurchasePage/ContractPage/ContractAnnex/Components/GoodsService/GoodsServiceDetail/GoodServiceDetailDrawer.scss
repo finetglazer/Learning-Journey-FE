@@ -1,0 +1,22 @@
+.drawer-header-text-fixed {
+  .drawer__header {
+    position: fixed;
+    background-color: #ffffff;
+    z-index: 1;
+
+    .button-close {
+      right: 45%;
+      position: absolute;
+    }
+  }
+
+  .drawer__content {
+    .drawer_footer {
+      z-index: 9;
+    }
+  }
+
+  .collapse-goods-service {
+    margin-top: 50px;
+  }
+}

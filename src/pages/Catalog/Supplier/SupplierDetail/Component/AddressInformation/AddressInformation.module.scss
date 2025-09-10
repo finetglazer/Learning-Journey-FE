@@ -1,0 +1,14 @@
+.address_information {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+
+  .form-item {
+    width: calc(50% - 8px);
+
+    &--full {
+      width: 100%;
+    }
+  }
+}

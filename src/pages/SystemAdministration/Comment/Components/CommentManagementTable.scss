@@ -1,0 +1,21 @@
+.comment__content {
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 16px;
+  color: var(--color-text-tertiary);
+
+  .hightlight__text {
+    color: var(--color-text);
+    font-weight: bold;
+    cursor: pointer;
+
+    &::before {
+      content: "@";
+    }
+  }
+}
+
+.trash__container {
+  cursor: pointer;
+}

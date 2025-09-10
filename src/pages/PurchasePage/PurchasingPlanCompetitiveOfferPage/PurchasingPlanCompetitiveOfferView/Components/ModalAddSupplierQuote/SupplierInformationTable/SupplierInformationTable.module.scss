@@ -1,0 +1,30 @@
+.supplier-information-table {
+  .primary-text {
+    font-weight: 600;
+    color: var(--palette-base-blue-5) !important;
+    cursor: pointer;
+  }
+
+  :global(.ant-table-thead) {
+    vertical-align: baseline !important;
+  }
+
+  .delete-row-btn {
+    width: 100%;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: transparent;
+    background-color: transparent;
+
+    svg {
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  .hyperlink {
+    color: var(--palette-base-blue-5) !important;
+  }
+}

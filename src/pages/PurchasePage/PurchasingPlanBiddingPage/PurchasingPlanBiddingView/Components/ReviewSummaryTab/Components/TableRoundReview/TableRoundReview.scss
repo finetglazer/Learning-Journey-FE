@@ -1,0 +1,20 @@
+.table-view-buyer {
+  padding-top: 12px;
+  .ant-table-container table > thead > tr:first-child > *:first-child {
+    border-start-start-radius: 0;
+  }
+  .ant-table-container:has(.unscrollable-vertical)
+    .ant-table-thead:has(.ant-table-cell-scrollbar)
+    tr
+    th:nth-last-child(2) {
+    right: 0 !important;
+  }
+  .ant-table-thead > tr > th {
+    border: 1px solid var(--palette-base-neutral-3) !important;
+    background-color: var(--palette-base-neutral-2) !important;
+  }
+
+  .ant-table-tbody > tr > td.ant-table-cell-row-hover {
+    background-color: var(--palette-base-neutral-2) !important;
+  }
+}

@@ -1,0 +1,104 @@
+.tab_section {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 16px;
+
+  .section_title {
+    display: flex;
+    flex-direction: column;
+
+    .collect_opinion_button {
+      margin-top: 10px;
+      width: max-content;
+    }
+
+    span {
+      color: var(--color-text);
+      font-size: medium;
+      font-weight: 600;
+      line-height: 24px;
+    }
+
+    .collect_opinion_button.disabled {
+      cursor: not-allowed;
+    }
+  }
+
+  .section_body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 8px;
+    overflow: hidden;
+    border-radius: 8px;
+
+    .page-table {
+      border-radius: 8px !important;
+      overflow: hidden;
+
+      .ant-table-body {
+        overflow-y: auto !important;
+        border-bottom: 1px solid var(--palette-base-neutral-3);
+        border-radius: 0 0 8px 8px;
+      }
+    }
+
+    .center_table_item {
+      display: flex;
+      flex: 1;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .table_text {
+      color: var(--color-text);
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 20px;
+    }
+
+    .table_sub_text {
+      color: var(--color-text-label);
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 16px;
+    }
+
+    .clickable_row {
+      cursor: pointer;
+    }
+
+    .text-base-line {
+      display: flex;
+      align-items: flex-start;
+      margin-top: 12px;
+      line-height: 1.1;
+      height: 100%;
+
+      &--smaller {
+        margin-top: 4px;
+      }
+    }
+
+    .icon-base-line {
+      display: flex;
+      align-items: flex-start;
+      height: 100%;
+      margin-top: 12px;
+    }
+  }
+}
+
+.collect-opinion-modal {
+  .body-modal {
+    overflow: visible;
+  }
+}
+
+.opinion_advanced_collapse {
+  .ant-collapse-content-box {
+    padding-top: 0px !important;
+  }
+  box-shadow: 0px 0px 2px rgba(0, 0, 0, 0.2), 0px 2px 10px rgba(0, 0, 0, 0.1);
+}

@@ -1,0 +1,75 @@
+export default {
+  title: "Liquidation Information",
+  liquidation_file: "Liquidation File",
+  create_new_order_liquidation: "Create New Order Liquidation",
+  create_new_contract_liquidation: "Create New Contract Liquidation",
+  contract_liquidation: "Contract Liquidation",
+  order_liquidation: "Order Liquidation",
+  create_new_liquidation: "Create New Liquidation",
+  liquidation_description: "Liquidation Description",
+  liquidation_date: "Date of termination effectiveness",
+  select_liquidated: "Select Contract/PO to Liquidate",
+  contract_value_and_payment: "Contract Value and Payment",
+  total_contract_value_includes_VAT: "Total Contract Value Includes VAT",
+  total_contract_settlement_value_includes_VAT:
+    "Total Contract Settlement Value Includes VAT",
+  advanced_paid: "Advanced Paid",
+  txt_task_content: "Task Content",
+  remaining_payment: "Remaining Payment",
+  general_terms: "General Terms",
+  warranty_terms: "Warranty Terms",
+  placeHolder: {
+    liquidation_description: "Enter Liquidation Description",
+    enter_job_description: "Enter Job Description",
+    enter_general_terms: "Enter General Terms",
+    enter_warranty_terms: "Enter Warranty Terms",
+  },
+
+  // view
+  general_infor_title: "General Information",
+  legal_entity_title: "Buyer/Service User",
+  seller_service_provider_txt: "Seller/Service Provider",
+  effective_liquidation_date: "Effective Liquidation Date",
+  attachment_title: "Attachment",
+  policy_title: "Policy",
+  contract_amout_and_payment_title: "Contract Value and Payment",
+  show_more: "Show More",
+  attachment_all_title: "All Attachments",
+  work_content: "Work Content",
+  general_policy_title: "General Policy",
+  warranty_terms_title: "Warranty Terms",
+  total_contract_value_including_vat: "Total Contract Value Including VAT",
+  total_finalized_contract_value_including_vat:
+    "Total Finalized Contract Value Including VAT",
+  disbursed_paid: "Disbursed Paid",
+  remaining_amount_to_be_paid: "Remaining Amount to be Paid",
+  approval_history: "Approval History",
+  total_value: "Total Value",
+  contract_code: "Contract Code",
+  effective_period: "Effective Period",
+  contract_termination_file_title: "Signed Liquidation File",
+  contract_termination_empty_title:
+    "Your system has not recorded any data.\nPlease add new data",
+  contract_termination_empty_system: "Your system has not recorded any data",
+  contract_termination_add_document: "Add Document",
+  btn_delete: "Delete",
+  file_description: "File Description",
+  upload_time: "Upload Time",
+  attachment: "Attachment",
+  //modal action
+  title_confirm_delete: "Confirm Delete Liquidation {{typeContract}}",
+  title_confirm_cancel: "Confirm Cancel Liquidation {{typeContract}}",
+  title_confirm_reject: "Confirm Reject Liquidation {{typeContract}}",
+  title_confirm_return: "Confirm Return Liquidation {{typeContract}}",
+  title_contract: "Liquidation",
+
+  content_confirm_delete:
+    "This action cannot be undone.\nPlease enter the reason and confirm to delete Liquidation {{typeContract}} <strong>{{code}}</strong>",
+  content_confirm_cancel:
+    "This action cannot be undone.\nPlease enter the reason and confirm to cancel Liquidation {{typeContract}} <strong>{{code}}</strong>",
+  content_confirm_reject:
+    "This action cannot be undone.\nPlease enter the reason and confirm to reject Liquidation {{typeContract}} <strong>{{code}}</strong>",
+  content_confirm_return:
+    "This action cannot be undone.\nPlease enter the reason and confirm to return Liquidation {{typeContract}} <strong>{{code}}</strong>",
+  title_order_code: "Order Code",
+};

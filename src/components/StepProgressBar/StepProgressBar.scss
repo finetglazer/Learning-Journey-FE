@@ -1,0 +1,60 @@
+.progress_bar_container {
+  display: flex;
+  width: 100%;
+  gap: 8px;
+
+  .step {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    cursor: pointer;
+
+    .step_content {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+
+      .order {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+
+        span {
+          font-size: 12px;
+          line-height: 16px;
+          font-weight: 500;
+          color: white;
+        }
+      }
+
+      .in_progress,
+      .not_started,
+      .success {
+        font-size: 12px;
+        line-height: 16px;
+        font-weight: 500;
+      }
+
+      .in_progress,
+      .success {
+        color: var(--color-text);
+      }
+
+      .not_started {
+        color: var(--color-text-disable);
+      }
+
+      .order.in_progress,
+      .order.success {
+        background-color: var(--color-primary);
+      }
+
+      .order.not_started {
+        background-color: var(--color-secondary);
+      }
+    }
+  }
+}

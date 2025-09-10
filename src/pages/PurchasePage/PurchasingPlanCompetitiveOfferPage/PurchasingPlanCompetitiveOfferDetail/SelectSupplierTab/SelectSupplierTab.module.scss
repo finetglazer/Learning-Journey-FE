@@ -1,0 +1,16 @@
+.select_supplier {
+  :global(.ant-collapse-content-box) {
+    padding-top: 0 !important;
+  }
+}
+
+#commercial-terms-table-purchasing-plan {
+  :global(.text-in-table-cell) {
+    margin: 12px 0;
+    white-space: pre-wrap;
+  }
+
+  td {
+    vertical-align: text-top;
+  }
+}

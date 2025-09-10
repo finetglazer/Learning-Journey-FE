@@ -1,0 +1,96 @@
+.goods-services-info-container {
+  margin-top: 16px;
+
+  .goods-services-info__list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    > button {
+      align-self: flex-start;
+    }
+
+    :global(.rotate-0) {
+      transform: rotate(0);
+    }
+
+    :global(.rotate-negative-90) {
+      transform: rotate(-90deg);
+    }
+
+    :global(.header) {
+      display: flex;
+      justify-content: space-between;
+
+      :global(.title) {
+        font-size: 16px;
+        font-weight: 600;
+        line-height: 24px;
+        color: var(--palette-base-neutral-10);
+      }
+    }
+    td:global(.ant-table-cell):has(:global(.data-with-collapse)) {
+      display: flex;
+      align-items: center;
+    }
+    :global(.text_blue) {
+      cursor: pointer;
+      color: var(--palette-base-blue-5);
+    }
+    :global(.total-row) {
+      background-color: var(--palette-base-neutral-2);
+      :global(td) {
+        background-color: var(--palette-base-neutral-2);
+      }
+    }
+    :global(.editable-row) {
+      background-color: var(--palette-base-neutral-3);
+      td {
+        background-color: var(--palette-base-neutral-3);
+      }
+    }
+  }
+
+  .delete-goods-services-row {
+    width: 100%;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: transparent;
+    background-color: transparent;
+
+    svg {
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  .empty-goods-services-info {
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #dfe1e6;
+    border-radius: 6px;
+    background-color: #fafbfc;
+  }
+  .empty-goods-services-info__wrapper {
+    display: flex;
+    gap: 24px;
+  }
+  .empty-goods-services-info__container {
+    display: flex;
+    flex-direction: column;
+    align-self: center;
+    align-items: flex-start;
+    gap: 12px;
+
+    button:global(.disabled) {
+      cursor: not-allowed;
+    }
+  }
+  .no-goods-services-info-text {
+    color: #7a869a;
+  }
+}

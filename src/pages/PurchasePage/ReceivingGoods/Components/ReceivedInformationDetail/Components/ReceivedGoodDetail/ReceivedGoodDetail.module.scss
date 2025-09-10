@@ -1,0 +1,24 @@
+.received-information__container {
+  display: flex;
+  gap: 20px;
+  border-radius: 8px;
+  background-color: #fff;
+
+  .received-sidebar {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #dfe1e6;
+    padding-right: 20px;
+    width: 50%;
+  }
+
+  .received-information__main {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+}
+
+.text-base {
+  font-size: 16px;
+}

@@ -1,0 +1,76 @@
+export default {
+  title: "Goods and Services List",
+  create: "Create New Goods and Services Category",
+  update: "Update Goods and Services Category",
+  preview: "Goods and Services Category Details",
+  advanceFilter: "Advanced Search",
+  message_empty_data: "Your system has not recorded any data. ",
+  let_add_new: "Please add new Goods and Services data",
+  // Breadcrumbs
+  breadcrumbs: {
+    home: "Home",
+    goodsServices: "Goods and Services Category",
+  },
+
+  // Table title
+  code: "Goods and Services Code",
+  name: "Goods and Services Name",
+  status: "Status",
+  active: "Active",
+  isChecked: "Warehouse Check",
+  isImported: "Warehouse Import",
+  isAsset: "Fixed Asset/Tool",
+  visible: "Tangible",
+  invisible: "Intangible",
+  referencePriceTable: "Reference Price Table",
+  fixedAssetDepreciationPeriod: "Tool Depreciation Period",
+  toolsDepreciationPeriod: "Fixed Asset Depreciation Period",
+  goodsServiceCategory: "Goods and Services Category",
+  goodsServicesType: "Goods and Services Type",
+  manufacturer: "Manufacturer/Type",
+  unitOfMeasure: "Unit of Measure",
+  unitOfMeasureGroup: "Unit of Measure Group",
+  convertUOMs: "Conversion Units",
+  currency: "Currency",
+  referencePrice: "Reference Price",
+  description: "Description",
+  attachment: "Attachment",
+  inactive: "Inactive",
+  deleteTitle: "Confirm Delete Goods and Services Category",
+  bulkDeleteTitle1: "Confirm Delete",
+  bulkDeleteTitle2: "Goods and Services Category",
+  deleteContent:
+    "This action cannot be undone. Are you sure you want to delete the selected Goods and Services Category",
+
+  txt_stt: "No.",
+
+  // Placeholder
+  placeholder: {
+    advanceFilter: "Advanced Search",
+    code: "Enter Goods and Services Code",
+    name: "Enter Goods and Services Name",
+    value: "Enter Value",
+    goodsServiceCategory: "Select Category",
+    goodsServicesType: "Select Goods and Services Type",
+    manufacturer: "Select Manufacturer/Type",
+    unitOfMeasure: "Select Unit of Measure",
+    unitOfMeasureGroup: "Select Unit of Measure Group",
+    convertUOMs: "-",
+    currency: "Select Currency",
+    referencePriceMin: "From",
+    referencePriceMax: "To",
+    description: "Enter Description",
+    fixedAssetDepreciationPeriod: "Enter Tool Depreciation Period",
+    toolsDepreciationPeriod: "Enter Fixed Asset Depreciation Period",
+  },
+
+  // message
+  copied_to_clipboard_message: "Copied to clipboard",
+  cost_line_delete_succeed_message:
+    "Deleted {{total}} Goods and Services Category records",
+  update_cost_line_succeed_message: "Successfully updated time",
+  create_cost_line_succeed_message: "Successfully created time",
+  yes_txt: "Yes",
+  no_txt: "No",
+  all_txt: "All",
+};

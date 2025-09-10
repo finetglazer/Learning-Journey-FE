@@ -1,0 +1,25 @@
+.policyinfor-container {
+  max-height: 400px;
+  margin-bottom: 6px;
+  .gutter-row {
+    .title {
+      color: var(--palette-base-neutral-8);
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 20px;
+      margin-bottom: 4px;
+    }
+    .content {
+      min-height: 376px;
+      max-height: 376px;
+      overflow-y: auto;
+      background-color: var(--palette-base-neutral-2);
+      padding: 16px;
+      color: var(--palette-base-neutral-10);
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 20px;
+      border-radius: 4px;
+    }
+  }
+}

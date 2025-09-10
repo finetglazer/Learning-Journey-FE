@@ -1,0 +1,22 @@
+.collapse-section {
+  background-color: #fff;
+  box-shadow: 0px 0px 2px rgba(0, 0, 0, 0.2), 0px 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.general-info-tab-container {
+  border-top: 1px solid #dfe1e6;
+}
+
+.content-container {
+  height: calc(100vh - 160px);
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  &.has-tab {
+    height: calc(100vh - 204px);
+  }
+}
+
+.approval-history-tab {
+  padding: 16px;
+}

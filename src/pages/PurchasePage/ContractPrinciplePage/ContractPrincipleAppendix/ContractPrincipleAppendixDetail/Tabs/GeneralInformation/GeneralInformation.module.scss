@@ -1,0 +1,25 @@
+.collapse-title {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+
+  .size-24 {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+}
+
+.bg-neutral-1 {
+  background-color: #fafbfc;
+  border-radius: 6px;
+}
+
+.content-container {
+  height: calc(100vh - 216px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}

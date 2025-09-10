@@ -1,0 +1,30 @@
+.modal-select__contact {
+  .search-bar-purchasing-plan-proposal {
+    .separate__item {
+      height: 40px;
+      padding: 8px;
+    }
+  }
+  .pl-color-sub-text {
+    color: red !important;
+    .text-ellipsis {
+      color: var(--color-text-label) !important;
+    }
+  }
+
+  .table-custom__baseline {
+    .page-table .ant-table-thead > tr > th {
+      vertical-align: baseline;
+    }
+  }
+  .h-custom-20 {
+    height: 16px;
+  }
+  .custom-pt {
+    padding-top: 2px;
+  }
+  .ant-table-cell.ant-table-selection-column {
+    vertical-align: baseline;
+    padding-top: 10px;
+  }
+}

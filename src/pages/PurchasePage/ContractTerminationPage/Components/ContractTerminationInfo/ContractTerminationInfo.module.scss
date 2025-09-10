@@ -1,0 +1,13 @@
+.collapse--title_custom {
+  :global(.collapse__header-title) {
+    font-size: 16px !important;
+  }
+
+  :global(.ck-editor__editable) {
+    min-height: 181px !important;
+  }
+}
+
+.error {
+  color: var(--color-critical);
+}

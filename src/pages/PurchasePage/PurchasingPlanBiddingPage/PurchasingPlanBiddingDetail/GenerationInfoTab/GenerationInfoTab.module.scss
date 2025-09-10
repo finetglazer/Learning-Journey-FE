@@ -1,0 +1,9 @@
+.content-container {
+  height: calc(100vh - 160px);
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  &.has-tab {
+    height: calc(100vh - 204px);
+  }
+}

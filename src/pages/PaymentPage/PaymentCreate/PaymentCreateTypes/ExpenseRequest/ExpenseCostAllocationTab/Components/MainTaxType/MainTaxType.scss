@@ -1,0 +1,17 @@
+.main-tax-type {
+  padding: 2px 16px 18px;
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--palette-base-neutral-3);
+
+  .main-tax-type__title {
+    font-weight: 400;
+    color: var(--color-text-label);
+    font-size: 14px;
+  }
+  .main-tax-type__content {
+    flex-direction: row;
+    display: flex;
+    gap: 32px;
+  }
+}

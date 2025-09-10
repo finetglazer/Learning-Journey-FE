@@ -1,0 +1,17 @@
+.actual-offer-information {
+  .actual-offer-information__title {
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 16px;
+    color: #8c9093;
+  }
+
+  .actual-offer-information_custom_input--primary {
+    .input-text--readOnly {
+      .component__input {
+        cursor: pointer;
+        color: var(--palette-base-blue-5) !important;
+      }
+    }
+  }
+}

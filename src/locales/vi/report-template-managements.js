@@ -1,0 +1,21 @@
+export default {
+  code: "Mã biểu mẫu",
+  name: "Tên biểu mẫu",
+  status: "Trạng thái",
+  download: "Tải xuống",
+  placeholder: {
+    code: "Nhập mã biểu mẫu",
+    name: "Nhập tên biểu mẫu",
+  },
+  create: "Thêm mới biểu mẫu",
+  update: "Chỉnh sửa biểu mẫu",
+  preview: "Xem biểu mẫu",
+  path: "Path",
+  inactive: "Ngừng hoạt động",
+  active: "Hoạt động",
+  deleteTitle: "Xoá biểu mẫu",
+  deleteContent: "Bạn có chắc chắn muốn xoá biểu mẫu này không?",
+  bulkDeleteTitle1: "Xác nhận xóa",
+  bulkDeleteTitle2: "biểu mẫu đã chọn?",
+  upload: "Tải lên",
+};

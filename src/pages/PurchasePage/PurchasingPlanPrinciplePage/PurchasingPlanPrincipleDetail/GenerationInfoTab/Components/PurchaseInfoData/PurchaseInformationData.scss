@@ -1,0 +1,54 @@
+.PurchaseInformationData {
+  &-body {
+    display: flex;
+    flex-direction: column;
+    margin-top: 16px;
+    gap: 16px;
+    .purchase_proposal_data_wrapper {
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid var(--palette-base-neutral-3);
+
+      .item_row {
+        border-bottom: 1px solid var(--palette-base-neutral-3);
+
+        &:last-child {
+          border-bottom: none;
+        }
+        .item_col {
+          padding: 16px;
+          border-right: 1px solid var(--palette-base-neutral-3);
+          display: flex;
+          flex-direction: column;
+
+          &:last-child {
+            border-right: none;
+          }
+          .label {
+            font-size: 12px;
+            font-weight: 400;
+            line-height: 20px;
+            color: var(--palette-base-neutral-7);
+          }
+          .value {
+            font-size: 14px;
+            font-weight: 500;
+            line-height: 20px;
+            color: var(--palette-base-neutral-10);
+          }
+
+          .text_blue {
+            color: var(--palette-base-blue-5);
+          }
+        }
+        .item_col--stacked {
+          display: flex;
+          flex-direction: column;
+        }
+      }
+      .bg_grey {
+        background: var(--palette-base-neutral-2);
+      }
+    }
+  }
+}

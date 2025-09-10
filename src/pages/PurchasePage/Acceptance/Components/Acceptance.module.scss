@@ -1,0 +1,33 @@
+@import "../../../../assets/scss/mixin/table_view";
+
+.table {
+  @include table-view;
+
+  tr th {
+    vertical-align: top;
+  }
+}
+
+.content-container {
+  height: calc(100vh - 216px);
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  .item-component {
+    margin: 24px 16px;
+
+    .title-header {
+      color: var(--palette-base-neutral-10);
+      font-weight: 600;
+      font-size: 16px;
+      margin-bottom: 12px;
+    }
+  }
+}
+
+.icon-row {
+  border: none;
+  background-color: transparent;
+  width: 40px;
+  height: 44px;
+}

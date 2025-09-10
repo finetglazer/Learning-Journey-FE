@@ -1,0 +1,46 @@
+.modal-select__container {
+  .ant-table-thead > tr > th {
+    background-color: #f4f5f7 !important;
+  }
+
+  .unit-title {
+    margin-bottom: 12px;
+  }
+
+  .line-one {
+    width: 156px;
+  }
+
+  .line-calm {
+    width: 200px;
+  }
+
+  .box-two__line {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .line-text__two {
+    color: #42526e;
+    font-size: 12px;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .line-text {
+    margin-bottom: 14px;
+  }
+
+  .ant-radio-wrapper {
+    margin-bottom: 6px;
+  }
+
+  .line-nowrap {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}

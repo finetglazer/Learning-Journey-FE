@@ -1,0 +1,24 @@
+.sign-process-master-action {
+  .sign-process-master-action__content {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+
+    .sign-process-master-action__button {
+      width: 156px;
+      height: 80px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+
+      .button__title {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+    }
+
+    .no-drop {
+      cursor: no-drop;
+    }
+  }
+}

@@ -1,0 +1,33 @@
+.ant-switch.ant-switch-checked {
+  background-color: #dd502e;
+  position: relative;
+
+  &:hover {
+    background-color: #dd502e !important;
+  }
+}
+
+.status-style {
+  color: #5e6c84;
+}
+
+.active-style {
+  color: #0c2042;
+}
+
+.warning-box {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  background-color: #e6f2fb;
+  border: 1px solid #3998e1;
+  padding: 16px;
+  align-items: flex-start;
+  border-radius: 4px;
+
+  .text-description {
+    color: #0673c6;
+    font-weight: 400;
+    font-size: 14px;
+  }
+}

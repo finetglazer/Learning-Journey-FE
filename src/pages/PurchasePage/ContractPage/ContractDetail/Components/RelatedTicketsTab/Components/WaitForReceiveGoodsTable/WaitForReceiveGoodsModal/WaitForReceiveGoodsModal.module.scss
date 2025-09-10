@@ -1,0 +1,50 @@
+.wait-for-receive-goods-modal {
+  :global(.ant-modal-footer) {
+    margin-top: 0;
+  }
+}
+
+.wait-for-receive-goods-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+
+  .filter-fields-group {
+    display: flex;
+    gap: 16px;
+  }
+
+  .search-field {
+    flex: 1;
+  }
+
+  .select-field {
+    flex-basis: 200px;
+  }
+
+  .empty-wait-for-receive-goods {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 230px;
+  }
+
+  .wait-for-receive-goods-modal-table {
+    :global(.ant-table-tbody) {
+      max-height: 230px;
+    }
+  }
+
+  .wait-for-receive-goods-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+  }
+
+  .wait-for-receive-goods-code {
+    font-size: 12px;
+    color: #5e6c84;
+  }
+}

@@ -1,0 +1,75 @@
+@import "../../../../assets/scss/mixin/table_view";
+
+.table {
+  @include table-view;
+
+  tr th {
+    width: calc(100% / 3);
+    vertical-align: top;
+  }
+}
+
+.form-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 12px;
+}
+
+.form-item {
+  width: calc(100% / 3 - 8px);
+}
+
+.unit--hidden {
+  :global(.text-unit) {
+    opacity: 0;
+  }
+}
+
+.custom-table {
+  :global(th.ant-table-cell) {
+    border-color: var(--palette-base-neutral-3) !important;
+    background-color: var(--palette-base-neutral-2) !important;
+  }
+
+  &.total {
+    &--border-first {
+      :global(td.ant-table-cell) {
+        border-right: unset !important;
+      }
+
+      :global(td.ant-table-cell:nth-child(2)) {
+        border-right: 1px var(--palette-base-neutral-3) solid !important;
+      }
+
+      :global(.ant-table-tbody .ant-table-row:nth-child(2)) {
+        :global(.ant-table-cell) {
+          background-color: var(--palette-base-neutral-2) !important;
+          font-weight: 600;
+          border-right: unset !important;
+        }
+
+        :global(td.ant-table-cell:first-child) {
+          border-right: 1px var(--palette-base-neutral-3) solid !important;
+        }
+      }
+    }
+
+    &--border-secondary {
+      :global(.ant-table-tbody .ant-table-row:nth-child(2)) {
+        :global(.ant-table-cell) {
+          background-color: var(--palette-base-neutral-2) !important;
+          font-weight: 600;
+          border-right: unset !important;
+        }
+
+        :global(td.ant-table-cell:first-child) {
+          border-right: 1px var(--palette-base-neutral-3) solid !important;
+        }
+      }
+
+      :global(td.ant-table-cell + td.ant-table-cell) {
+        border-right: unset !important;
+      }
+    }
+  }
+}

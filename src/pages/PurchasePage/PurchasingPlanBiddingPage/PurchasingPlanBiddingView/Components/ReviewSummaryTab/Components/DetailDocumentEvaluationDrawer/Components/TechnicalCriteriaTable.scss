@@ -1,0 +1,105 @@
+.technical-criteria-table {
+  .ant-table-body {
+    overflow: auto !important;
+  }
+  .footer-table {
+    padding: 0;
+    .footer-item-table {
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      height: 44px;
+      column-gap: 16px;
+      .label-flag {
+        width: 551px;
+        font-size: 14px;
+        font-weight: 600;
+        padding: 10px 0;
+        line-height: 20px;
+        color: var(--color-text);
+      }
+
+      .label-score {
+        width: 581px;
+        font-size: 14px;
+        font-weight: 600;
+        padding: 10px 0;
+        line-height: 20px;
+        color: var(--color-text);
+      }
+
+      .edit-content-flag {
+        width: 114px;
+        padding: 6px 0;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 20px;
+        color: var(--color-text);
+      }
+
+      .edit-content-score {
+        width: 114px;
+        padding: 6px 0;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 20px;
+        color: var(--color-text);
+      }
+
+      .edit-note-flag {
+        width: 134px;
+        margin-left: 16px;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 20px;
+        color: var(--color-text);
+      }
+
+      .edit-note-score {
+        width: 134px;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 20px;
+        color: var(--color-text);
+      }
+
+      .value-score {
+        width: 114px;
+        padding: 6px 0;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 20px;
+        color: var(--color-text);
+      }
+
+      .value-flag {
+        width: 114px;
+        padding: 6px 0;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 20px;
+        color: var(--color-text);
+      }
+
+      .note-score {
+        width: 134px;
+        font-size: 14px;
+        margin-left: 16px;
+        font-weight: 400;
+        line-height: 20px;
+        color: var(--color-text);
+      }
+
+      .note-flag {
+        width: 124px;
+        margin-left: 16px;
+        font-size: 14px;
+        line-height: 20px;
+        color: var(--color-text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+  }
+}

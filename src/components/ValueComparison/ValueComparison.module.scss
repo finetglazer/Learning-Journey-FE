@@ -1,0 +1,32 @@
+@mixin sign($content) {
+  position: relative;
+  left: 0;
+  display: inline-block;
+  content: $content;
+}
+
+.comparison {
+  position: relative;
+
+  &--blue {
+    color: var(--palette-base-green-6);
+  }
+
+  &--red {
+    color: var(--palette-base-red-6);
+  }
+
+  &--sign {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+
+    &.comparison--blue:before {
+      @include sign("+");
+    }
+
+    &.comparison--red:before {
+      @include sign("-");
+    }
+  }
+}

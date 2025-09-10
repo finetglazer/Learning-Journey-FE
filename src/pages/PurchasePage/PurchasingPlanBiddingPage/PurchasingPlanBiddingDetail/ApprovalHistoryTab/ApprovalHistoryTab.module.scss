@@ -1,0 +1,21 @@
+.approval_history_tab {
+  .tab_container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 12px 16px 16px 16px;
+    gap: 16px;
+  }
+}
+
+.new_approval_history_tab {
+  background-color: var(--palette-base-neutral-1);
+
+  .tab_container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 16px;
+    gap: 16px;
+  }
+}

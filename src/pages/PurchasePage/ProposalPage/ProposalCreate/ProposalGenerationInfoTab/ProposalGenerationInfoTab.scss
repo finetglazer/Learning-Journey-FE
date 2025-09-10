@@ -1,0 +1,8 @@
+.proposal_generation_info_tab {
+  height: calc(100vh - 220px);
+  overflow-y: auto;
+
+  &__comment {
+    padding: 0 16px;
+  }
+}

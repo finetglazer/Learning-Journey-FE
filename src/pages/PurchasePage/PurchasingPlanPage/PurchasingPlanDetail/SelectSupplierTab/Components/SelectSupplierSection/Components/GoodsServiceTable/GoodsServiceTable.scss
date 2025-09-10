@@ -1,0 +1,29 @@
+.goods_service_table {
+  table {
+    border-collapse: unset !important;
+  }
+
+  td.ant-table-cell:has(.data-with-collapse) {
+    display: flex;
+    align-items: center;
+  }
+
+  th.ant-table-cell.ant-table-cell-ellipsis,
+  th.ant-table-cell.ant-table-selection-column {
+    vertical-align: baseline;
+  }
+
+  .data-with-collapse {
+    .collapse_text {
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 20px;
+    }
+
+    .first_line_style {
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 20px;
+    }
+  }
+}

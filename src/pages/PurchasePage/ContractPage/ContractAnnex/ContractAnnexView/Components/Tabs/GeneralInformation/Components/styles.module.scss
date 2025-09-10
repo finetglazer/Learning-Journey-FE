@@ -1,0 +1,241 @@
+.normal-text {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: #0c2042;
+}
+
+.bold-text {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 700;
+  color: #0c2042;
+}
+
+.over-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.annex-information__wrapper {
+  border-radius: 4px;
+  background-color: #ffffff;
+  color: #0c2042;
+
+  .normal-information__wrapper {
+    background-color: #e6f2fb;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    border-radius: 4px;
+
+    .title-section {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: flex-start;
+
+      .title {
+        @extend .over-text;
+        font-size: 18px;
+        line-height: 24px;
+        font-weight: 700;
+        flex: 8;
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+      }
+
+      .total {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-direction: row;
+        font-size: 14px;
+        line-height: 20px;
+        font-weight: 500;
+
+        div {
+          font-size: 18px;
+          line-height: 24px;
+          font-weight: 700;
+        }
+      }
+    }
+
+    .content-section {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 20px;
+
+      .avatar {
+        display: flex;
+        flex-direction: row;
+        gap: 8px;
+
+        span {
+          font-size: 14px;
+          line-height: 20px;
+          font-weight: 500;
+          color: #0c2042;
+        }
+      }
+    }
+  }
+
+  .contract-information {
+    padding: 16px;
+  }
+
+  .text-row {
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+  }
+
+  .text-column {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .text-label {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 400;
+    color: #5e6c84;
+  }
+
+  .text-value {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 500;
+    color: #0c2042;
+  }
+}
+
+.services-information {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-radius: 4px;
+
+  .content {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+
+    .section-wrapper {
+      display: flex;
+      flex-direction: column;
+      background-color: white;
+      padding: 24px 16px;
+      flex: 1;
+      gap: 16px;
+      border-radius: 4px;
+      box-shadow: 0px 4px 12px 0px var(--palette-base-neutral-3);
+
+      box-shadow: 0px 0px 1px 0px var(--palette-base-neutral-5);
+
+      .section-title-wrapper {
+        display: flex;
+        flex-direction: row;
+        gap: 8px;
+
+        .title {
+          @extend .bold-text;
+          font-size: 18px;
+          line-height: 24px;
+        }
+      }
+
+      .row-wrapper {
+        display: flex;
+        flex-direction: row;
+        gap: 16px;
+
+        .label {
+          font-size: 14px;
+          line-height: 20px;
+          font-weight: 500;
+          color: #5e6c84;
+          flex: 2;
+        }
+
+        .value {
+          font-size: 14px;
+          line-height: 20px;
+          font-weight: 500;
+          flex: 8;
+          color: #0c2042;
+        }
+      }
+    }
+  }
+}
+
+.delivery-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .text-label {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 400;
+    color: #5e6c84;
+  }
+
+  .text-value {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 500;
+    color: #0c2042;
+  }
+}
+
+.rounded-spacing {
+  height: 4px;
+  width: 4px;
+  border-radius: 4px;
+  background-color: #d9d9d9;
+}
+
+.text-information {
+  @extend .over-text;
+  margin-top: 2px;
+}
+
+.text-contract-no-row {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  overflow: hidden;
+
+  .text-contract-no-label {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 400;
+    color: #5e6c84;
+  }
+
+  .text-contract-no-value {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 500;
+    color: #0c2042;
+    @extend .over-text;
+  }
+}
+
+.size-24 {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: start;
+  justify-content: center;
+  cursor: pointer;
+}

@@ -1,0 +1,13 @@
+.acceptance-filter {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+
+  .search {
+    width: 70%;
+  }
+
+  .multiple-select {
+    width: 28%;
+  }
+}

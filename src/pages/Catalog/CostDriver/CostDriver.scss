@@ -1,0 +1,30 @@
+.cost-driver {
+  &__action {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: 16px;
+    gap: 12px;
+
+    &__search {
+      width: 300px;
+    }
+  }
+}
+
+.cost-driver-advance-filter {
+  padding: 16px;
+  display: flex;
+  gap: 16px;
+  width: 100%;
+  flex-wrap: wrap;
+
+  .form-item {
+    width: 376px;
+
+    &--full {
+      width: 100%;
+      flex-grow: 1;
+    }
+  }
+}

@@ -1,0 +1,29 @@
+.label {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 20px;
+  color: var(--palette-base-neutral-7);
+}
+
+.currency {
+  font-size: 10px;
+  line-height: 20px;
+  color: var(--palette-base-neutral-7);
+}
+
+.border {
+  border-top: 1px solid var(--color-bg-button-disable);
+}
+
+.limited-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* Giới hạn 2 dòng */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+}
+
+.blue {
+  color: var(--palette-base-blue-5);
+}

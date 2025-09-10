@@ -1,0 +1,22 @@
+.approval_history_tab {
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: calc(100vh - 220px);
+
+  .tab_container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 0px 16px 16px 16px;
+    gap: 16px;
+  }
+}
+
+.approval_history_tab_only_one {
+  margin-top: -20px;
+
+  .tab_container {
+    padding: 0px 16px 16px 16px;
+    gap: 16px;
+  }
+}

@@ -1,0 +1,5 @@
+.switch-status {
+  &:global(.ant-switch.ant-switch-checked) {
+    background-color: var(--palette-brand-6) !important;
+  }
+}

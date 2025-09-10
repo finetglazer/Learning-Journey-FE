@@ -1,0 +1,24 @@
+.supplier-info-wrapper {
+  display: flex;
+  gap: 12px;
+
+  :global(
+      .PurchaseInformationData-body
+        .purchase_proposal_data_wrapper
+        .item_row
+        .item_col
+    ).table-cell {
+    padding: 14px 16px;
+    height: unset;
+
+    &--large {
+      padding: 10px 16px;
+      height: 56px;
+    }
+  }
+
+  .sub-value {
+    font-size: 10px;
+    color: var(--palette-base-neutral-8);
+  }
+}

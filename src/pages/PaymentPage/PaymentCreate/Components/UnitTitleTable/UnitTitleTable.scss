@@ -1,0 +1,27 @@
+.unit-title__container {
+  display: flex;
+  flex-direction: column;
+
+  .text-title {
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--palette-base-neutral-10);
+    font-weight: 600;
+  }
+
+  .text-unit {
+    font-size: 10px;
+    line-height: 12px;
+    font-weight: 400;
+    color: var(--palette-base-neutral-8);
+  }
+}
+
+.align-center {
+  align-items: center;
+}
+
+.unit-title__container__required {
+  display: flex;
+  justify-content: end;
+}

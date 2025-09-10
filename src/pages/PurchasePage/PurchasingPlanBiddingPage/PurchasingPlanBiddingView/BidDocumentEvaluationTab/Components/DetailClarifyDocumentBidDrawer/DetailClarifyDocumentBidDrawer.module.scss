@@ -1,0 +1,58 @@
+:global(.drawer__container):has(.drawer-title) + :global(.overlay) {
+  background-color: transparent;
+  cursor: default;
+}
+
+:global(
+    .drawer__container.slide-out.drawer-2xl
+  ).detail-clarify-document-bid__container {
+  width: 800px;
+
+  .drawer-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0c2042;
+  }
+
+  .content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .content-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0c2042;
+  }
+  .response-content,
+  .clarification-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .clarification-content__label {
+    margin-bottom: 0;
+    flex: 0 0 200px;
+    color: #5e6c84;
+  }
+  .file-item {
+    flex: 0 0 160px;
+    :global(.file-loaded-container) {
+      margin-bottom: 0;
+    }
+  }
+  .file-list {
+  }
+  .clarification-content__value {
+    margin-bottom: 0;
+    font-weight: 500;
+  }
+  .divider {
+    width: 100%;
+    height: 1px;
+    background-color: #dfe1e6;
+  }
+  .response-content {
+  }
+}

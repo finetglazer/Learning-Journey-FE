@@ -1,0 +1,120 @@
+.summary-table__container {
+  display: flex;
+  background-color: #f4f5f7;
+  border-radius: 4px;
+  border: 1px solid #dfe1e6;
+  width: fit-content;
+
+  .summary-table__left {
+    width: fit-content;
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-right: 1px solid var(--palette-base-neutral-3);
+    padding: 20px;
+
+    .summary-table__total {
+      color: #0c2042;
+      font-weight: 600;
+    }
+
+    .summary-table__main {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
+      .summary-table__value {
+        font-size: 28px;
+        color: #0c2042;
+        font-weight: 700;
+      }
+
+      .summary-table__unit {
+        font-size: 10px;
+        color: #5e6c84;
+        font-weight: 400;
+        align-self: flex-end;
+        margin-bottom: 8px;
+      }
+    }
+  }
+
+  .summary-table__right {
+    width: 451px;
+    .summary-table__asset {
+      display: flex;
+      justify-content: space-between;
+      padding: 16.5px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--palette-base-neutral-3);
+
+      .summary-table__asset__fixed {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 600;
+      }
+
+      .summary-table__sidebar {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        .summary-value {
+          font-weight: 600;
+          font-size: 14px;
+        }
+        .summary-value__expense {
+          font-size: 14px;
+          color: #0c2042;
+          font-weight: 400;
+        }
+
+        .unit {
+          font-size: 10px;
+          color: #5e6c84;
+          margin-top: 4px;
+        }
+      }
+    }
+
+    .summary-table__subitem {
+      display: flex;
+      justify-content: space-between;
+      padding: 16.5px 16px 16.5px 38px;
+      font-size: 14px;
+      border-bottom: 1px solid var(--palette-base-neutral-3);
+      .summary-value__expanded {
+        font-size: 14px;
+      }
+      .unit {
+        font-size: 10px;
+        color: #5e6c84;
+        margin-top: 4px;
+      }
+
+      .summary-table__title_expanded {
+        font-weight: 600;
+      }
+      .summary-table__sidebar {
+        display: flex;
+        gap: 5px;
+      }
+    }
+
+    .dropdown-icon {
+      transition: transform 0.2s ease-in-out;
+      color: #7a869a;
+    }
+
+    .expanded {
+      transform: rotate(180deg);
+    }
+  }
+  .custom-padding {
+    padding: 14.5px 16px !important;
+  }
+  .input-number {
+    width: 220px;
+  }
+}

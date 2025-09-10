@@ -1,0 +1,59 @@
+.contract-terms-container {
+  height: calc(100vh - 340px);
+  overflow-y: auto;
+  margin-top: 0;
+
+  .contract-terms__list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    > button {
+      align-self: flex-start;
+    }
+  }
+
+  .contract-terms__list-action-icon {
+    width: 100%;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: transparent;
+    background-color: transparent;
+
+    svg {
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  .contract-terms__list :global(.text-in-table-cell) {
+    margin: 12px 0;
+    white-space: pre-wrap;
+  }
+
+  .empty-contract-terms {
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #dfe1e6;
+    border-radius: 6px;
+    background-color: #fafbfc;
+  }
+  .empty-contract-terms__wrapper {
+    display: flex;
+    gap: 24px;
+  }
+  .empty-contract-terms__container {
+    display: flex;
+    flex-direction: column;
+    align-self: center;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .no-contract-terms-text {
+    color: #7a869a;
+  }
+}

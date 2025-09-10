@@ -1,0 +1,63 @@
+export default {
+  title: "Cost Line Category",
+  message_empty_data: "Your system has not recorded any data. ",
+  let_add_new: "Please add new Cost Line data",
+  placeholder_search_bar: "Search by Cost Line code or name...",
+  advance_filter_button: "Advanced Search",
+  // Table title
+  code_line_code_txt: "Cost Line Code",
+  code_line_name_txt: "Cost Line Name",
+  code_line_parent_txt: "Parent Cost Line",
+  budget_period_txt: "Budget Period",
+  calculation_method_txt: "Calculation Method",
+  budget_calculation_method_txt: "Budget Calculation Method",
+  allow_transfer_txt: "Allow Transfer",
+  allow_budget_transfer_txt: "Allow Budget Transfer",
+  allow_budget_exceed_txt: "Allow Budget Exceed",
+  driver_default_txt: "Default Cost Driver",
+  // Input placeholder
+  code_input_placeholder: "Enter Cost Line code",
+  name_input_placeholder: "Enter Cost Line name",
+  driver_default_input_placeholder: "Select default Cost Driver",
+  // Placeholder
+  code_search_placeholder: "Search by Cost Line code",
+  name_search_placeholder: "Search by Cost Line name",
+  parent_search_placeholder: "Select Parent Cost Line",
+  budget_period_search_placeholder: "Select Budget Period",
+  budget_calculation_method_search_placeholder:
+    "Select Budget Calculation Method",
+  allow_transfer_search_placeholder: "Select value",
+  allow_budget_exceed_search_placeholder: "Select value",
+  driver_default_search_placeholder: "Select Cost Driver",
+  // Budget period
+  monthly_txt: "Month",
+  quarterly_txt: "Quarter",
+  semi_annually_txt: "6 Months",
+  annually_txt: "Year",
+  // Budget calculation method
+  cumulative_txt: "Cumulative",
+  periodic_txt: "Periodic",
+  active_status_txt: "Active",
+  deactivate_status_txt: "Inactive",
+  deactivate_status_full_txt: "Inactive",
+  // Create new cost line
+  create_new_cost_line_title: "Create New Cost Line",
+  update_cost_line_title: "Edit Cost Line",
+  view_cost_line_detail_title: "View Cost Line Details",
+  save_btn: "Save",
+  close_btn: "Close",
+  delete_btn: "Delete",
+  confirm_delete_title: "Confirm delete {{total}} Cost Line",
+  confirm_delete_message:
+    "This action cannot be undone. Are you sure you want to delete the selected Cost Line?",
+  allow_txt: "Allow",
+  deny_txt: "Deny",
+  // message
+  copied_to_clipboard_message: "Copied to clipboard",
+  cost_line_delete_succeed_message: "Deleted {{total}} Cost Line records",
+  update_cost_line_succeed_message: "Successfully edited Cost Line",
+  create_cost_line_succeed_message: "Successfully created Cost Line",
+  yes_txt: "Yes",
+  no_txt: "No",
+  all_txt: "All",
+};

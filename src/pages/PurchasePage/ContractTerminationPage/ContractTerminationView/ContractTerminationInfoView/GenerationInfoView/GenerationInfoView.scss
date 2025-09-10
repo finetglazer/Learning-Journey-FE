@@ -1,0 +1,149 @@
+.generation-infor-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  .head-infor-block {
+    background-color: var(--palette-base-blue-1);
+    box-shadow: 0px 0px 1px var(--palette-base-neutral-5),
+      0px 4px 12px var(--palette-base-neutral-3);
+    border-radius: 4px;
+    padding: 16px;
+    overflow: hidden;
+  }
+
+  .flex {
+    display: flex;
+    align-items: center;
+
+    &.start {
+      justify-content: flex-start;
+    }
+
+    &.between {
+      justify-content: space-between;
+    }
+
+    &.align-start {
+      align-items: flex-start;
+    }
+  }
+
+  .item-content-box {
+    font-size: 14px;
+
+    .label-box {
+      color: var(--palette-base-neutral-8);
+    }
+    .content-box {
+      color: var(--palette-base-neutral-10);
+      flex: 1;
+    }
+
+    &.custom {
+      .label-box {
+        width: 140px;
+        color: var(--palette-base-neutral-7);
+      }
+
+      margin-bottom: 12px;
+    }
+  }
+
+  .dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background-color: #d9d9d9;
+  }
+
+  .text {
+    font-size: 14px;
+    color: var(--palette-base-neutral-10);
+  }
+
+  .bold {
+    font-weight: 500;
+  }
+
+  .large {
+    font-weight: 700;
+    font-size: 18px;
+  }
+
+  .code-box {
+    color: var(--palette-base-blue-5);
+    cursor: pointer;
+    width: 100%;
+
+    .code {
+      max-width: 50%;
+    }
+
+    a {
+      width: 100%;
+      text-decoration: underline dotted 2px;
+      text-underline-offset: 4px;
+      color: var(--palette-base-blue-5);
+    }
+  }
+
+  .name-box {
+    max-width: 50%;
+  }
+
+  .total-box {
+    text-align: right;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .g-8 {
+    gap: 8px;
+  }
+
+  .g-4 {
+    gap: 4px;
+  }
+
+  .g-12 {
+    gap: 12px;
+  }
+
+  .g-16 {
+    gap: 16px;
+  }
+
+  .block {
+    background-color: var(--palette-base-white-100);
+    box-shadow: 0px 0px 1px var(--palette-base-neutral-5),
+      0px 4px 12px var(--palette-base-neutral-3);
+    border-radius: 4px;
+    padding: 24px 16px;
+    flex: 1;
+  }
+
+  .title {
+    color: var(--palette-base-neutral-10);
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 24px;
+    margin-bottom: 16px;
+  }
+
+  .mb-16 {
+    margin-bottom: 16px;
+  }
+
+  .item-box {
+    width: 100%;
+  }
+
+  .w100 {
+    width: 100%;
+  }
+
+  .mg-0 {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}

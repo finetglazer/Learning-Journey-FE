@@ -1,0 +1,16 @@
+.file-import-error-modal__container {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 4px;
+
+  img {
+    margin-top: 2px;
+  }
+
+  span {
+    color: #42526e;
+    font-size: 14px;
+    line-height: 20px;
+  }
+}

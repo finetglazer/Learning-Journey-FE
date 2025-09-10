@@ -1,0 +1,63 @@
+.good-services-category {
+  &-view-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__status {
+    width: fit-content;
+  }
+
+  &__name {
+    font-weight: 500;
+    font-size: 24px;
+    line-height: 32px;
+  }
+
+  &__code {
+    cursor: pointer;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+
+    &-value {
+      font-weight: 500;
+    }
+
+    &-icon {
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+  }
+
+  &__item {
+    display: inline-flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 60px;
+    border: 1px solid #dfe1e6;
+    gap: 4px;
+    padding: 16px;
+    border-radius: 4px;
+    height: auto;
+
+    &-label {
+      color: var(--color-text-label);
+      font-weight: 400;
+      font-size: 12px;
+      line-height: 16px;
+    }
+
+    &-description {
+      color: var(--text-color-base-neutral-10);
+      font-weight: 500;
+      font-size: 16px;
+      line-height: 24px;
+      white-space: pre-line;
+    }
+  }
+}

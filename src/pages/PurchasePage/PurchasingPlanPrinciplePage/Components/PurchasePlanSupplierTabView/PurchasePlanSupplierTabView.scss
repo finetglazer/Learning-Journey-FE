@@ -1,0 +1,22 @@
+.purchasing-plan-supplier-view {
+  &-scroll {
+    overflow-y: auto;
+    max-height: calc(100vh - 240px);
+    padding-top: 9px;
+    padding-bottom: 16px;
+    padding-inline: 16px;
+  }
+  .collapse__header-title {
+    font-weight: 700;
+    font-size: 18px !important;
+    line-height: 24px;
+  }
+
+  .collapse__container {
+    margin-top: 0 !important;
+  }
+
+  .border-collapse_supplier {
+    border: 1px solid var(--palette-base-neutral-3);
+  }
+}

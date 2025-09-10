@@ -1,0 +1,36 @@
+.contract_seller_info_wrapper {
+  padding: 16px;
+  border-bottom: 1px solid var(--palette-base-neutral-3);
+
+  .body {
+    display: flex;
+    flex-direction: column;
+    margin-top: 16px;
+    gap: 16px;
+
+    .follow_attorney .input-select__wrapper .input-select__label {
+      justify-content: space-between;
+    }
+  }
+
+  .special-text-input__wrapper {
+    width: 100%;
+    position: relative;
+
+    .check-box__wrapper {
+      position: absolute;
+      top: -4px;
+      right: 0;
+
+      .checkbox__container
+        .ant-checkbox-wrapper
+        .ant-checkbox.ant-checkbox-checked
+        .ant-checkbox-inner {
+        background-color: #97a0af !important;
+      }
+      .checkbox__container .ant-checkbox-wrapper .ant-checkbox + span {
+        color: #7a869a !important;
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px 16px;
+
+  .invisible-label {
+    :global(.input-select__label),
+    :global(.input-tag__label) {
+      opacity: 0;
+    }
+  }
+}
+
+.w-one-third {
+  width: 33.333333%;
+}

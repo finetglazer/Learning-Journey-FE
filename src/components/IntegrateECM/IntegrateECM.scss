@@ -1,0 +1,26 @@
+.integrate-ecm-tab {
+  padding: 12px 16px 16px;
+
+  .title-integrate-ecm {
+    color: var(--palette-base-neutral-10);
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .file-loaded-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 32px;
+    margin-top: 6px;
+    margin-bottom: 6px;
+    border-radius: 4px;
+    border: 1px solid var(--color-bg-button-disable);
+    text-align: left;
+    background-color: white;
+  }
+
+  .ant-table-cell {
+    vertical-align: baseline;
+  }
+}

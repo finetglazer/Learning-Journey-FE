@@ -1,0 +1,18 @@
+.delivery-filter {
+  display: flex;
+  gap: 16px;
+
+  .search {
+    width: 50%;
+    flex-shrink: 0;
+  }
+
+  .multiple-select {
+    width: 31%;
+  }
+
+  .checkbox {
+    min-width: 174px;
+    margin-top: 6px;
+  }
+}

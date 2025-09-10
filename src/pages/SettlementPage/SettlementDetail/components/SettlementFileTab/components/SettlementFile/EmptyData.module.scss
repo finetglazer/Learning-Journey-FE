@@ -1,0 +1,32 @@
+.h_wrapper {
+  min-height: calc(100vh - 340px);
+  .empty__wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    column-gap: 24px;
+    background-color: var(--palette-base-neutral-1);
+    border: 1px dashed #d9dadb;
+    border-radius: 6px;
+    padding: 24px;
+    &_icon {
+      width: 140px;
+      height: 140px;
+      object-fit: cover;
+    }
+    &_content {
+      &__massage {
+        &_import {
+          font-size: 14px;
+          line-height: 20px;
+          font-weight: 400;
+          white-space: pre-line;
+          color: var(--palette-base-neutral-6);
+        }
+      }
+      &__button {
+        margin-top: 12px;
+      }
+    }
+  }
+}

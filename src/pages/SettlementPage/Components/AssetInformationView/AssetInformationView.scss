@@ -1,0 +1,17 @@
+.asset-information-tab-view {
+  background-color: var(--palette-base-neutral-2);
+  overflow-y: auto;
+
+  .asset-information-tab-view-items {
+    padding: 24px 16px;
+    background-color: var(--palette-base-neutral-white);
+    overflow-y: auto;
+    border-radius: 4px;
+    box-shadow: 0px 4px 12px 0px var(--palette-base-neutral-3);
+    box-shadow: 0px 0px 1px 0px var(--palette-base-neutral-5);
+  }
+
+  .text_blue {
+    color: var(--palette-base-blue-5);
+  }
+}

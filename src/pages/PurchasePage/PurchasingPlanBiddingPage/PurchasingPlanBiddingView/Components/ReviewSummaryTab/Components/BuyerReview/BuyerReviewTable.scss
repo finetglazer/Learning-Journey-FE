@@ -1,0 +1,9 @@
+.table-view-buyer {
+  padding-top: 12px;
+  .ant-table-container table > thead > tr:first-child > *:first-child {
+    border-start-start-radius: 0;
+  }
+  .ant-table-thead > tr > th {
+    border: 1px solid #b3bac5;
+  }
+}

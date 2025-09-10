@@ -1,0 +1,32 @@
+.collapse__header-title {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  color: var(--palette-base-neutral-10);
+}
+
+.collapse__expend-icon {
+  transition: all 0.3s;
+}
+
+.collapse__container {
+  margin-top: 12px;
+
+  &__overflow {
+    margin-left: -16px;
+    margin-right: -16px;
+  }
+
+  &--not-border {
+    @extend .collapse__container__overflow;
+    .ant-collapse-header {
+      border-top: none !important;
+    }
+  }
+}
+
+.ant-collapse-item {
+  .ant-collapse-header {
+    border-top: 1px solid #dfe1e6;
+  }
+}

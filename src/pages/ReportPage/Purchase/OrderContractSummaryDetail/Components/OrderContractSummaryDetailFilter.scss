@@ -1,0 +1,10 @@
+.order-contract-summary-detail-filter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  .form-item {
+    width: 49% !important;
+    height: 90px;
+  }
+}

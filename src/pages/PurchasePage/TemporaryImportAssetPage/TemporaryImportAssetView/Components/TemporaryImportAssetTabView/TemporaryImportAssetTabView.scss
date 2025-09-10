@@ -1,0 +1,27 @@
+.temporary_import_asset_tab_view {
+  overflow-y: auto;
+  max-height: calc(100vh - 212px);
+
+  .collapse__container {
+    margin-top: 0px;
+  }
+
+  .temporary_import_asset_collapse_view {
+    .ant-collapse-item:first-child {
+      .ant-collapse-header {
+        border-top: none;
+      }
+    }
+
+    .text--primary {
+      color: var(--palette-base-blue-5);
+      font-weight: 500;
+      text-decoration: none;
+    }
+  }
+
+  .comment_section {
+    border-top: 1px solid var(--palette-base-neutral-3);
+    padding: 0 16px 8px;
+  }
+}

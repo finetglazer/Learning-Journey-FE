@@ -1,0 +1,63 @@
+.attachments {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+
+  .form-upload {
+    flex: 1;
+
+    &.error .upload-button__container .upload-dropzone {
+      border: 1px dashed var(--color-critical) !important;
+    }
+  }
+
+  .items {
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px 16px;
+
+    &_file {
+      width: calc(50% - 8px);
+    }
+  }
+
+  .items-view {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0px 16px;
+
+    &_file {
+      width: 100%;
+      .file-loaded-container {
+        margin-bottom: 2px;
+      }
+    }
+  }
+}
+
+// attachment view
+.attachment-container {
+  width: 100%;
+  .attachment-title {
+    display: flex;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+  .show-more-button {
+    display: flex;
+    margin: 0 auto;
+    color: #077eda;
+    font-weight: 600;
+    border: none;
+    background-color: transparent;
+  }
+}
+.empty-data {
+  width: 100% !important;
+}
+.affter-data {
+  width: 50% !important;
+}

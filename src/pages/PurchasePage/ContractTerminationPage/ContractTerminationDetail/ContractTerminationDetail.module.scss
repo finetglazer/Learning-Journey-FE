@@ -1,0 +1,8 @@
+.container {
+  :global(.ant-tabs-nav) {
+    padding-bottom: 0 !important;
+  }
+  :global(.ant-collapse-content-box) {
+    padding-top: 4px !important;
+  }
+}

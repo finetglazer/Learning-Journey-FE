@@ -1,0 +1,30 @@
+.page-container {
+  margin: -16px;
+
+  .page-header {
+    position: relative;
+    border-radius: 0;
+    height: var(--height-page-title) !important;
+  }
+
+  .content-tab {
+    :global(.ant-tabs-nav) {
+      margin-bottom: 0 !important;
+
+      :global(.ant-tabs-nav-wrap) {
+        width: 100%;
+        padding: 0 16px;
+        border-bottom: 1px solid var(--palette-base-neutral-3);
+
+        :global(.ant-tabs-tab) {
+          box-shadow: unset !important;
+          height: 43px !important;
+        }
+
+        :global(.ant-tabs-ink-bar) {
+          background-color: transparent;
+        }
+      }
+    }
+  }
+}

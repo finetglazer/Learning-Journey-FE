@@ -1,0 +1,16 @@
+.selected-supplier-wrapper {
+  .table-view {
+    .ant-table-container table > thead > tr:first-child > *:first-child {
+      border-start-start-radius: 0;
+    }
+    .ant-table-thead > tr > th {
+      border: 1px solid #b3bac5;
+    }
+  }
+
+  .font-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--palette-base-neutral-10);
+  }
+}

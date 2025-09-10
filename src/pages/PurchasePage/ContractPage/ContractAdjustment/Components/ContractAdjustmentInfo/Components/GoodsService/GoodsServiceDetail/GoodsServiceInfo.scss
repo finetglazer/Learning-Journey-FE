@@ -1,0 +1,36 @@
+.table-goods-service {
+  .background-table {
+    background-color: #e6f2fb;
+  }
+
+  .table-border-color > th {
+    border-color: #0673c6 !important;
+  }
+
+  .tax {
+    .primary-number {
+      font-weight: 500;
+      color: #0c2042;
+    }
+
+    .secondary-number {
+      font-weight: 500;
+      color: #42526e;
+    }
+
+    .currency {
+      font-size: 10px;
+      font-weight: 500;
+    }
+  }
+}
+
+.input-text--read-only {
+  .input-text--disabled {
+    background-color: #f4f5f7 !important;
+  }
+
+  .input-select--disabled {
+    background-color: #f4f5f7 !important;
+  }
+}

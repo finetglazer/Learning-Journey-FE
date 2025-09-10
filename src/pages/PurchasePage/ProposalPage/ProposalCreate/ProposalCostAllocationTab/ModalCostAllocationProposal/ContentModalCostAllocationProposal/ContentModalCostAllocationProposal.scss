@@ -1,0 +1,41 @@
+.according_to_area {
+  .according_to_area_row {
+    display: flex;
+    gap: 12px;
+    width: 100% !important;
+    margin-bottom: 17px;
+    &__first {
+      width: 50%;
+      .input-select__icon {
+        display: none;
+      }
+      &--checkbox {
+        margin-top: 32px;
+      }
+    }
+
+    &__second {
+      display: flex;
+      gap: 12px;
+      width: 100% !important;
+      margin-bottom: 17px;
+    }
+
+    &__third {
+      display: flex;
+      gap: 12px;
+      width: 100% !important;
+    }
+  }
+
+  .ant-picker {
+    border-radius: 4px !important;
+  }
+
+  .ant-table-thead {
+    height: 52px;
+    th:first-child {
+      border-start-start-radius: unset !important;
+    }
+  }
+}

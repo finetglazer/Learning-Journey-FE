@@ -1,0 +1,15 @@
+.contract-detail-delivery_information {
+  margin-top: 12px;
+  overflow-y: auto;
+  border-radius: 4px;
+  padding: 0 16px 16px;
+  border-bottom: 1px solid var(--palette-base-neutral-3);
+
+  .receiving_date_btn {
+    margin-top: 16px;
+  }
+
+  .receiving_row_select {
+    margin-top: 16px;
+  }
+}

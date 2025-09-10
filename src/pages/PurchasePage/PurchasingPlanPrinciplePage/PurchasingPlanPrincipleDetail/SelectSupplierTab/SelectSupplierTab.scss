@@ -1,0 +1,60 @@
+.select_supplier_tab {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+
+  height: calc(100vh - 220px);
+  overflow-y: auto;
+  margin-top: 8px;
+  padding: 0px 16px 16px 16px;
+
+  &__general_information {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 0 16px;
+    gap: 16px;
+    border: 1px solid var(--palette-base-neutral-3);
+    border-radius: 4px;
+  }
+
+  &__bidding_rounds {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 0 16px;
+    gap: 16px;
+    border: 1px solid var(--palette-base-neutral-3);
+    border-radius: 4px;
+  }
+}
+
+.select_supplier_collapse {
+  margin-top: 0px;
+
+  .ant-collapse-item {
+    &:first-child {
+      .ant-collapse-header {
+        border-top: none;
+      }
+
+      .collapse__header-title {
+        font-size: 18px !important;
+        line-height: 24px;
+        font-weight: 700;
+      }
+    }
+
+    .collapse__header-title {
+      font-size: 16px !important;
+    }
+
+    .ant-collapse-header {
+      padding: 16px 0;
+    }
+
+    .ant-collapse-content .ant-collapse-content-box {
+      padding: 0 0 16px 0;
+    }
+  }
+}

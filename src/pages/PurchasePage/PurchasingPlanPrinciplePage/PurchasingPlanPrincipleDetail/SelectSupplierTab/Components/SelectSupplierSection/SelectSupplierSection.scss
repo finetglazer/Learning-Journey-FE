@@ -1,0 +1,51 @@
+.select_supplier_section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  .select_round_controller {
+    display: flex;
+    gap: 12px;
+
+    .supplier_dropdown {
+      width: 66.5%;
+    }
+    .bidding_rounds_dropdown {
+      width: 34%;
+    }
+  }
+
+  .prices_quote {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    span {
+      font-size: 16px;
+      line-height: 24px;
+      font-weight: 600;
+      color: var(--color-text);
+    }
+  }
+
+  .goods_service {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .exchange_rate {
+      display: flex;
+      align-self: flex-end;
+      gap: 16px;
+      align-items: center;
+
+      span {
+        text-wrap: nowrap;
+      }
+
+      &_input {
+        width: 139px;
+      }
+    }
+  }
+}

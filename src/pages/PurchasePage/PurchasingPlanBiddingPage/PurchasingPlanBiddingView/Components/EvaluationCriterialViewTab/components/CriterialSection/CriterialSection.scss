@@ -1,0 +1,12 @@
+.criterial-section-wrapper {
+  .header_criteria {
+    display: flex;
+
+    .partition {
+      margin: 0 16px;
+      background: var(--palette-base-neutral-3);
+      width: 1px;
+      height: 24px;
+    }
+  }
+}

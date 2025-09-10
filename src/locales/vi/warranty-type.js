@@ -1,0 +1,20 @@
+export default {
+  title_warranty_type: "Portal | Danh mục loại bảo hành",
+  txt_warranty_type_code: "Mã loại bảo hành",
+  plh_warranty_type_input_code: "Nhập mã loại bảo hành",
+  plh_warranty_type_code: "Tìm theo mã loại bảo hành",
+  txt_warranty_type_name: "Tên loại bảo hành",
+  plh_warranty_type_input_name: "Nhập tên loại bảo hành",
+  plh_warranty_type_name: "Tìm theo tên loại bảo hành",
+  txt_warranty_type_describe: "Mô tả",
+  plh_warranty_type_describe: "Tìm theo mô tả",
+  plh_warranty_type_input_describe: "Nhập mô tả",
+  txt_status: "Trạng thái",
+  placeholder_quickly_search: "Tìm theo mã hoặc tên loại bảo hành",
+  txt_create_warranty_type: "Thêm mới loại bảo hành",
+  txt_edit_warranty_type: "Chỉnh sửa loại bảo hành",
+  txt_view_detail_warranty_type: "Xem chi tiết loại bảo hành",
+  txt_delete_title: "Xác nhận xóa danh mục",
+  txt_delete_content:
+    "Thao tác này không thể khôi phục hoặc hoàn tác. Bạn có xác nhận xóa danh mục?",
+};

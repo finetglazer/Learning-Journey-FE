@@ -1,0 +1,68 @@
+.supplier-review-drawer {
+  width: 1100px !important;
+  background: var(--palette-base-neutral-2);
+  &__content {
+    padding: 0;
+    background: var(--palette-base-neutral-2);
+    margin-top: -16px;
+    &-item {
+      margin-top: 16px;
+    }
+  }
+  .drawer {
+    &__content {
+      padding: 0;
+      background: var(--palette-base-neutral-2);
+    }
+    &__header {
+      background: white;
+      position: sticky;
+      top: 0;
+      z-index: 99999;
+    }
+    &__body {
+      background: var(--palette-base-neutral-2);
+    }
+    &_footer {
+      width: 1100px !important;
+      z-index: 99999;
+    }
+  }
+  &__collapse {
+    padding: 0;
+  }
+}
+.footer {
+  &__item {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 8px;
+    &--border-bottom {
+      border-bottom: 1px solid var(--palette-base-neutral-3);
+    }
+  }
+  &__label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--palette-base-neutral-10);
+  }
+  &__value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--palette-base-neutral-10);
+    padding-right: 6px;
+  }
+}
+.ant-table-wrapper {
+  .ant-table-footer {
+    border: 1px solid var(--palette-base-neutral-3);
+    border-top: 0;
+    background: white;
+    padding: 0;
+  }
+}
+.text {
+  &--blue {
+    color: var(--palette-base-blue-5);
+  }
+}

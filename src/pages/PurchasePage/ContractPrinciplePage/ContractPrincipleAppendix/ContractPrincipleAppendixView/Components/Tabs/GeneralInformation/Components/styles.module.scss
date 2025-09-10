@@ -1,0 +1,246 @@
+.normal-text {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: #0c2042;
+}
+
+.bold-text {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 700;
+  color: #0c2042;
+}
+
+.over-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.annex-information__wrapper {
+  border-radius: 4px;
+  background-color: #ffffff;
+  color: #0c2042;
+
+  .normal-information__wrapper {
+    background-color: #e6f2fb;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    border-radius: 4px;
+
+    .title-section {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 16px;
+
+      .title {
+        @extend .over-text;
+        font-size: 18px;
+        line-height: 24px;
+        font-weight: 700;
+        color: #077eda;
+        text-decoration: underline dotted 2px;
+        text-underline-offset: 4px;
+        cursor: pointer;
+      }
+
+      .value {
+        font-size: 18px;
+        line-height: 24px;
+        font-weight: 700;
+        color: #0c2042;
+        display: flex;
+        flex-direction: row;
+        gap: 8px;
+
+        .size-24 {
+          width: 24px;
+          height: 24px;
+          cursor: pointer;
+          display: flex;
+          align-items: flex-start;
+        }
+      }
+    }
+
+    .content-section {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 8px;
+
+      .avatar {
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: row;
+        gap: 8px;
+        align-items: center;
+
+        span {
+          font-size: 14px;
+          line-height: 20px;
+          font-weight: 500;
+          color: #0c2042;
+        }
+      }
+    }
+  }
+
+  .contract-information {
+    padding: 16px;
+  }
+
+  .text-row {
+    display: flex;
+    flex-shrink: 0;
+    flex-direction: row;
+    gap: 4px;
+  }
+
+  .text-column {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .text-label {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 400;
+    color: #5e6c84;
+  }
+
+  .text-value {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 500;
+    color: #0c2042;
+  }
+}
+
+.services-information {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-radius: 4px;
+
+  .content {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+
+    .section-wrapper {
+      display: flex;
+      flex-direction: column;
+      background-color: white;
+      padding: 24px 16px;
+      flex: 1;
+      gap: 16px;
+      border-radius: 4px;
+      box-shadow: 0px 4px 12px 0px var(--palette-base-neutral-3);
+
+      box-shadow: 0px 0px 1px 0px var(--palette-base-neutral-5);
+
+      .section-title-wrapper {
+        display: flex;
+        flex-direction: row;
+        gap: 8px;
+
+        .title {
+          @extend .bold-text;
+          font-size: 18px;
+          line-height: 24px;
+        }
+      }
+
+      .row-wrapper {
+        display: flex;
+        flex-direction: row;
+        gap: 16px;
+
+        .label {
+          width: 160px;
+          flex-shrink: 0;
+          font-size: 14px;
+          line-height: 20px;
+          font-weight: 500;
+          color: #5e6c84;
+        }
+
+        .value {
+          font-size: 14px;
+          line-height: 20px;
+          font-weight: 500;
+          flex: 1;
+          color: #0c2042;
+        }
+      }
+    }
+  }
+}
+
+.delivery-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .text-label {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 400;
+    color: #5e6c84;
+  }
+
+  .text-value {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 500;
+    color: #0c2042;
+  }
+}
+
+.rounded-spacing {
+  height: 4px;
+  width: 4px;
+  border-radius: 4px;
+  background-color: #d9d9d9;
+}
+
+.text-information {
+  margin-top: 2px;
+}
+
+.text-contract-no-row {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  overflow: hidden;
+
+  .text-contract-no-label {
+    width: 89px;
+    flex-shrink: 0;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 400;
+    color: #5e6c84;
+  }
+
+  .text-contract-no-value {
+    @extend .over-text;
+    text-align: left;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 500;
+    color: #0c2042;
+  }
+}
+
+.divider {
+  background-color: #dfe1e6;
+  height: 1px;
+  margin: 0px -16px;
+}

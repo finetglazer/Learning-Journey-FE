@@ -1,0 +1,25 @@
+.invoice {
+  &-title {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+  }
+  &-transition {
+    transition: all 0.3s;
+  }
+  &-width_content_empty {
+    width: 200px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+  }
+  &-title_view {
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 20px;
+    color: var(--palette-base-neutral-10);
+    margin-left: 8px;
+    text-align: right;
+  }
+}

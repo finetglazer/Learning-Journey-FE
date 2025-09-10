@@ -1,0 +1,11 @@
+.page-container {
+  margin: -16px;
+
+  .page-header {
+    position: sticky;
+    top: 48px;
+    border-radius: 0;
+    height: var(--height-page-title) !important;
+    border-bottom: 1px solid var(--palette-base-neutral-3);
+  }
+}

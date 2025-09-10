@@ -1,0 +1,76 @@
+@import "../../../../../../../../assets/scss/mixin/table_view";
+
+.table-goods-service {
+  .background-table {
+    background-color: #e6f2fb;
+  }
+
+  .table-border-color > th {
+    border-color: #0673c6 !important;
+  }
+
+  .tax {
+    .primary-number {
+      font-weight: 500;
+      color: #0c2042;
+    }
+
+    .secondary-number {
+      font-weight: 500;
+      color: #42526e;
+    }
+
+    .currency {
+      font-size: 10px;
+      font-weight: 500;
+    }
+  }
+
+  .table__blue {
+    @include table_view(var(--palette-base-blue-6));
+    margin-top: 16px;
+
+    tr th {
+      background-color: var(--palette-base-blue-1);
+
+      .text-ellipsis {
+        line-height: 1.5;
+      }
+    }
+  }
+}
+
+.input-text-disabled {
+  .input-text--disabled {
+    background-color: #f4f5f7 !important;
+  }
+
+  .input-select--disabled {
+    background-color: #f4f5f7 !important;
+  }
+  .input-number--disabled {
+    background-color: #f4f5f7 !important;
+  }
+}
+
+.input-text-read-only {
+  &:has(
+      .input-text--readOnly,
+      .input-number--readOnly,
+      .input-select--readOnly
+    ) {
+    cursor: not-allowed !important;
+  }
+
+  .input-text--readOnly,
+  .input-number--readOnly,
+  .input-select--readOnly {
+    background-color: #ffffff !important;
+    pointer-events: none;
+
+    input.component__input {
+      cursor: not-allowed !important;
+      pointer-events: none;
+    }
+  }
+}

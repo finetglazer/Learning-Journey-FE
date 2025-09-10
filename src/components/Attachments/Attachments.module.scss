@@ -1,0 +1,25 @@
+.attachments {
+  display: flex;
+  gap: 16px;
+
+  .form-upload {
+    flex: 1;
+  }
+
+  .items {
+    width: 50%;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 0px 16px;
+
+    &_file {
+      width: calc(50% - 8px);
+    }
+  }
+
+  :global(.upload-dropzone) {
+    height: 100% !important;
+    min-height: 132px;
+  }
+}

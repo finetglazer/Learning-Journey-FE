@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Custom PDF Viewer</title>
+    <style>
+        body {
+            background-color: #f7fafc;
+            margin: 0;
+        }
+
+        #viewerContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            padding-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="viewerContainer"></div>
+    <script src="../external-script/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = "../external-script/pdf.worker.min.js";
+    </script>
+    <script>
+        window.addEventListener("message", async (event) => {
+            if (event.data?.type === "LOAD_PDF" && event.data?.data) {
+                const loadingTask = pdfjsLib.getDocument({ data: event.data.data });
+
+                loadingTask.promise.then(pdf => {
+                    const container = document.getElementById("viewerContainer");
+                    container.innerHTML = ""; // clear old pages
+
+                    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+                        pdf.getPage(pageNumber).then(page => {
+                            const scale = 1;
+                            const viewport = page.getViewport({ scale });
+
+                            const canvas = document.createElement("canvas");
+                            const context = canvas.getContext("2d");
+
+                            canvas.width = viewport.width;
+                            canvas.height = viewport.height;
+
+                            page.render({
+                                canvasContext: context,
+                                viewport: viewport
+                            });
+
+                            container.appendChild(canvas);
+                        });
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>

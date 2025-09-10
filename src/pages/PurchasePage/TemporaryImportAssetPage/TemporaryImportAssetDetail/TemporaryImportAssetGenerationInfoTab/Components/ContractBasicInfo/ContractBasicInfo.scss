@@ -1,0 +1,15 @@
+.temporary-import-asset_contract_basic {
+  .temporary-import-asset_contract_basic_custom_input--disabled {
+    .input-text--readOnly {
+      background-color: #fff !important;
+    }
+  }
+  .temporary-import-asset_contract_basic_custom_input--primary {
+    .input-text--readOnly {
+      .component__input {
+        cursor: pointer;
+        color: var(--palette-base-blue-5) !important;
+      }
+    }
+  }
+}

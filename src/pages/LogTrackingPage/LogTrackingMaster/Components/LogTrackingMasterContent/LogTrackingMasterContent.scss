@@ -1,0 +1,46 @@
+.filter_panel {
+  width: 600px;
+  padding: 0 16px 16px 16px;
+}
+
+.search_input_wrapper {
+  width: 450px;
+}
+
+.text_table_content_primary {
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.filter_wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header_table {
+  display: flex;
+  align-items: center;
+
+  .w100pc {
+    height: fit-content !important;
+  }
+}
+
+.page-master__pagination {
+  .pagination-container .pagination-right .ant-pagination {
+    .ant-pagination-jump-prev,
+    .ant-pagination-jump-next {
+      min-width: 32px !important;
+    }
+  }
+
+  .ant-pagination-item-container {
+    .ant-pagination-item-ellipsis {
+      width: 32px !important;
+      font-size: 10px !important;
+    }
+  }
+}
+// TODO: update css ant

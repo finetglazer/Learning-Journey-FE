@@ -1,0 +1,14 @@
+.review-summary {
+  padding-bottom: 0;
+  .view-technical {
+    .ant-collapse-header {
+      padding: 0 0 12px !important;
+    }
+    .ant-collapse-content-box {
+      padding: 0 !important;
+    }
+  }
+  .pl-scroll {
+    padding-bottom: 0;
+  }
+}

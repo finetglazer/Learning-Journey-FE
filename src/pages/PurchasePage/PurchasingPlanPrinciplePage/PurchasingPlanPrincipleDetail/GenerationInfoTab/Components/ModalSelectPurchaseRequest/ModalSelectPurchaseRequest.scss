@@ -1,0 +1,13 @@
+.search-bar-purchasing-plan-proposal {
+  .separate__item {
+    height: 40px;
+    padding: 8px;
+  }
+}
+
+.pl-color-sub-text {
+  color: red !important;
+  .text-ellipsis {
+    color: var(--color-text-label) !important;
+  }
+}

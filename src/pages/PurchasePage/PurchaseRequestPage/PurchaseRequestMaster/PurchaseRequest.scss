@@ -1,0 +1,22 @@
+.PurchaseRequest {
+  &__ctn__button--nodata {
+    display: flex;
+    gap: 8px;
+  }
+  &__advance__filter {
+    &__seperate__item {
+      display: flex;
+      width: 32px;
+      height: 100%;
+      padding-top: 8px;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+}
+
+.PurchaseRequestFilter {
+  .filter-panel-container {
+    max-width: 830px;
+  }
+}

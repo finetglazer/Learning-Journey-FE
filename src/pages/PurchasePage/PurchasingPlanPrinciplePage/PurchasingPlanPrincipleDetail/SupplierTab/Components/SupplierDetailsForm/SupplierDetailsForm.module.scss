@@ -1,0 +1,6 @@
+.primary-text:global(.input-text__wrapper)
+  :global(.input-text__container)
+  input {
+  color: #077eda;
+  cursor: pointer;
+}

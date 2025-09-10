@@ -1,0 +1,48 @@
+.text-bold {
+  font-weight: bold;
+}
+
+.supplier-evaluation-config__preview {
+  border: 1px solid #dfe1e6;
+  border-radius: 4px;
+
+  .supplier-evaluation-config {
+    &__item {
+      display: inline-flex;
+      flex-direction: column;
+      width: 100%;
+      min-height: 78px;
+      gap: 4px;
+      padding: 16px;
+      height: auto;
+      border-bottom: 1px solid #dfe1e6;
+
+      &-label {
+        color: var(--color-text-label);
+        font-weight: 400;
+        font-size: 12px;
+        line-height: 16px;
+      }
+
+      &-description {
+        color: var(--text-color-base-neutral-10);
+        font-weight: 500;
+        font-size: 14px;
+        line-height: 24px;
+        white-space: pre-line;
+      }
+      &__gray {
+        background-color: var(--palette-base-neutral-2);
+        display: inline-flex;
+        flex-direction: column;
+        width: 100%;
+        min-height: 78px;
+        gap: 4px;
+        padding: 16px;
+        height: auto;
+        border-right: 1px solid #dfe1e6;
+        border-bottom: 1px solid #dfe1e6;
+      }
+    }
+  }
+}

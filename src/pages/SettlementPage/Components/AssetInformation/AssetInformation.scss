@@ -1,0 +1,16 @@
+.asset-information-tab {
+  .text_blue {
+    color: var(--palette-base-blue-5);
+  }
+
+  .disabled-button {
+    img {
+      filter: brightness(0) saturate(100%) invert(50%) sepia(10%) saturate(500%)
+        hue-rotate(180deg);
+    }
+  }
+
+  .overlay {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+}

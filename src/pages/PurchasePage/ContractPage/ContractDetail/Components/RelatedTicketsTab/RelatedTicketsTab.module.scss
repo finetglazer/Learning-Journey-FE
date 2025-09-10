@@ -1,0 +1,9 @@
+.related-tickets-tab {
+  height: calc(100vh - 220px);
+  overflow-y: auto;
+  margin-top: 0;
+
+  :global(.ant-collapse-item:first-child .ant-collapse-header) {
+    border-top: none;
+  }
+}

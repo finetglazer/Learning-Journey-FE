@@ -1,0 +1,11 @@
+.text-blue {
+  color: #077eda;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.content-container {
+  height: calc(100vh - 216px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}

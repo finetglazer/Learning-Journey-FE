@@ -1,0 +1,15 @@
+@use "sass:math";
+
+.contract_view_buyer_information {
+  padding: 0 16px 20px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--palette-base-neutral-3);
+
+  &-body {
+    margin-top: 16px;
+  }
+
+  .w-percentage-4-add-1px {
+    width: calc(percentage(math.div(4, 12)) + 1px);
+  }
+}

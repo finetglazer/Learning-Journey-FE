@@ -1,0 +1,29 @@
+.reimbursement {
+  &-title {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+  }
+  &-transition {
+    transition: all 0.3s;
+  }
+  &-width_content_empty {
+    width: 300px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+  }
+  &-w_300 {
+    width: 300px !important;
+  }
+  &-gap {
+    gap: 10px;
+  }
+}
+
+.payment_collapse {
+  .ant-collapse-item:nth-child(1) .ant-collapse-header {
+    border-top: none !important;
+  }
+}

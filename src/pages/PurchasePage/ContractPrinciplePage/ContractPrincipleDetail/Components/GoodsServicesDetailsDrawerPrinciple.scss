@@ -1,0 +1,12 @@
+.goods-services-principle__container {
+  width: 1100px !important;
+
+  .drawer_footer {
+    width: 1100px !important;
+  }
+  .body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+}
