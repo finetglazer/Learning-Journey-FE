@@ -1,8 +1,0 @@
-.collapse-body {
-  &
-    > :global(.ant-collapse-item.ant-collapse-item-active)
-    > :global(.ant-collapse-content.ant-collapse-content-active) {
-    height: 690px;
-    overflow-y: scroll;
-  }
-}

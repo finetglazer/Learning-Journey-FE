@@ -1,4 +1,0 @@
-export enum STATUS_ACTIVE {
-  SUCCESS = "SUCCESS",
-  DEFAULT = "DEFAULT",
-}
