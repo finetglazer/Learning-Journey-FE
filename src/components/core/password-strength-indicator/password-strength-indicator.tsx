@@ -1,0 +1,34 @@
+"use client"
+
+import { cn } from "@/lib/utils";
+
+export interface PasswordStrenghtIndicatorProps {
+    currentSatisfiedCategoriesNumber: number;
+    minimumSatisfiedCategories: number;
+    categoryNumber: number;
+    wrapperClassName?: string;
+    textIndicatorClassName?: string;
+}
+
+export const PasswordStrengthIndicator = (props: PasswordStrenghtIndicatorProps) => {
+    const {
+        currentSatisfiedCategoriesNumber,
+        minimumSatisfiedCategories,
+        categoryNumber,
+        wrapperClassName,
+        textIndicatorClassName
+    } = props;
+
+    return (
+        <div className={cn("", wrapperClassName)}>
+            <span className={cn(`text-${currentSatisfiedCategoriesNumber < minimumSatisfiedCategories ? "red" : "green"}-600 text-[0.7rem]`, textIndicatorClassName)}>
+                {currentSatisfiedCategoriesNumber < minimumSatisfiedCategories ? "Weak" : "Strong"}
+            </span>
+            <div className="flex mt-1">
+                <div className={`bg-${currentSatisfiedCategoriesNumber >= 1 ? "green" : "red"}-700 mr-[4px] h-1 w-8`} />
+                <div className={`bg-${currentSatisfiedCategoriesNumber >= minimumSatisfiedCategories ? "green" : "red"}-700 mr-[4px] h-1 w-8`} />
+                <div className={`bg-${currentSatisfiedCategoriesNumber === categoryNumber ? "green" : "red"}-700 mr-[4px] h-1 w-8`} />
+            </div>
+        </div>
+    );
+};

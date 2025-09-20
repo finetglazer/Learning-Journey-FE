@@ -1,5 +1,3 @@
-import { CustomClassName } from "../type";
-
 export interface ButtonProps {
     id: string;
     label: string;
@@ -7,8 +5,8 @@ export interface ButtonProps {
     size?: "default" | "sm" | "lg" | "icon";
     loading?: boolean;
     disabled?: boolean;
-    wrapperClassName?: CustomClassName;
-    buttonClassName?: CustomClassName;
-    labelClassName?: CustomClassName;
+    wrapperClassName?: string;
+    buttonClassName?: string;
+    labelClassName?: string;
     onClick?: () => void;
 }

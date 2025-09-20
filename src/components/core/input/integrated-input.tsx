@@ -2,56 +2,62 @@
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cloneElement, Fragment, isValidElement, JSX } from "react";
 import { InputProps } from "./type";
-import { cloneElement, Fragment, JSX } from "react";
-import { CustomClassName } from "../type";
-import { mergeClassNames } from "@/utils/classname-utils";
+import { cn } from "@/lib/utils";
+import { InputValidation } from "../validation/input-validation";
 
 export interface IntegratedInputProps extends InputProps {
     prefix?: JSX.Element;
     postfix?: JSX.Element;
-    prefixClassName?: CustomClassName;
-    postfixClassName?: CustomClassName;
 };
 
 export const IntegratedInput = (props: IntegratedInputProps) => {
     const {
         prefix,
         postfix,
-        prefixClassName,
-        postfixClassName,
         ...input
     } = props;
 
-    const clonePrefix = prefix
+    const prefixProps = prefix?.props;
+    const postfixProps = postfix?.props;
+
+    const clonePrefix = prefix && isValidElement(prefix)
         ? cloneElement(prefix, {
-            className: mergeClassNames("absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground", prefixClassName)
-        })
+            ...prefixProps,
+            className: cn("absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground", prefixProps?.className)
+        } as any)
         : <Fragment />;
 
-    const clonePostfix = postfix
+    const clonePostfix = postfix && isValidElement(postfix)
         ? cloneElement(postfix, {
-            className: mergeClassNames("absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground", postfixClassName)
-        })
+            ...postfixProps,
+            className: cn("absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground", postfixProps?.className)
+        } as any)
         : <Fragment />;
 
     return (
-        <div className={mergeClassNames("grid w-full max-w-sm items-center gap-3", input?.wrapperClassName)}>
-            <Label htmlFor={input.id}>{input.label}</Label>
+        <div className={cn("grid w-full max-w-sm items-center relative gap-3", input?.wrapperClassName)}>
+            <Label htmlFor={input.id}>
+                <span>{input.label}</span>
+                {input?.required ? <span className="text-red-600">*</span> : null}
+            </Label>
             <div className="relative">
-
                 {clonePrefix}
 
                 <Input
                     id={input.id}
                     type={input?.type || "text"}
                     placeholder={input?.placeholder}
-                    className={mergeClassNames("pl-10", input?.inputClassName)}
+                    className={cn("pl-10", input?.inputClassName)}
                 />
 
                 {input?.type !== "password" ? clonePostfix : null}
-
             </div>
+            <InputValidation 
+                type="warning"
+                message="adaaaaaaaaaaaaaaaad"
+            />
         </div>
     );
 };

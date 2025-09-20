@@ -1,12 +1,15 @@
 import { HTMLInputTypeAttribute } from "react";
-import { CustomClassName } from "../type";
+import { ValidationType } from "../validation/type";
 
 export interface InputProps {
     id: string;
     label: string;
     placeholder?: string;
     type?: HTMLInputTypeAttribute | undefined;
-    wrapperClassName?: CustomClassName;
-    labelClassName?: CustomClassName;
-    inputClassName?: CustomClassName;
+    required?: boolean;
+    wrapperClassName?: string;
+    labelClassName?: string;
+    inputClassName?: string;
+    validationType?: ValidationType;
+    validationMessage?: string;
 };
