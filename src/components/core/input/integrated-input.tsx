@@ -6,6 +6,8 @@ import { cloneElement, Fragment, isValidElement, JSX } from "react";
 import { InputProps } from "./type";
 import { cn } from "@/lib/utils";
 import { InputValidation } from "../validation/input-validation";
+import { PasswordStrengthIndicator } from "../password-strength-indicator/password-strength-indicator";
+import _ from "lodash";
 
 export interface IntegratedInputProps extends InputProps {
     prefix?: JSX.Element;
@@ -36,6 +38,8 @@ export const IntegratedInput = (props: IntegratedInputProps) => {
         } as any)
         : <Fragment />;
 
+    const passwordStrengthIndicator = input?.passwordStrengthIndicator;
+
     return (
         <div className={cn("grid w-full max-w-sm items-center relative gap-3", input?.wrapperClassName)}>
             <Label htmlFor={input.id}>
@@ -54,10 +58,24 @@ export const IntegratedInput = (props: IntegratedInputProps) => {
 
                 {input?.type !== "password" ? clonePostfix : null}
             </div>
-            <InputValidation 
-                type="warning"
-                message="adaaaaaaaaaaaaaaaad"
-            />
+            <div className="flex items-center justify-between">
+                {!_.isNil(passwordStrengthIndicator?.currentSatisfiedCategoriesNumber) &&
+                !_.isNil(passwordStrengthIndicator?.categoryNumber) &&
+                !_.isNil(passwordStrengthIndicator?.minimumSatisfiedCategories) ?
+                (
+                    <PasswordStrengthIndicator
+                        currentSatisfiedCategoriesNumber={passwordStrengthIndicator?.currentSatisfiedCategoriesNumber}
+                        categoryNumber={passwordStrengthIndicator?.categoryNumber}
+                        minimumSatisfiedCategories={passwordStrengthIndicator?.minimumSatisfiedCategories}
+                    />
+                ) : null}
+                {input?.validationError && input?.validationType ? (
+                    <InputValidation
+                        type={input?.validationType || "error"}
+                        message={input?.validationMessage}
+                    />
+                ) : null}
+            </div>
         </div>
     );
 };
