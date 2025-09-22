@@ -1,6 +1,7 @@
 "use client"
 
 import { IntegratedButton, IntegratedButtonProps } from "@/components/core/button/integrated-button";
+import { Divider } from "@/components/core/divider/divider";
 import { IntegratedInput, IntegratedInputProps } from "@/components/core/input/integrated-input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -39,16 +40,16 @@ export default function AuthFormLayout(props: FormLayoutProps) {
         switch (divider?.type) {
             case "2-line-symmetric":
                 return (
-                    <div className="flex items-center">
-                        <Separator />
+                    <div className="flex items-center mb-2">
+                        <Divider />
                         <span>
                             {divider?.content || ""}
                         </span>
-                        <Separator />
+                        <Divider />
                     </div>
                 );
             case "1-line":
-                return <Separator />;
+                return <Divider />;
             case "none":
                 return (
                     <span>{divider?.content || ""}</span>
@@ -59,11 +60,11 @@ export default function AuthFormLayout(props: FormLayoutProps) {
     };
 
     return (
-        <Card className="w-50">
+        <Card className="max-w-175 h-120 mt-65 mx-auto">
             <CardHeader>
-                <CardTitle className={cn("", header?.titleClassName)}>{header?.title || ""}</CardTitle>
+                <CardTitle className={cn("font-bold text-[3rem] text-center", header?.titleClassName)}>{header?.title || ""}</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="grid place-items-center">
                 {(actions?.buttons || []).map((button: IntegratedInputProps) =>
                     <IntegratedButton {...button} />
                 )}

@@ -39,7 +39,7 @@ export const IntegratedButton = (props: IntegratedButtonProps) => {
         : <Fragment />;
 
     return (
-        <div className={cn("max-w-2xs", button?.wrapperClassName)}>
+        <div className={cn("w-95 -mt-4 mb-2", button?.wrapperClassName)}>
             <Button
                 id={button.id}
                 variant={button?.variant || "outline"}
