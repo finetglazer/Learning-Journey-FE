@@ -1,6 +1,7 @@
-import { HTMLInputTypeAttribute } from "react";
+import { HTMLInputTypeAttribute, JSX } from "react";
 import { ValidationType } from "../validation/type";
 import { PasswordStrenghtIndicatorProps } from "../password-strength-indicator/password-strength-indicator";
+import { InputValidationProps } from "../validation/input-validation";
 
 export interface InputProps {
     id: string;
@@ -11,8 +12,7 @@ export interface InputProps {
     wrapperClassName?: string;
     labelClassName?: string;
     inputClassName?: string;
-    validationError?: string;
-    validationType?: ValidationType;
-    validationMessage?: string;
+    inputValidation?: InputValidationProps;
     passwordStrengthIndicator?: PasswordStrenghtIndicatorProps;
+    extraComponent?: JSX.Element;
 };

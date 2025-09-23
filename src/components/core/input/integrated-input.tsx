@@ -39,6 +39,7 @@ export const IntegratedInput = (props: IntegratedInputProps) => {
         : <Fragment />;
 
     const passwordStrengthIndicator = input?.passwordStrengthIndicator;
+    const inputValidation = input?.inputValidation;
 
     return (
         <div className={cn("grid w-full max-w-sm items-center relative gap-3", input?.wrapperClassName)}>
@@ -58,7 +59,7 @@ export const IntegratedInput = (props: IntegratedInputProps) => {
 
                 {input?.type !== "password" ? clonePostfix : null}
             </div>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between -mt-1">
                 {!_.isNil(passwordStrengthIndicator?.currentSatisfiedCategoriesNumber) &&
                 !_.isNil(passwordStrengthIndicator?.categoryNumber) &&
                 !_.isNil(passwordStrengthIndicator?.minimumSatisfiedCategories) ?
@@ -69,12 +70,12 @@ export const IntegratedInput = (props: IntegratedInputProps) => {
                         minimumSatisfiedCategories={passwordStrengthIndicator?.minimumSatisfiedCategories}
                     />
                 ) : null}
-                {input?.validationError && input?.validationType ? (
-                    <InputValidation
-                        type={input?.validationType || "error"}
-                        message={input?.validationMessage}
-                    />
-                ) : null}
+                <div className="flex-col justify-between relative">
+                    {inputValidation?.message ? (
+                        <InputValidation {...inputValidation} />
+                    ) : null}
+                    {input?.extraComponent || null}
+                </div>
             </div>
         </div>
     );

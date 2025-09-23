@@ -20,14 +20,14 @@ export const PasswordStrengthIndicator = (props: PasswordStrenghtIndicatorProps)
     } = props;
 
     return (
-        <div className={cn("", wrapperClassName)}>
+        <div className={cn("-mt-1", wrapperClassName)}>
             <span className={cn(`text-${currentSatisfiedCategoriesNumber < minimumSatisfiedCategories ? "red" : "green"}-600 text-[0.7rem]`, textIndicatorClassName)}>
                 {currentSatisfiedCategoriesNumber < minimumSatisfiedCategories ? "Weak" : "Strong"}
             </span>
             <div className="flex mt-1">
-                <div className={`bg-${currentSatisfiedCategoriesNumber >= 1 ? "green" : "red"}-700 mr-[4px] h-1 w-8`} />
-                <div className={`bg-${currentSatisfiedCategoriesNumber >= minimumSatisfiedCategories ? "green" : "red"}-700 mr-[4px] h-1 w-8`} />
-                <div className={`bg-${currentSatisfiedCategoriesNumber === categoryNumber ? "green" : "red"}-700 mr-[4px] h-1 w-8`} />
+                <div className={`bg-${currentSatisfiedCategoriesNumber >= 1 ? "green" : "red"}-600 mr-[4px] h-1 w-8`} />
+                <div className={`bg-${currentSatisfiedCategoriesNumber >= minimumSatisfiedCategories ? "green" : "red"}-600 mr-[4px] h-1 w-8`} />
+                <div className={`bg-${currentSatisfiedCategoriesNumber === categoryNumber ? "green" : "red"}-600 mr-[4px] h-1 w-8`} />
             </div>
         </div>
     );

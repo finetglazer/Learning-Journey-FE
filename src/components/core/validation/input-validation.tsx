@@ -55,12 +55,12 @@ export const InputValidation = (props: InputValidationProps) => {
         : null;
 
     return (
-        <div className={cn("w-full flex justify-end -mt-1", inputValidation?.wrapperClassName)}>
+        <div className={cn("w-full flex justify-end mt-0", inputValidation?.wrapperClassName)}>
             <div className="flex items-center">
-                {clonePrefix || renderDefaultPrefix(inputValidation.type)}
+                {clonePrefix || renderDefaultPrefix(inputValidation?.type || "error")}
 
                 <span className={cn(
-                    classNames(getMessageStyle(inputValidation.type), "ml-1.5"),
+                    classNames(getMessageStyle(inputValidation?.type || "error"), "ml-0.5 -mt-1 text-[0.8rem]"),
                     inputValidation?.messageClassName)}
                 >
                     {inputValidation?.message}

@@ -3,9 +3,10 @@
 import { IntegratedButton, IntegratedButtonProps } from "@/components/core/button/integrated-button";
 import { Divider } from "@/components/core/divider/divider";
 import { IntegratedInput, IntegratedInputProps } from "@/components/core/input/integrated-input";
+import { Link, LinkProps } from "@/components/core/link/link";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { JSX } from "react";
 
 export interface FormLayoutProps {
     header?: {
@@ -17,6 +18,7 @@ export interface FormLayoutProps {
     };
     footer?: {
         submitButton?: IntegratedButtonProps;
+        footComponent?: JSX.Element;
     };
     actions?: {
         buttons?: IntegratedButtonProps[];
@@ -40,12 +42,12 @@ export default function AuthFormLayout(props: FormLayoutProps) {
         switch (divider?.type) {
             case "2-line-symmetric":
                 return (
-                    <div className="flex items-center mb-2">
+                    <div className="flex items-center mb-2 ml-2">
                         <Divider />
                         <span>
                             {divider?.content || ""}
                         </span>
-                        <Divider />
+                        <Divider className="mr-0 ml-3" />
                     </div>
                 );
             case "1-line":
@@ -60,11 +62,11 @@ export default function AuthFormLayout(props: FormLayoutProps) {
     };
 
     return (
-        <Card className="max-w-175 h-120 mt-65 mx-auto">
-            <CardHeader>
-                <CardTitle className={cn("font-bold text-[3rem] text-center", header?.titleClassName)}>{header?.title || ""}</CardTitle>
+        <Card className="max-w-175 h-120 mt-85 ml-120 grid place-items-center">
+            <CardHeader className="w-full p-0 text-center">
+                <CardTitle className={cn("font-bold text-[3rem] w-full", header?.titleClassName)}>{header?.title || ""}</CardTitle>
             </CardHeader>
-            <CardContent className="grid place-items-center">
+            <CardContent className="">
                 {(actions?.buttons || []).map((button: IntegratedInputProps) =>
                     <IntegratedButton {...button} />
                 )}
@@ -73,8 +75,9 @@ export default function AuthFormLayout(props: FormLayoutProps) {
                     <IntegratedInput {...input} />
                 )}
             </CardContent>
-            <CardFooter>
+            <CardFooter className="flex-col text-center">
                 {footer?.submitButton ? <IntegratedButton {...footer?.submitButton} /> : null}
+                {footer?.footComponent || null}
             </CardFooter>
         </Card>
     );
