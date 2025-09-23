@@ -5,7 +5,7 @@ import { InputValidationProps } from "../validation/input-validation";
 
 export interface InputProps {
     id: string;
-    label: string;
+    label?: string;
     placeholder?: string;
     type?: HTMLInputTypeAttribute | undefined;
     required?: boolean;

@@ -44,22 +44,22 @@ export const IntegratedInput = (props: IntegratedInputProps) => {
     return (
         <div className={cn("grid w-full max-w-sm items-center relative gap-3", input?.wrapperClassName)}>
             <Label htmlFor={input.id}>
-                <span>{input.label}</span>
+                <span>{input?.label || ""}</span>
                 {input?.required ? <span className="text-red-600">*</span> : null}
             </Label>
-            <div className="relative">
+            <div className={cn("relative", inputValidation?.message ? "" : "")}>
                 {clonePrefix}
 
                 <Input
                     id={input.id}
                     type={input?.type || "text"}
                     placeholder={input?.placeholder}
-                    className={cn("pl-10", input?.inputClassName)}
+                    className={cn("pl-10", inputValidation?.message ? "border-red-500 border" : "", input?.inputClassName)}
                 />
 
                 {input?.type !== "password" ? clonePostfix : null}
             </div>
-            <div className="flex items-center justify-between -mt-1">
+            <div className={`flex items-center ${passwordStrengthIndicator ? 'justify-between' : 'justify-end'} -mt-1`}>
                 {!_.isNil(passwordStrengthIndicator?.currentSatisfiedCategoriesNumber) &&
                 !_.isNil(passwordStrengthIndicator?.categoryNumber) &&
                 !_.isNil(passwordStrengthIndicator?.minimumSatisfiedCategories) ?

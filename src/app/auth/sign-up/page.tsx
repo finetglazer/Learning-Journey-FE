@@ -3,7 +3,6 @@
 import { IntegratedButtonProps } from "@/components/core/button/integrated-button";
 import { GoogleIcon } from "@/components/core/icons";
 import { IntegratedInputProps } from "@/components/core/input/integrated-input";
-import { Link } from "@/components/core/link/link";
 import AuthFormLayout from "@/layout/auth-form-layout";
 import { LockIcon, MailIcon, UserIcon } from "lucide-react";
 import Image from "next/image";
@@ -19,7 +18,7 @@ export default function SignUpPage() {
             label: "Username",
             placeholder: "Username",
             required: true,
-            prefix: <MailIcon />,
+            prefix: <UserIcon />,
             inputValidation: {
                 message: "AA"
             },
@@ -28,8 +27,9 @@ export default function SignUpPage() {
             id: "email-input",
             label: "Email",
             placeholder: "Email",
+            type: "email",
             required: true,
-            prefix: <UserIcon />,
+            prefix: <MailIcon />,
             inputValidation: {
                 message: "AA"
             },
@@ -71,21 +71,10 @@ export default function SignUpPage() {
 
     const footer = {
         submitButton: {
-            id: "sign-in-btn",
-            label: "Sign In",
+            id: "sign-up-btn",
+            label: "Sign Up",
             wrapperClassName: "my-auto"
         },
-        footComponent: (
-            <span className="mt-2">
-                {"Don't have an account? "}
-                <Link
-                    href=""
-                    className="underline"
-                    content="Sign up"
-                >
-                </Link>
-            </span>
-        )
     };
 
     return (

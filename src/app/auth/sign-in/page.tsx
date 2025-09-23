@@ -1,12 +1,12 @@
 "use client"
 
 import { IntegratedButtonProps } from "@/components/core/button/integrated-button";
-import { IntegratedInputProps } from "@/components/core/input/integrated-input";
-import { LockIcon, MailIcon } from "lucide-react";
 import { GoogleIcon } from "@/components/core/icons";
-import Image from "next/image";
-import AuthFormLayout from "@/layout/auth-form-layout";
+import { IntegratedInputProps } from "@/components/core/input/integrated-input";
 import { Link } from "@/components/core/link/link";
+import AuthFormLayout from "@/layout/auth-form-layout";
+import { LockIcon, UserIcon } from "lucide-react";
+import Image from "next/image";
 
 export default function SignInPage() {
     const header = {
@@ -19,9 +19,9 @@ export default function SignInPage() {
             label: "Username",
             placeholder: "Username",
             required: true,
-            prefix: <MailIcon />,
+            prefix: <UserIcon />,
             inputValidation: {
-                message: ""
+                message: "AA"
             },
         },
         {

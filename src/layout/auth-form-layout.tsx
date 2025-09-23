@@ -51,7 +51,7 @@ export default function AuthFormLayout(props: FormLayoutProps) {
                     </div>
                 );
             case "1-line":
-                return <Divider />;
+                return <Divider className="w-95 -mt-2" />;
             case "none":
                 return (
                     <span>{divider?.content || ""}</span>
@@ -62,12 +62,12 @@ export default function AuthFormLayout(props: FormLayoutProps) {
     };
 
     return (
-        <Card className="max-w-175 h-120 mt-85 ml-120 grid place-items-center">
+        <Card className="max-w-175 h-auto mt-65 mx-auto grid place-items-center">
             <CardHeader className="w-full p-0 text-center">
                 <CardTitle className={cn("font-bold text-[3rem] w-full", header?.titleClassName)}>{header?.title || ""}</CardTitle>
             </CardHeader>
             <CardContent className="">
-                {(actions?.buttons || []).map((button: IntegratedInputProps) =>
+                {(actions?.buttons || []).map((button: IntegratedButtonProps) =>
                     <IntegratedButton {...button} />
                 )}
                 {getDivider()}

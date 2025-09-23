@@ -25,9 +25,9 @@ export const PasswordStrengthIndicator = (props: PasswordStrenghtIndicatorProps)
                 {currentSatisfiedCategoriesNumber < minimumSatisfiedCategories ? "Weak" : "Strong"}
             </span>
             <div className="flex mt-1">
-                <div className={`bg-${currentSatisfiedCategoriesNumber >= 1 ? "green" : "red"}-600 mr-[4px] h-1 w-8`} />
-                <div className={`bg-${currentSatisfiedCategoriesNumber >= minimumSatisfiedCategories ? "green" : "red"}-600 mr-[4px] h-1 w-8`} />
-                <div className={`bg-${currentSatisfiedCategoriesNumber === categoryNumber ? "green" : "red"}-600 mr-[4px] h-1 w-8`} />
+                <div className={`${currentSatisfiedCategoriesNumber >= 1 ? "bg-green-600" : "bg-red-600"} mr-[4px] h-1 w-8`} />
+                <div className={`${currentSatisfiedCategoriesNumber >= minimumSatisfiedCategories ? "bg-green-600" : "bg-red-600"} mr-[4px] h-1 w-8`} />
+                <div className={`${currentSatisfiedCategoriesNumber === categoryNumber ? "bg-green-600" : "bg-red-600"} mr-[4px] h-1 w-8`} />
             </div>
         </div>
     );
