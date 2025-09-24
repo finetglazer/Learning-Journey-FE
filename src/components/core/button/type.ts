@@ -1,3 +1,6 @@
+import { Model } from "react-3layer-common";
+import { Observable } from "rxjs";
+
 export interface ButtonProps {
     id: string;
     label: string;
@@ -8,5 +11,5 @@ export interface ButtonProps {
     wrapperClassName?: string;
     buttonClassName?: string;
     labelClassName?: string;
-    onClick?: () => void;
+    onClick?: (form?: Model) => void;
 }

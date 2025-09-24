@@ -1,14 +1,26 @@
 "use client"
 
+import { SignInModel } from "@/app/model/sign-in-model";
+import { authRepository } from "@/app/repository/auth-repository";
 import { IntegratedButtonProps } from "@/components/core/button/integrated-button";
 import { GoogleIcon } from "@/components/core/icons";
 import { IntegratedInputProps } from "@/components/core/input/integrated-input";
 import { Link } from "@/components/core/link/link";
 import AuthFormLayout from "@/layout/auth-form-layout";
+import { formService } from "@/service/form-service";
 import { LockIcon, UserIcon } from "lucide-react";
 import Image from "next/image";
 
 export default function SignInPage() {
+    const {
+        model,
+        updateModel,
+        onSubmitForm,
+    } = formService.useForm(
+        new SignInModel,
+        authRepository.signIn,
+    );
+    
     const header = {
         title: "Welcome back!",
     };
@@ -23,29 +35,27 @@ export default function SignInPage() {
             inputValidation: {
                 message: "AA"
             },
+            fieldName: "username",
+            model: model,
+            updateModel: updateModel,
         },
         {
             id: "password-input",
             label: "Password",
             placeholder: "Password",
+            fieldName: "password",
             required: true,
             type: "password",
             prefix: <LockIcon />,
-            passwordStrengthIndicator: {
-                currentSatisfiedCategoriesNumber: 0,
-                minimumSatisfiedCategories: 2,
-                categoryNumber: 3,
-            },
-            inputValidation: {
-                message: "AAA"
-            },
             extraComponent: (
                 <Link 
                     href=""
                     content="Forgot password?"
-                    className="absolute text-[0.9rem] w-30 top-4 right-0 hover:underline"
+                    className="absolute text-[0.9rem] w-30 top-3 right-0 hover:underline"
                 />
-            )
+            ),
+            model: model,
+            updateModel: updateModel,
         },
     ];
 
@@ -70,10 +80,11 @@ export default function SignInPage() {
         submitButton: {
             id: "sign-in-btn",
             label: "Sign In",
-            wrapperClassName: "my-auto"
+            wrapperClassName: "my-auto mt-4",
+            onClick: onSubmitForm
         },
         footComponent: (
-            <span className="mt-2">
+            <span className="mt-4">
                 {"Don't have an account? "} 
                 <Link
                     href=""

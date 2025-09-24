@@ -44,7 +44,12 @@ export const IntegratedButton = (props: IntegratedButtonProps) => {
                 id={button.id}
                 variant={button?.variant || "outline"}
                 size={button?.size}
-                onClick={button?.onClick}
+                onClick={(event) => {
+                    event.preventDefault();
+                    if (typeof button?.onClick === "function") {
+                        button?.onClick();
+                    }
+                }}
                 disabled={button?.disabled || button?.loading}
                 className={cn("w-full cursor-pointer bg-indigo-900 border-0 hover:bg-amber-300 text-white", button?.buttonClassName)}
             >

@@ -3,7 +3,6 @@
 import { IntegratedButton, IntegratedButtonProps } from "@/components/core/button/integrated-button";
 import { Divider } from "@/components/core/divider/divider";
 import { IntegratedInput, IntegratedInputProps } from "@/components/core/input/integrated-input";
-import { Link, LinkProps } from "@/components/core/link/link";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { JSX } from "react";

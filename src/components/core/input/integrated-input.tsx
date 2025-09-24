@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { InputValidation } from "../validation/input-validation";
 import { PasswordStrengthIndicator } from "../password-strength-indicator/password-strength-indicator";
 import _ from "lodash";
+import { message } from "antd";
 
 export interface IntegratedInputProps extends InputProps {
     prefix?: JSX.Element;
@@ -47,32 +48,43 @@ export const IntegratedInput = (props: IntegratedInputProps) => {
                 <span>{input?.label || ""}</span>
                 {input?.required ? <span className="text-red-600">*</span> : null}
             </Label>
-            <div className={cn("relative", inputValidation?.message ? "" : "")}>
+            <div className="relative">
                 {clonePrefix}
 
                 <Input
                     id={input.id}
+                    className={cn("pl-10", (input.model?.errors || {})[input.fieldName] ? "border-red-500 border" : "", input?.inputClassName)}
                     type={input?.type || "text"}
                     placeholder={input?.placeholder}
-                    className={cn("pl-10", inputValidation?.message ? "border-red-500 border" : "", input?.inputClassName)}
+                    onChange={(event) => {
+                        input.updateModel(
+                            input.fieldName,
+                            event.target.value
+                        )
+                    }}
+                    value={(input.model as any)[input.fieldName] || ""}
+                    disabled={input?.disabled || false}
                 />
 
                 {input?.type !== "password" ? clonePostfix : null}
             </div>
             <div className={`flex items-center ${passwordStrengthIndicator ? 'justify-between' : 'justify-end'} -mt-1`}>
                 {!_.isNil(passwordStrengthIndicator?.currentSatisfiedCategoriesNumber) &&
-                !_.isNil(passwordStrengthIndicator?.categoryNumber) &&
-                !_.isNil(passwordStrengthIndicator?.minimumSatisfiedCategories) ?
-                (
-                    <PasswordStrengthIndicator
-                        currentSatisfiedCategoriesNumber={passwordStrengthIndicator?.currentSatisfiedCategoriesNumber}
-                        categoryNumber={passwordStrengthIndicator?.categoryNumber}
-                        minimumSatisfiedCategories={passwordStrengthIndicator?.minimumSatisfiedCategories}
-                    />
-                ) : null}
+                    !_.isNil(passwordStrengthIndicator?.categoryNumber) &&
+                    !_.isNil(passwordStrengthIndicator?.minimumSatisfiedCategories) ?
+                    (
+                        <PasswordStrengthIndicator
+                            currentSatisfiedCategoriesNumber={passwordStrengthIndicator?.currentSatisfiedCategoriesNumber}
+                            categoryNumber={passwordStrengthIndicator?.categoryNumber}
+                            minimumSatisfiedCategories={passwordStrengthIndicator?.minimumSatisfiedCategories}
+                        />
+                    ) : null}
                 <div className="flex-col justify-between relative">
-                    {inputValidation?.message ? (
-                        <InputValidation {...inputValidation} />
+                    {(input.model?.errors || {})[input.fieldName] ? (
+                        <InputValidation
+                            {...inputValidation}
+                            message={(input.model?.errors || {})[input.fieldName]}
+                        />
                     ) : null}
                     {input?.extraComponent || null}
                 </div>
