@@ -3,7 +3,6 @@
 import { SignInModel } from "@/model/sign-in-model";
 import { authRepository } from "@/repository/auth-repository";
 import { IntegratedButtonProps } from "@/components/core/button/integrated-button";
-import { GoogleIcon } from "@/components/core/icons";
 import { IntegratedInputProps } from "@/components/core/input/integrated-input";
 import { Link } from "@/components/core/link/link";
 import AuthFormLayout from "@/layout/auth-form-layout";
@@ -11,6 +10,8 @@ import { formService } from "@/service/form-service";
 import { LockIcon, UserIcon } from "lucide-react";
 import Image from "next/image";
 import { SIGN_UP_BASE_ROUTE } from "@/const/routes-const";
+import GoogleIcon from "@/components/core/icons/google";
+import { Icon } from "@/components/core/icon/icon";
 export default function SignInPage() {
     const {
         model,
@@ -63,12 +64,9 @@ export default function SignInPage() {
             label: "Sign in with Google",
             buttonClassName: "bg-white text-black border-1",
             prefix: (
-                <Image
-                    src={GoogleIcon}
-                    alt="google-oauth2-btn"
-                    height={20}
-                    width={20}
-                    className="mr-2"
+                <Icon
+                    name="GoogleIcon"
+                    className="mr-2 h-20 w-20"
                 />
             )
         },

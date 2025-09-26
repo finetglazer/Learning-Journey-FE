@@ -1,7 +1,7 @@
 "use client"
 
 import { IntegratedButtonProps } from "@/components/core/button/integrated-button";
-import { GoogleIcon } from "@/components/core/icons";
+import { Icon } from "@/components/core/icon/icon";
 import { IntegratedInputProps } from "@/components/core/input/integrated-input";
 import { SIGN_IN_ROUTE, SIGN_UP_EMAIL_VERIFICATION_ROUTE } from "@/const/routes-const";
 import AuthFormLayout from "@/layout/auth-form-layout";
@@ -80,12 +80,9 @@ export default function SignUpPage() {
             label: "Sign up with Google",
             buttonClassName: "bg-white text-black border-1",
             prefix: (
-                <Image
-                    src={GoogleIcon}
-                    alt="google-oauth2-btn"
-                    height={20}
-                    width={20}
-                    className="mr-2"
+                <Icon
+                    name="GoogleIcon"
+                    className="mr-2 h-20 w-20"
                 />
             )
         },

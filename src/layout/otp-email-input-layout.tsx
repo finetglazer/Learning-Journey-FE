@@ -2,15 +2,14 @@
 
 import { IntegratedButton, IntegratedButtonProps } from "@/components/core/button/integrated-button";
 import { Divider } from "@/components/core/divider/divider";
-import { LeftArrow } from "@/components/core/icons";
+import { Icon } from "@/components/core/icon/icon";
 import { IntegratedInput } from "@/components/core/input/integrated-input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn, uuid4 } from "@/lib/utils";
 import { InputOTP } from "antd-input-otp";
 import { MailIcon } from "lucide-react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Dispatch, isValidElement, SetStateAction, useState } from "react";
+import { isValidElement, useState } from "react";
 import { Model } from "react-3layer-common";
 
 export interface OtpEmailInputLayoutProps {
@@ -88,7 +87,7 @@ export const OtpEmailInputLayout = (props: OtpEmailInputLayoutProps) => {
                         <IntegratedButton
                             id={`back-btn-${uuid4()}`}
                             label={backButtonTitle || ""}
-                            prefix={<Image src={LeftArrow} alt="back-btn" className="opacity-[0.7] hover:opacity-[1]" />}
+                            prefix={<Icon name="LeftArrow" className="opacity-[0.7] hover:opacity-[1]" />}
                             variant="default"
                             wrapperClassName="text-left"
                             buttonClassName="bg-transparent text-black hover:bg-transparent w-auto"

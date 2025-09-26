@@ -1,7 +1,13 @@
-import GoogleIcon from "./google.svg";
-import LeftArrow from "./left-arrow.svg";
+import GoogleIcon from "./google";
+import LeftArrow from "./left-arrow";
+import StackIcon from "./stack";
+import AtIcon from "./at";
 
-export {
+export const iconCollection = {
     GoogleIcon,
     LeftArrow,
-}
+    StackIcon,
+    AtIcon,
+};
+
+export type IconName = keyof typeof iconCollection;
