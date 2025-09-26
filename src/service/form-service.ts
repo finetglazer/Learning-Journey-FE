@@ -1,14 +1,17 @@
+import { convertArrErrToObjErr } from "@/lib/utils";
+import { FieldError } from "@/model/field-error";
 import { useCallback, useState } from "react";
 import { Model } from "react-3layer-common";
 import { finalize, Observable } from 'rxjs';
 import { toast } from "sonner";
 
 export const formService = {
-    useForm(
-        modelClass: Model,
-        onSubmit: (form?: Model) => Observable<any>
+    useForm<T extends Model>(
+        modelClass: new () => T,
+        onSubmit: (form?: Model) => Observable<any>,
+        callbackFn?: () => void,
     ) {
-        const [model, setModel] = useState<Model>(modelClass);
+        const [model, setModel] = useState<T>(new modelClass);
         const [loading, setLoading] = useState<boolean>(false);
 
         const updateModel = useCallback((fieldName: string, value: any) => {
@@ -16,35 +19,51 @@ export const formService = {
                 ...model,
                 [fieldName]: value,
             });
-        }, [modelClass]);
+        }, [modelClass, model]);
 
-        const onSubmitForm = useCallback((form?: Model) => {
+        const onSubmitForm = useCallback(() => {
             setLoading(true);
-            onSubmit(form)
+            onSubmit(model)
                 .pipe(finalize(() => setLoading(false)))
                 .subscribe({
                     next: res => {
-                        console.log(111)
-                        setModel({
-                            ...model,
-                            ...res?.data,
-                        });
-                        if (res?.message) {
-                            console.log(111111111);
-                            toast.success(res?.message);
+                        if (res?.status) {
+                            if (res?.data) {
+                                setModel({
+                                    ...model,
+                                    ...res?.data,
+                                    errors: undefined,
+                                });
+                            }
+                            if (res?.message) {
+                                toast.success(res?.message);
+                            }
+                            if (typeof callbackFn === "function") {
+                                callbackFn();
+                            }
+                        }
+                        else if (!res?.status) {
+                            if (res?.data) {
+                                updateModel("errors", convertArrErrToObjErr(res?.data as FieldError[]));
+                            }
+                            else if (res?.message) {
+                                toast.error(res?.message);
+                                updateModel("errors", undefined);
+                            }
                         }
                     },
                     error: err => {
-                        console.log(err)
-                        if (err?.data) {
-                            updateModel("errors", err?.data);
+                        const res = err?.response?.data;
+                        if (res?.data) {
+                            updateModel("errors", convertArrErrToObjErr(res?.data as FieldError[]));
                         }
-                        else if (err?.message) {
-                            toast.error(err?.message);
+                        else if (res?.message) {
+                            toast.error(res?.message);
+                            updateModel("errors", undefined);
                         }
                     }
                 });
-        }, [onSubmit]);
+        }, [onSubmit, model]);
 
         return {
             model,

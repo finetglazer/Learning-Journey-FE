@@ -1,7 +1,7 @@
 "use client"
 
-import { SignInModel } from "@/app/model/sign-in-model";
-import { authRepository } from "@/app/repository/auth-repository";
+import { SignInModel } from "@/model/sign-in-model";
+import { authRepository } from "@/repository/auth-repository";
 import { IntegratedButtonProps } from "@/components/core/button/integrated-button";
 import { GoogleIcon } from "@/components/core/icons";
 import { IntegratedInputProps } from "@/components/core/input/integrated-input";
@@ -10,32 +10,30 @@ import AuthFormLayout from "@/layout/auth-form-layout";
 import { formService } from "@/service/form-service";
 import { LockIcon, UserIcon } from "lucide-react";
 import Image from "next/image";
-
+import { SIGN_UP_BASE_ROUTE } from "@/const/routes-const";
 export default function SignInPage() {
     const {
         model,
+        loading,
         updateModel,
         onSubmitForm,
     } = formService.useForm(
-        new SignInModel,
+        SignInModel,
         authRepository.signIn,
     );
-    
+
     const header = {
         title: "Welcome back!",
     };
 
     const bodyInputs: IntegratedInputProps[] = [
         {
-            id: "username-input",
-            label: "Username",
-            placeholder: "Username",
+            id: "email-input",
+            label: "Email",
+            placeholder: "Email",
             required: true,
             prefix: <UserIcon />,
-            inputValidation: {
-                message: "AA"
-            },
-            fieldName: "username",
+            fieldName: "email",
             model: model,
             updateModel: updateModel,
         },
@@ -48,10 +46,10 @@ export default function SignInPage() {
             type: "password",
             prefix: <LockIcon />,
             extraComponent: (
-                <Link 
+                <Link
                     href=""
                     content="Forgot password?"
-                    className="absolute text-[0.9rem] w-30 top-3 right-0 hover:underline"
+                    className="absolute text-[0.9rem] w-30 top-3 right-60 hover:underline"
                 />
             ),
             model: model,
@@ -81,13 +79,14 @@ export default function SignInPage() {
             id: "sign-in-btn",
             label: "Sign In",
             wrapperClassName: "my-auto mt-4",
-            onClick: onSubmitForm
+            onClick: onSubmitForm,
+            loading,
         },
         footComponent: (
             <span className="mt-4">
-                {"Don't have an account? "} 
+                {"Don't have an account? "}
                 <Link
-                    href=""
+                    href={SIGN_UP_BASE_ROUTE}
                     className="underline"
                     content="Sign up"
                 >
@@ -97,19 +96,21 @@ export default function SignInPage() {
     };
 
     return (
-        <AuthFormLayout
-            header={header}
-            body={{
-                inputs: bodyInputs
-            }}
-            footer={footer}
-            actions={{
-                buttons: actionButtons
-            }}
-            divider={{
-                type: "2-line-symmetric",
-                content: "OR"
-            }}
-        />
+        <>
+            <AuthFormLayout
+                header={header}
+                body={{
+                    inputs: bodyInputs
+                }}
+                footer={footer}
+                actions={{
+                    buttons: actionButtons
+                }}
+                divider={{
+                    type: "2-line-symmetric",
+                    content: "OR"
+                }}
+            />
+        </>
     );
 };

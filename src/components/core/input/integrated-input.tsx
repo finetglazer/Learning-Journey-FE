@@ -2,13 +2,12 @@
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { cloneElement, Fragment, isValidElement, JSX } from "react";
-import { InputProps } from "./type";
 import { cn } from "@/lib/utils";
-import { InputValidation } from "../validation/input-validation";
-import { PasswordStrengthIndicator } from "../password-strength-indicator/password-strength-indicator";
 import _ from "lodash";
-import { message } from "antd";
+import { cloneElement, Fragment, isValidElement, JSX } from "react";
+import { PasswordStrengthIndicator } from "../password-strength-indicator/password-strength-indicator";
+import { InputValidation } from "../validation/input-validation";
+import { InputProps } from "./type";
 
 export interface IntegratedInputProps extends InputProps {
     prefix?: JSX.Element;
@@ -69,12 +68,12 @@ export const IntegratedInput = (props: IntegratedInputProps) => {
                 {input?.type !== "password" ? clonePostfix : null}
             </div>
             <div className={`flex items-center ${passwordStrengthIndicator ? 'justify-between' : 'justify-end'} -mt-1`}>
-                {!_.isNil(passwordStrengthIndicator?.currentSatisfiedCategoriesNumber) &&
+                {!_.isNil(passwordStrengthIndicator?.currentPassword) &&
                     !_.isNil(passwordStrengthIndicator?.categoryNumber) &&
                     !_.isNil(passwordStrengthIndicator?.minimumSatisfiedCategories) ?
                     (
                         <PasswordStrengthIndicator
-                            currentSatisfiedCategoriesNumber={passwordStrengthIndicator?.currentSatisfiedCategoriesNumber}
+                            currentPassword={passwordStrengthIndicator?.currentPassword}
                             categoryNumber={passwordStrengthIndicator?.categoryNumber}
                             minimumSatisfiedCategories={passwordStrengthIndicator?.minimumSatisfiedCategories}
                         />

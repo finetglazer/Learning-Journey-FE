@@ -1,5 +1,4 @@
 import { Model } from "react-3layer-common";
-import { Observable } from "rxjs";
 
 export interface ButtonProps {
     id: string;
@@ -12,4 +11,5 @@ export interface ButtonProps {
     buttonClassName?: string;
     labelClassName?: string;
     onClick?: (form?: Model) => void;
+    validateFn?: () => boolean;
 }

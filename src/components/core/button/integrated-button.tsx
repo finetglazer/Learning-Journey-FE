@@ -38,15 +38,21 @@ export const IntegratedButton = (props: IntegratedButtonProps) => {
         } as any)
         : <Fragment />;
 
+    const validateFn = button?.validateFn;
+    const validateIsFn = typeof validateFn === "function";
+
     return (
         <div className={cn("w-95 -mt-4 mb-2", button?.wrapperClassName)}>
             <Button
                 id={button.id}
+                type="button"
                 variant={button?.variant || "outline"}
                 size={button?.size}
                 onClick={(event) => {
                     event.preventDefault();
-                    if (typeof button?.onClick === "function") {
+                    if (typeof button?.onClick === "function"
+                        && (validateIsFn && validateFn() || !validateIsFn)
+                    ) {
                         button?.onClick();
                     }
                 }}

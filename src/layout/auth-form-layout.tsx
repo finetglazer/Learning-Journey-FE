@@ -2,15 +2,21 @@
 
 import { IntegratedButton, IntegratedButtonProps } from "@/components/core/button/integrated-button";
 import { Divider } from "@/components/core/divider/divider";
+import { LeftArrow } from "@/components/core/icons";
 import { IntegratedInput, IntegratedInputProps } from "@/components/core/input/integrated-input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { JSX } from "react";
+import { cn, uuid4 } from "@/lib/utils";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { Dispatch, JSX, SetStateAction, useState } from "react";
 
 export interface FormLayoutProps {
+    cardClassName?: string;
     header?: {
         title?: string;
         titleClassName?: string;
+        backButtonTitle?: string;
+        backButtonUrl?: string;
     };
     body?: {
         inputs?: IntegratedInputProps[];
@@ -30,12 +36,16 @@ export interface FormLayoutProps {
 
 export default function AuthFormLayout(props: FormLayoutProps) {
     const {
+        cardClassName,
         header,
         body,
         footer,
         actions,
         divider,
     } = props;
+    const router = useRouter();
+
+    const [loading, setLoading] = useState<boolean>(false);
 
     const getDivider = () => {
         switch (divider?.type) {
@@ -61,8 +71,28 @@ export default function AuthFormLayout(props: FormLayoutProps) {
     };
 
     return (
-        <Card className="max-w-175 h-auto mt-65 mx-auto grid place-items-center">
+        <Card className={cn("max-w-175 h-auto mt-65 mx-auto grid place-items-center", cardClassName)}>
             <CardHeader className="w-full p-0 text-center">
+                {header?.backButtonTitle ? (
+                    <div className="flex">
+                        <IntegratedButton
+                            id={`back-btn-${uuid4()}`}
+                            label={header?.backButtonTitle || ""}
+                            prefix={<Image src={LeftArrow} alt="back-btn" className="opacity-[0.7] hover:opacity-[1]" />}
+                            variant="default"
+                            wrapperClassName="text-left"
+                            buttonClassName="bg-transparent text-black hover:bg-transparent w-auto"
+                            labelClassName="text-[1.1rem] text-gray-500 hover:text-black"
+                            onClick={() => {
+                                router.push(header?.backButtonUrl || "");
+                                if (setLoading) {
+                                    setLoading(true);
+                                }
+                            }}
+                            loading={loading}
+                        />
+                    </div>
+                ) : null}
                 <CardTitle className={cn("font-bold text-[3rem] w-full", header?.titleClassName)}>{header?.title || ""}</CardTitle>
             </CardHeader>
             <CardContent className="">

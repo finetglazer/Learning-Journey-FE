@@ -3,25 +3,47 @@
 import { IntegratedButtonProps } from "@/components/core/button/integrated-button";
 import { GoogleIcon } from "@/components/core/icons";
 import { IntegratedInputProps } from "@/components/core/input/integrated-input";
+import { SIGN_IN_ROUTE, SIGN_UP_EMAIL_VERIFICATION_ROUTE } from "@/const/routes-const";
 import AuthFormLayout from "@/layout/auth-form-layout";
+import { SignUpModel } from "@/model/sign-up-model";
+import { authRepository } from "@/repository/auth-repository";
+import { formService } from "@/service/form-service";
 import { LockIcon, MailIcon, UserIcon } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function SignUpPage() {
+    const router = useRouter();
+
+    const {
+        model,
+        loading,
+        setLoading,
+        updateModel,
+        onSubmitForm,
+    } = formService.useForm(
+        SignUpModel,
+        authRepository.signUp,
+        () => router.push(SIGN_UP_EMAIL_VERIFICATION_ROUTE)
+    );
+
     const header = {
         title: "Register",
+        titleClassName: "-mt-3",
+        backButtonTitle: "Sign in",
+        backButtonUrl: SIGN_IN_ROUTE,
     };
 
     const bodyInputs: IntegratedInputProps[] = [
         {
-            id: "username-input",
-            label: "Username",
-            placeholder: "Username",
+            id: "display-name-input",
+            label: "Display name",
+            placeholder: "Display name",
             required: true,
             prefix: <UserIcon />,
-            inputValidation: {
-                message: "AA"
-            },
+            fieldName: "displayName",
+            model,
+            updateModel,
         },
         {
             id: "email-input",
@@ -30,9 +52,9 @@ export default function SignUpPage() {
             type: "email",
             required: true,
             prefix: <MailIcon />,
-            inputValidation: {
-                message: "AA"
-            },
+            fieldName: "email",
+            model,
+            updateModel,
         },
         {
             id: "password-input",
@@ -42,20 +64,20 @@ export default function SignUpPage() {
             type: "password",
             prefix: <LockIcon />,
             passwordStrengthIndicator: {
-                currentSatisfiedCategoriesNumber: 0,
+                currentPassword: model?.password || "",
                 minimumSatisfiedCategories: 2,
                 categoryNumber: 3,
             },
-            inputValidation: {
-                message: "AAA"
-            },
+            fieldName: "password",
+            model,
+            updateModel,
         },
     ];
 
     const actionButtons: IntegratedButtonProps[] = [
         {
-            id: "google-oauth2-btn",
-            label: "Sign in with Google",
+            id: "google-sign-up-oauth2-btn",
+            label: "Sign up with Google",
             buttonClassName: "bg-white text-black border-1",
             prefix: (
                 <Image
@@ -73,7 +95,9 @@ export default function SignUpPage() {
         submitButton: {
             id: "sign-up-btn",
             label: "Sign Up",
-            wrapperClassName: "my-auto"
+            wrapperClassName: "my-auto",
+            onClick: onSubmitForm,
+            loading,
         },
     };
 

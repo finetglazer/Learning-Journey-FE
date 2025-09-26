@@ -14,14 +14,14 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         style: {
           "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
+          "--normal-text": "var(--white)",
           "--normal-border": "var(--border)",
 
           "--success-bg": "var(--green-600)",
           "--success-text": "var(--white)",
 
           "--error-bg": "var(--destructive)",
-          "--error-text": "var(--destructive-foreground)",
+          "--error-text": "var(--white)",
 
           "--info-bg": "var(--blue-600)",
           "--info-text": "var(--white)",

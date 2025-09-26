@@ -1,9 +1,10 @@
 "use client"
 
-import { cn } from "@/lib/utils";
+import { cn, getNumberOfSatisfiedCategories } from "@/lib/utils";
+import { useMemo } from "react";
 
 export interface PasswordStrenghtIndicatorProps {
-    currentSatisfiedCategoriesNumber: number;
+    currentPassword: string;
     minimumSatisfiedCategories: number;
     categoryNumber: number;
     wrapperClassName?: string;
@@ -12,16 +13,20 @@ export interface PasswordStrenghtIndicatorProps {
 
 export const PasswordStrengthIndicator = (props: PasswordStrenghtIndicatorProps) => {
     const {
-        currentSatisfiedCategoriesNumber,
+        currentPassword,
         minimumSatisfiedCategories,
         categoryNumber,
         wrapperClassName,
         textIndicatorClassName
     } = props;
 
+    const currentSatisfiedCategoriesNumber = useMemo(() => {
+        return getNumberOfSatisfiedCategories(currentPassword);
+    }, [currentPassword]);
+
     return (
         <div className={cn("-mt-1", wrapperClassName)}>
-            <span className={cn(`text-${currentSatisfiedCategoriesNumber < minimumSatisfiedCategories ? "red" : "green"}-600 text-[0.7rem]`, textIndicatorClassName)}>
+            <span className={cn(`${currentSatisfiedCategoriesNumber < minimumSatisfiedCategories ? "text-red-600" : "text-green-600"} text-[0.7rem]`, textIndicatorClassName)}>
                 {currentSatisfiedCategoriesNumber < minimumSatisfiedCategories ? "Weak" : "Strong"}
             </span>
             <div className="flex mt-1">
