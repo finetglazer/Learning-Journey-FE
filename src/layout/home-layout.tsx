@@ -43,7 +43,7 @@ export const HomeLayout = (props: HomeLayoutProps) => {
             direction="horizontal"
             className="!h-[100vh] w-full rounded-lg border"
         >
-            <ResizablePanel defaultSize={27} minSize={15} maxSize={30} className="bg-sidebar-accent">
+            <ResizablePanel defaultSize={23} minSize={15} maxSize={30} className="bg-sidebar-accent">
                 <div className="flex items-center ml-4 mt-5">
                     {isValidElement(header?.prefix) ? header?.prefix : null}
                     <div className="ml-3">

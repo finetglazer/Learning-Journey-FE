@@ -70,7 +70,7 @@ export default function AuthFormLayout(props: FormLayoutProps) {
     };
 
     return (
-        <Card className={cn("w-175 max-w-175 h-auto grid place-items-center", cardClassName)}>
+        <Card className={cn("w-175 max-w-175 h-auto grid place-items-center -mt-10", cardClassName)}>
             <CardHeader className="w-full p-0 text-center">
                 {header?.backButtonTitle ? (
                     <div className="flex">

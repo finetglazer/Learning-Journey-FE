@@ -1,12 +1,13 @@
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
-export interface LinkProps {
+export interface LinkWithLoadingProps {
     href?: string;
     content?: string;
     className?: string;
 };
 
-export const Link = (props: LinkProps) => {
+export const LinkWithLoading = (props: LinkWithLoadingProps) => {
     const {
         href,
         content,
@@ -14,6 +15,6 @@ export const Link = (props: LinkProps) => {
     } = props;
 
     return (
-        <a href={href} className={cn("", className)}>{content}</a>
+        <Link href={href || ""} className={cn("", className)}>{content}</Link>
     );
 };

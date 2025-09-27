@@ -1,17 +1,15 @@
 "use client"
 
+import { IntegratedButtonProps } from "@/components/core/button/integrated-button";
+import { Icon } from "@/components/core/icon/icon";
+import { IntegratedInputProps } from "@/components/core/input/integrated-input";
+import { LinkWithLoading } from "@/components/core/link/link";
+import { SIGN_UP_BASE_ROUTE } from "@/const/routes-const";
+import AuthFormLayout from "@/layout/auth-form-layout";
 import { SignInModel } from "@/model/sign-in-model";
 import { authRepository } from "@/repository/auth-repository";
-import { IntegratedButtonProps } from "@/components/core/button/integrated-button";
-import { IntegratedInputProps } from "@/components/core/input/integrated-input";
-import { Link } from "@/components/core/link/link";
-import AuthFormLayout from "@/layout/auth-form-layout";
 import { formService } from "@/service/form-service";
 import { LockIcon, UserIcon } from "lucide-react";
-import Image from "next/image";
-import { SIGN_UP_BASE_ROUTE } from "@/const/routes-const";
-import GoogleIcon from "@/components/core/icons/google";
-import { Icon } from "@/components/core/icon/icon";
 export default function SignInPage() {
     const {
         model,
@@ -47,7 +45,7 @@ export default function SignInPage() {
             type: "password",
             prefix: <LockIcon />,
             extraComponent: (
-                <Link
+                <LinkWithLoading
                     href=""
                     content="Forgot password?"
                     className="absolute text-[0.9rem] w-30 top-3 right-60 hover:underline"
@@ -83,12 +81,12 @@ export default function SignInPage() {
         footComponent: (
             <span className="mt-4">
                 {"Don't have an account? "}
-                <Link
+                <LinkWithLoading
                     href={SIGN_UP_BASE_ROUTE}
                     className="underline"
                     content="Sign up"
                 >
-                </Link>
+                </LinkWithLoading>
             </span>
         )
     };

@@ -57,13 +57,13 @@ export const IntegratedButton = (props: IntegratedButtonProps) => {
                     }
                 }}
                 disabled={button?.disabled || button?.loading}
-                className={cn("w-full cursor-pointer bg-indigo-900 border-0 hover:bg-amber-300 text-white", button?.buttonClassName)}
+                className={cn("w-full cursor-pointer bg-[var(--button-primary)] border-0 hover:bg-amber-300 text-white", button?.buttonClassName)}
             >
                 {clonePrefix}
 
                 <Label
                     htmlFor={button.id}
-                    className={cn("", button?.labelClassName)}
+                    className={cn("cursor-pointer", button?.labelClassName)}
                 >
                     {button.label}
                 </Label>

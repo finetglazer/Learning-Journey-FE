@@ -4,7 +4,7 @@ import { cn, getNumberOfSatisfiedCategories } from "@/lib/utils";
 import { useMemo } from "react";
 
 export interface PasswordStrenghtIndicatorProps {
-    currentPassword: string;
+    currentPassword: string | null;
     minimumSatisfiedCategories: number;
     categoryNumber: number;
     wrapperClassName?: string;

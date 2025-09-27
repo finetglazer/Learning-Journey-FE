@@ -44,7 +44,7 @@ export const IntegratedInput = (props: IntegratedInputProps) => {
     return (
         <div className={cn("grid w-full max-w-sm items-center relative gap-3", input?.wrapperClassName)}>
             <Label htmlFor={input.id}>
-                <span>{input?.label || ""}</span>
+                <span className={input?.labelClassName || ""}>{input?.label || ""}</span>
                 {input?.required ? <span className="text-red-600">*</span> : null}
             </Label>
             <div className="relative">

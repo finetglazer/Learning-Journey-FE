@@ -11,6 +11,8 @@ export interface CollapsibleTreeProps {
     setSelectedItemId?: Dispatch<SetStateAction<string | null>>;
 };
 
+const ITEM_SELECTED_TEXT_COLOR = "text-blue-500";
+
 export const CollapsibleTree = (props: CollapsibleTreeProps) => {
     const {
         root,
@@ -28,36 +30,40 @@ export const CollapsibleTree = (props: CollapsibleTreeProps) => {
 
     const [open, setOpen] = useState<boolean>(false);
     const [ml, setMl] = useState<number>(2);
-    const [mrPx, setMrPx] = useState<number>(50);
+    const [pr, setPr] = useState<number>(4);
 
     const prefixProps = prefix?.props;
 
     const clonePrefix = prefix && isValidElement(prefix)
         ? cloneElement(prefix, {
             ...prefixProps,
-            className: cn("h-10 w-10 mt-3 ml-2 text-gray-500", prefixProps?.className)
+            className: cn(
+                "h-10 w-10 mt-3 ml-2 text-gray-500", 
+                prefixProps?.className, 
+                id === selectedItemId ? ITEM_SELECTED_TEXT_COLOR : ""
+            )
         } as any)
         : <Fragment />;
 
-    const chevronClassName = "text-gray-500";
+    const chevronClassName = cn("text-gray-500", id === selectedItemId ? ITEM_SELECTED_TEXT_COLOR : "");
 
     useEffect(() => {
         switch (level) {
             case 0:
                 setMl(2);
-                setMrPx(50);
+                setPr(1);
                 break;
             case 1:
                 setMl(3.5);
-                setMrPx(60);
+                setPr(0.5);
                 break;
             case 2:
                 setMl(7);
-                setMrPx(70);
+                setPr(0.25);
                 break;
             default:
                 setMl(9);
-                setMrPx(80);
+                setPr(0.25);
         }
     }, []);
 
@@ -69,9 +75,9 @@ export const CollapsibleTree = (props: CollapsibleTreeProps) => {
     };
 
     return (
-        <div>
+        <div style={{paddingRight: `${pr}rem`}}>
             <div
-                style={{ marginLeft: `${ml}rem`, width: `calc(100%-${mrPx}px)` }}
+                style={{ marginLeft: `${ml}rem`, paddingLeft: "12px" }}
                 className={`flex items-center cursor-pointer ${id === selectedItemId ? "bg-blue-200" : ""} rounded-md`}
                 onClick={onClick}
                 id={id}
@@ -81,7 +87,7 @@ export const CollapsibleTree = (props: CollapsibleTreeProps) => {
                         : <ChevronRight className={chevronClassName} />)
                     : null}
                 {clonePrefix}
-                <span className="text-[1.3rem] text-gray-700 -ml-1">{label}</span>
+                <span className={cn("text-[1.3rem] text-gray-700 -ml-1", id === selectedItemId ? ITEM_SELECTED_TEXT_COLOR : "")}>{label}</span>
             </div>
             {open && (children || []).length ? (
                 <>

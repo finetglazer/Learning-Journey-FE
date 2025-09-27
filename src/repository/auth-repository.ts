@@ -6,6 +6,7 @@ const BASE_API_URL = "http://localhost:8081/api/users/auth";
 const API_SIGN_IN = "/login";
 const API_SIGN_UP = "/register";
 const API_VERIFY_OTP = "/verify";
+const API_CHANGE_PASSWORD = "/change-password";
 
 export class AuthRepository extends BaseRepository {
     constructor() {
@@ -28,6 +29,11 @@ export class AuthRepository extends BaseRepository {
                 token: form?.otp
             }
         })
+            .pipe(map(res => res?.data));
+    };
+
+    public changePassword = (form?: Model): Observable<any> => {
+        return this.http.post(API_CHANGE_PASSWORD, form)
             .pipe(map(res => res?.data));
     };
 };

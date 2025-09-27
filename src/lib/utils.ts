@@ -27,7 +27,10 @@ export const convertArrErrToObjErr = (err: FieldError[]) => {
   }, {});
 };
 
-export const getNumberOfSatisfiedCategories = (password: string) => {
+export const getNumberOfSatisfiedCategories = (password: string | null) => {
+  if (!password) {
+    return 0;
+  }
   const reachedMinimumLength = password.length >= PASSWORD_MINIMUM_LENGTH;
   const matchedRegex = PASSWORD_REGEX.test(password);
   const reachedGoodLength = password.length >= PASSWORD_GOOD_LENGTH;

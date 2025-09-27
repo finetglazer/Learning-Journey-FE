@@ -80,7 +80,7 @@ export const OtpEmailInputLayout = (props: OtpEmailInputLayoutProps) => {
     };
 
     return (
-        <Card className={cn("max-w-175 h-auto mt-65 mx-auto grid place-items-center", wrapperClassName)}>
+        <Card className={cn("w-185 h-auto mx-auto grid place-items-center", wrapperClassName)}>
             <CardHeader className="w-full p-0 text-center">
                 {backButtonTitle ? (
                     <div className="flex">
