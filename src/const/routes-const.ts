@@ -7,3 +7,8 @@ export const SIGN_UP_EMAIL_VERIFICATION_ROUTE = join(SIGN_UP_BASE_ROUTE, "/email
 export const FORGOT_PASSWORD_BASE_ROUTE = "/auth/forgot-password";
 export const FORGOT_PASSWORD_EMAIL_INPUT_ROUTE = join(FORGOT_PASSWORD_BASE_ROUTE, "/email-input");
 export const FORGOT_PASSWORD_RESET_PASSWORD_ROUTE = join(FORGOT_PASSWORD_BASE_ROUTE, "/reset-password");
+export const GOOGLE_OAUTH2_ROUTE = "http://localhost:8080/oauth2/authorization/google";
+
+// Home page routes
+export const HOME_BASE_ROUTE = "/home";
+export const SETTING_BASE_ROUTE = join(HOME_BASE_ROUTE, "/setting");

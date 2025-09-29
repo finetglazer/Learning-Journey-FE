@@ -16,6 +16,7 @@ export default function ChangePasswordPage() {
 
     const {
         model,
+        loading,
         updateModel,
         onSubmitForm,
     } = formService.useForm(
@@ -85,6 +86,7 @@ export default function ChangePasswordPage() {
             <IntegratedButton 
                 id="change-password-btn"
                 label="Change password"
+                loading={loading}
                 onClick={onSubmitForm}
                 wrapperClassName="mt-12 w-120"
                 buttonClassName="h-12"

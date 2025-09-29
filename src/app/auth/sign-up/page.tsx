@@ -1,6 +1,6 @@
 "use client"
 
-import { IntegratedButtonProps } from "@/components/core/button/integrated-button";
+import { IntegratedButton, IntegratedButtonProps } from "@/components/core/button/integrated-button";
 import { Icon } from "@/components/core/icon/icon";
 import { IntegratedInputProps } from "@/components/core/input/integrated-input";
 import { SIGN_IN_ROUTE, SIGN_UP_EMAIL_VERIFICATION_ROUTE } from "@/const/routes-const";
@@ -9,7 +9,6 @@ import { SignUpModel } from "@/model/sign-up-model";
 import { authRepository } from "@/repository/auth-repository";
 import { formService } from "@/service/form-service";
 import { LockIcon, MailIcon, UserIcon } from "lucide-react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 export default function SignUpPage() {
@@ -18,7 +17,6 @@ export default function SignUpPage() {
     const {
         model,
         loading,
-        setLoading,
         updateModel,
         onSubmitForm,
     } = formService.useForm(
@@ -89,13 +87,15 @@ export default function SignUpPage() {
     ];
 
     const footer = {
-        submitButton: {
-            id: "sign-up-btn",
-            label: "Sign Up",
-            wrapperClassName: "my-auto",
-            onClick: onSubmitForm,
-            loading,
-        },
+        submitButton: (
+            <IntegratedButton
+                id="sign-up-btn"
+                label="Sign up"
+                wrapperClassName="my-auto"
+                onClick={onSubmitForm}
+                loading={loading}
+            />
+        ),
     };
 
     return (
@@ -112,6 +112,7 @@ export default function SignUpPage() {
                 type: "2-line-symmetric",
                 content: "OR"
             }}
+            onSubmitForm={onSubmitForm}
         />
     );
 };

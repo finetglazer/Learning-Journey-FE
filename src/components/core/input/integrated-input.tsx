@@ -77,7 +77,7 @@ export const IntegratedInput = (props: IntegratedInputProps) => {
                             categoryNumber={passwordStrengthIndicator?.categoryNumber}
                             minimumSatisfiedCategories={passwordStrengthIndicator?.minimumSatisfiedCategories}
                         />
-                    ) : null}
+                    ) : <div />}
                 <div className="flex-col justify-between relative">
                     {(input.model?.errors || {})[input.fieldName] ? (
                         <InputValidation

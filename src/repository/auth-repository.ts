@@ -7,6 +7,8 @@ const API_SIGN_IN = "/login";
 const API_SIGN_UP = "/register";
 const API_VERIFY_OTP = "/verify";
 const API_CHANGE_PASSWORD = "/change-password";
+const API_RESET_PASSWORD = "/reset-password";
+const API_RESET_PASSWORD_SEND_EMAIL = "/forgot-password";
 
 export class AuthRepository extends BaseRepository {
     constructor() {
@@ -34,6 +36,16 @@ export class AuthRepository extends BaseRepository {
 
     public changePassword = (form?: Model): Observable<any> => {
         return this.http.post(API_CHANGE_PASSWORD, form)
+            .pipe(map(res => res?.data));
+    };
+
+    public resetPassword = (form?: Model): Observable<any> => {
+        return this.http.post(API_RESET_PASSWORD, form)
+            .pipe(map(res => res?.data));
+    };
+
+    public resetPasswordSendEmail = (form?: Model): Observable<any> => {
+        return this.http.post(API_RESET_PASSWORD_SEND_EMAIL, form)
             .pipe(map(res => res?.data));
     };
 };

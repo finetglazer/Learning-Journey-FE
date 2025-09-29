@@ -79,7 +79,9 @@
   --sidebar-ring: oklch(0.708 0 0);
   --white: oklch(1 0 0);
   --green-600: oklch(0.696 0.17 162.48);
-  --button-primary: oklch(75.328% 0.08446 161.423);
+  --navbar-background: oklch(92.36% 0.131 161.4);
+  --button-text-primary: oklch(42.484% 0.12753 256.023);
+  --button-primary: oklch(93.847% 0.07446 162.529);
 }
 
 .dark {

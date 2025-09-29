@@ -8,7 +8,7 @@ import { toast } from "sonner";
 export const formService = {
     useForm<T extends Model>(
         modelClass: new () => T,
-        onSubmit: (form?: Model) => Observable<any>,
+        onSubmit?: (form?: Model) => Observable<any>,
         callbackFn?: () => void,
     ) {
         const [model, setModel] = useState<T>(new modelClass);
@@ -22,6 +22,9 @@ export const formService = {
         }, [modelClass, model]);
 
         const onSubmitForm = useCallback(() => {
+            if (typeof onSubmit !== "function") {
+                return;
+            }
             setLoading(true);
             onSubmit(model)
                 .pipe(finalize(() => setLoading(false)))

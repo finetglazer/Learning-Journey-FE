@@ -9,7 +9,7 @@ import { cn, uuid4 } from "@/lib/utils";
 import { InputOTP } from "antd-input-otp";
 import { MailIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { isValidElement, useState } from "react";
+import { cloneElement, Fragment, isValidElement, useState } from "react";
 import { Model } from "react-3layer-common";
 
 export interface OtpEmailInputLayoutProps {
@@ -20,7 +20,8 @@ export interface OtpEmailInputLayoutProps {
     title?: string;
     titleClassName?: string;
     description?: string[];
-    submitButton?: IntegratedButtonProps;
+    submitButton?: JSX.Element;
+    onSubmitForm?: () => void;
     backButtonTitle?: string;
     backButtonUrl?: string;
     otpValidationError?: string | null;
@@ -34,6 +35,7 @@ export const OtpEmailInputLayout = (props: OtpEmailInputLayoutProps) => {
         type,
         description,
         submitButton,
+        onSubmitForm,
         backButtonTitle,
         backButtonUrl,
         model,
@@ -79,49 +81,67 @@ export const OtpEmailInputLayout = (props: OtpEmailInputLayoutProps) => {
         }
     };
 
+    const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (typeof onSubmitForm === "function") {
+            onSubmitForm();
+        }
+    };
+
+    const submitButtonProps = submitButton?.props;
+
+    const cloneSubmitButton = isValidElement(submitButton)
+        ? cloneElement(submitButton, {
+            ...submitButtonProps,
+            type: "submit"
+        })
+        : <Fragment />;
+
     return (
-        <Card className={cn("w-185 h-auto mx-auto grid place-items-center", wrapperClassName)}>
-            <CardHeader className="w-full p-0 text-center">
-                {backButtonTitle ? (
-                    <div className="flex">
-                        <IntegratedButton
-                            id={`back-btn-${uuid4()}`}
-                            label={backButtonTitle || ""}
-                            prefix={<Icon name="LeftArrow" className="opacity-[0.7] hover:opacity-[1]" />}
-                            variant="default"
-                            wrapperClassName="text-left"
-                            buttonClassName="bg-transparent text-black hover:bg-transparent w-auto"
-                            labelClassName="text-[1.1rem] text-gray-500 hover:text-black"
-                            onClick={() => {
-                                router.push(backButtonUrl || "");
-                                if (setLoading) {
-                                    setLoading(true);
-                                }
-                            }}
-                            loading={loading}
-                        />
+        <form onSubmit={handleFormSubmit}>
+            <Card className={cn("w-185 h-auto mx-auto grid place-items-center", wrapperClassName)}>
+                <CardHeader className="w-full p-0 text-center">
+                    {backButtonTitle ? (
+                        <div className="flex">
+                            <IntegratedButton
+                                id={`back-btn-${uuid4()}`}
+                                label={backButtonTitle || ""}
+                                prefix={<Icon name="LeftArrow" className="opacity-[0.7] hover:opacity-[1]" />}
+                                variant="default"
+                                wrapperClassName="text-left"
+                                buttonClassName="bg-transparent text-black hover:bg-transparent w-auto"
+                                labelClassName="text-[1.1rem] text-gray-500 hover:text-black"
+                                onClick={() => {
+                                    router.push(backButtonUrl || "");
+                                    if (setLoading) {
+                                        setLoading(true);
+                                    }
+                                }}
+                                loading={loading}
+                            />
+                        </div>
+                    ) : null}
+                    <CardTitle className={cn("font-bold text-[3rem] w-full", titleClassName)}>{title}</CardTitle>
+                </CardHeader>
+                <CardContent className="items-center">
+                    <Divider className="w-120 mb-4" />
+                    {
+                        (description || []).map((description: string) =>
+                            <p className="text-[1.7rem] italic font-light text-center">{description}</p>
+                        )
+                    }
+                    <div className="mt-7">
+                        {renderContent()}
                     </div>
-                ) : null}
-                <CardTitle className={cn("font-bold text-[3rem] w-full", titleClassName)}>{title}</CardTitle>
-            </CardHeader>
-            <CardContent className="items-center">
-                <Divider className="w-120 mb-4" />
-                {
-                    (description || []).map((description: string) =>
-                        <p className="text-[1.7rem] italic font-light text-center">{description}</p>
-                    )
+                </CardContent>
+                {isValidElement(submitButton)
+                    ?
+                    <CardFooter className="flex-col text-center">
+                        {cloneSubmitButton}
+                    </CardFooter>
+                    : null
                 }
-                <div className="mt-7">
-                    {renderContent()}
-                </div>
-            </CardContent>
-            {isValidElement(submitButton)
-                ?
-                <CardFooter className="flex-col text-center">
-                    {submitButton}
-                </CardFooter>
-                : null
-            }
-        </Card>
+            </Card>
+        </form>
     );
 };

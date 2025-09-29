@@ -45,7 +45,7 @@ export const IntegratedButton = (props: IntegratedButtonProps) => {
         <div className={cn("w-95 -mt-4 mb-2", button?.wrapperClassName)}>
             <Button
                 id={button.id}
-                type="button"
+                type={button?.type || "button"}
                 variant={button?.variant || "outline"}
                 size={button?.size}
                 onClick={(event) => {
@@ -57,7 +57,7 @@ export const IntegratedButton = (props: IntegratedButtonProps) => {
                     }
                 }}
                 disabled={button?.disabled || button?.loading}
-                className={cn("w-full cursor-pointer bg-[var(--button-primary)] border-0 hover:bg-amber-300 text-white", button?.buttonClassName)}
+                className={cn("w-full cursor-pointer bg-[var(--button-primary)] border-0 hover:bg-amber-300 text-[var(--button-text-primary)]", button?.buttonClassName)}
             >
                 {clonePrefix}
 

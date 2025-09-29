@@ -22,7 +22,7 @@ module.exports = {
             },
             colors: {
                 'night-blue': '#210B8D',
-            }
+            },
         },
     },
 }

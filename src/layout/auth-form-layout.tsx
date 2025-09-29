@@ -7,7 +7,7 @@ import { IntegratedInput, IntegratedInputProps } from "@/components/core/input/i
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn, uuid4 } from "@/lib/utils";
 import { useRouter } from "next/navigation";
-import { JSX, useState } from "react";
+import { cloneElement, Fragment, isValidElement, JSX, useState } from "react";
 
 export interface FormLayoutProps {
     cardClassName?: string;
@@ -21,7 +21,7 @@ export interface FormLayoutProps {
         inputs?: IntegratedInputProps[];
     };
     footer?: {
-        submitButton?: IntegratedButtonProps;
+        submitButton?: JSX.Element;
         footComponent?: JSX.Element;
     };
     actions?: {
@@ -31,6 +31,7 @@ export interface FormLayoutProps {
         type: "2-line-symmetric" | "1-line" | "none";
         content?: string;
     };
+    onSubmitForm?: () => void;
 };
 
 export default function AuthFormLayout(props: FormLayoutProps) {
@@ -41,6 +42,7 @@ export default function AuthFormLayout(props: FormLayoutProps) {
         footer,
         actions,
         divider,
+        onSubmitForm,
     } = props;
     const router = useRouter();
 
@@ -69,44 +71,62 @@ export default function AuthFormLayout(props: FormLayoutProps) {
         }
     };
 
+    const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (typeof onSubmitForm === "function") {
+            onSubmitForm();
+        }
+    };
+
+    const submitButtonProps = footer?.submitButton?.props;
+
+    const cloneSubmitButton = isValidElement(footer?.submitButton)
+        ? cloneElement(footer?.submitButton, {
+            ...submitButtonProps,
+            type: "submit"
+        })
+        : <Fragment />;
+
     return (
-        <Card className={cn("w-175 max-w-175 h-auto grid place-items-center -mt-10", cardClassName)}>
-            <CardHeader className="w-full p-0 text-center">
-                {header?.backButtonTitle ? (
-                    <div className="flex">
-                        <IntegratedButton
-                            id={`back-btn-${uuid4()}`}
-                            label={header?.backButtonTitle || ""}
-                            prefix={<Icon name="LeftArrow" className="opacity-[0.7]" />}
-                            variant="default"
-                            wrapperClassName="text-left"
-                            buttonClassName="bg-transparent text-black hover:bg-transparent w-auto"
-                            labelClassName="text-[1.1rem] text-gray-500 hover:text-black"
-                            onClick={() => {
-                                router.push(header?.backButtonUrl || "");
-                                if (setLoading) {
-                                    setLoading(true);
-                                }
-                            }}
-                            loading={loading}
-                        />
-                    </div>
-                ) : null}
-                <CardTitle className={cn("font-bold text-[3rem] w-full", header?.titleClassName)}>{header?.title || ""}</CardTitle>
-            </CardHeader>
-            <CardContent className="">
-                {(actions?.buttons || []).map((button: IntegratedButtonProps) =>
-                    <IntegratedButton {...button} />
-                )}
-                {getDivider()}
-                {(body?.inputs || []).map((input: IntegratedInputProps) =>
-                    <IntegratedInput {...input} />
-                )}
-            </CardContent>
-            <CardFooter className="flex-col text-center">
-                {footer?.submitButton ? <IntegratedButton {...footer?.submitButton} /> : null}
-                {footer?.footComponent || null}
-            </CardFooter>
-        </Card>
+        <form onSubmit={handleFormSubmit}>
+            <Card className={cn("w-175 max-w-175 h-auto grid place-items-center -mt-10", cardClassName)}>
+                <CardHeader className="w-full p-0 text-center">
+                    {header?.backButtonTitle ? (
+                        <div className="flex">
+                            <IntegratedButton
+                                id={`back-btn-${uuid4()}`}
+                                label={header?.backButtonTitle || ""}
+                                prefix={<Icon name="LeftArrow" className="opacity-[0.7]" />}
+                                variant="default"
+                                wrapperClassName="text-left"
+                                buttonClassName="bg-transparent text-black hover:bg-transparent w-auto"
+                                labelClassName="text-[1.1rem] text-gray-500 hover:text-black"
+                                onClick={() => {
+                                    router.push(header?.backButtonUrl || "");
+                                    if (setLoading) {
+                                        setLoading(true);
+                                    }
+                                }}
+                                loading={loading}
+                            />
+                        </div>
+                    ) : null}
+                    <CardTitle className={cn("font-bold text-[3rem] w-full", header?.titleClassName)}>{header?.title || ""}</CardTitle>
+                </CardHeader>
+                <CardContent className="">
+                    {(actions?.buttons || []).map((button: IntegratedButtonProps) =>
+                        <IntegratedButton {...button} />
+                    )}
+                    {getDivider()}
+                    {(body?.inputs || []).map((input: IntegratedInputProps) =>
+                        <IntegratedInput {...input} />
+                    )}
+                </CardContent>
+                <CardFooter className="flex-col text-center">
+                    {cloneSubmitButton}
+                    {footer?.footComponent || null}
+                </CardFooter>
+            </Card>
+        </form>
     );
 };

@@ -1,15 +1,16 @@
 "use client"
 
-import { IntegratedButtonProps } from "@/components/core/button/integrated-button";
+import { IntegratedButton, IntegratedButtonProps } from "@/components/core/button/integrated-button";
 import { Icon } from "@/components/core/icon/icon";
 import { IntegratedInputProps } from "@/components/core/input/integrated-input";
 import { LinkWithLoading } from "@/components/core/link/link";
-import { SIGN_UP_BASE_ROUTE } from "@/const/routes-const";
+import { FORGOT_PASSWORD_EMAIL_INPUT_ROUTE, GOOGLE_OAUTH2_ROUTE, SIGN_UP_BASE_ROUTE } from "@/const/routes-const";
 import AuthFormLayout from "@/layout/auth-form-layout";
 import { SignInModel } from "@/model/sign-in-model";
 import { authRepository } from "@/repository/auth-repository";
 import { formService } from "@/service/form-service";
 import { LockIcon, UserIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 export default function SignInPage() {
     const {
         model,
@@ -20,6 +21,8 @@ export default function SignInPage() {
         SignInModel,
         authRepository.signIn,
     );
+
+    const router = useRouter();
 
     const header = {
         title: "Welcome back!",
@@ -46,7 +49,7 @@ export default function SignInPage() {
             prefix: <LockIcon />,
             extraComponent: (
                 <LinkWithLoading
-                    href=""
+                    href={FORGOT_PASSWORD_EMAIL_INPUT_ROUTE}
                     content="Forgot password?"
                     className="absolute text-[0.9rem] w-30 top-3 right-60 hover:underline"
                 />
@@ -66,18 +69,21 @@ export default function SignInPage() {
                     name="GoogleIcon"
                     className="mr-2 h-20 w-20"
                 />
-            )
+            ),
+            onClick: () => { router.push(GOOGLE_OAUTH2_ROUTE) },
         },
     ];
 
     const footer = {
-        submitButton: {
-            id: "sign-in-btn",
-            label: "Sign In",
-            wrapperClassName: "my-auto mt-4",
-            onClick: onSubmitForm,
-            loading,
-        },
+        submitButton: (
+            <IntegratedButton
+                id="sign-in-btn"
+                label="Sign In"
+                wrapperClassName="my-auto mt-4"
+                onClick={onSubmitForm}
+                loading={loading}
+            />
+        ),
         footComponent: (
             <span className="mt-4">
                 {"Don't have an account? "}
@@ -106,6 +112,7 @@ export default function SignInPage() {
                     type: "2-line-symmetric",
                     content: "OR"
                 }}
+                onSubmitForm={onSubmitForm}
             />
         </>
     );

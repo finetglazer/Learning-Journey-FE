@@ -67,6 +67,7 @@ export default function EmailVerificationPage() {
             otpValidationError={otpValidationError}
             backButtonTitle="Sign up"
             backButtonUrl={SIGN_UP_BASE_ROUTE}
+            onSubmitForm={onSubmitForm}
         />
     );
 }

@@ -1,13 +1,36 @@
 "use client"
 
+import { IntegratedButton } from "@/components/core/button/integrated-button";
 import { IntegratedInputProps } from "@/components/core/input/integrated-input";
+import { FORGOT_PASSWORD_EMAIL_INPUT_ROUTE, SIGN_IN_ROUTE } from "@/const/routes-const";
 import AuthFormLayout from "@/layout/auth-form-layout";
+import { ResetPasswordModel } from "@/model/reset-password-model";
+import { authRepository } from "@/repository/auth-repository";
+import { formService } from "@/service/form-service";
 import { LockIcon } from "lucide-react";
-import { toast } from "sonner";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 
 export default function ResetPasswordPage() {
+    const router = useRouter();
+
+    const {
+        model,
+        loading,
+        updateModel,
+        onSubmitForm,
+    } = formService.useForm(
+        ResetPasswordModel,
+        authRepository.resetPassword,
+        () => router.push(SIGN_IN_ROUTE),
+    );
+
+    const token = useSearchParams().get("token");
+
     const header = {
         title: "Reset password",
+        backButtonTitle: "Email checking",
+        backButtonUrl: FORGOT_PASSWORD_EMAIL_INPUT_ROUTE,
     };
 
     const bodyInputs: IntegratedInputProps[] = [
@@ -19,14 +42,14 @@ export default function ResetPasswordPage() {
             type: "password",
             prefix: <LockIcon />,
             passwordStrengthIndicator: {
-                currentSatisfiedCategoriesNumber: 0,
+                currentPassword: model?.newPassword || "",
                 minimumSatisfiedCategories: 2,
                 categoryNumber: 3,
             },
-            inputValidation: {
-                message: "AAA"
-            },
-            wrapperClassName: "mt-7"
+            wrapperClassName: "mt-7",
+            fieldName: "newPassword",
+            model: model,
+            updateModel: updateModel,
         },
         {
             id: "confirm-password-input",
@@ -35,32 +58,28 @@ export default function ResetPasswordPage() {
             required: true,
             type: "password",
             prefix: <LockIcon />,
-            inputValidation: {
-                message: "AAA"
-            },
             wrapperClassName: "mt-7",
+            fieldName: "confirmPassword",
+            model: model,
+            updateModel: updateModel,
         },
     ];
 
     const footer = {
-        submitButton: {
-            id: "reset-password-btn",
-            label: "Reset password",
-            wrapperClassName: "my-auto mt-5",
-            onClick: () => {
-                toast("Event has been created", {
-                    description: "Sunday, December 03, 2023 at 9:00 AM",
-                    action: {
-                        label: "Undo",
-                        onClick: () => console.log("Undo"),
-                    },
-                    classNames: {
-                        description: "!text-foreground/80",
-                    },
-                })
-            },
-        }
+        submitButton: (
+            <IntegratedButton
+                id="reset-password-btn"
+                label="Reset password"
+                wrapperClassName="my-auto mt-5"
+                onClick={onSubmitForm}
+                loading={loading}
+            />
+        )
     };
+
+    useEffect(() => {
+        updateModel("token", token);
+    }, [token]);
 
     return (
         <AuthFormLayout
@@ -72,6 +91,7 @@ export default function ResetPasswordPage() {
             divider={{
                 type: "1-line",
             }}
+            onSubmitForm={onSubmitForm}
         />
     );
 };

@@ -3,15 +3,13 @@
 import { cn } from "@/lib/utils";
 import { TreeNode } from "@/model/tree-node";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { cloneElement, Dispatch, Fragment, isValidElement, SetStateAction, useEffect, useState } from "react";
+import { cloneElement, Dispatch, Fragment, isValidElement, SetStateAction, useState } from "react";
 
 export interface CollapsibleTreeProps {
     root: TreeNode;
     selectedItemId?: string | null;
     setSelectedItemId?: Dispatch<SetStateAction<string | null>>;
 };
-
-const ITEM_SELECTED_TEXT_COLOR = "text-blue-500";
 
 export const CollapsibleTree = (props: CollapsibleTreeProps) => {
     const {
@@ -22,6 +20,7 @@ export const CollapsibleTree = (props: CollapsibleTreeProps) => {
 
     const {
         id,
+        type,
         level,
         prefix,
         label,
@@ -29,8 +28,9 @@ export const CollapsibleTree = (props: CollapsibleTreeProps) => {
     } = root;
 
     const [open, setOpen] = useState<boolean>(false);
-    const [ml, setMl] = useState<number>(2);
-    const [pr, setPr] = useState<number>(4);
+
+    const marginLeftRem = 0.5 + (level * 1.5);
+    const paddingRightRem = 1;
 
     const prefixProps = prefix?.props;
 
@@ -38,34 +38,19 @@ export const CollapsibleTree = (props: CollapsibleTreeProps) => {
         ? cloneElement(prefix, {
             ...prefixProps,
             className: cn(
-                "h-10 w-10 mt-3 ml-2 text-gray-500", 
-                prefixProps?.className, 
-                id === selectedItemId ? ITEM_SELECTED_TEXT_COLOR : ""
+                "h-8 w-8 mt-3 ml-2 text-gray-500 shrink-0",
+                prefixProps?.className,
+                id === selectedItemId && type !== "group-root" ? "text-blue-500" : ""
             )
         } as any)
         : <Fragment />;
 
-    const chevronClassName = cn("text-gray-500", id === selectedItemId ? ITEM_SELECTED_TEXT_COLOR : "");
-
-    useEffect(() => {
-        switch (level) {
-            case 0:
-                setMl(2);
-                setPr(1);
-                break;
-            case 1:
-                setMl(3.5);
-                setPr(0.5);
-                break;
-            case 2:
-                setMl(7);
-                setPr(0.25);
-                break;
-            default:
-                setMl(9);
-                setPr(0.25);
-        }
-    }, []);
+    const chevronClassName = cn(
+        "text-gray-500 shrink-0",
+        id === selectedItemId && type !== "group-root" ? "text-blue-500" : "",
+        !prefix ? "h-5 w-5" : "",
+        { "ml-4": type === "group-root" }
+    );
 
     const onClick = () => {
         setOpen(!open);
@@ -75,31 +60,65 @@ export const CollapsibleTree = (props: CollapsibleTreeProps) => {
     };
 
     return (
-        <div style={{paddingRight: `${pr}rem`}}>
+        <div>
             <div
-                style={{ marginLeft: `${ml}rem`, paddingLeft: "12px" }}
-                className={`flex items-center cursor-pointer ${id === selectedItemId ? "bg-blue-200" : ""} rounded-md`}
+                style={{ marginLeft: `${marginLeftRem}rem` }}
+                className={cn("cursor-pointer px-2", { "mb-2": type === "group-root" })}
                 onClick={onClick}
                 id={id}
             >
-                {(children || []).length ?
-                    (open ? <ChevronDown className={chevronClassName} />
-                        : <ChevronRight className={chevronClassName} />)
-                    : null}
-                {clonePrefix}
-                <span className={cn("text-[1.3rem] text-gray-700 -ml-1", id === selectedItemId ? ITEM_SELECTED_TEXT_COLOR : "")}>{label}</span>
-            </div>
-            {open && (children || []).length ? (
-                <>
-                    {(children || []).map((child: TreeNode) =>
-                        <CollapsibleTree
-                            root={child}
-                            selectedItemId={selectedItemId}
-                            setSelectedItemId={setSelectedItemId}
-                        />
+                <div
+                    style={{ paddingRight: `${paddingRightRem}rem` }}
+                    className={cn(
+                        "flex items-center rounded-md",
+                        { "bg-blue-200": id === selectedItemId && type !== "group-root" }
                     )}
-                </>
-            ) : null}
+                >
+                    <div className={cn("flex items-center truncate", { "flex-grow": type !== "group-root" })}>
+                        {clonePrefix}
+                        <span className={cn(
+                            "text-[1.2rem] text-gray-700 -ml-1 truncate",
+                            { "text-blue-500": id === selectedItemId && type !== "group-root" },
+                            { "text-[1.2rem] font-semibold": type === "group-root" },
+                            { "ml-2.5": !prefix }
+                        )}>
+                            {label}
+                        </span>
+                    </div>
+                    <div className={type === "group-root" ? "flex-grow" : ""}>
+                        {(children || []).length ?
+                            (open ? <ChevronDown className={chevronClassName} />
+                                : <ChevronRight className={chevronClassName} />)
+                            : <div className="w-6 shrink-0" />
+                        }
+                    </div>
+                </div>
+            </div>
+            <div
+                className={cn(
+                    "grid transition-[grid-template-rows] duration-300 ease-in-out",
+                    open ? "[grid-template-rows:1fr]" : "[grid-template-rows:0fr]"
+                )}
+            >
+                <div className="overflow-hidden">
+                    <div className="relative">
+                        {open && type !== "group-root" && (children || []).length > 0 && (
+                            <span
+                                className="absolute top-0 bottom-0 w-[2px] bg-gray-300"
+                                style={{ left: "2.25rem" }}
+                            />
+                        )}
+                        {(children || []).map((child: TreeNode) =>
+                            <CollapsibleTree
+                                key={child.id}
+                                root={child}
+                                selectedItemId={selectedItemId}
+                                setSelectedItemId={setSelectedItemId}
+                            />
+                        )}
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };
