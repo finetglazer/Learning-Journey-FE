@@ -79,7 +79,7 @@ export default function ResetPasswordPage() {
 
     useEffect(() => {
         updateModel("token", token);
-    }, [token]);
+    }, [token, updateModel]);
 
     return (
         <AuthFormLayout

@@ -17,7 +17,6 @@ export default function EmailVerificationPage() {
     const {
         model,
         loading,
-        setLoading,
         updateModel,
         onSubmitForm,
     } = formService.useForm(

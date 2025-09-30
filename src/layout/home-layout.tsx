@@ -100,8 +100,9 @@ export const HomeLayout = (props: HomeLayoutProps) => {
                 </div>
                 <ScrollArea className="h-[calc(100%-32px)]">
                     <div className="mt-7 -ml-2">
-                        {(upperItems || []).map((item: TreeNode) =>
+                        {(upperItems || []).map((item: TreeNode, index: number) =>
                             <CollapsibleTree
+                                key={item.id + '-' + index}
                                 root={item}
                                 selectedItemId={selectedItemId}
                                 setSelectedItemId={setSelectedItemId}
@@ -110,8 +111,9 @@ export const HomeLayout = (props: HomeLayoutProps) => {
                     </div>
                     <Divider className="mt-5 ml-4 max-w-90 w-[calc(100%-40px)]" />
                     <div className="mt-7 -ml-2">
-                        {(lowerItems || []).map((item: TreeNode) =>
+                        {(lowerItems || []).map((item: TreeNode, index: number) =>
                             <CollapsibleTree
+                                key={item.id + '-' + index}
                                 root={item}
                                 selectedItemId={selectedItemId}
                                 setSelectedItemId={setSelectedItemId}

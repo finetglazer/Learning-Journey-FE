@@ -1,6 +1,6 @@
 "use client"
 
-import { IntegratedButton, IntegratedButtonProps } from "@/components/core/button/integrated-button";
+import { IntegratedButton } from "@/components/core/button/integrated-button";
 import { Divider } from "@/components/core/divider/divider";
 import { Icon } from "@/components/core/icon/icon";
 import { IntegratedInput } from "@/components/core/input/integrated-input";
@@ -126,8 +126,8 @@ export const OtpEmailInputLayout = (props: OtpEmailInputLayoutProps) => {
                 <CardContent className="items-center">
                     <Divider className="w-120 mb-4" />
                     {
-                        (description || []).map((description: string) =>
-                            <p className="text-[1.7rem] italic font-light text-center">{description}</p>
+                        (description || []).map((description: string, index: number) =>
+                            <p className="text-[1.7rem] italic font-light text-center" key={"desc-" + uuid4() + "-" + index}>{description}</p>
                         )
                     }
                     <div className="mt-7">

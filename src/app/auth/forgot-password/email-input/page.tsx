@@ -34,7 +34,7 @@ export default function EmailInputPage() {
                     loading={loading}
                     onClick={onSubmitForm}
                 />
-            ) as any}
+            )}
             model={model}
             updateModel={updateModel}
             onSubmitForm={onSubmitForm}

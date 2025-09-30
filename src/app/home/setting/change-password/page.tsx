@@ -79,8 +79,8 @@ export default function ChangePasswordPage() {
 
     return (
         <div className="">
-            {inputs.map((input: IntegratedInputProps) => 
-                <IntegratedInput {...input} />
+            {inputs.map((input: IntegratedInputProps, index: number) => 
+                <IntegratedInput {...input} key={input.id + '-' + index} />
             )}
 
             <IntegratedButton 

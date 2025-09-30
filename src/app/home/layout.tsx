@@ -3,7 +3,7 @@
 import { Icon } from "@/components/core/icon/icon";
 import { HomeLayout } from "@/layout/home-layout";
 import { useState } from "react";
-import { cn } from "@/lib/utils"; // Assuming you have a cn utility
+// Assuming you have a cn utility
 import { TreeNode } from "@/model/tree-node";
 
 // 1. Define the interface for a navbar group item

@@ -19,7 +19,7 @@ export const formService = {
                 ...model,
                 [fieldName]: value,
             });
-        }, [modelClass, model]);
+        }, [model]);
 
         const onSubmitForm = useCallback(() => {
             if (typeof onSubmit !== "function") {
@@ -66,7 +66,7 @@ export const formService = {
                         }
                     }
                 });
-        }, [onSubmit, model]);
+        }, [model]);
 
         return {
             model,

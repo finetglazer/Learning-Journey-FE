@@ -114,12 +114,12 @@ export default function AuthFormLayout(props: FormLayoutProps) {
                     <CardTitle className={cn("font-bold text-[3rem] w-full", header?.titleClassName)}>{header?.title || ""}</CardTitle>
                 </CardHeader>
                 <CardContent className="">
-                    {(actions?.buttons || []).map((button: IntegratedButtonProps) =>
-                        <IntegratedButton {...button} />
+                    {(actions?.buttons || []).map((button: IntegratedButtonProps, index: number) =>
+                        <IntegratedButton {...button} key={button.id + '-' + index} />
                     )}
                     {getDivider()}
-                    {(body?.inputs || []).map((input: IntegratedInputProps) =>
-                        <IntegratedInput {...input} />
+                    {(body?.inputs || []).map((input: IntegratedInputProps, index: number) =>
+                        <IntegratedInput {...input} key={input.id + '-' + index} />
                     )}
                 </CardContent>
                 <CardFooter className="flex-col text-center">
