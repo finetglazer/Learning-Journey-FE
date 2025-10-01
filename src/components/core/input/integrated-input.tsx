@@ -8,6 +8,7 @@ import { cloneElement, Fragment, isValidElement, JSX } from "react";
 import { PasswordStrengthIndicator } from "../password-strength-indicator/password-strength-indicator";
 import { InputValidation } from "../validation/input-validation";
 import { InputProps } from "./type";
+import { Tooltip } from "antd";
 
 export interface IntegratedInputProps extends InputProps {
     prefix?: JSX.Element;
@@ -41,6 +42,23 @@ export const IntegratedInput = (props: IntegratedInputProps) => {
     const passwordStrengthIndicator = input?.passwordStrengthIndicator;
     const inputValidation = input?.inputValidation;
 
+    const inputElement = (
+        <Input
+            id={input.id}
+            className={cn("pl-10", (input.model?.errors || {})[input.fieldName] ? "border-red-500 border" : "", input?.inputClassName)}
+            type={input?.type || "text"}
+            placeholder={input?.placeholder}
+            onChange={(event) => {
+                input.updateModel(
+                    input.fieldName,
+                    event.target.value
+                )
+            }}
+            value={(input.model as any)[input.fieldName] || ""}
+            disabled={input?.disabled || false}
+        />
+    );
+
     return (
         <div className={cn("grid w-full max-w-sm items-center relative gap-3", input?.wrapperClassName)}>
             <Label htmlFor={input.id}>
@@ -49,21 +67,15 @@ export const IntegratedInput = (props: IntegratedInputProps) => {
             </Label>
             <div className="relative">
                 {clonePrefix}
-
-                <Input
-                    id={input.id}
-                    className={cn("pl-10", (input.model?.errors || {})[input.fieldName] ? "border-red-500 border" : "", input?.inputClassName)}
-                    type={input?.type || "text"}
-                    placeholder={input?.placeholder}
-                    onChange={(event) => {
-                        input.updateModel(
-                            input.fieldName,
-                            event.target.value
-                        )
-                    }}
-                    value={(input.model as any)[input.fieldName] || ""}
-                    disabled={input?.disabled || false}
-                />
+                {input?.type !== "password"
+                    ? (
+                        <Tooltip
+                            placement="top"
+                            title={(input.model as any)[input.fieldName] || ""}
+                        >
+                            {inputElement}
+                        </Tooltip>
+                    ) : inputElement}
 
                 {input?.type !== "password" ? clonePostfix : null}
             </div>

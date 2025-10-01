@@ -78,6 +78,7 @@
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
   --white: oklch(1 0 0);
+  --dropdown-selected-bg-color: oklch(0.649 0.058 264.05);
   --green-600: oklch(0.696 0.17 162.48);
   --navbar-background: oklch(92.36% 0.131 161.4);
   --button-text-primary: oklch(42.484% 0.12753 256.023);
@@ -125,4 +126,18 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.ant-dropdown-menu-item:hover {
+  background-color: #628ccc !important;
+  color: white !important;
+}
+
+.ant-dropdown-menu-title-content {
+  display: flex;
+  align-items: center;
+}
+
+.ant-dropdown-menu-item-selected {
+  padding-left: 0;
 }
