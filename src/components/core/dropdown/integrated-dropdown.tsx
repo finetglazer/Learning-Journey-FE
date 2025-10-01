@@ -2,22 +2,25 @@
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { cn, generateTimeSlots, uuid4 } from "@/lib/utils";
+import { cn, filterItems, uuid4 } from "@/lib/utils";
 import { Dropdown, Input, Menu, Tooltip } from 'antd';
 import { isNil } from "lodash";
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { cloneElement, isValidElement, useMemo, useState } from 'react';
 import { Icon } from '../icon/icon';
-import { DropdownProps } from "./type";
+import { DropdownItem, DropdownProps } from "./type";
 
-export interface TimeDropdownProps extends DropdownProps {
+export interface IntegratedDropdownProps extends DropdownProps {
+    items?: DropdownItem[];
 };
 
-export const TimeDropdown = (props: TimeDropdownProps) => {
+export const IntegratedDropdown = (props: IntegratedDropdownProps) => {
     const {
-        selectedItem: selectedTime,
-        setSelectedItem: setSelectedTime,
+        selectedItem,
+        setSelectedItem,
+        items,
         trigger,
+        prefix,
         label,
         labelClassName,
         open,
@@ -34,12 +37,14 @@ export const TimeDropdown = (props: TimeDropdownProps) => {
     } = props;
 
     const [isOpen, setIsOpen] = useState<boolean>(false);
-    const [timeStr, setTimeStr] = useState<string>("");
+    const [itemStr, setItemStr] = useState<string>("");
 
-    const timeSlots = useMemo(() => generateTimeSlots(timeStr), [timeStr]);
+    const filteredItems = useMemo(() => {
+        return filterItems(items || [], itemStr);
+    }, [itemStr]);
 
     const handleMenuClick = (e: any) => {
-        setSelectedTime(timeSlots.find(time => time.id === e.key) || null);
+        setSelectedItem(items?.find(item => item.id === e.key) || null);
         setIsOpen(false);
     };
 
@@ -52,7 +57,16 @@ export const TimeDropdown = (props: TimeDropdownProps) => {
         setIsOpen(!(isNil(open) ? isOpen : open));
     };
 
-    const dropdownId = "time-dropdown-".concat(uuid4());
+    const prefixProps = prefix?.props;
+
+    const clonePrefix = isValidElement(prefix)
+        ? cloneElement(prefix, {
+            ...prefixProps,
+            className: cn("", prefixProps?.className)
+        })
+        : null;
+
+    const dropdownId = "integrated-dropdown-".concat(uuid4());
 
     return (
         <>
@@ -80,9 +94,9 @@ export const TimeDropdown = (props: TimeDropdownProps) => {
                                         ...searchStyle
                                     }}
                                     onChange={(e) => {
-                                        setTimeStr(e.target.value);
+                                        setItemStr(e.target.value);
                                     }}
-                                    value={timeStr}
+                                    value={itemStr}
                                 />
                             )}
                             <Menu
@@ -95,9 +109,9 @@ export const TimeDropdown = (props: TimeDropdownProps) => {
                                     },
                                     ...menuStyle
                                 }}
-                                selectedKeys={selectedTime ? [selectedTime?.id] : []}
+                                selectedKeys={selectedItem?.id ? [selectedItem?.id] : []}
                             >
-                                {timeSlots.map((item) => (
+                                {filteredItems.map((item: DropdownItem) => (
                                     <Menu.Item
                                         key={item.id}
                                         style={{
@@ -105,14 +119,14 @@ export const TimeDropdown = (props: TimeDropdownProps) => {
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 cursor: 'pointer',
-                                                color: selectedTime?.id === item.id ? '#91EEFF' : '#A0A0A0',
-                                                backgroundColor: selectedTime?.id === item.id ? '#4A6DE4' : 'transparent',
+                                                color: selectedItem?.id === item.id ? '#91EEFF' : '#A0A0A0',
+                                                backgroundColor: selectedItem?.id === item.id ? '#4A6DE4' : 'transparent',
                                             },
                                             ...menuItemStyle
                                         }}
                                     >
-                                        {selectedTime?.id === item.id && <Icon name="SuccessIcon" className="text-[#91EEFF] h-4 w-4 mr-2" />}
-                                        <span>{item?.content || ""}</span>
+                                        {selectedItem?.id === item.id && <Icon name="SuccessIcon" className="text-[#91EEFF] h-4 w-4 mr-2" />}
+                                        <span>{item.content}</span>
                                     </Menu.Item>
                                 ))}
                             </Menu>
@@ -135,11 +149,12 @@ export const TimeDropdown = (props: TimeDropdownProps) => {
                     `,
                             buttonClassName)}
                     >
+                        {clonePrefix}
                         <Tooltip
-                            title={selectedTime?.content || ""}
+                            title={selectedItem?.content || ""}
                             placement="top"
                         >
-                            <span className={cn("flex-grow text-left text-[#7D8FB3] truncate", buttonLabelClassName)}>{selectedTime?.content || ""}</span>
+                            <span className={cn("flex-grow text-left text-[#7D8FB3] truncate", buttonLabelClassName)}>{selectedItem?.content || ""}</span>
                         </Tooltip>
                         {isOpen ? <ChevronUp className={chevronClass} /> : <ChevronDown className={chevronClass} />}
                     </Button>

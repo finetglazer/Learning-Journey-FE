@@ -1,3 +1,4 @@
+import { DropdownItem } from "@/components/core/dropdown/type";
 import { PASSWORD_GOOD_LENGTH, PASSWORD_MINIMUM_LENGTH, PASSWORD_REGEX, TIME_STR_REGEX } from "@/const/consts";
 import { FieldError } from "@/model/field-error";
 import { clsx, type ClassValue } from "clsx"
@@ -48,7 +49,7 @@ export const getNumberOfSatisfiedCategories = (password: string | null) => {
 };
 
 export const generateTimeSlots = (timeStr?: string) => {
-  const times = [];
+  const times: DropdownItem[] = [];
   for (let hour = 6; hour <= 22; hour++) {
     for (let minute = 0; minute < 60; minute += 15) {
       const period = hour >= 12 ? 'pm' : 'am';
@@ -57,13 +58,13 @@ export const generateTimeSlots = (timeStr?: string) => {
       const paddedHour = String(displayHour).padStart(2, '0');
       const paddedMinute = String(minute).padStart(2, '0');
 
-      const display = `${displayHour}:${paddedMinute}${period}`;
+      const content = `${displayHour}:${paddedMinute}${period}`;
       const id = `${paddedHour}-${paddedMinute}-${period}`;
 
-      times.push({ id, display });
+      times.push({ id, content });
     }
   }
-  const res = times.filter((time: {id: string, display: string}) => time.display.includes(timeStr || ""));
+  const res = times.filter((time: { id: string, content?: string}) => (time?.content || "").includes(timeStr || ""));
   // res does not contain any elements at all but timeStr is a correct time format such as 10:37am, 9:09pm,... 
   if (!res.length && TIME_STR_REGEX.test(timeStr || "")) {
     const filledTimeStr = ((timeStr || "").length === 6 ? "0" : "").concat(timeStr || "")
@@ -71,14 +72,13 @@ export const generateTimeSlots = (timeStr?: string) => {
       id: filledTimeStr.split(":").join("-").substring(0, filledTimeStr.length - 2)
       .concat("-")
       .concat(filledTimeStr.substring(filledTimeStr.length - 2, filledTimeStr.length)),
-      display: filledTimeStr,
+      content: filledTimeStr,
     }];
   }
   return res;
 };
 
-export const convertTimeIdToTime = (id: string) => {
-  if (id === "") return "";
-  const t = id.split("-");
-  return t.slice(0, 2).join(":").concat(t[2]);
+export const filterItems = (items: DropdownItem[], name?: string) => {
+  const trimmedName = (name || "").trim().toLowerCase();
+  return items.filter(item => (item?.content || "").trim().toLowerCase().includes(trimmedName));
 };
