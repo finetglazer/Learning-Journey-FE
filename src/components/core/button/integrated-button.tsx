@@ -61,12 +61,14 @@ export const IntegratedButton = (props: IntegratedButtonProps) => {
             >
                 {clonePrefix}
 
-                <Label
-                    htmlFor={button.id}
-                    className={cn("cursor-pointer", button?.labelClassName)}
-                >
-                    {button.label}
-                </Label>
+                {button?.label && (
+                    <Label
+                        htmlFor={button.id}
+                        className={cn("cursor-pointer", button?.labelClassName)}
+                    >
+                        {button?.label}
+                    </Label>
+                )}
 
                 {clonePostfix}
             </Button>

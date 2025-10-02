@@ -1,14 +1,23 @@
 "use client"
 
 import { RoundedButton } from "@/components/core/button/rounded-button"
+import { DateRangeNavigator } from "@/components/core/date-range-navigator/date-range-navigator"
 import { IntegratedDropdown } from "@/components/core/dropdown/integrated-dropdown"
 import { TimeDropdown } from "@/components/core/dropdown/time-dropdown"
 import { DropdownItem } from "@/components/core/dropdown/type"
 import { Icon } from "@/components/core/icon/icon"
+import { SegmentedControl, SegmentedControlOption } from "@/components/core/segmented-control/segmented-control"
 import { Tag } from "@/components/core/tag/tag"
 import { useState } from "react"
 export default function InputWithIcons() {
   const [selectedItem, setSelectedItem] = useState<DropdownItem | null>(null);
+  const [currentView, setCurrentView] = useState("week");
+  const viewOptions: SegmentedControlOption[] = [
+    { label: "Year", value: "year" },
+    { label: "Month", value: "month" },
+    { label: "Week", value: "week" },
+    { label: "Day", value: "day" },
+  ];
   return (
     <div className="flex-col">
       {/* <RoundedButton
@@ -27,13 +36,13 @@ export default function InputWithIcons() {
       {/* <Icon 
         name="InfoCircle"
       /> */}
-      <TimeDropdown
+      {/* <TimeDropdown
         selectedItem={selectedItem}
         setSelectedItem={setSelectedItem}
         useSearch
         label={"AAAAAA"}
-      />
-      <IntegratedDropdown 
+      /> */}
+      {/* <IntegratedDropdown 
         prefix={(
           <Icon name="StackIcon" className="!h-7 !w-7 mt-2" />
         )}
@@ -63,12 +72,22 @@ export default function InputWithIcons() {
             content: "This is AabBCc dropdown item 12",
           },
         ]}
-      />
+      /> */}
 
       {/* <Tag 
         content="Routine"
         type="task"
       /> */}
+
+      {/* <DateRangeNavigator
+        dateRangeLabel="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      /> */}
+
+      <SegmentedControl
+        options={viewOptions}
+        value={currentView}
+        onValueChange={(value) => setCurrentView(value)}
+      />
     </div>
   )
 }

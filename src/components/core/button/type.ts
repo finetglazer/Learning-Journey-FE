@@ -2,7 +2,7 @@ import { Model } from "react-3layer-common";
 
 export interface ButtonProps {
     id: string;
-    label: string;
+    label?: string;
     type?: "button" | "submit" | "reset";
     variant?: "default" | "secondary" | "destructive" | "outline" | "link" | "ghost";
     size?: "default" | "sm" | "lg" | "icon";
