@@ -3,3 +3,17 @@ export const PASSWORD_GOOD_LENGTH = 10;
 export const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/;
 export const OTP_REGEX = /^[0-9]+$/;
 export const TIME_STR_REGEX = /^(0?[1-9]|1[0-2]):[0-5][0-9](am|pm)$/i;
+export const DAYS_OF_WEEK = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday"
+];
+
+export const MONTHS = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+];

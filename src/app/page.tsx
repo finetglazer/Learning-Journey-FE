@@ -1,6 +1,7 @@
 "use client"
 
 import { RoundedButton } from "@/components/core/button/rounded-button"
+import { DayWeekViewCalendar } from "@/components/core/calendar/calendar-day-week-view"
 import { DateRangeNavigator } from "@/components/core/date-range-navigator/date-range-navigator"
 import { IntegratedDropdown } from "@/components/core/dropdown/integrated-dropdown"
 import { TimeDropdown } from "@/components/core/dropdown/time-dropdown"
@@ -8,6 +9,9 @@ import { DropdownItem } from "@/components/core/dropdown/type"
 import { Icon } from "@/components/core/icon/icon"
 import { SegmentedControl, SegmentedControlOption } from "@/components/core/segmented-control/segmented-control"
 import { Tag } from "@/components/core/tag/tag"
+import { dayJsToISOString, toISOString } from "@/lib/utils"
+import { Task } from "@/model/task"
+import dayjs from "dayjs"
 import { useState } from "react"
 export default function InputWithIcons() {
   const [selectedItem, setSelectedItem] = useState<DropdownItem | null>(null);
@@ -19,7 +23,7 @@ export default function InputWithIcons() {
     { label: "Day", value: "day" },
   ];
   return (
-    <div className="flex-col">
+    <div className="flex-col w-full h-[100vh]">
       {/* <RoundedButton
         id={"D"}
         label={"Save"}
@@ -83,10 +87,71 @@ export default function InputWithIcons() {
         dateRangeLabel="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
       /> */}
 
-      <SegmentedControl
+      {/* <SegmentedControl
         options={viewOptions}
         value={currentView}
         onValueChange={(value) => setCurrentView(value)}
+      /> */}
+
+      <DayWeekViewCalendar 
+        tasks={(() => {
+          const tasks: Task[] = [];
+          const today = dayjs();
+          const startOfWeek = today.startOf('week');
+          for (let i = 0; i < 1; i++) {
+            const startTime = dayJsToISOString(startOfWeek.subtract(2, 'day').hour(9).minute(0).second(0));
+            const endTime = dayJsToISOString(startOfWeek.add(14, 'day').hour(17).minute(0).second(0));
+
+            tasks.push({
+              id: startTime,
+              startTime,
+              endTime,
+              type: "routine",
+              routineStartTime: startTime,
+              routineEndTime: endTime,
+              routineStartHour: "09:00",
+              routineEndHour: "10:00",
+            });
+          }
+          const startTime = dayJsToISOString(startOfWeek.add(2, 'day').hour(13).minute(0).second(0));
+          const endTime = dayJsToISOString(startOfWeek.add(2, 'day').hour(15).minute(0).second(0));
+          tasks.push({
+            id: startTime,
+            startTime,
+            endTime,
+          });
+          tasks.push({
+            id: startTime,
+            startTime,
+            endTime,
+          });
+          tasks.push({
+            id: startTime,
+            startTime,
+            endTime,
+          });
+          tasks.push({
+            id: startTime,
+            startTime,
+            endTime,
+          });
+          tasks.push({
+            id: startTime,
+            startTime,
+            endTime,
+          });
+          tasks.push({
+            id: startTime,
+            startTime,
+            endTime,
+          });
+          tasks.push({
+            id: dayJsToISOString(startOfWeek.add(2, 'day').hour(7).minute(0).second(0)),
+            startTime: dayJsToISOString(startOfWeek.add(2, 'day').hour(7).minute(0).second(0)),
+            endTime: dayJsToISOString(startOfWeek.add(2, 'day').hour(18).minute(0).second(0)),
+          });
+          return tasks;
+        })()}
       />
     </div>
   )
