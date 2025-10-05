@@ -1,11 +1,8 @@
 "use client"
 
-import { WarningAlertDialog } from "@/components/core/alert/alert";
 import { DropdownItem } from "@/components/core/dropdown/type"
 import { GradientLoadingBar } from "@/components/core/loading-bar/loading-bar";
 import { SegmentedControlOption } from "@/components/core/segmented-control/segmented-control"
-import { TaskEditor } from "@/components/core/task/task";
-import { TimeConstraintCard } from "@/components/core/time-constraint-card/time-constraint-card";
 import { useState } from "react"
 export default function InputWithIcons() {
   const [selectedItem, setSelectedItem] = useState<DropdownItem | null>(null);

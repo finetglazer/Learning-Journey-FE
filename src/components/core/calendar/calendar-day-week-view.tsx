@@ -10,7 +10,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { DAYS_OF_WEEK } from "@/const/consts";
-import { dayJsToISOString, getNearestMonday, initCalendarMap, reId, toDayJs, uuid4 } from "@/lib/utils";
+import { dayJsToISOString, getNearestMonday, initCalendarMap, reId, toDayJs } from "@/lib/utils";
 import { Task } from "@/model/task";
 import { Dayjs } from "dayjs";
 import { Clock } from "lucide-react";
@@ -53,7 +53,7 @@ export const DayWeekViewCalendar = ({ tasks, ...props }: DayWeekViewCalendarProp
 
         setCalendarMap(calendarMap);
 
-        let visited: Record<string, boolean> = {};
+        const visited: Record<string, boolean> = {};
         const getHeight = (timeKey: string, task: Task) => {
             const startTime = toDayJs(task.startTime);
             const endTime = toDayJs(task.endTime);

@@ -24,6 +24,7 @@ const eslintConfig = [
     extends: ['next/core-web-vitals', 'next/typescript'],
     plugins: ["unused-imports"],
     "rules": {
+      "@typescript-eslint/no-empty-object-type": "off",
       // Disables errors for using the 'any' type
       "@typescript-eslint/no-explicit-any": "off",
       // Enable the unused-imports rule for auto-fixing

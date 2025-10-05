@@ -203,7 +203,7 @@ export const minTime = (a: string, b: string) => {
 export const reId = (tasks: Task[]) => {
   const newTasks = tasks;
   for (let i = 0; i < newTasks.length; ++i) {
-    let indexes: number[] = [];
+    const indexes: number[] = [];
     for (let j = i + 1; j < newTasks.length; ++j) {
       if (newTasks[i].id === newTasks[j].id) {
         indexes.push(j);

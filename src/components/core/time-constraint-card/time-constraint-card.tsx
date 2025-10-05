@@ -1,5 +1,4 @@
 import { Card, CardContent } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
 import { Clock } from "lucide-react"
 
 // Define props for the component to make it dynamic
