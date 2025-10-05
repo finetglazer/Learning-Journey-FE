@@ -34,7 +34,7 @@ export const formService = {
                             if (res?.data) {
                                 setModel({
                                     ...model,
-                                    ...res?.data,
+                                    data: res?.data,
                                     errors: undefined,
                                 });
                             }

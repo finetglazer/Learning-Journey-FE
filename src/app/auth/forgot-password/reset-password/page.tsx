@@ -3,16 +3,21 @@
 import { IntegratedButton } from "@/components/core/button/integrated-button";
 import { IntegratedInputProps } from "@/components/core/input/integrated-input";
 import { FORGOT_PASSWORD_EMAIL_INPUT_ROUTE, SIGN_IN_ROUTE } from "@/const/routes-const";
+import { AppContext, AppContextProps } from "@/hooks/app-context";
 import AuthFormLayout from "@/layout/auth-form-layout";
 import { ResetPasswordModel } from "@/model/reset-password-model";
 import { authRepository } from "@/repository/auth-repository";
 import { formService } from "@/service/form-service";
 import { LockIcon } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { useContext, useEffect } from "react";
 
 export default function ResetPasswordPage() {
     const router = useRouter();
+
+    const {
+        setLoadingPage,
+    } = useContext<AppContextProps>(AppContext);
 
     const {
         model,
@@ -22,7 +27,10 @@ export default function ResetPasswordPage() {
     } = formService.useForm(
         ResetPasswordModel,
         authRepository.resetPassword,
-        () => router.push(SIGN_IN_ROUTE),
+        () => {
+            router.push(SIGN_IN_ROUTE);
+            setLoadingPage(true);
+        },
     );
 
     const token = useSearchParams().get("token");
@@ -79,7 +87,7 @@ export default function ResetPasswordPage() {
 
     useEffect(() => {
         updateModel("token", token);
-    }, [token, updateModel]);
+    }, [token]);
 
     return (
         <AuthFormLayout

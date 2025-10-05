@@ -8,11 +8,16 @@ import { EmailVerificationModel } from "@/model/email-verification-model";
 import { authRepository } from "@/repository/auth-repository";
 import { SIGN_IN_ROUTE, SIGN_UP_BASE_ROUTE } from "@/const/routes-const";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { OTP_REGEX } from "@/const/consts";
+import { AppContext, AppContextProps } from "@/hooks/app-context";
 
 export default function EmailVerificationPage() {
     const router = useRouter();
+
+    const {
+        setLoadingPage,
+    } = useContext<AppContextProps>(AppContext);
 
     const {
         model,
@@ -22,9 +27,12 @@ export default function EmailVerificationPage() {
     } = formService.useForm(
         EmailVerificationModel,
         authRepository.verifyOtp,
-        () => router.push(SIGN_IN_ROUTE)
+        () => {
+            router.push(SIGN_IN_ROUTE);
+            setLoadingPage(true);
+        }
     );
-
+    
     const [otpValidationError, setOtpValidationError] = useState<string | undefined | null>(undefined);
 
     const validateOtp = () => {

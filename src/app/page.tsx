@@ -1,17 +1,11 @@
 "use client"
 
-import { RoundedButton } from "@/components/core/button/rounded-button"
-import { DayWeekViewCalendar } from "@/components/core/calendar/calendar-day-week-view"
-import { DateRangeNavigator } from "@/components/core/date-range-navigator/date-range-navigator"
-import { IntegratedDropdown } from "@/components/core/dropdown/integrated-dropdown"
-import { TimeDropdown } from "@/components/core/dropdown/time-dropdown"
+import { WarningAlertDialog } from "@/components/core/alert/alert";
 import { DropdownItem } from "@/components/core/dropdown/type"
-import { Icon } from "@/components/core/icon/icon"
-import { SegmentedControl, SegmentedControlOption } from "@/components/core/segmented-control/segmented-control"
-import { Tag } from "@/components/core/tag/tag"
-import { dayJsToISOString, toISOString } from "@/lib/utils"
-import { Task } from "@/model/task"
-import dayjs from "dayjs"
+import { GradientLoadingBar } from "@/components/core/loading-bar/loading-bar";
+import { SegmentedControlOption } from "@/components/core/segmented-control/segmented-control"
+import { TaskEditor } from "@/components/core/task/task";
+import { TimeConstraintCard } from "@/components/core/time-constraint-card/time-constraint-card";
 import { useState } from "react"
 export default function InputWithIcons() {
   const [selectedItem, setSelectedItem] = useState<DropdownItem | null>(null);
@@ -93,7 +87,7 @@ export default function InputWithIcons() {
         onValueChange={(value) => setCurrentView(value)}
       /> */}
 
-      <DayWeekViewCalendar 
+      {/* <DayWeekViewCalendar 
         tasks={(() => {
           const tasks: Task[] = [];
           const today = dayjs();
@@ -152,7 +146,12 @@ export default function InputWithIcons() {
           });
           return tasks;
         })()}
-      />
+      /> */ }
+
+      {/* <WarningAlertDialog /> */}
+      {/* <TaskEditor /> */}
+      {/* <TimeConstraintCard progress={80} /> */}
+      <GradientLoadingBar />
     </div>
   )
 }

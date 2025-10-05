@@ -1,5 +1,9 @@
+"use client"
+
+import { AppContext, AppContextProps } from "@/hooks/app-context";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { useContext } from "react";
 
 export interface LinkWithLoadingProps {
     href?: string;
@@ -14,7 +18,17 @@ export const LinkWithLoading = (props: LinkWithLoadingProps) => {
         className,
     } = props;
 
+    const {
+        setLoadingPage,
+    } = useContext<AppContextProps>(AppContext);
+
     return (
-        <Link href={href || ""} className={cn("", className)}>{content}</Link>
+        <Link
+            onClick={() => {
+                setLoadingPage(true);
+            }}
+            className={cn("", className)}
+            href={href || ""}
+        >{content}</Link>
     );
 };
