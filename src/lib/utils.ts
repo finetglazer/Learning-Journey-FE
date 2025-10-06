@@ -122,7 +122,7 @@ export const initCalendarMap = (mondayTime: Dayjs, tasks?: Task[]) => {
         const isoStringStartTime = dayJsToISOString(j.hour(Number(startHour.split(":")[0])).minute(Number(startHour.split(":")[1])));
         const isoStringEndTime = dayJsToISOString(j.hour(Number(endHour.split(":")[0])).minute(Number(endHour.split(":")[1])));
         const dayTimeLeftIndex = leftBoundIndex(timeKeys, isoStringStartTime);
-        const dayTimeRightIndex = rightBoundIndex(timeKeys, isoStringEndTime);
+        const dayTimeRightIndex = leftBoundIndex(timeKeys, isoStringEndTime);
         if (dayTimeLeftIndex !== null && dayTimeRightIndex !== null) {
           for (let k = dayTimeLeftIndex; k <= dayTimeRightIndex; ++k) {
             map[timeKeys[k]].push({
@@ -137,7 +137,7 @@ export const initCalendarMap = (mondayTime: Dayjs, tasks?: Task[]) => {
     }
     else {
       const leftTimeIndex = leftBoundIndex(timeKeys, task.startTime);
-      const rightTimeIndex = rightBoundIndex(timeKeys, task.endTime);
+      const rightTimeIndex = leftBoundIndex(timeKeys, task.endTime);
       if (leftTimeIndex !== null && rightTimeIndex !== null) {
         for (let j = leftTimeIndex; j <= rightTimeIndex; ++j) {
           map[timeKeys[j]].push(task);

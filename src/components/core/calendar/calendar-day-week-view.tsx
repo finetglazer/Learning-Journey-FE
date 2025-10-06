@@ -10,7 +10,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { DAYS_OF_WEEK } from "@/const/consts";
-import { dayJsToISOString, getNearestMonday, initCalendarMap, reId, toDayJs } from "@/lib/utils";
+import { dayJsToISOString, getNearestMonday, initCalendarMap, leftBoundIndex, reId, toDayJs, uuid4 } from "@/lib/utils";
 import { Task } from "@/model/task";
 import { Dayjs } from "dayjs";
 import { Clock } from "lucide-react";
@@ -48,7 +48,7 @@ export const DayWeekViewCalendar = ({ tasks, ...props }: DayWeekViewCalendarProp
     useEffect(() => {
         const newTasks = reId(tasks || []);
         const calendarMap = initCalendarMap(currentMondayTime, newTasks);
-        const newTasksStyle = {...tasksStyle};
+        const newTasksStyle = { ...tasksStyle };
         let currentZIndex = 0;
 
         setCalendarMap(calendarMap);
@@ -59,9 +59,9 @@ export const DayWeekViewCalendar = ({ tasks, ...props }: DayWeekViewCalendarProp
             const endTime = toDayJs(task.endTime);
             const startDiff = startTime.diff(toDayJs(timeKey)) / 60000 * (100 / 60);
             const endDiff = endTime.diff(toDayJs(timeKey)) / 60000 * (100 / 60);
-            const nextHour = startTime.add(1, "hour");
+            const nextHour = toDayJs(timeKey).add(1, "hour");
 
-            if (startTime <= nextHour && endTime <= nextHour) {
+            if (startTime <= nextHour && endTime <= nextHour && !visited[task.id]) {
                 visited[task.id] = true;
                 return (endTime.diff(startTime) / 60000 * (100 / 60));
             }
@@ -78,24 +78,25 @@ export const DayWeekViewCalendar = ({ tasks, ...props }: DayWeekViewCalendarProp
             const tasksVal = calendarMap[timeKey];
             tasksVal.forEach((task: Task, count: number) => {
                 let newStyle = newTasksStyle[task.id];
-                const diff = toDayJs(task.startTime).diff(toDayJs(timeKey)) / 6000 * 1.5;
+                const diff = toDayJs(task.startTime).diff(toDayJs(timeKey)) / 60000 * (100 / 60);
 
                 newStyle = {
                     zIndex: !visited[task.id] ? ++currentZIndex : newStyle?.zIndex,
-                    top: !visited[task.id] ? diff * 1.5 : newStyle?.top,    // %
+                    top: !visited[task.id] ? diff : newStyle?.top,    // %
                     left: count * 10,    // %
                     height: (newStyle?.height || 0) + getHeight(timeKey, task), // %
                     width: Math.min(newStyle?.width || 85, 85 / tasksVal.length),   // %
                 }
+
                 newTasksStyle[task.id] = newStyle;
             });
         });
         setTasksStyle(newTasksStyle);
-        
+
     }, [currentMondayTime]);
 
     return (
-        <Card className="w-full h-full mx-auto rounded-xl shadow-lg bg-slate-50/50">
+        <Card className="w-full h-full mx-auto rounded-xl shadow-lg bg-slate-50/50 p-0">
             {/* ====== Header (Same as before) ====== */}
             <CardHeader className="flex flex-row items-center justify-between p-4 border-b border-gray-200 bg-slate-100/60 rounded-t-xl">
                 <div className="text-sm font-semibold text-slate-600">
@@ -120,24 +121,27 @@ export const DayWeekViewCalendar = ({ tasks, ...props }: DayWeekViewCalendarProp
             {/* ====== Calendar Table ====== */}
             <CardContent className="p-0 h-full">
                 {/* Scroll container */}
-                <Table>
-                    <TableHeader className="sticky top-0 bg-white z-10">
-                        <TableRow>
-                            <TableHead className="min-w-6 max-w-6 text-left">
-                                <Clock className="w-4 h-4 mx-auto text-slate-400" />
-                            </TableHead>
-                            {DAYS_OF_WEEK.map((day) => (
-                                <TableHead
-                                    key={day}
-                                    className="text-center font-medium text-slate-600 max-w-16.5 min-w-16.5 p-0"
-                                >
-                                    {day}
+                <div className="relative flex pr-4">
+                    <Table>
+                        <TableHeader className="sticky top-0 bg-white z-10">
+                            <TableRow>
+                                <TableHead className="min-w-6 max-w-6 text-left">
+                                    <Clock className="w-4 h-4 mx-auto text-slate-400" />
                                 </TableHead>
-                            ))}
-                        </TableRow>
-                    </TableHeader>
-                </Table>
-                <div className="relative h-[85vh] overflow-y-scroll">
+                                {DAYS_OF_WEEK.map((day) => (
+                                    <TableHead
+                                        key={day}
+                                        className="text-center font-medium text-slate-600 max-w-16.5 min-w-16.5 p-0"
+                                    >
+                                        {day}
+                                    </TableHead>
+                                ))}
+                            </TableRow>
+                        </TableHeader>
+                    </Table>
+                    {/* <div className="w-12" /> */}
+                </div>
+                <div className="relative h-[85vh] overflow-y-scroll overflow-x-hidden">
                     <Table className="w-full">
                         <TableBody>
                             {hours.map((hour) => (
@@ -151,14 +155,17 @@ export const DayWeekViewCalendar = ({ tasks, ...props }: DayWeekViewCalendarProp
                                         const newTime = currentMondayTime.add(index, "day").hour(Number(hour));
                                         const id = dayJsToISOString(newTime);
                                         return (
-                                            <TableCell key={id} id={id} className="relative border-r-2 min-w-16.5 max-w-16.5">
+                                            <TableCell key={id + `-${uuid4()}`} id={id} className="relative border-r-2 min-w-16.5 max-w-16.5">
                                                 {(calendarMap[id] || []).map((task: Task, ind) => {
-                                                    if (!task.id.includes(id)) {
+                                                    const timeKeys = Object.keys(calendarMap);
+                                                    const timeLeftBoundIndex = leftBoundIndex(timeKeys, task.startTime);
+                                                    if (timeLeftBoundIndex === null || !timeKeys[timeLeftBoundIndex].includes(id)) {
                                                         return null;
                                                     }
+
                                                     return (
                                                         <div
-                                                            key={task.id}
+                                                            key={id + `-${uuid4()}`}
                                                             style={{
                                                                 ...tasksStyle[task.id],
                                                                 top: `${tasksStyle[task.id].top}%`,

@@ -1,8 +1,12 @@
 "use client"
 
+import { DayWeekViewCalendar } from "@/components/core/calendar/calendar-day-week-view";
 import { DropdownItem } from "@/components/core/dropdown/type"
 import { GradientLoadingBar } from "@/components/core/loading-bar/loading-bar";
 import { SegmentedControlOption } from "@/components/core/segmented-control/segmented-control"
+import { dayJsToISOString } from "@/lib/utils";
+import { Task } from "@/model/task";
+import dayjs from "dayjs";
 import { useState } from "react"
 export default function InputWithIcons() {
   const [selectedItem, setSelectedItem] = useState<DropdownItem | null>(null);
@@ -84,7 +88,7 @@ export default function InputWithIcons() {
         onValueChange={(value) => setCurrentView(value)}
       /> */}
 
-      {/* <DayWeekViewCalendar 
+      <DayWeekViewCalendar
         tasks={(() => {
           const tasks: Task[] = [];
           const today = dayjs();
@@ -104,8 +108,8 @@ export default function InputWithIcons() {
               routineEndHour: "10:00",
             });
           }
-          const startTime = dayJsToISOString(startOfWeek.add(2, 'day').hour(13).minute(0).second(0));
-          const endTime = dayJsToISOString(startOfWeek.add(2, 'day').hour(15).minute(0).second(0));
+          const startTime = dayJsToISOString(startOfWeek.add(2, 'day').hour(13).minute(15).second(0));
+          const endTime = dayJsToISOString(startOfWeek.add(2, 'day').hour(15).minute(45).second(0));
           tasks.push({
             id: startTime,
             startTime,
@@ -137,18 +141,18 @@ export default function InputWithIcons() {
             endTime,
           });
           tasks.push({
-            id: dayJsToISOString(startOfWeek.add(2, 'day').hour(7).minute(0).second(0)),
-            startTime: dayJsToISOString(startOfWeek.add(2, 'day').hour(7).minute(0).second(0)),
-            endTime: dayJsToISOString(startOfWeek.add(2, 'day').hour(18).minute(0).second(0)),
+            id: dayJsToISOString(startOfWeek.add(2, 'day').hour(7).minute(15).second(0)),
+            startTime: dayJsToISOString(startOfWeek.add(2, 'day').hour(7).minute(15).second(0)),
+            endTime: dayJsToISOString(startOfWeek.add(2, 'day').hour(18).minute(30).second(0)),
           });
           return tasks;
         })()}
-      /> */ }
+      />
 
       {/* <WarningAlertDialog /> */}
       {/* <TaskEditor /> */}
       {/* <TimeConstraintCard progress={80} /> */}
-      <GradientLoadingBar />
+      {/* <GradientLoadingBar /> */}
     </div>
   )
 }
