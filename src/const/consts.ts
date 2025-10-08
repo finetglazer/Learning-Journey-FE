@@ -17,3 +17,13 @@ export const MONTHS = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
 ];
+
+export enum ROUTINE_PATTERNS {
+    EVERY_SUNDAY,
+    EVERY_MONDAY,
+    EVERY_TUESDAY,
+    EVERY_WEDNESDAY,
+    EVERY_THURSDAY,
+    EVERY_FRIDAY,
+    EVERY_SATURDAY,
+};

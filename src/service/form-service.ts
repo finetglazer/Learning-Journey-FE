@@ -10,16 +10,17 @@ export const formService = {
         modelClass: new () => T,
         onSubmit?: (form?: Model) => Observable<any>,
         callbackFn?: () => void,
+        initModel?: T,
     ) {
-        const [model, setModel] = useState<T>(new modelClass);
+        const [model, setModel] = useState<T>(initModel || new modelClass);
         const [loading, setLoading] = useState<boolean>(false);
 
         const updateModel = useCallback((fieldName: string, value: any) => {
-            setModel({
-                ...model,
+            setModel(prevModel => ({
+                ...prevModel,
                 [fieldName]: value,
-            });
-        }, [model]);
+            }));
+        }, []);
 
         const onSubmitForm = useCallback(() => {
             if (typeof onSubmit !== "function") {

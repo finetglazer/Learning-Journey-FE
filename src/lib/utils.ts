@@ -4,6 +4,7 @@ import { FieldError } from "@/model/field-error";
 import { Task } from "@/model/task";
 import { clsx, type ClassValue } from "clsx"
 import dayjs, { Dayjs } from "dayjs";
+import { isNil } from "lodash";
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
@@ -93,6 +94,19 @@ export const toISOString = (dateString: string) => {
 export const dayJsToISOString = (dayjs: Dayjs) => {
   dayjs = dayjs.add(7, "hour");
   return dayjs.toISOString();
+};
+
+export const dateToDayJs = (date: Date, gmt?: number) => {
+  return dayjs(date).subtract(isNil(gmt) ? 0 : gmt, "hour");
+};
+
+export const dateToIsoString = (date: Date, gmt?: number) => {
+  return dayJsToISOString(dateToDayJs(date, gmt));
+};
+
+export const isoStringToDate = (isoString: string) => {
+  const dayjs = toDayJs(isoString);
+  return dayjs.toDate();
 };
 
 export const getNearestMonday = () => {
@@ -216,6 +230,26 @@ export const reId = (tasks: Task[]) => {
   return newTasks;
 };
 
-export const toDayJs = (time: string, gmt?: number) => {
-  return dayjs(time).subtract(7, "hour");
+export const toDayJs = (time?: string, gmt?: number) => {
+  return dayjs(time).subtract(isNil(gmt) ? 7 : gmt, "hour");
+};
+
+export const isoToHHMM = (isoString: string, gmt?: number) => {
+  const time = toDayJs(isoString, gmt);
+  const hours = time.get("hour").toString().padStart(2, '0');
+  const minutes = time.get("minute").toString().padStart(2, '0');
+
+  return `${hours}:${minutes}`;
+}
+
+export const getRoutineDates = (task: Task, startTime: string, endTime: string) => {
+  const currentTime = task?.routineStartTime || dayJsToISOString(dayjs());
+  let res = [];
+  for (let i = toDayJs(maxTime(currentTime, startTime)); i <= toDayJs(endTime); i = i.add(1, "day")) {
+    const isoString = dayJsToISOString(i);
+    if (startTime <= isoString && (task?.routinePattern || []).includes(i.get("day"))) {
+      res.push(i.get("date"));
+    }
+  }
+  return res;
 };

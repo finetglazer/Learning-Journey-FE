@@ -1,158 +1,57 @@
 "use client"
 
-import { DayWeekViewCalendar } from "@/components/core/calendar/calendar-day-week-view";
-import { DropdownItem } from "@/components/core/dropdown/type"
-import { GradientLoadingBar } from "@/components/core/loading-bar/loading-bar";
-import { SegmentedControlOption } from "@/components/core/segmented-control/segmented-control"
-import { dayJsToISOString } from "@/lib/utils";
+import { CalendarDayView } from "@/components/core/calendar/calendar-day-view";
+import { CalendarWeekView } from "@/components/core/calendar/calendar-week-view";
+import { TaskEditor } from "@/components/core/task-editor/task-editor";
+import { BaseTask } from "@/components/core/task/base-task";
+import { dayJsToISOString, reId } from "@/lib/utils";
 import { Task } from "@/model/task";
 import dayjs from "dayjs";
-import { useState } from "react"
-export default function InputWithIcons() {
-  const [selectedItem, setSelectedItem] = useState<DropdownItem | null>(null);
-  const [currentView, setCurrentView] = useState("week");
-  const viewOptions: SegmentedControlOption[] = [
-    { label: "Year", value: "year" },
-    { label: "Month", value: "month" },
-    { label: "Week", value: "week" },
-    { label: "Day", value: "day" },
-  ];
+import { useMemo } from "react";
+export default function RootPage() {
+  const tasks = useMemo(() => {
+    const taskArray: Task[] = [];
+    const today = dayjs();
+    const startOfWeek = today.startOf('week');
+
+    for (let i = 0; i < 1; i++) {
+      const taskDay = startOfWeek.add(1, 'day');
+      const startTime = dayJsToISOString(taskDay.hour(9).minute(0).second(0));
+      const endTime = dayJsToISOString(taskDay.hour(17).minute(0).second(0));
+
+      taskArray.push({
+        id: startTime,
+        startTime,
+        endTime,
+        type: "task",
+        title: "Task 1",
+        description: "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibus. Vivamus elementum semper nisi. Aenean vulputate eleifend tellus. Aenean leo ligula, porttitor eu, consequat vitae, eleifend ac, enim. Aliquam lorem ante, dapibus in, viverra quis, feugiat a, tellus. Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget condimentum rhoncus, sem quam semper libero, sit amet adipiscing sem neque sed ipsum. Nam quam nunc, blandit vel, luctus pulvinar, hendrerit id, lorem. Maecenas nec odio et ante tincidunt tempus. Donec vitae sapien ut libero venenatis faucibus. Nullam quis ante. Etiam sit amet orci eget eros faucibus tincidunt. Duis leo. Sed fringilla mauris sit amet nibh. Donec sodales sagittis magna. Sed consequat, leo eget bibendum sodales, augue velit cursus nunc,",
+      });
+    }
+    return taskArray;
+  }, []);
+
   return (
-    <div className="flex-col w-full h-[100vh]">
-      {/* <RoundedButton
-        id={"D"}
-        label={"Save"}
-        disabled={false}
-      /> */}
-      {/* <Icon 
-        name="SandClock"
-        className="text-blue-600"
-      /> */}
-      {/* <Icon
-        name="SuccessIcon"
-        className="text-[#91EEFF]"
-      /> */}
-      {/* <Icon 
-        name="InfoCircle"
-      /> */}
-      {/* <TimeDropdown
-        selectedItem={selectedItem}
-        setSelectedItem={setSelectedItem}
-        useSearch
-        label={"AAAAAA"}
-      /> */}
-      {/* <IntegratedDropdown 
-        prefix={(
-          <Icon name="StackIcon" className="!h-7 !w-7 mt-2" />
-        )}
-        useSearch
-        label="BBBBBBB"
-        selectedItem={selectedItem}
-        setSelectedItem={setSelectedItem}
-        items={[
+    // <CalendarWeekView tasks={tasks} />
+    // <BaseTask 
+    //   task={tasks[0]}
+    //   calendarType="month-planning"
+    // />
+    <TaskEditor 
+      task={{
+        ...tasks[0],
+        steps: [
           {
             id: "1",
-            content: "This is A dropdown item",
+            description: "AAA"
           },
           {
             id: "2",
-            content: "This is B dropdown item 1",
+            description: "BBB"
           },
-                    {
-            id: "3",
-            content: "This is a dropdown item",
-          },
-                    {
-            id: "4",
-            content: "This is C dropdown item 2",
-          },
-                    {
-            id: "5",
-            content: "This is AabBCc dropdown item 12",
-          },
-        ]}
-      /> */}
-
-      {/* <Tag 
-        content="Routine"
-        type="task"
-      /> */}
-
-      {/* <DateRangeNavigator
-        dateRangeLabel="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-      /> */}
-
-      {/* <SegmentedControl
-        options={viewOptions}
-        value={currentView}
-        onValueChange={(value) => setCurrentView(value)}
-      /> */}
-
-      <DayWeekViewCalendar
-        tasks={(() => {
-          const tasks: Task[] = [];
-          const today = dayjs();
-          const startOfWeek = today.startOf('week');
-          for (let i = 0; i < 1; i++) {
-            const startTime = dayJsToISOString(startOfWeek.subtract(2, 'day').hour(9).minute(0).second(0));
-            const endTime = dayJsToISOString(startOfWeek.add(14, 'day').hour(17).minute(0).second(0));
-
-            tasks.push({
-              id: startTime,
-              startTime,
-              endTime,
-              type: "routine",
-              routineStartTime: startTime,
-              routineEndTime: endTime,
-              routineStartHour: "09:00",
-              routineEndHour: "10:00",
-            });
-          }
-          const startTime = dayJsToISOString(startOfWeek.add(2, 'day').hour(13).minute(15).second(0));
-          const endTime = dayJsToISOString(startOfWeek.add(2, 'day').hour(15).minute(45).second(0));
-          tasks.push({
-            id: startTime,
-            startTime,
-            endTime,
-          });
-          tasks.push({
-            id: startTime,
-            startTime,
-            endTime,
-          });
-          tasks.push({
-            id: startTime,
-            startTime,
-            endTime,
-          });
-          tasks.push({
-            id: startTime,
-            startTime,
-            endTime,
-          });
-          tasks.push({
-            id: startTime,
-            startTime,
-            endTime,
-          });
-          tasks.push({
-            id: startTime,
-            startTime,
-            endTime,
-          });
-          tasks.push({
-            id: dayJsToISOString(startOfWeek.add(2, 'day').hour(7).minute(15).second(0)),
-            startTime: dayJsToISOString(startOfWeek.add(2, 'day').hour(7).minute(15).second(0)),
-            endTime: dayJsToISOString(startOfWeek.add(2, 'day').hour(18).minute(30).second(0)),
-          });
-          return tasks;
-        })()}
-      />
-
-      {/* <WarningAlertDialog /> */}
-      {/* <TaskEditor /> */}
-      {/* <TimeConstraintCard progress={80} /> */}
-      {/* <GradientLoadingBar /> */}
-    </div>
-  )
+        ]
+      }}
+      // setUpdatedTasks={}
+    />
+  );
 }

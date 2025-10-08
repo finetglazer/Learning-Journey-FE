@@ -12,14 +12,18 @@ import {
 import { DAYS_OF_WEEK } from "@/const/consts";
 import { dayJsToISOString, getNearestMonday, initCalendarMap, leftBoundIndex, reId, toDayJs, uuid4 } from "@/lib/utils";
 import { Task } from "@/model/task";
+import { DndContext, DragOverEvent, DragOverlay } from "@dnd-kit/core";
 import { Dayjs } from "dayjs";
 import { Clock } from "lucide-react";
 import { useEffect, useState } from "react";
 import { RoundedButton } from "../button/rounded-button";
 import { DateRangeNavigator } from "../date-range-navigator/date-range-navigator";
 import { SegmentedControl, SegmentedControlOption } from "../segmented-control/segmented-control";
+import { DraggableTask } from "./draggable-task";
+import { DroppableCell } from "./droppable-cell";
+import { isNil } from "lodash";
 
-export interface DayWeekViewCalendarProps {
+export interface WeekViewCalendarProps {
     tasks?: Task[];
 };
 
@@ -27,7 +31,7 @@ const hours = Array.from({ length: 24 }, (_, i) =>
     i.toString().padStart(2, "0")
 ); // 00 to 23
 
-export const DayWeekViewCalendar = ({ tasks, ...props }: DayWeekViewCalendarProps) => {
+export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => {
     const [currentView, setCurrentView] = useState("week");
     const viewOptions: SegmentedControlOption[] = [
         { label: "Year", value: "year" },
@@ -38,15 +42,45 @@ export const DayWeekViewCalendar = ({ tasks, ...props }: DayWeekViewCalendarProp
 
     const [currentMondayTime, setCurrentMondayTime] = useState<Dayjs>(getNearestMonday());
     const [calendarMap, setCalendarMap] = useState<Record<string, any[]>>({});
-    const [updatedTasks, setUpdatedTasks] = useState<Task[]>([]);
+    const [updatedTasks, setUpdatedTasks] = useState<Task[]>(tasks || []);
     const [tasksStyle, setTasksStyle] = useState<Record<string, any>>({});
+    const [activeDragId, setActiveDragId] = useState<string | null>(null);
+    const [activeTask, setActiveTask] = useState<Task | null>(null);
 
-    // Calculate position for the current time indicator
-    // This is based on the height of each table row (h-16 = 4rem)
     const topPosition = `calc(${(12.5 - 8) * 4}rem + 2.5rem)`; // (12:30 - 8:00) * 4rem/hour + header height
 
+    const onDragStart = (event: DragOverEvent) => {
+        setActiveDragId(String(event.active.id));
+        const task = updatedTasks.find(t => t.id === event.active.id);
+        if (task) {
+            setActiveTask(task);
+        }
+    };
+
+    const onDragEnd = (event: DragOverEvent) => {
+        const droppedCellId = String(event.over?.id || null);
+        if (!droppedCellId) {
+            setActiveDragId(null);
+            return;
+        }
+        const updatedTaskIndex = updatedTasks.findIndex(task => task.id === activeDragId);
+        const oldTask = updatedTasks[updatedTaskIndex];
+        const newUpdatedTasks = [...updatedTasks];
+        const taskDuration = toDayJs(oldTask.endTime).diff(toDayJs(oldTask.startTime));
+        if (!isNil(updatedTaskIndex)) {
+            newUpdatedTasks[updatedTaskIndex] = {
+                ...oldTask,
+                id: droppedCellId,
+                startTime: droppedCellId,
+                endTime: dayJsToISOString(toDayJs(droppedCellId).add(taskDuration)),
+            }
+        }
+        setUpdatedTasks(reId(newUpdatedTasks));
+        setActiveDragId(null);
+    };
+
     useEffect(() => {
-        const newTasks = reId(tasks || []);
+        const newTasks = updatedTasks || [];
         const calendarMap = initCalendarMap(currentMondayTime, newTasks);
         const newTasksStyle = { ...tasksStyle };
         let currentZIndex = 0;
@@ -93,7 +127,7 @@ export const DayWeekViewCalendar = ({ tasks, ...props }: DayWeekViewCalendarProp
         });
         setTasksStyle(newTasksStyle);
 
-    }, [currentMondayTime]);
+    }, [currentMondayTime, updatedTasks]);
 
     return (
         <Card className="w-full h-full mx-auto rounded-xl shadow-lg bg-slate-50/50 p-0">
@@ -142,50 +176,70 @@ export const DayWeekViewCalendar = ({ tasks, ...props }: DayWeekViewCalendarProp
                     {/* <div className="w-12" /> */}
                 </div>
                 <div className="relative h-[85vh] overflow-y-scroll overflow-x-hidden">
-                    <Table className="w-full">
-                        <TableBody>
-                            {hours.map((hour) => (
-                                <TableRow key={hour} className="h-16">
-                                    {/* Time Gutter Cell */}
-                                    <TableCell className="align-top text-xs text-slate-500 -translate-y-2 translate-x-4 min-w-6 max-w-6 border-r-2">
-                                        {hour}
-                                    </TableCell>
+                    <DndContext
+                        onDragStart={onDragStart}
+                        onDragEnd={onDragEnd}
+                    >
+                        <Table className="w-full">
+                            <TableBody>
+                                {hours.map((hour) => (
+                                    <TableRow key={hour} className="h-16">
+                                        {/* Time Gutter Cell */}
+                                        <TableCell className="align-top text-xs text-slate-500 -translate-y-2 translate-x-4 min-w-6 max-w-6 border-r-2">
+                                            {hour}
+                                        </TableCell>
 
-                                    {DAYS_OF_WEEK.map((_, index) => {
-                                        const newTime = currentMondayTime.add(index, "day").hour(Number(hour));
-                                        const id = dayJsToISOString(newTime);
-                                        return (
-                                            <TableCell key={id + `-${uuid4()}`} id={id} className="relative border-r-2 min-w-16.5 max-w-16.5">
-                                                {(calendarMap[id] || []).map((task: Task, ind) => {
-                                                    const timeKeys = Object.keys(calendarMap);
-                                                    const timeLeftBoundIndex = leftBoundIndex(timeKeys, task.startTime);
-                                                    if (timeLeftBoundIndex === null || !timeKeys[timeLeftBoundIndex].includes(id)) {
-                                                        return null;
-                                                    }
+                                        {DAYS_OF_WEEK.map((_, index) => {
+                                            const newTime = currentMondayTime.add(index, "day").hour(Number(hour));
+                                            const id = dayJsToISOString(newTime);
+                                            return (
+                                                <DroppableCell key={id + `-${uuid4()}`} id={id}>
+                                                    {(calendarMap[id] || []).map((task: Task) => {
+                                                        const timeKeys = Object.keys(calendarMap);
+                                                        const timeLeftBoundIndex = leftBoundIndex(timeKeys, task.startTime);
+                                                        if (timeLeftBoundIndex === null || !timeKeys[timeLeftBoundIndex].includes(id)) {
+                                                            return null;
+                                                        }
 
-                                                    return (
-                                                        <div
-                                                            key={id + `-${uuid4()}`}
-                                                            style={{
-                                                                ...tasksStyle[task.id],
-                                                                top: `${tasksStyle[task.id].top}%`,
-                                                                left: `${tasksStyle[task.id].left}%`,
-                                                                height: `${tasksStyle[task.id].height}%`,
-                                                                width: `${tasksStyle[task.id].width}%`,
-                                                                backgroundColor: ind % 2 === 0 ? "blue" : "orange",
-                                                                position: "absolute",
-                                                            }}
-                                                        />
-                                                    );
-                                                })}
-                                            </TableCell>
-                                        );
-                                    })}
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-
+                                                        return (
+                                                            <DraggableTask
+                                                                 key={id + `-${uuid4()}`}
+                                                                 task={task}
+                                                                wrapperClassName="truncate absolute rounded-lg border-black border-[0.5px] pl-2"
+                                                                wrapperStyle={{
+                                                                    ...tasksStyle[task.id],
+                                                                    top: `${tasksStyle[task.id].top}%`,
+                                                                    left: `${tasksStyle[task.id].left}%`,
+                                                                    height: `${tasksStyle[task.id].height}%`,
+                                                                    width: `${tasksStyle[task.id].width}%`,
+                                                                }}
+                                                            />
+                                                        );
+                                                    })}
+                                                </DroppableCell>
+                                            );
+                                        })}
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                        <DragOverlay>
+                            {activeTask  ? (
+                                <DraggableTask
+                                    isOverlay={true}
+                                    task={activeTask}
+                                    wrapperClassName="truncate rounded-lg border-black border-[0.5px] pl-2"
+                                    wrapperStyle={{
+                                        ...tasksStyle[activeTask.id],
+                                        top: `${tasksStyle[activeTask.id].top}%`,
+                                        left: `${tasksStyle[activeTask.id].left}%`,
+                                        height: `${tasksStyle[activeTask.id].height}%`,
+                                        width: `${tasksStyle[activeTask.id].width}%`,
+                                    }}
+                                />
+                            ) : null}
+                        </DragOverlay>
+                    </DndContext>
                     {/* Current Time Indicator */}
                     <div
                         className="absolute left-3 right-0 flex items-center z-20"
