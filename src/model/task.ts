@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import { Model } from "react-3layer-common";
 
 export class Task extends Model {
-    public id: string = "1";
+    public id: string = dayJsToISOString(dayjs());
     public status?: 'in-progress' | 'completed' | 'plan' | 'incomplete';
     //2025-10-03T10:45:00.000Z
     public title?: string;

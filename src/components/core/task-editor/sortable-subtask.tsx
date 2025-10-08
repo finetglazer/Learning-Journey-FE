@@ -1,6 +1,8 @@
 "use client";
 
-import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
+import { Button } from "@/components/ui/button";
+import { Task, TaskStep } from "@/model/task";
+import { closestCenter, DndContext, DragEndEvent } from "@dnd-kit/core";
 import {
     arrayMove,
     SortableContext,
@@ -9,11 +11,9 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, MinusCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Task, TaskStep } from "@/model/task";
-import { Dispatch, SetStateAction } from "react";
+import { Model } from "react-3layer-common";
 
-function SortableSubTask({ subtask }: { subtask: Task | TaskStep }) {
+function SortableSubTask({ subtask, model, updateModel }: { subtask: Task | TaskStep, model: Model, updateModel: (fieldName: string, value: any) => void }) {
     const {
         attributes,
         listeners,
@@ -25,6 +25,14 @@ function SortableSubTask({ subtask }: { subtask: Task | TaskStep }) {
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
+    };
+
+    const onDelete = (id: string) => {
+        updateModel(model?.type === "big-task" ? "subtasks" : "steps",
+            [...((model?.type === "big-task" ? model?.subtasks : model?.steps) || []).filter(
+                (item: Task | TaskStep) => item.id !== id
+            )]
+        );
     };
 
     return (
@@ -39,7 +47,7 @@ function SortableSubTask({ subtask }: { subtask: Task | TaskStep }) {
                 </button>
                 <span className="text-sm">{(subtask as Task)?.title || (subtask as TaskStep)?.description}</span>
             </div>
-            <Button variant="ghost" size="icon" className="text-gray-400 hover:text-red-500">
+            <Button variant="ghost" size="icon" className="text-gray-400 hover:text-red-500" onClick={() => onDelete(subtask.id)}>
                 <MinusCircle size={20} />
             </Button>
         </div>
@@ -51,9 +59,10 @@ interface SubTaskListProps {
     subtasks: Task[] | TaskStep[];
     fieldName: string;
     onSubtasksChange: (fieldName: string, value: any) => void;
-}
+    model: Model;
+};
 
-export const SubTaskList = ({ subtasks, fieldName, onSubtasksChange }: SubTaskListProps) => {
+export const SubTaskList = ({ subtasks, fieldName, onSubtasksChange, model }: SubTaskListProps) => {
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
 
@@ -69,10 +78,15 @@ export const SubTaskList = ({ subtasks, fieldName, onSubtasksChange }: SubTaskLi
             <SortableContext items={subtasks} strategy={verticalListSortingStrategy}>
                 <div className="space-y-2">
                     {subtasks.map((subtask) => (
-                        <SortableSubTask key={subtask.id} subtask={subtask} />
+                        <SortableSubTask
+                            key={subtask.id}
+                            subtask={subtask}
+                            model={model}
+                            updateModel={onSubtasksChange}
+                        />
                     ))}
                 </div>
             </SortableContext>
         </DndContext>
     );
-}
+};

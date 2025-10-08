@@ -41,7 +41,7 @@ export default function RootPage() {
       task={{
         ...tasks[0],
         type: 'big-task',
-        subtasks: reId([
+        subtasks: ([
           {
             ...tasks[0],
             id: "123123",

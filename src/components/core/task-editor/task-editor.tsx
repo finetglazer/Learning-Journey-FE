@@ -1,6 +1,5 @@
 "use client"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
     Card,
@@ -14,21 +13,23 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { isoStringToDate, isoToHHMM, isoToStandardTime } from "@/lib/utils"
-import { Task } from "@/model/task"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { isoStringToDate, isoToHHMM, isoToStandardTime, uuid4 } from "@/lib/utils"
+import { Task, TaskStep } from "@/model/task"
 import { formService } from "@/service/form-service"
 import {
     Calendar,
     ChevronDown,
     CircleAlertIcon,
     ListCheck,
-    Pencil
+    Pencil,
+    Plus
 } from "lucide-react"
 import { Dispatch, SetStateAction, useState } from "react"
 import { DateTimePicker } from "../date-time-picker/date-time-picker"
 import { SubTaskList } from "./sortable-subtask"
 import { TaskStatusDropdown } from "./task-status-dropdown"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { TaskTypeDropdown } from "./task-type-dropdown"
 
 export interface TaskEditorProps {
     task: Task;
@@ -64,6 +65,12 @@ export const TaskEditor = ({ task, setUpdatedTasks }: TaskEditorProps) => {
 
     const hasTimeError = model.startTime > model.endTime;
 
+    const handleAddSubtask = () => {
+        updateModel(model?.type === "big-task" ? "subtasks" : "steps", 
+            model?.type === "big-task" ? [...(model?.subtasks || []), new Task] : [...(model?.steps || []), {id: uuid4()} as TaskStep]
+        );
+    };
+
     const onSave = () => {
 
     };
@@ -91,10 +98,11 @@ export const TaskEditor = ({ task, setUpdatedTasks }: TaskEditorProps) => {
                     </div>
 
                     {/* Tags Section */}
-                    <div className="flex space-x-2 mb-4">
-                        {model?.type === "event" && <Badge className="bg-blue-400 text-white rounded-md px-3 py-1 text-xs font-medium">Event</Badge>}
-                        {(!model?.type || task?.type === "task" || model?.type === "big-task") && <Badge className="bg-pink-500 text-white rounded-md px-3 py-1 text-xs font-medium">Task</Badge>}
-                        {model?.type === "routine" && <Badge className="bg-green-400 text-white rounded-md px-3 py-1 text-xs font-medium">Routine</Badge>}
+                    <div className="mb-4">
+                        <TaskTypeDropdown
+                            currentType={model?.type}
+                            onTypeChange={(newType: any) => updateModel('type', newType)}
+                        />
                     </div>
 
                     <div className="border-t border-gray-200 my-4"></div>
@@ -163,22 +171,31 @@ export const TaskEditor = ({ task, setUpdatedTasks }: TaskEditorProps) => {
 
                     {/* Sub-task || Steps List Section */}
                     <Collapsible defaultOpen className="px-2">
-                        <div className="flex items-center space-x-3">
-                            <ListCheck className="h-4 w-4 text-gray-600" />
-                            <CollapsibleTrigger asChild>
-                                <div className="flex items-center cursor-pointer mt-0.5">
-                                    <Label htmlFor="subtask-toggle" className="text-gray-700 cursor-pointer text-sm">Sub task list</Label>
-                                    <ChevronDown className="h-4 w-4 ml-1 text-gray-500" />
-                                </div>
-                            </CollapsibleTrigger>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                                <ListCheck className="h-4 w-4 text-gray-600" />
+                                <CollapsibleTrigger asChild>
+                                    <div className="flex items-center cursor-pointer mt-0.5">
+                                        <Label htmlFor="subtask-toggle" className="text-gray-700 cursor-pointer text-sm">
+                                            {model?.type === "big-task" ? "Sub task list" : "Steps"}
+                                        </Label>
+                                        <ChevronDown className="h-4 w-4 ml-1 text-gray-500" />
+                                    </div>
+                                </CollapsibleTrigger>
+                            </div>
+
+                            <Button variant="ghost" size="icon" onClick={handleAddSubtask}>
+                                <Plus className="h-4 w-4 text-gray-600" />
+                            </Button>
                         </div>
                         <CollapsibleContent>
                             <ScrollArea className="mt-3 ml-2 h-30">
                                 <div className="space-y-3 text-gray-600 text-sm pl-4">
                                     <SubTaskList
-                                        subtasks={model?.subtasks || model?.steps || []}
+                                        subtasks={(model?.type === "big-task" ? model?.subtasks : model?.steps)|| []}
                                         fieldName={model?.type === "big-task" ? "subtasks" : "steps"}
                                         onSubtasksChange={updateModel}
+                                        model={model}
                                     />
                                 </div>
                             </ScrollArea>
