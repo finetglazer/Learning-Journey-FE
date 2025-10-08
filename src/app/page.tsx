@@ -40,16 +40,14 @@ export default function RootPage() {
     <TaskEditor 
       task={{
         ...tasks[0],
-        steps: [
+        type: 'big-task',
+        subtasks: reId([
           {
-            id: "1",
-            description: "AAA"
+            ...tasks[0],
+            id: "123123",
           },
-          {
-            id: "2",
-            description: "BBB"
-          },
-        ]
+          tasks[0]
+        ])
       }}
       // setUpdatedTasks={}
     />

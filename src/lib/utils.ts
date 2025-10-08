@@ -242,6 +242,12 @@ export const isoToHHMM = (isoString: string, gmt?: number) => {
   return `${hours}:${minutes}`;
 }
 
+export const isoToStandardTime = (isoString: string, gmt?: number) => {
+  const dayjsObject = toDayJs(isoString, gmt);
+
+  return dayjsObject.format('DD/MM/YYYY');
+};
+
 export const getRoutineDates = (task: Task, startTime: string, endTime: string) => {
   const currentTime = task?.routineStartTime || dayJsToISOString(dayjs());
   let res = [];
