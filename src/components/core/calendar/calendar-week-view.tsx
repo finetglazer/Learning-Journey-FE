@@ -40,6 +40,8 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
         { label: "Day", value: "day" },
     ];
 
+    const sleepStartHour = 22; // 22:00
+    const sleepEndHour = 6;
     const [currentMondayTime, setCurrentMondayTime] = useState<Dayjs>(getNearestMonday());
     const [calendarMap, setCalendarMap] = useState<Record<string, any[]>>({});
     const [updatedTasks, setUpdatedTasks] = useState<Task[]>(tasks || []);
@@ -180,6 +182,23 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                         onDragStart={onDragStart}
                         onDragEnd={onDragEnd}
                     >
+                        {/* --- Sleep Time Rectangles --- */}
+                        {/* Morning Block (00:00 to sleepEndHour) */}
+                        <div
+                            className="absolute left-0 right-0 bg-slate-300 z-0"
+                            style={{
+                                top: 0,
+                                height: `${sleepEndHour * 4}rem`, // 4rem is the height of one hour (h-16)
+                            }}
+                        />
+                        {/* Night Block (sleepStartHour to 24:00) */}
+                        <div
+                            className="absolute left-0 right-0 bg-slate-300 z-0"
+                            style={{
+                                top: `${sleepStartHour * 4}rem`,
+                                height: `${(24 - sleepStartHour) * 4}rem`,
+                            }}
+                        />
                         <Table className="w-full">
                             <TableBody>
                                 {hours.map((hour) => (

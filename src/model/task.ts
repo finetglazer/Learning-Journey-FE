@@ -15,7 +15,7 @@ export class Task extends Model {
     public routineEndTime?: string; 
     public routineStartHour?: string;
     public routineEndHour?: string;
-    public routinePattern?: number[]; 
+    public routinePatterns?: number[]; 
     public subtasks?: Task[];
     public steps?: TaskStep[];
 };

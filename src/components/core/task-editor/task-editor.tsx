@@ -30,6 +30,7 @@ import { DateTimePicker } from "../date-time-picker/date-time-picker"
 import { SubTaskList } from "./sortable-subtask"
 import { TaskStatusDropdown } from "./task-status-dropdown"
 import { TaskTypeDropdown } from "./task-type-dropdown"
+import { RecurringPatterns } from "./recurring-patterns"
 
 export interface TaskEditorProps {
     task: Task;
@@ -66,8 +67,8 @@ export const TaskEditor = ({ task, setUpdatedTasks }: TaskEditorProps) => {
     const hasTimeError = model.startTime > model.endTime;
 
     const handleAddSubtask = () => {
-        updateModel(model?.type === "big-task" ? "subtasks" : "steps", 
-            model?.type === "big-task" ? [...(model?.subtasks || []), new Task] : [...(model?.steps || []), {id: uuid4()} as TaskStep]
+        updateModel(model?.type === "big-task" ? "subtasks" : "steps",
+            model?.type === "big-task" ? [...(model?.subtasks || []), new Task] : [...(model?.steps || []), { id: uuid4() } as TaskStep]
         );
     };
 
@@ -122,9 +123,8 @@ export const TaskEditor = ({ task, setUpdatedTasks }: TaskEditorProps) => {
                         <div className="relative flex items-center space-x-3 text-gray-500 px-2 cursor-pointer">
                             <Calendar size={20} onClick={() => setOpenStartTimePicker(!openStartTimePicker)} />
                             <Input
-                                disabled
                                 placeholder="Start hour"
-                                className="border-none focus:ring-0 shadow-none text-sm bg-transparent p-0"
+                                className="border-none mt-0.25 focus:ring-0 shadow-none text-sm bg-transparent p-0"
                                 value={model?.type !== "big-task" ? isoToHHMM(model.startTime) : isoToStandardTime(model.startTime)}
                             />
                             <DateTimePicker
@@ -140,7 +140,6 @@ export const TaskEditor = ({ task, setUpdatedTasks }: TaskEditorProps) => {
                         <div className="relative flex items-center space-x-3 text-gray-500 px-2 border-l border-gray-200 cursor-pointer">
                             <Calendar size={20} onClick={() => setOpenEndTimePicker(!openEndTimePicker)} />
                             <Input
-                                disabled
                                 placeholder="End hour"
                                 className="border-none focus:ring-0 shadow-none text-sm bg-transparent p-0"
                                 value={model?.type !== "big-task" ? isoToHHMM(model.endTime) : isoToStandardTime(model.endTime)}
@@ -169,40 +168,49 @@ export const TaskEditor = ({ task, setUpdatedTasks }: TaskEditorProps) => {
 
                     <div className="border-t border-gray-200 my-4"></div>
 
-                    {/* Sub-task || Steps List Section */}
-                    <Collapsible defaultOpen className="px-2">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                                <ListCheck className="h-4 w-4 text-gray-600" />
-                                <CollapsibleTrigger asChild>
-                                    <div className="flex items-center cursor-pointer mt-0.5">
-                                        <Label htmlFor="subtask-toggle" className="text-gray-700 cursor-pointer text-sm">
-                                            {model?.type === "big-task" ? "Sub task list" : "Steps"}
-                                        </Label>
-                                        <ChevronDown className="h-4 w-4 ml-1 text-gray-500" />
+                    {/* Sub-task || Steps List || Recurring patterns Section */}
+                    {model?.type !== 'event' && (
+                        <>
+                            <Collapsible defaultOpen className="px-2">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-3">
+                                        <ListCheck className="h-4 w-4 text-gray-600" />
+                                        <CollapsibleTrigger asChild>
+                                            <div className="flex items-center cursor-pointer mt-0.5">
+                                                <Label htmlFor="subtask-toggle" className="text-gray-700 cursor-pointer text-sm">
+                                                    {model?.type === "big-task" ? "Sub task list" : "Steps"}
+                                                </Label>
+                                                <ChevronDown className="h-4 w-4 ml-1 text-gray-500" />
+                                            </div>
+                                        </CollapsibleTrigger>
                                     </div>
-                                </CollapsibleTrigger>
-                            </div>
 
-                            <Button variant="ghost" size="icon" onClick={handleAddSubtask}>
-                                <Plus className="h-4 w-4 text-gray-600" />
-                            </Button>
-                        </div>
-                        <CollapsibleContent>
-                            <ScrollArea className="mt-3 ml-2 h-30">
-                                <div className="space-y-3 text-gray-600 text-sm pl-4">
-                                    <SubTaskList
-                                        subtasks={(model?.type === "big-task" ? model?.subtasks : model?.steps)|| []}
-                                        fieldName={model?.type === "big-task" ? "subtasks" : "steps"}
-                                        onSubtasksChange={updateModel}
-                                        model={model}
-                                    />
+                                    <Button variant="ghost" size="icon" onClick={handleAddSubtask}>
+                                        <Plus className="h-4 w-4 text-gray-600" />
+                                    </Button>
                                 </div>
-                            </ScrollArea>
-                        </CollapsibleContent>
-                    </Collapsible>
+                                <CollapsibleContent>
+                                    <ScrollArea className="mt-3 ml-2 h-30">
+                                        {model.type === 'routine' ? (
+                                            <RecurringPatterns
+                                                selectedPatterns={model.routinePatterns || []}
+                                                onPatternChange={(patterns) => updateModel('routinePatterns', patterns)}
+                                            />
+                                        ) : (
+                                            <SubTaskList
+                                                subtasks={(model?.type === "big-task" ? model?.subtasks : model?.steps) || []}
+                                                onSubtasksChange={(newList) => updateModel(model?.type === "big-task" ? "subtasks" : "steps", newList)}
+                                                fieldName={model?.type === "big-task" ? "subtasks" : "steps"}
+                                                model={model}
+                                            />
+                                        )}
+                                    </ScrollArea>
+                                </CollapsibleContent>
+                            </Collapsible>
 
-                    <div className="border-t border-gray-200 my-4"></div>
+                            <div className="border-t border-gray-200 my-4"></div>
+                        </>
+                    )}
 
                     {/* Notes Section */}
                     <div className="flex items-center space-x-3 text-gray-500 px-2">

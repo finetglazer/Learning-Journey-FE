@@ -1,13 +1,18 @@
 "use client"
 
 import { CalendarDayView } from "@/components/core/calendar/calendar-day-view";
+import { MonthPlanningCalendar } from "@/components/core/calendar/calendar-month-planing";
+import { CalendarMonthView } from "@/components/core/calendar/calendar-month-view";
 import { CalendarWeekView } from "@/components/core/calendar/calendar-week-view";
+import { CalendarYearView } from "@/components/core/calendar/calendar-year-view";
+import { CollapsibleUnscheduledPanel } from "@/components/core/calendar/collapsible-unscheduled-items-panel";
 import { TaskEditor } from "@/components/core/task-editor/task-editor";
 import { BaseTask } from "@/components/core/task/base-task";
 import { dayJsToISOString, reId } from "@/lib/utils";
 import { Task } from "@/model/task";
 import dayjs from "dayjs";
 import { useMemo } from "react";
+import { CalendarDay } from "react-day-picker";
 export default function RootPage() {
   const tasks = useMemo(() => {
     const taskArray: Task[] = [];
@@ -37,19 +42,20 @@ export default function RootPage() {
     //   task={tasks[0]}
     //   calendarType="month-planning"
     // />
-    <TaskEditor 
-      task={{
-        ...tasks[0],
-        type: 'big-task',
-        subtasks: ([
-          {
-            ...tasks[0],
-            id: "123123",
-          },
-          tasks[0]
-        ])
-      }}
-      // setUpdatedTasks={}
-    />
+    // <TaskEditor 
+    //   task={{
+    //     ...tasks[0],
+    //     type: 'big-task',
+    //     subtasks: ([
+    //       {
+    //         ...tasks[0],
+    //         id: "123123",
+    //       },
+    //       tasks[0]
+    //     ])
+    //   }}
+    //   // setUpdatedTasks={}
+    // />
+    <CalendarDayView />
   );
 }

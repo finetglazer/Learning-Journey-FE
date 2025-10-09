@@ -10,7 +10,7 @@ import { Clock } from "lucide-react";
 import { useEffect, useState } from "react";
 import { RoundedButton } from "../button/rounded-button";
 import { DateRangeNavigator } from "../date-range-navigator/date-range-navigator";
-import { SegmentedControl } from "../segmented-control/segmented-control";
+import { SegmentedControl, SegmentedControlOption } from "../segmented-control/segmented-control";
 
 export interface CalendarDayViewProps {
     tasks?: Task[];
@@ -22,7 +22,16 @@ export const CalendarDayView = ({ tasks }: CalendarDayViewProps) => {
     const [tasksStyle, setTasksStyle] = useState<Record<string, any>>({});
     const [calendarMap, setCalendarMap] = useState<Record<string, any[]>>({});
     const [currentMondayTime, setCurrentMondayTime] = useState<Dayjs>(getNearestMonday());
+    const [currentView, setCurrentView] = useState("week");
+    const viewOptions: SegmentedControlOption[] = [
+        { label: "Year", value: "year" },
+        { label: "Month", value: "month" },
+        { label: "Week", value: "week" },
+        { label: "Day", value: "day" },
+    ];
 
+    const sleepStartHour = 22; // 22:00
+    const sleepEndHour = 6;
     const now = dayjs();
     const hoursNow = now.hour();
     const minutesNow = now.minute();
@@ -82,7 +91,7 @@ export const CalendarDayView = ({ tasks }: CalendarDayViewProps) => {
     }, [currentMondayTime]);
 
     return (
-        <Card className="w-full h-full mx-auto rounded-xl shadow-lg bg-slate-50/50 p-0">
+        <Card className="w-full h-[100vh] mx-auto rounded-xl shadow-lg bg-slate-50/50 p-0">
             {/* ====== Header (Same as before) ====== */}
             <CardHeader className="flex flex-row items-center justify-between p-4 border-b border-gray-200 bg-slate-100/60 rounded-t-xl">
                 <div className="text-sm font-semibold text-slate-600">
@@ -95,11 +104,11 @@ export const CalendarDayView = ({ tasks }: CalendarDayViewProps) => {
                         onNextClick={() => { }}
                         onPreviousClick={() => { }}
                     />
-                    {/* <SegmentedControl
+                    <SegmentedControl
                         options={viewOptions}
                         value={currentView}
                         onValueChange={setCurrentView}
-                    /> */}
+                    />
                     <RoundedButton label="UTC" id="2" />
                 </div>
             </CardHeader>
@@ -108,6 +117,23 @@ export const CalendarDayView = ({ tasks }: CalendarDayViewProps) => {
             <CardContent className="p-0 h-full">
                 {/* Scroll container */}
                 <div className="relative h-[85vh] overflow-y-scroll overflow-x-hidden">
+                    {/* --- Sleep Time Rectangles --- */}
+                    {/* Morning Block (00:00 to sleepEndHour) */}
+                    <div
+                        className="absolute left-0 right-0 bg-slate-300 z-0"
+                        style={{
+                            top: 0,
+                            height: `${sleepEndHour * 4}rem`, // 4rem is the height of one hour (h-16)
+                        }}
+                    />
+                    {/* Night Block (sleepStartHour to 24:00) */}
+                    <div
+                        className="absolute left-0 right-0 bg-slate-300 z-0"
+                        style={{
+                            top: `${sleepStartHour * 4}rem`,
+                            height: `${(24 - sleepStartHour) * 4}rem`,
+                        }}
+                    />
                     <Table className="w-full">
                         <TableBody>
                             {hours.map((hour) => (

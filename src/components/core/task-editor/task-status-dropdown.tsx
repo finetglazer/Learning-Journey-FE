@@ -31,7 +31,7 @@ export function TaskStatusDropdown({ currentStatus, onStatusChange }: TaskStatus
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2 px-2 h-auto justify-start">
-                    <Icon className={`${color} ${selectedStatusKey === 'in-progress' ? 'animate-spin' : ''}`} size={20} />
+                    <Icon className={`${color} ${selectedStatusKey === 'in-progress' ? 'animate-spin' : ''}, -mt-0.5`} size={20} />
                     <span className="text-sm text-gray-700">{label}</span>
                 </Button>
             </DropdownMenuTrigger>
