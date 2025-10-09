@@ -1,16 +1,19 @@
 "use client"
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { TableHeader, TableRow, TableHead, TableBody, TableCell, Table } from "@/components/ui/table";
-import { DAYS_OF_WEEK } from "@/const/consts";
-import { toDayJs, dayJsToISOString, leftBoundIndex, isoToHHMM, reId, getNearestMonday, initCalendarMap, uuid4 } from "@/lib/utils";
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
+import { dayJsToISOString, getNearestMonday, initCalendarMap, isoToHHMM, leftBoundIndex, reId, toDayJs, uuid4 } from "@/lib/utils";
 import { Task } from "@/model/task";
+import { DndContext, DragOverEvent, DragOverlay } from "@dnd-kit/core";
 import dayjs, { Dayjs } from "dayjs";
-import { Clock } from "lucide-react";
+import { isNil } from "lodash";
 import { useEffect, useState } from "react";
+import { WarningAlertDialog } from "../alert/alert";
 import { RoundedButton } from "../button/rounded-button";
 import { DateRangeNavigator } from "../date-range-navigator/date-range-navigator";
 import { SegmentedControl, SegmentedControlOption } from "../segmented-control/segmented-control";
+import { CalendarDayViewDroppableCell } from "./calendar-day-view-droppable-cell";
+import { DraggableTask } from "./draggable-task";
 
 export interface CalendarDayViewProps {
     tasks?: Task[];
@@ -23,6 +26,10 @@ export const CalendarDayView = ({ tasks }: CalendarDayViewProps) => {
     const [calendarMap, setCalendarMap] = useState<Record<string, any[]>>({});
     const [currentMondayTime, setCurrentMondayTime] = useState<Dayjs>(getNearestMonday());
     const [currentView, setCurrentView] = useState("week");
+    const [updatedTasks, setUpdatedTasks] = useState<Task[]>(reId(tasks || []));
+    const [activeDragId, setActiveDragId] = useState<string | null>(null);
+    const [activeTask, setActiveTask] = useState<Task | null>(null);
+    const [openSleepingTimeWarning, setOpenSleepingTimeWarning] = useState<boolean>(false);
     const viewOptions: SegmentedControlOption[] = [
         { label: "Year", value: "year" },
         { label: "Month", value: "month" },
@@ -30,20 +37,81 @@ export const CalendarDayView = ({ tasks }: CalendarDayViewProps) => {
         { label: "Day", value: "day" },
     ];
 
-    const sleepStartHour = 22; // 22:00
-    const sleepEndHour = 6;
+    const CELL_HEIGHT = 4.57; // rem;
     const now = dayjs();
     const hoursNow = now.hour();
     const minutesNow = now.minute();
-    const topPosition = `calc(${(hoursNow + minutesNow / 60) * 4}rem - 0.25rem)`; // 4rem per hour, offset for dot size
+    const topPosition = `calc(${(hoursNow + minutesNow / 60) * CELL_HEIGHT}rem - 0.25rem)`; // offset for dot size
     const hours = Array.from({ length: 24 }, (_, i) =>
         i.toString().padStart(2, "0")
     ); // 00 to 23
 
+    const sleepStartTime = "22:15";
+    const sleepEndTime = "06:15";
+    const sleepStartHour = Number(sleepStartTime.substring(0, 2));
+    const sleepStartMinute = Number(sleepStartTime.substring(3, 5));
+    const sleepEndHour = Number(sleepEndTime.substring(0, 2));
+    const sleepEndMinute = Number(sleepEndTime.substring(3, 5));
+    const startPositionInHours = sleepStartHour + (sleepStartMinute / 60);
+    const endPositionInHours = sleepEndHour + (sleepEndMinute / 60);
+
+    const onDragStart = (event: DragOverEvent) => {
+        setActiveDragId(String(event.active.id));
+        const task = updatedTasks.find(t => t.id === event.active.id);
+        if (task) {
+            setActiveTask(task);
+        }
+    };
+
+    const isCollidingWithSleepTime = (task: Task) => {
+        const taskStartHHMM = isoToHHMM(task.startTime);
+        const taskEndHHMM = isoToHHMM(task.endTime);
+        const isSleepOvernight = sleepEndTime > "00:00" && "23:59" >= sleepStartTime;
+        if (isSleepOvernight) {
+            return sleepStartTime < taskEndHHMM && taskEndHHMM <= "23:59" ||
+                "00:00" <= taskEndHHMM && taskEndHHMM <= sleepEndTime ||
+                sleepStartTime <= taskStartHHMM && taskStartHHMM <= "23:59" ||
+                "00:00" <= taskStartHHMM && taskStartHHMM < sleepEndTime;
+        } else {
+            return !(taskStartHHMM >= sleepEndTime || taskEndHHMM <= sleepStartTime);
+        }
+    };
+
+    const onDragEnd = (event: DragOverEvent) => {
+        const droppedCellId = String(event.over?.id || null);
+        if (!droppedCellId) {
+            setActiveDragId(null);
+            return;
+        }
+        const updatedTaskIndex = updatedTasks.findIndex(task => task.id === activeDragId);
+        const oldTask = updatedTasks[updatedTaskIndex];
+        const newUpdatedTasks = [...updatedTasks];
+        const taskDuration = toDayJs(oldTask.endTime).diff(toDayJs(oldTask.startTime));
+        if (!isNil(updatedTaskIndex)) {
+            newUpdatedTasks[updatedTaskIndex] = {
+                ...oldTask,
+                id: droppedCellId,
+                startTime: droppedCellId,
+                endTime: dayJsToISOString(toDayJs(droppedCellId).add(taskDuration)),
+            };
+        }
+
+        const sleepTimeCollision = (newUpdatedTasks.some(task => isCollidingWithSleepTime(task)));
+        if (sleepTimeCollision) {
+            setOpenSleepingTimeWarning(true);
+            return;
+        }
+
+        setUpdatedTasks(reId(newUpdatedTasks));
+    };
+
     useEffect(() => {
-        const newTasks = reId(tasks || []);
+        const newTasks = [...updatedTasks];
         const calendarMap = initCalendarMap(currentMondayTime, newTasks);
-        const newTasksStyle = { ...tasksStyle };
+        const newTasksStyle: any = {};
+        if (activeTask) {
+            newTasksStyle[activeTask.id] = tasksStyle[activeTask.id];
+        }
         let currentZIndex = 0;
 
         setCalendarMap(calendarMap);
@@ -58,16 +126,17 @@ export const CalendarDayView = ({ tasks }: CalendarDayViewProps) => {
 
             if (startTime <= nextHour && endTime <= nextHour && !visited[task.id]) {
                 visited[task.id] = true;
-                return (endTime.diff(startTime) / 60000 * (100 / 60));
+                return (endTime.diff(startTime) / 60000 * (100 / 60)) / 100 * CELL_HEIGHT;
             }
             if (!visited[task.id]) {
                 visited[task.id] = true;
-                return 100 - startDiff;
+                return (100 - startDiff) / 100 * CELL_HEIGHT;
             }
             if (startTime <= toDayJs(timeKey) && nextHour <= endTime) {
-                return 100;
+                return CELL_HEIGHT;
             }
-            return endDiff;
+
+            return endDiff / 100 * CELL_HEIGHT;
         };
         Object.keys(calendarMap).forEach(timeKey => {
             const tasksVal = calendarMap[timeKey];
@@ -79,19 +148,24 @@ export const CalendarDayView = ({ tasks }: CalendarDayViewProps) => {
                     zIndex: !visited[task.id] ? ++currentZIndex : newStyle?.zIndex,
                     top: !visited[task.id] ? diff : newStyle?.top,    // %
                     left: count * 10,    // %
-                    height: (newStyle?.height || 0) + getHeight(timeKey, task), // %
-                    width: Math.min(newStyle?.width || 85, 85 / tasksVal.length),   // %
+                    height: (newStyle?.height || 0) + getHeight(timeKey, task), // rem
+                    width: Math.min(newStyle?.width || 90, 90 / tasksVal.length),   // %
                 }
 
                 newTasksStyle[task.id] = newStyle;
             });
         });
+
+        if (activeTask) {
+            newTasksStyle[activeTask.id] = undefined;
+        }
+        setActiveTask(null);
         setTasksStyle(newTasksStyle);
 
-    }, [currentMondayTime]);
+    }, [currentMondayTime, updatedTasks]);
 
     return (
-        <Card className="w-full h-[100vh] mx-auto rounded-xl shadow-lg bg-slate-50/50 p-0">
+        <Card className="w-full h-[100%] mx-auto rounded-xl shadow-lg bg-slate-50/50 p-0">
             {/* ====== Header (Same as before) ====== */}
             <CardHeader className="flex flex-row items-center justify-between p-4 border-b border-gray-200 bg-slate-100/60 rounded-t-xl">
                 <div className="text-sm font-semibold text-slate-600">
@@ -118,69 +192,84 @@ export const CalendarDayView = ({ tasks }: CalendarDayViewProps) => {
                 {/* Scroll container */}
                 <div className="relative h-[85vh] overflow-y-scroll overflow-x-hidden">
                     {/* --- Sleep Time Rectangles --- */}
-                    {/* Morning Block (00:00 to sleepEndHour) */}
+                    {/* Morning Block (from midnight to wake-up time) */}
                     <div
                         className="absolute left-0 right-0 bg-slate-300 z-0"
                         style={{
                             top: 0,
-                            height: `${sleepEndHour * 4}rem`, // 4rem is the height of one hour (h-16)
+                            height: `${endPositionInHours * CELL_HEIGHT}rem`,
                         }}
                     />
-                    {/* Night Block (sleepStartHour to 24:00) */}
+                    {/* Night Block (from bedtime to midnight) */}
                     <div
                         className="absolute left-0 right-0 bg-slate-300 z-0"
                         style={{
-                            top: `${sleepStartHour * 4}rem`,
-                            height: `${(24 - sleepStartHour) * 4}rem`,
+                            top: `${startPositionInHours * CELL_HEIGHT}rem`,
+                            height: `${(24 - startPositionInHours) * CELL_HEIGHT}rem`,
                         }}
                     />
-                    <Table className="w-full">
-                        <TableBody>
-                            {hours.map((hour) => (
-                                <TableRow key={hour} className="h-16">
-                                    {/* Time Gutter Cell */}
-                                    <TableCell className="align-top text-xs text-slate-500 -translate-y-2 translate-x-4 min-w-6 max-w-6 border-r-2">
-                                        {hour}
-                                    </TableCell>
-
-                                    {DAYS_OF_WEEK.map((_, index) => {
-                                        const newTime = currentMondayTime.add(index, "day").hour(Number(hour));
-                                        const id = dayJsToISOString(newTime);
-                                        return (
-                                            <TableCell key={id + `-${uuid4()}`} id={id} className="relative min-w-16.5 max-w-16.5">
-                                                {(calendarMap[id] || []).map((task: Task, ind) => {
-                                                    const timeKeys = Object.keys(calendarMap);
-                                                    const timeLeftBoundIndex = leftBoundIndex(timeKeys, task.startTime);
-                                                    if (timeLeftBoundIndex === null || !timeKeys[timeLeftBoundIndex].includes(id)) {
-                                                        return null;
-                                                    }
-
-                                                    return (
-                                                        <div
-                                                            key={id + `-${uuid4()}`}
-                                                            className="truncate absolute rounded-lg border-black border-[0.5px] pl-2"
-                                                            style={{
-                                                                ...tasksStyle[task.id],
-                                                                top: `${tasksStyle[task.id].top}%`,
-                                                                left: `${tasksStyle[task.id].left}%`,
-                                                                height: `${tasksStyle[task.id].height}%`,
-                                                                width: `${tasksStyle[task.id].width}%`,
-                                                                backgroundColor: "#4B99D2",
-                                                            }}
-                                                        >
-                                                            <p className="font-semibold">{task?.title}</p>
-                                                            <p>{isoToHHMM(task.startTime) + " - " + isoToHHMM(task.endTime)}</p>
-                                                        </div>
-                                                    );
-                                                })}
+                    <DndContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
+                        <Table className="w-full table-fixed">
+                            <TableBody>
+                                {hours.map((hour, index) => {
+                                    const newTime = currentMondayTime.add(index, "hour");
+                                    const id = dayJsToISOString(newTime);
+                                    return (
+                                        <TableRow key={hour} className="h-16">
+                                            <TableCell className="w-1/15 align-top text-xs text-slate-500 -translate-y-2 translate-x-4 border-r-2">
+                                                {hour}
                                             </TableCell>
-                                        );
-                                    })}
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                                            <TableCell className="w-14/15">
+                                                <CalendarDayViewDroppableCell key={id + `-${uuid4()}`} id={id} bordered={false}>
+                                                    {(calendarMap[id] || []).map((task: Task) => {
+                                                        const timeKeys = Object.keys(calendarMap);
+                                                        const timeLeftBoundIndex = leftBoundIndex(timeKeys, task.startTime);
+                                                        if (timeLeftBoundIndex === null ||
+                                                            !timeKeys[timeLeftBoundIndex].includes(id) ||
+                                                            !tasksStyle[task.id]
+                                                        ) {
+                                                            return null;
+                                                        }
 
+                                                        return (
+                                                            <DraggableTask
+                                                                key={id + `-${uuid4()}`}
+                                                                task={task}
+                                                                wrapperClassName="truncate absolute rounded-lg border-black border-[0.5px] pl-2"
+                                                                wrapperStyle={{
+                                                                    ...tasksStyle[task.id],
+                                                                    top: `${tasksStyle[task.id].top}%`,
+                                                                    left: `${tasksStyle[task.id].left}%`,
+                                                                    height: `${tasksStyle[task.id].height}rem`,
+                                                                    width: `${tasksStyle[task.id].width}%`,
+                                                                }}
+                                                            />
+                                                        );
+                                                    })}
+                                                </CalendarDayViewDroppableCell>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
+                            </TableBody>
+                        </Table>
+                        <DragOverlay>
+                            {activeTask ? (
+                                <DraggableTask
+                                    isOverlay={true}
+                                    task={activeTask}
+                                    wrapperClassName="truncate rounded-lg border-black border-[0.5px] pl-2"
+                                    wrapperStyle={{
+                                        ...tasksStyle[activeTask.id],
+                                        top: `${tasksStyle[activeTask.id].top}%`,
+                                        left: `${tasksStyle[activeTask.id].left}%`,
+                                        height: `${tasksStyle[activeTask.id].height}rem`,
+                                        width: `${tasksStyle[activeTask.id].width}%`,
+                                    }}
+                                />
+                            ) : null}
+                        </DragOverlay>
+                    </DndContext>
                     {/* Current Time Indicator */}
                     <div
                         className="absolute left-3 right-0 flex items-center z-20"
@@ -191,6 +280,12 @@ export const CalendarDayView = ({ tasks }: CalendarDayViewProps) => {
                         <div className="w-2.5 h-2.5 bg-orange-500 rounded-full -mr-[5px]"></div>
                     </div>
                 </div>
+                <WarningAlertDialog
+                    open={openSleepingTimeWarning}
+                    setOpen={setOpenSleepingTimeWarning}
+                    warningMessage="Your picked time is conflict with the sleeping time!"
+                    recommendActionMessage="Wake up sooner is a better solution!"
+                />
             </CardContent>
         </Card>
     );

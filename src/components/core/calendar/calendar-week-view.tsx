@@ -10,18 +10,19 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { DAYS_OF_WEEK } from "@/const/consts";
-import { dayJsToISOString, getNearestMonday, initCalendarMap, leftBoundIndex, reId, toDayJs, uuid4 } from "@/lib/utils";
+import { dayJsToISOString, getNearestMonday, initCalendarMap, isoToHHMM, leftBoundIndex, reId, toDayJs, uuid4 } from "@/lib/utils";
 import { Task } from "@/model/task";
 import { DndContext, DragOverEvent, DragOverlay } from "@dnd-kit/core";
-import { Dayjs } from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
 import { Clock } from "lucide-react";
 import { useEffect, useState } from "react";
 import { RoundedButton } from "../button/rounded-button";
 import { DateRangeNavigator } from "../date-range-navigator/date-range-navigator";
 import { SegmentedControl, SegmentedControlOption } from "../segmented-control/segmented-control";
 import { DraggableTask } from "./draggable-task";
-import { DroppableCell } from "./droppable-cell";
+import { CalendarWeekViewDroppableCell, DroppableCell } from "./calendar-week-view-droppable-cell";
 import { isNil } from "lodash";
+import { WarningAlertDialog } from "../alert/alert";
 
 export interface WeekViewCalendarProps {
     tasks?: Task[];
@@ -39,23 +40,45 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
         { label: "Week", value: "week" },
         { label: "Day", value: "day" },
     ];
+    const CELL_HEIGHT = 4.6; // rem;
 
-    const sleepStartHour = 22; // 22:00
-    const sleepEndHour = 6;
     const [currentMondayTime, setCurrentMondayTime] = useState<Dayjs>(getNearestMonday());
     const [calendarMap, setCalendarMap] = useState<Record<string, any[]>>({});
-    const [updatedTasks, setUpdatedTasks] = useState<Task[]>(tasks || []);
+    const [updatedTasks, setUpdatedTasks] = useState<Task[]>(reId(tasks || []));
     const [tasksStyle, setTasksStyle] = useState<Record<string, any>>({});
     const [activeDragId, setActiveDragId] = useState<string | null>(null);
     const [activeTask, setActiveTask] = useState<Task | null>(null);
+    const [openSleepingTimeWarning, setOpenSleepingTimeWarning] = useState<boolean>(false);
 
-    const topPosition = `calc(${(12.5 - 8) * 4}rem + 2.5rem)`; // (12:30 - 8:00) * 4rem/hour + header height
+    const topPosition = `calc(${(12.5 - 8) * CELL_HEIGHT}rem + 2.5rem)`; // + header height
+    const sleepStartTime = "22:15";
+    const sleepEndTime = "06:15";
+    const sleepStartHour = Number(sleepStartTime.substring(0, 2));
+    const sleepStartMinute = Number(sleepStartTime.substring(3, 5));
+    const sleepEndHour = Number(sleepEndTime.substring(0, 2));
+    const sleepEndMinute = Number(sleepEndTime.substring(3, 5));
+    const startPositionInHours = sleepStartHour + (sleepStartMinute / 60);
+    const endPositionInHours = sleepEndHour + (sleepEndMinute / 60);
 
     const onDragStart = (event: DragOverEvent) => {
         setActiveDragId(String(event.active.id));
         const task = updatedTasks.find(t => t.id === event.active.id);
         if (task) {
             setActiveTask(task);
+        }
+    };
+
+    const isCollidingWithSleepTime = (task: Task) => {
+        const taskStartHHMM = isoToHHMM(task.startTime);
+        const taskEndHHMM = isoToHHMM(task.endTime);
+        const isSleepOvernight = sleepEndTime > "00:00" && "23:59" >= sleepStartTime;
+        if (isSleepOvernight) {
+            return sleepStartTime < taskEndHHMM && taskEndHHMM <= "23:59" || 
+                    "00:00" <= taskEndHHMM && taskEndHHMM <= sleepEndTime ||
+                sleepStartTime <= taskStartHHMM && taskStartHHMM <= "23:59" ||
+                "00:00" <= taskStartHHMM && taskStartHHMM < sleepEndTime;
+        } else {
+            return !(taskStartHHMM >= sleepEndTime || taskEndHHMM <= sleepStartTime);
         }
     };
 
@@ -77,14 +100,23 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                 endTime: dayJsToISOString(toDayJs(droppedCellId).add(taskDuration)),
             }
         }
+
+        const sleepTimeCollision = (newUpdatedTasks.some(task => isCollidingWithSleepTime(task)));
+        if (sleepTimeCollision) {
+            setOpenSleepingTimeWarning(true);
+            return;
+        }
+
         setUpdatedTasks(reId(newUpdatedTasks));
-        setActiveDragId(null);
     };
 
     useEffect(() => {
-        const newTasks = updatedTasks || [];
+        const newTasks = [...updatedTasks];
         const calendarMap = initCalendarMap(currentMondayTime, newTasks);
-        const newTasksStyle = { ...tasksStyle };
+        const newTasksStyle: any = {};
+        if (activeTask) {
+            newTasksStyle[activeTask.id] = tasksStyle[activeTask.id];
+        }
         let currentZIndex = 0;
 
         setCalendarMap(calendarMap);
@@ -99,16 +131,16 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
 
             if (startTime <= nextHour && endTime <= nextHour && !visited[task.id]) {
                 visited[task.id] = true;
-                return (endTime.diff(startTime) / 60000 * (100 / 60));
+                return (endTime.diff(startTime) / 60000 * (100 / 60)) / 100 * CELL_HEIGHT;
             }
             if (!visited[task.id]) {
                 visited[task.id] = true;
-                return 100 - startDiff;
+                return (100 - startDiff) / 100 * CELL_HEIGHT;
             }
             if (startTime <= toDayJs(timeKey) && nextHour <= endTime) {
-                return 100;
+                return CELL_HEIGHT;
             }
-            return endDiff;
+            return endDiff / 100 * CELL_HEIGHT;
         };
         Object.keys(calendarMap).forEach(timeKey => {
             const tasksVal = calendarMap[timeKey];
@@ -120,13 +152,18 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                     zIndex: !visited[task.id] ? ++currentZIndex : newStyle?.zIndex,
                     top: !visited[task.id] ? diff : newStyle?.top,    // %
                     left: count * 10,    // %
-                    height: (newStyle?.height || 0) + getHeight(timeKey, task), // %
+                    height: (newStyle?.height || 0) + getHeight(timeKey, task), // rem
                     width: Math.min(newStyle?.width || 85, 85 / tasksVal.length),   // %
                 }
 
                 newTasksStyle[task.id] = newStyle;
             });
         });
+
+        if (activeTask) {
+            newTasksStyle[activeTask.id] = undefined;
+        }
+        setActiveTask(null);
         setTasksStyle(newTasksStyle);
 
     }, [currentMondayTime, updatedTasks]);
@@ -183,20 +220,20 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                         onDragEnd={onDragEnd}
                     >
                         {/* --- Sleep Time Rectangles --- */}
-                        {/* Morning Block (00:00 to sleepEndHour) */}
+                        {/* Morning Block (from midnight to wake-up time) */}
                         <div
                             className="absolute left-0 right-0 bg-slate-300 z-0"
                             style={{
                                 top: 0,
-                                height: `${sleepEndHour * 4}rem`, // 4rem is the height of one hour (h-16)
+                                height: `${endPositionInHours * CELL_HEIGHT}rem`,
                             }}
                         />
-                        {/* Night Block (sleepStartHour to 24:00) */}
+                        {/* Night Block (from bedtime to midnight) */}
                         <div
                             className="absolute left-0 right-0 bg-slate-300 z-0"
                             style={{
-                                top: `${sleepStartHour * 4}rem`,
-                                height: `${(24 - sleepStartHour) * 4}rem`,
+                                top: `${startPositionInHours * CELL_HEIGHT}rem`,
+                                height: `${(24 - startPositionInHours) * CELL_HEIGHT}rem`,
                             }}
                         />
                         <Table className="w-full">
@@ -204,7 +241,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                 {hours.map((hour) => (
                                     <TableRow key={hour} className="h-16">
                                         {/* Time Gutter Cell */}
-                                        <TableCell className="align-top text-xs text-slate-500 -translate-y-2 translate-x-4 min-w-6 max-w-6 border-r-2">
+                                        <TableCell className="align-top text-xs text-slate-500 -translate-y-2 translate-x-4 w-6 h-[4rem] border-r-2">
                                             {hour}
                                         </TableCell>
 
@@ -212,30 +249,33 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                             const newTime = currentMondayTime.add(index, "day").hour(Number(hour));
                                             const id = dayJsToISOString(newTime);
                                             return (
-                                                <DroppableCell key={id + `-${uuid4()}`} id={id}>
+                                                <CalendarWeekViewDroppableCell key={id + `-${uuid4()}`} id={id} wrapperClassName="w-16.5 h-[4.6rem] ">
                                                     {(calendarMap[id] || []).map((task: Task) => {
                                                         const timeKeys = Object.keys(calendarMap);
                                                         const timeLeftBoundIndex = leftBoundIndex(timeKeys, task.startTime);
-                                                        if (timeLeftBoundIndex === null || !timeKeys[timeLeftBoundIndex].includes(id)) {
+                                                        if (timeLeftBoundIndex === null ||
+                                                            !timeKeys[timeLeftBoundIndex].includes(id) ||
+                                                            !tasksStyle[task.id]
+                                                        ) {
                                                             return null;
                                                         }
 
                                                         return (
                                                             <DraggableTask
-                                                                 key={id + `-${uuid4()}`}
-                                                                 task={task}
+                                                                key={id + `-${uuid4()}`}
+                                                                task={task}
                                                                 wrapperClassName="truncate absolute rounded-lg border-black border-[0.5px] pl-2"
                                                                 wrapperStyle={{
                                                                     ...tasksStyle[task.id],
                                                                     top: `${tasksStyle[task.id].top}%`,
                                                                     left: `${tasksStyle[task.id].left}%`,
-                                                                    height: `${tasksStyle[task.id].height}%`,
+                                                                    height: `${tasksStyle[task.id].height}rem`,
                                                                     width: `${tasksStyle[task.id].width}%`,
                                                                 }}
                                                             />
                                                         );
                                                     })}
-                                                </DroppableCell>
+                                                </CalendarWeekViewDroppableCell>
                                             );
                                         })}
                                     </TableRow>
@@ -243,7 +283,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                             </TableBody>
                         </Table>
                         <DragOverlay>
-                            {activeTask  ? (
+                            {activeTask ? (
                                 <DraggableTask
                                     isOverlay={true}
                                     task={activeTask}
@@ -252,7 +292,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                         ...tasksStyle[activeTask.id],
                                         top: `${tasksStyle[activeTask.id].top}%`,
                                         left: `${tasksStyle[activeTask.id].left}%`,
-                                        height: `${tasksStyle[activeTask.id].height}%`,
+                                        height: `${tasksStyle[activeTask.id].height}rem`,
                                         width: `${tasksStyle[activeTask.id].width}%`,
                                     }}
                                 />
@@ -269,6 +309,12 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                         <div className="w-2.5 h-2.5 bg-orange-500 rounded-full -mr-[5px]"></div>
                     </div>
                 </div>
+                <WarningAlertDialog
+                    open={openSleepingTimeWarning}
+                    setOpen={setOpenSleepingTimeWarning}
+                    warningMessage="Your picked time is conflict with the sleeping time!"
+                    recommendActionMessage="Wake up sooner is a better solution!"
+                />
             </CardContent>
         </Card>
     );

@@ -19,10 +19,10 @@ export default function RootPage() {
     const today = dayjs();
     const startOfWeek = today.startOf('week');
 
-    for (let i = 0; i < 1; i++) {
+    for (let i = 0; i < 4; i++) {
       const taskDay = startOfWeek.add(1, 'day');
-      const startTime = dayJsToISOString(taskDay.hour(9).minute(0).second(0));
-      const endTime = dayJsToISOString(taskDay.hour(17).minute(0).second(0));
+      const startTime = dayJsToISOString(taskDay.hour(i <= 2 ? 9 : 7).minute(15).second(0));
+      const endTime = dayJsToISOString(taskDay.hour(i <= 2 ? 17 : 12).minute(30).second(0));
 
       taskArray.push({
         id: startTime,
@@ -56,6 +56,6 @@ export default function RootPage() {
     //   }}
     //   // setUpdatedTasks={}
     // />
-    <CalendarDayView />
+    <CalendarDayView tasks={tasks}/>
   );
 }
