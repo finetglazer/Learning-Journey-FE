@@ -259,3 +259,17 @@ export const getRoutineDates = (task: Task, startTime: string, endTime: string) 
   }
   return res;
 };
+
+export const isCollidingWithSleepTime = (task: Task, sleepStartTime: string, sleepEndTime: string) => {
+  const taskStartHHMM = isoToHHMM(task.startTime);
+  const taskEndHHMM = isoToHHMM(task.endTime);
+  const isSleepOvernight = sleepEndTime > "00:00" && "23:59" >= sleepStartTime;
+  if (isSleepOvernight) {
+    return sleepStartTime < taskEndHHMM && taskEndHHMM <= "23:59" ||
+      "00:00" <= taskEndHHMM && taskEndHHMM <= sleepEndTime ||
+      sleepStartTime <= taskStartHHMM && taskStartHHMM <= "23:59" ||
+      "00:00" <= taskStartHHMM && taskStartHHMM < sleepEndTime;
+  } else {
+    return !(taskStartHHMM >= sleepEndTime || taskEndHHMM <= sleepStartTime);
+  }
+};

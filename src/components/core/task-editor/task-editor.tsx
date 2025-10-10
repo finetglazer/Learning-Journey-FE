@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { isoStringToDate, isoToHHMM, isoToStandardTime, uuid4 } from "@/lib/utils"
+import { isCollidingWithSleepTime, isoStringToDate, isoToHHMM, isoToStandardTime, reId, uuid4 } from "@/lib/utils"
 import { Task, TaskStep } from "@/model/task"
 import { formService } from "@/service/form-service"
 import {
@@ -27,19 +27,32 @@ import {
 } from "lucide-react"
 import { CSSProperties, Dispatch, SetStateAction, useState } from "react"
 import { DateTimePicker } from "../date-time-picker/date-time-picker"
+import { RecurringPatterns } from "./recurring-patterns"
 import { SubTaskList } from "./sortable-subtask"
 import { TaskStatusDropdown } from "./task-status-dropdown"
 import { TaskTypeDropdown } from "./task-type-dropdown"
-import { RecurringPatterns } from "./recurring-patterns"
 
 export interface TaskEditorProps {
     task: Task;
-    setUpdatedTasks?: Dispatch<SetStateAction<Task[]>>;
+    updatedTasks: Task[];
+    setUpdatedTasks: Dispatch<SetStateAction<Task[]>>;
+    setOpenSleepingTimeWarning: Dispatch<SetStateAction<boolean>>;
+    sleepStartTime: string;
+    sleepEndTime: string;
     onClose?: () => void;
     style?: CSSProperties;
 };
 
-export const TaskEditor = ({ task, setUpdatedTasks, onClose, style }: TaskEditorProps) => {
+export const TaskEditor = ({ 
+    task, 
+    updatedTasks, 
+    setUpdatedTasks, 
+    setOpenSleepingTimeWarning, 
+    onClose, 
+    style,
+    sleepStartTime,
+    sleepEndTime,
+}: TaskEditorProps) => {
     const [openStartTimePicker, setOpenStartTimePicker] = useState<boolean>(false);
     const [openEndTimePicker, setOpenEndTimePicker] = useState<boolean>(false);
 
@@ -75,7 +88,26 @@ export const TaskEditor = ({ task, setUpdatedTasks, onClose, style }: TaskEditor
     };
 
     const onSave = () => {
+        let cloneUpdatedTasks = [...updatedTasks];
+        const updatedIndex = cloneUpdatedTasks.findIndex(updatedTask => updatedTask.id === task.id);
+        if (updatedIndex !== -1) {
+            cloneUpdatedTasks[updatedIndex] = model;
+        }
+        else {
+            cloneUpdatedTasks = [...cloneUpdatedTasks, model];
+        }
 
+        if (hasTimeError) {
+            return;
+        }
+
+        if (isCollidingWithSleepTime(model, sleepStartTime, sleepEndTime)) {
+            setOpenSleepingTimeWarning(true);
+            return;
+        }
+
+        setUpdatedTasks(reId(cloneUpdatedTasks));
+        onClose?.();
     };
 
     const onCancel = () => {
@@ -95,8 +127,8 @@ export const TaskEditor = ({ task, setUpdatedTasks, onClose, style }: TaskEditor
                             value={model?.title}
                         />
                         <div className="flex items-center space-x-2">
-                            <Button className="bg-green-300 hover:bg-green-400 text-green-800 rounded-full px-5 text-sm font-semibold">Save</Button>
-                            <Button variant="ghost" className="text-gray-500 rounded-full px-5 text-sm" onClick={onCancel}>Cancel</Button>
+                            <Button className="bg-green-300 hover:bg-green-400 text-green-800 rounded-full px-5 text-sm font-semibold cursor-pointer" onClick={onSave}>Save</Button>
+                            <Button variant="ghost" className="text-gray-500 rounded-full px-5 text-sm cursor-pointer" onClick={onCancel}>Cancel</Button>
                         </div>
                     </div>
 

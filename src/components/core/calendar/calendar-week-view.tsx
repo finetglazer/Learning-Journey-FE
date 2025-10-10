@@ -296,6 +296,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                         height: `${tasksStyle[activeTask.id].height}rem`,
                                         width: `${tasksStyle[activeTask.id].width}%`,
                                     }}
+                                    
                                 />
                             ) : null}
                         </DragOverlay>

@@ -2,9 +2,9 @@
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
-import { dayJsToISOString, getNearestMonday, initCalendarMap, isoToHHMM, leftBoundIndex, reId, toDayJs, uuid4 } from "@/lib/utils";
+import { dayJsToISOString, getNearestMonday, initCalendarMap, isCollidingWithSleepTime, isoToHHMM, leftBoundIndex, reId, toDayJs, uuid4 } from "@/lib/utils";
 import { Task } from "@/model/task";
-import { DndContext, DragEndEvent, DragOverEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import dayjs, { Dayjs } from "dayjs";
 import { isNil } from "lodash";
 import { useEffect, useRef, useState } from "react";
@@ -12,9 +12,9 @@ import { WarningAlertDialog } from "../alert/alert";
 import { RoundedButton } from "../button/rounded-button";
 import { DateRangeNavigator } from "../date-range-navigator/date-range-navigator";
 import { SegmentedControl, SegmentedControlOption } from "../segmented-control/segmented-control";
+import { TaskEditor } from "../task-editor/task-editor";
 import { CalendarDayViewDroppableCell } from "./calendar-day-view-droppable-cell";
 import { DraggableTask } from "./draggable-task";
-import { TaskEditor } from "../task-editor/task-editor";
 
 export interface CalendarDayViewProps {
     tasks?: Task[];
@@ -32,7 +32,6 @@ export const CalendarDayView = ({ tasks }: CalendarDayViewProps) => {
     const [activeDragId, setActiveDragId] = useState<string | null>(null);
     const [activeTask, setActiveTask] = useState<Task | null>(null);
     const [openSleepingTimeWarning, setOpenSleepingTimeWarning] = useState<boolean>(false);
-    const [openCreateTaskForm, setOpenCreateTaskForm] = useState<boolean>(false);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [editorPosition, setEditorPosition] = useState({ x: 0, y: 0 });
     const viewOptions: SegmentedControlOption[] = [
@@ -76,20 +75,6 @@ export const CalendarDayView = ({ tasks }: CalendarDayViewProps) => {
         }
     };
 
-    const isCollidingWithSleepTime = (task: Task) => {
-        const taskStartHHMM = isoToHHMM(task.startTime);
-        const taskEndHHMM = isoToHHMM(task.endTime);
-        const isSleepOvernight = sleepEndTime > "00:00" && "23:59" >= sleepStartTime;
-        if (isSleepOvernight) {
-            return sleepStartTime < taskEndHHMM && taskEndHHMM <= "23:59" ||
-                "00:00" <= taskEndHHMM && taskEndHHMM <= sleepEndTime ||
-                sleepStartTime <= taskStartHHMM && taskStartHHMM <= "23:59" ||
-                "00:00" <= taskStartHHMM && taskStartHHMM < sleepEndTime;
-        } else {
-            return !(taskStartHHMM >= sleepEndTime || taskEndHHMM <= sleepStartTime);
-        }
-    };
-
     const onDragEnd = (event: DragEndEvent) => {
         const droppedCellId = String(event.over?.id || null);
         if (!droppedCellId) {
@@ -110,7 +95,7 @@ export const CalendarDayView = ({ tasks }: CalendarDayViewProps) => {
             };
         }
 
-        const sleepTimeCollision = (newUpdatedTasks.some(task => isCollidingWithSleepTime(task)));
+        const sleepTimeCollision = (newUpdatedTasks.some(task => isCollidingWithSleepTime(task, sleepStartTime, sleepEndTime)));
         if (sleepTimeCollision) {
             setOpenSleepingTimeWarning(true);
             return;
@@ -131,15 +116,20 @@ export const CalendarDayView = ({ tasks }: CalendarDayViewProps) => {
         const containerRect = container.getBoundingClientRect();
         const y = event.clientY - containerRect.top + container.scrollTop;
         const x = event.clientX - containerRect.left;
-
-        setEditorPosition({ x, y });
-
         const newTask = {
             id: uuid4(),
+            type: "task",
             startTime: cellId,
             endTime: cellId,
             title: "",
         } as Task;
+
+        if (isCollidingWithSleepTime(newTask, sleepStartTime, sleepEndTime)) {
+            return;
+        }
+        
+        setEditorPosition({ x, y });
+    
         setEditingTask(newTask);
     };
 
@@ -365,8 +355,13 @@ export const CalendarDayView = ({ tasks }: CalendarDayViewProps) => {
                         <TaskEditor
                             key={editingTask.id}
                             task={editingTask}
+                            updatedTasks={updatedTasks}
+                            setUpdatedTasks={setUpdatedTasks}
+                            setOpenSleepingTimeWarning={setOpenSleepingTimeWarning}
                             onClose={() => setEditingTask(null)}
                             style={{ top: editorPosition.y, left: editorPosition.x }}
+                            sleepStartTime={sleepStartTime}
+                            sleepEndTime={sleepEndTime}
                         />
                     )}
                 </div>
