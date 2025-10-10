@@ -4,16 +4,17 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { dayJsToISOString, getNearestMonday, initCalendarMap, isoToHHMM, leftBoundIndex, reId, toDayJs, uuid4 } from "@/lib/utils";
 import { Task } from "@/model/task";
-import { DndContext, DragOverEvent, DragOverlay } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragOverEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import dayjs, { Dayjs } from "dayjs";
 import { isNil } from "lodash";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { WarningAlertDialog } from "../alert/alert";
 import { RoundedButton } from "../button/rounded-button";
 import { DateRangeNavigator } from "../date-range-navigator/date-range-navigator";
 import { SegmentedControl, SegmentedControlOption } from "../segmented-control/segmented-control";
 import { CalendarDayViewDroppableCell } from "./calendar-day-view-droppable-cell";
 import { DraggableTask } from "./draggable-task";
+import { TaskEditor } from "../task-editor/task-editor";
 
 export interface CalendarDayViewProps {
     tasks?: Task[];
@@ -21,6 +22,7 @@ export interface CalendarDayViewProps {
 
 export const CalendarDayView = ({ tasks }: CalendarDayViewProps) => {
 
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
     const [tasksStyle, setTasksStyle] = useState<Record<string, any>>({});
     const [calendarMap, setCalendarMap] = useState<Record<string, any[]>>({});
@@ -30,6 +32,9 @@ export const CalendarDayView = ({ tasks }: CalendarDayViewProps) => {
     const [activeDragId, setActiveDragId] = useState<string | null>(null);
     const [activeTask, setActiveTask] = useState<Task | null>(null);
     const [openSleepingTimeWarning, setOpenSleepingTimeWarning] = useState<boolean>(false);
+    const [openCreateTaskForm, setOpenCreateTaskForm] = useState<boolean>(false);
+    const [editingTask, setEditingTask] = useState<Task | null>(null);
+    const [editorPosition, setEditorPosition] = useState({ x: 0, y: 0 });
     const viewOptions: SegmentedControlOption[] = [
         { label: "Year", value: "year" },
         { label: "Month", value: "month" },
@@ -55,7 +60,15 @@ export const CalendarDayView = ({ tasks }: CalendarDayViewProps) => {
     const startPositionInHours = sleepStartHour + (sleepStartMinute / 60);
     const endPositionInHours = sleepEndHour + (sleepEndMinute / 60);
 
-    const onDragStart = (event: DragOverEvent) => {
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        })
+    );
+
+    const onDragStart = (event: DragStartEvent) => {
         setActiveDragId(String(event.active.id));
         const task = updatedTasks.find(t => t.id === event.active.id);
         if (task) {
@@ -77,10 +90,11 @@ export const CalendarDayView = ({ tasks }: CalendarDayViewProps) => {
         }
     };
 
-    const onDragEnd = (event: DragOverEvent) => {
+    const onDragEnd = (event: DragEndEvent) => {
         const droppedCellId = String(event.over?.id || null);
         if (!droppedCellId) {
             setActiveDragId(null);
+            setActiveTask(null);
             return;
         }
         const updatedTaskIndex = updatedTasks.findIndex(task => task.id === activeDragId);
@@ -102,7 +116,48 @@ export const CalendarDayView = ({ tasks }: CalendarDayViewProps) => {
             return;
         }
 
+        setActiveTask(null);
         setUpdatedTasks(reId(newUpdatedTasks));
+    };
+
+    const handleCellClick = (event: React.MouseEvent<HTMLTableCellElement>, cellId: string) => {
+        if ((event.target as HTMLElement).closest('.cursor-grab')) {
+            return;
+        }
+
+        const container = scrollContainerRef.current;
+        if (!container) return;
+
+        const containerRect = container.getBoundingClientRect();
+        const y = event.clientY - containerRect.top + container.scrollTop;
+        const x = event.clientX - containerRect.left;
+
+        setEditorPosition({ x, y });
+
+        const newTask = {
+            id: uuid4(),
+            startTime: cellId,
+            endTime: cellId,
+            title: "",
+        } as Task;
+        setEditingTask(newTask);
+    };
+
+    const handleTaskDoubleClick = (event: React.MouseEvent<HTMLDivElement>, task: Task) => {
+        // if ((event.target as HTMLElement).closest('.cursor-grab')) {
+        //     return;
+        // }
+
+        const container = scrollContainerRef.current;
+        if (!container) return;
+
+        const containerRect = container.getBoundingClientRect();
+        const y = event.clientY - containerRect.top + container.scrollTop;
+        const x = event.clientX - containerRect.left;
+
+        setEditorPosition({ x, y });
+
+        setEditingTask(task);
     };
 
     useEffect(() => {
@@ -156,10 +211,32 @@ export const CalendarDayView = ({ tasks }: CalendarDayViewProps) => {
             });
         });
 
-        if (activeTask) {
-            newTasksStyle[activeTask.id] = undefined;
+        const sortedTasks = [...updatedTasks].sort((a, b) =>
+            dayjs(a.startTime).diff(dayjs(b.startTime))
+        );
+
+        for (const task of sortedTasks) {
+            const overlappingTasks = sortedTasks.filter(otherTask =>
+                dayjs(task.startTime).isBefore(dayjs(otherTask.endTime)) &&
+                dayjs(otherTask.startTime).isBefore(dayjs(task.endTime))
+            );
+
+            const width = 90 / overlappingTasks.length;
+            overlappingTasks.sort((a, b) => a.id.localeCompare(b.id));
+            const columnIndex = overlappingTasks.findIndex(t => t.id === task.id);
+            const left = columnIndex * width;
+
+            newTasksStyle[task.id] = {
+                ...newTasksStyle[task.id],
+                width,
+                left,
+            };
         }
-        setActiveTask(null);
+
+        // if (activeTask) {
+        //     newTasksStyle[activeTask.id] = undefined;
+        // }
+
         setTasksStyle(newTasksStyle);
 
     }, [currentMondayTime, updatedTasks]);
@@ -190,7 +267,7 @@ export const CalendarDayView = ({ tasks }: CalendarDayViewProps) => {
             {/* ====== Calendar Table ====== */}
             <CardContent className="p-0 h-full">
                 {/* Scroll container */}
-                <div className="relative h-[85vh] overflow-y-scroll overflow-x-hidden">
+                <div ref={scrollContainerRef} className="relative h-[85vh] overflow-y-scroll overflow-x-hidden">
                     {/* --- Sleep Time Rectangles --- */}
                     {/* Morning Block (from midnight to wake-up time) */}
                     <div
@@ -208,7 +285,7 @@ export const CalendarDayView = ({ tasks }: CalendarDayViewProps) => {
                             height: `${(24 - startPositionInHours) * CELL_HEIGHT}rem`,
                         }}
                     />
-                    <DndContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
+                    <DndContext onDragStart={onDragStart} onDragEnd={onDragEnd} sensors={sensors}>
                         <Table className="w-full table-fixed">
                             <TableBody>
                                 {hours.map((hour, index) => {
@@ -219,7 +296,10 @@ export const CalendarDayView = ({ tasks }: CalendarDayViewProps) => {
                                             <TableCell className="w-1/15 align-top text-xs text-slate-500 -translate-y-2 translate-x-4 border-r-2">
                                                 {hour}
                                             </TableCell>
-                                            <TableCell className="w-14/15">
+                                            <TableCell
+                                                onClick={(e) => handleCellClick(e, id)}
+                                                className="w-14/15 cursor-pointer"
+                                            >
                                                 <CalendarDayViewDroppableCell key={id + `-${uuid4()}`} id={id} bordered={false}>
                                                     {(calendarMap[id] || []).map((task: Task) => {
                                                         const timeKeys = Object.keys(calendarMap);
@@ -234,6 +314,7 @@ export const CalendarDayView = ({ tasks }: CalendarDayViewProps) => {
                                                         return (
                                                             <DraggableTask
                                                                 key={id + `-${uuid4()}`}
+                                                                setEditingTask={handleTaskDoubleClick}
                                                                 task={task}
                                                                 wrapperClassName="truncate absolute rounded-lg border-black border-[0.5px] pl-2"
                                                                 wrapperStyle={{
@@ -256,9 +337,10 @@ export const CalendarDayView = ({ tasks }: CalendarDayViewProps) => {
                         <DragOverlay>
                             {activeTask ? (
                                 <DraggableTask
+                                    setEditingTask={handleTaskDoubleClick}
                                     isOverlay={true}
                                     task={activeTask}
-                                    wrapperClassName="truncate rounded-lg border-black border-[0.5px] pl-2"
+                                    wrapperClassName="truncate absolute rounded-lg border-black border-[0.5px] pl-2"
                                     wrapperStyle={{
                                         ...tasksStyle[activeTask.id],
                                         top: `${tasksStyle[activeTask.id].top}%`,
@@ -279,6 +361,14 @@ export const CalendarDayView = ({ tasks }: CalendarDayViewProps) => {
                         <div className="w-full h-0.5 bg-orange-500"></div>
                         <div className="w-2.5 h-2.5 bg-orange-500 rounded-full -mr-[5px]"></div>
                     </div>
+                    {editingTask && (
+                        <TaskEditor
+                            key={editingTask.id}
+                            task={editingTask}
+                            onClose={() => setEditingTask(null)}
+                            style={{ top: editorPosition.y, left: editorPosition.x }}
+                        />
+                    )}
                 </div>
                 <WarningAlertDialog
                     open={openSleepingTimeWarning}

@@ -1,0 +1,1 @@
+export type CalendarType = 'day' | 'week' | 'month-view' | 'month-planning';

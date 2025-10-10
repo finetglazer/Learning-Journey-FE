@@ -1,11 +1,13 @@
 import { useDraggable } from '@dnd-kit/core';
 import { BaseTask, BaseTaskProps } from '../task/base-task';
+import { Task } from '@/model/task';
 
 export interface DraggableTaskProps extends BaseTaskProps {
+    setEditingTask: (e: React.MouseEvent<HTMLDivElement>, task: Task) => void;
     isOverlay?: boolean;
 }
 
-export const DraggableTask = ({ task, isOverlay = false, ...baseTaskProps }: DraggableTaskProps) => {
+export const DraggableTask = ({ task, isOverlay = false, setEditingTask, ...baseTaskProps }: DraggableTaskProps) => {
     // Get `isDragging` from the hook
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: task.id,
@@ -20,6 +22,20 @@ export const DraggableTask = ({ task, isOverlay = false, ...baseTaskProps }: Dra
         return <div ref={setNodeRef} style={{ visibility: 'hidden' }} />;
     }
 
+    if (isOverlay) {
+        const overlayWrapperStyle = {
+            ...(baseTaskProps.wrapperStyle || {}),
+            touchAction: 'none',
+        };
+        return (
+            <BaseTask
+                task={task}
+                {...baseTaskProps}
+                wrapperStyle={overlayWrapperStyle}
+            />
+        );
+    }
+
     return (
         <div
             ref={setNodeRef}
@@ -27,6 +43,7 @@ export const DraggableTask = ({ task, isOverlay = false, ...baseTaskProps }: Dra
             {...listeners}
             {...attributes}
             className="cursor-grab"
+            onDoubleClick={(e) => setEditingTask(e, task)}
         >
             <BaseTask task={task} {...baseTaskProps} />
         </div>

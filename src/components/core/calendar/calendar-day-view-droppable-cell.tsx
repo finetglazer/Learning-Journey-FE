@@ -5,12 +5,14 @@ export const CalendarDayViewDroppableCell = ({
     id, 
     children,
     bordered = true,
-    wrapperClassName 
+    wrapperClassName,
+    onClick,
 }: { 
     id: string; 
     children: React.ReactNode; 
     bordered?: boolean;
     wrapperClassName?: string;
+    onClick?: () => void;
 }) => {
     const { isOver, setNodeRef } = useDroppable({
         id: id,

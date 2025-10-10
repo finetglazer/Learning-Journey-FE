@@ -25,7 +25,7 @@ import {
     Pencil,
     Plus
 } from "lucide-react"
-import { Dispatch, SetStateAction, useState } from "react"
+import { CSSProperties, Dispatch, SetStateAction, useState } from "react"
 import { DateTimePicker } from "../date-time-picker/date-time-picker"
 import { SubTaskList } from "./sortable-subtask"
 import { TaskStatusDropdown } from "./task-status-dropdown"
@@ -35,9 +35,11 @@ import { RecurringPatterns } from "./recurring-patterns"
 export interface TaskEditorProps {
     task: Task;
     setUpdatedTasks?: Dispatch<SetStateAction<Task[]>>;
+    onClose?: () => void;
+    style?: CSSProperties;
 };
 
-export const TaskEditor = ({ task, setUpdatedTasks }: TaskEditorProps) => {
+export const TaskEditor = ({ task, setUpdatedTasks, onClose, style }: TaskEditorProps) => {
     const [openStartTimePicker, setOpenStartTimePicker] = useState<boolean>(false);
     const [openEndTimePicker, setOpenEndTimePicker] = useState<boolean>(false);
 
@@ -77,12 +79,12 @@ export const TaskEditor = ({ task, setUpdatedTasks }: TaskEditorProps) => {
     };
 
     const onCancel = () => {
-
+        onClose?.();
     };
 
     return (
         <TooltipProvider>
-            <Card className="w-[380px] bg-[#F9FAFB] rounded-xl shadow-md font-sans p-4">
+            <Card style={style} className="w-[380px] bg-[#F9FAFB] rounded-xl shadow-md font-sans p-4 absolute z-[10000]">
                 <CardContent className="p-2">
                     {/* Header Section */}
                     <div className="flex justify-between items-center mb-4">
@@ -94,7 +96,7 @@ export const TaskEditor = ({ task, setUpdatedTasks }: TaskEditorProps) => {
                         />
                         <div className="flex items-center space-x-2">
                             <Button className="bg-green-300 hover:bg-green-400 text-green-800 rounded-full px-5 text-sm font-semibold">Save</Button>
-                            <Button variant="ghost" className="text-gray-500 rounded-full px-5 text-sm">Cancel</Button>
+                            <Button variant="ghost" className="text-gray-500 rounded-full px-5 text-sm" onClick={onCancel}>Cancel</Button>
                         </div>
                     </div>
 

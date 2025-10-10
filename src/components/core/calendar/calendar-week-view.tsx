@@ -107,6 +107,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
             return;
         }
 
+        setActiveTask(null);
         setUpdatedTasks(reId(newUpdatedTasks));
     };
 
@@ -160,10 +161,10 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
             });
         });
 
-        if (activeTask) {
-            newTasksStyle[activeTask.id] = undefined;
-        }
-        setActiveTask(null);
+        // if (activeTask) {
+        //     newTasksStyle[activeTask.id] = undefined;
+        // }
+
         setTasksStyle(newTasksStyle);
 
     }, [currentMondayTime, updatedTasks]);

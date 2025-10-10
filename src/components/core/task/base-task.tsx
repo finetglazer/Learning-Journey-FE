@@ -1,11 +1,12 @@
 import { cn, isoToHHMM, toDayJs } from '@/lib/utils';
 import { Task } from '@/model/task';
 import React, { CSSProperties } from 'react';
+import { CalendarType } from '../calendar/type';
 
 export interface BaseTaskProps {
     task: Task;
     key?: string;
-    calendarType?: 'day' | 'week' | 'month-view' | 'month-planning';
+    calendarType?: CalendarType;
     wrapperClassName?: string;
     wrapperStyle?: CSSProperties;
     titleClassName?: string;
