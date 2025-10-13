@@ -30,12 +30,12 @@ export function TaskStatusDropdown({ currentStatus, onStatusChange }: TaskStatus
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2 px-2 h-auto justify-start">
+                <Button variant="ghost" className="flex items-center gap-2 px-2 h-auto justify-start cursor-pointer">
                     <Icon className={`${color} ${selectedStatusKey === 'in-progress' ? 'animate-spin' : ''}, -mt-0.5`} size={20} />
                     <span className="text-sm text-gray-700">{label}</span>
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent>
+            <DropdownMenuContent className="z-[99999]">
                 {Object.entries(statusConfig).map(([key, { label, Icon, color }]) => (
                     <DropdownMenuItem key={key} onSelect={() => onStatusChange(key as Status)}>
                         <Icon className={`mr-2 h-4 w-4 ${color} ${key === 'in-progress' ? 'animate-spin' : ''}`} />

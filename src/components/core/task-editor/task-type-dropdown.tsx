@@ -31,12 +31,12 @@ export function TaskTypeDropdown({ currentType, onTypeChange }: TaskTypeDropdown
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className={`flex items-center gap-2 rounded-md px-3 py-1 h-auto text-xs font-medium text-white hover:text-white ${color}`}>
+                <Button variant="ghost" className={`flex items-center cursor-pointer gap-2 rounded-md px-3 py-1 h-auto text-xs font-medium text-white hover:text-white ${color}`}>
                     <Icon size={14} />
                     {label}
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent>
+            <DropdownMenuContent className="z-[99999]">
                 {Object.entries(typeConfig).map(([key, { label, Icon }]) => (
                     <DropdownMenuItem key={key} onSelect={() => onTypeChange(key as TaskType)}>
                         <Icon className="mr-2 h-4 w-4" />

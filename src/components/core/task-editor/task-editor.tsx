@@ -23,7 +23,8 @@ import {
     CircleAlertIcon,
     ListCheck,
     Pencil,
-    Plus
+    Plus,
+    Trash2
 } from "lucide-react"
 import { CSSProperties, Dispatch, SetStateAction, useState } from "react"
 import { DateTimePicker } from "../date-time-picker/date-time-picker"
@@ -39,19 +40,21 @@ export interface TaskEditorProps {
     setOpenSleepingTimeWarning: Dispatch<SetStateAction<boolean>>;
     sleepStartTime: string;
     sleepEndTime: string;
+    onDelete: () => void;
     onClose?: () => void;
     style?: CSSProperties;
 };
 
-export const TaskEditor = ({ 
-    task, 
-    updatedTasks, 
-    setUpdatedTasks, 
-    setOpenSleepingTimeWarning, 
-    onClose, 
+export const TaskEditor = ({
+    task,
+    updatedTasks,
+    setUpdatedTasks,
+    setOpenSleepingTimeWarning,
+    onClose,
     style,
     sleepStartTime,
     sleepEndTime,
+    onDelete,
 }: TaskEditorProps) => {
     const [openStartTimePicker, setOpenStartTimePicker] = useState<boolean>(false);
     const [openEndTimePicker, setOpenEndTimePicker] = useState<boolean>(false);
@@ -129,6 +132,21 @@ export const TaskEditor = ({
                         <div className="flex items-center space-x-2">
                             <Button className="bg-green-300 hover:bg-green-400 text-green-800 rounded-full px-5 text-sm font-semibold cursor-pointer" onClick={onSave}>Save</Button>
                             <Button variant="ghost" className="text-gray-500 rounded-full px-5 text-sm cursor-pointer" onClick={onCancel}>Cancel</Button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="text-gray-500 cursor-pointer hover:text-red-500 rounded-full"
+                                        onClick={onDelete}
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent className="z-[99999]">
+                                    <p>Delete</p>
+                                </TooltipContent>
+                            </Tooltip>
                         </div>
                     </div>
 

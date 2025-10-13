@@ -14,12 +14,12 @@ export const CalendarDayViewDroppableCell = ({
     wrapperClassName?: string;
     onClick?: () => void;
 }) => {
-    const { isOver, setNodeRef } = useDroppable({
+    const { isOver, active, setNodeRef } = useDroppable({
         id: id,
     }); 
 
     const style = {
-        backgroundColor: isOver ? '#E0F2FE' : undefined
+        backgroundColor: isOver && active?.id !== "draggable-panel" ? '#E0F2FE' : undefined
     };
 
     return (
