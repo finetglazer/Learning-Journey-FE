@@ -1,19 +1,31 @@
+import { CALENDAR_VIEW_OPTIONS } from "@/const/consts";
 import { cn } from "@/lib/utils";
 
-export interface SegmentedControlOption {
-    label: string;
-    value: string;
-}
-
 export interface SegmentedControlProps {
-    options: SegmentedControlOption[];
     value: string;
     onValueChange: (value: string) => void;
     className?: string;
 }
 
 export const SegmentedControl = (props: SegmentedControlProps) => {
-    const { options, value, onValueChange, className } = props;
+    const { value, onValueChange, className } = props;
+
+    const getLabel = (key: string) => {
+        switch (key) {
+            case "day":
+                return "Day";
+            case "week":
+                return "Week";
+            case "month-view":
+                return "Month view";
+            case "month-planning":
+                return "Month planning";
+            case "year":
+                return "Year";
+            default:
+                return "";
+        }
+    };
 
     return (
         <div
@@ -23,24 +35,24 @@ export const SegmentedControl = (props: SegmentedControlProps) => {
             )}
             role="group"
         >
-            {options.map((option, index) => {
-                const isActive = value === option.value;
+            {CALENDAR_VIEW_OPTIONS.map((option, index) => {
+                const isActive = value === option;
 
                 return (
                     <button
-                        key={option.value}
-                        onClick={() => onValueChange(option.value)}
+                        key={"calendar-".concat(option).concat("-mode")}
+                        onClick={() => onValueChange(option)}
                         className={cn(
                             "px-5 py-2 text-sm font-semibold transition-colors duration-200 ease-in-out",
                             index > 0 && "border-l border-gray-200",
                             "first:rounded-l-full last:rounded-r-full",
                             isActive
-                                ? "text-slate-800 font-bold"
+                                ? "text-amber-500 font-bold"
                                 : "text-slate-500 hover:bg-gray-50",
                             "hover:cursor-pointer"
                         )}
                     >
-                        {option.label}
+                        {getLabel(option)}
                     </button>
                 );
             })}

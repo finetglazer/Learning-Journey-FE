@@ -32,12 +32,14 @@ import { RecurringPatterns } from "./recurring-patterns"
 import { SubTaskList } from "./sortable-subtask"
 import { TaskStatusDropdown } from "./task-status-dropdown"
 import { TaskTypeDropdown } from "./task-type-dropdown"
+import { AlertMessage } from "../alert-modal/alert-modal"
+import { COLLIDING_WITH_SLEEP_TIME_WARNING } from "@/const/consts"
 
 export interface TaskEditorProps {
     task: Task;
     updatedTasks: Task[];
     setUpdatedTasks: Dispatch<SetStateAction<Task[]>>;
-    setOpenSleepingTimeWarning: Dispatch<SetStateAction<boolean>>;
+    setAlertMessage: Dispatch<SetStateAction<AlertMessage | null>>;
     sleepStartTime: string;
     sleepEndTime: string;
     onDelete: () => void;
@@ -49,7 +51,7 @@ export const TaskEditor = ({
     task,
     updatedTasks,
     setUpdatedTasks,
-    setOpenSleepingTimeWarning,
+    setAlertMessage,
     onClose,
     style,
     sleepStartTime,
@@ -105,7 +107,7 @@ export const TaskEditor = ({
         }
 
         if (isCollidingWithSleepTime(model, sleepStartTime, sleepEndTime)) {
-            setOpenSleepingTimeWarning(true);
+            setAlertMessage(COLLIDING_WITH_SLEEP_TIME_WARNING);
             return;
         }
 
@@ -230,7 +232,7 @@ export const TaskEditor = ({
                                         <CollapsibleTrigger asChild>
                                             <div className="flex items-center cursor-pointer mt-0.5">
                                                 <Label htmlFor="subtask-toggle" className="text-gray-700 cursor-pointer text-sm">
-                                                    {model?.type === "big-task" ? "Sub task list" : "Steps"}
+                                                    {model?.type === "big-task" ? "Sub task list" : (model?.type === "routine" ? "Routine patterns" : "Steps")}
                                                 </Label>
                                                 <ChevronDown className="h-4 w-4 ml-1 text-gray-500" />
                                             </div>

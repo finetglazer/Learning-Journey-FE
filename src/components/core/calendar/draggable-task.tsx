@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 
 export interface DraggableTaskProps extends BaseTaskProps {
-    setEditingTask: (e: React.MouseEvent<HTMLDivElement>, task: Task) => void;
+    handleTaskDoubleClick: (e: React.MouseEvent<HTMLDivElement>, task: Task, scrollContainerRef: React.RefObject<HTMLDivElement | null>) => void;
+    scrollContainerRef: React.RefObject<HTMLDivElement | null>;
     isOverlay?: boolean;
     onRemove?: (taskId: string) => void;
 }
@@ -13,8 +14,9 @@ export interface DraggableTaskProps extends BaseTaskProps {
 export const DraggableTask = ({ 
     task, 
     isOverlay = false, 
-    setEditingTask,
+    handleTaskDoubleClick,
     onRemove,
+    scrollContainerRef,
     ...baseTaskProps 
 }: DraggableTaskProps) => {
     // Get `isDragging` from the hook
@@ -52,7 +54,7 @@ export const DraggableTask = ({
             {...listeners}
             {...attributes}
             className="cursor-grab"
-            onDoubleClick={(e) => setEditingTask(e, task)}
+            onDoubleClick={(e) => handleTaskDoubleClick(e, task, scrollContainerRef)}
         >
             <BaseTask task={task} {...baseTaskProps} />
             {/* <Button

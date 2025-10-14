@@ -4,7 +4,6 @@ import { Model } from "react-3layer-common";
 
 export class Task extends Model {
     public id: string = dayJsToISOString(dayjs());
-    public pastId: string = this.id;
     public status?: 'in-progress' | 'completed' | 'plan' | 'incomplete';
     //2025-10-03T10:45:00.000Z
     public title?: string;

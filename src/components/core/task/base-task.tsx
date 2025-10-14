@@ -1,12 +1,12 @@
+import { CALENDAR_VIEW_OPTIONS } from '@/const/consts';
 import { cn, isoToHHMM, toDayJs } from '@/lib/utils';
 import { Task } from '@/model/task';
 import React, { CSSProperties } from 'react';
-import { CalendarType } from '../calendar/type';
 
 export interface BaseTaskProps {
     task: Task;
     key?: string;
-    calendarType?: CalendarType;
+    calendarType?: (typeof CALENDAR_VIEW_OPTIONS)[number];
     wrapperClassName?: string;
     wrapperStyle?: CSSProperties;
     titleClassName?: string;
@@ -15,7 +15,7 @@ export interface BaseTaskProps {
     badgeClassName?: string;
 };
 
-export const BaseTask: React.FC<BaseTaskProps> = ({ 
+export const BaseTask: React.FC<BaseTaskProps> = ({
     task,
     key,
     calendarType,
@@ -34,7 +34,7 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                 { "border-sky-300": type === "event" },
                 { "border-[#68DE79]": type === "routine" },
                 wrapperClassName,
-            )} style={{...wrapperStyle}}>
+            )} style={{ ...wrapperStyle }}>
                 <span className={cn("font-semibold text-slate-700 text-lg text-left truncate", titleClassName)}>
                     {task?.title}
                 </span>
@@ -75,21 +75,21 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
 
     return (
         <div key={key} className={cn("border-3 border-sky-300 bg-stone-50 rounded-lg p-4 w-full",
-            {"border-[#E62E7B]": type === "task"},
-            {"border-[#68DE79]": type === "routine"},
+            { "border-[#E62E7B]": type === "task" || type === "big-task" },
+            { "border-[#68DE79]": type === "routine" },
             wrapperClassName,
         )} style={{ ...wrapperStyle }}>
             <div className={cn("flex items-center gap-2", badgeWrapperClassName)}>
                 <div className={cn("rounded bg-sky-400 px-2 py-1 text-xs font-bold text-white",
-                    {"bg-[#68DE79]": type === "routine"},
-                    {"bg-[#E62E7B]": type === "task"},
+                    { "bg-[#68DE79]": type === "routine" },
+                    { "bg-[#E62E7B]": type === "task" || type === "big-task" },
                     badgeClassName,
                 )}>
                     {isoToHHMM(task.startTime)}
                 </div>
                 <div className={cn("rounded bg-sky-400 px-2 py-1 text-xs font-bold text-white",
                     { "bg-[#68DE79]": type === "routine" },
-                    { "bg-[#E62E7B]": type === "task" },
+                    { "bg-[#E62E7B]": type === "task" || type === "big-task" },
                     badgeClassName,
                 )}>
                     {isoToHHMM(task.endTime)}

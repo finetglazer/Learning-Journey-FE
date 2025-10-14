@@ -8,6 +8,8 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Calendar, CheckSquare, Repeat } from "lucide-react";
+import { useContext } from "react";
+import { CalendarContext, CalendarContextInterface } from "../calendar/calendar-context";
 
 const typeConfig = {
     event: { label: "Event", Icon: Calendar, color: "bg-blue-400" },
@@ -26,7 +28,15 @@ interface TaskTypeDropdownProps {
 export function TaskTypeDropdown({ currentType, onTypeChange }: TaskTypeDropdownProps) {
     const selectedTypeKey = (currentType && typeConfig[currentType]) ? currentType : 'task';
 
+    const {
+        currentView,
+    } = useContext<CalendarContextInterface>(CalendarContext);
+
     const { label, Icon, color } = typeConfig[selectedTypeKey];
+
+    const { routine, ...typeConfigWithoutRoutine } = typeConfig;
+
+    const customTypeConfig = currentView !== 'day' ? typeConfig : typeConfigWithoutRoutine;
 
     return (
         <DropdownMenu>
@@ -37,7 +47,7 @@ export function TaskTypeDropdown({ currentType, onTypeChange }: TaskTypeDropdown
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="z-[99999]">
-                {Object.entries(typeConfig).map(([key, { label, Icon }]) => (
+                {Object.entries(customTypeConfig).map(([key, { label, Icon }]) => (
                     <DropdownMenuItem key={key} onSelect={() => onTypeChange(key as TaskType)}>
                         <Icon className="mr-2 h-4 w-4" />
                         <span>{label}</span>

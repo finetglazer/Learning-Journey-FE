@@ -10,22 +10,22 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { DAYS_OF_WEEK } from "@/const/consts";
-import { dayJsToISOString, getNearestMonday, initCalendarMap, isCollidingWithSleepTime, isoToHHMM, leftBoundIndex, reId, toDayJs, uuid4 } from "@/lib/utils";
+import { dayJsToISOString, getNearestMonday, initCalendarMap, isCollidingWithSleepTime, leftBoundIndex, reId, toDayJs, uuid4 } from "@/lib/utils";
 import { Task, UnscheduledBigTask, UnscheduledTask } from "@/model/task";
-import { DndContext, DragEndEvent, DragOverEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import dayjs, { Dayjs } from "dayjs";
+import { isNil } from "lodash";
 import { ClipboardList, Clock } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { WarningAlertDialog } from "../alert-modal/alert";
 import { RoundedButton } from "../button/rounded-button";
 import { DateRangeNavigator } from "../date-range-navigator/date-range-navigator";
 import { SegmentedControl, SegmentedControlOption } from "../segmented-control/segmented-control";
-import { DraggableTask } from "./draggable-task";
-import { CalendarWeekViewDroppableCell } from "./calendar-week-view-droppable-cell";
-import { isNil } from "lodash";
-import { WarningAlertDialog } from "../alert/alert";
 import { TaskEditor } from "../task-editor/task-editor";
-import { UnscheduledTaskItem } from "./unscheduled-task-item";
+import { CalendarWeekViewDroppableCell } from "./calendar-week-view-droppable-cell";
 import { CollapsibleUnscheduledPanel } from "./collapsible-unscheduled-items-panel";
+import { DraggableTask } from "./draggable-task";
+import { UnscheduledTaskItem } from "./unscheduled-task-item";
 
 export interface WeekViewCalendarProps {
     tasks?: Task[];

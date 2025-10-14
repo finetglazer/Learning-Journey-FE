@@ -109,8 +109,10 @@ export const isoStringToDate = (isoString: string) => {
   return dayjs.toDate();
 };
 
-export const getNearestMonday = () => {
-  return dayjs().subtract(dayjs().get("day") - 1, "day").startOf("day");
+export const getNearestMonday = (currentDate?: Dayjs): Dayjs => {
+  const dateToProcess = currentDate || dayjs();
+
+  return dateToProcess.startOf('week').add(1, "day").startOf("day");
 };
 
 export const initCalendarMap = (mondayTime: Dayjs, tasks?: Task[]) => {
@@ -231,6 +233,9 @@ export const reId = (tasks: Task[]) => {
 };
 
 export const toDayJs = (time?: string, gmt?: number) => {
+  if (!time) {
+    return dayjs().subtract(isNil(gmt) ? 7 : gmt, "hour");
+  }
   return dayjs(time).subtract(isNil(gmt) ? 7 : gmt, "hour");
 };
 

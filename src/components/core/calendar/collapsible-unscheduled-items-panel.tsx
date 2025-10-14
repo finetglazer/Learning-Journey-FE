@@ -26,6 +26,7 @@ export interface CollapsibleUnscheduledPanelProps {
     unscheduledBigTasks?: UnscheduledBigTask[];
     handleRemoveUnscheduledBigTask?: (bigTaskId: string) => void;
     handleRemoveUnscheduledSubTask?: (bigTaskId: string, subTaskId: string) => void;
+    onUnscheduledTaskTitleChange?: (taskId: string, newTitle: string) => void;
 };
 
 export function CollapsibleUnscheduledPanel({
@@ -33,6 +34,7 @@ export function CollapsibleUnscheduledPanel({
     handleRemoveUnscheduledBigTask,
     handleRemoveUnscheduledSubTask,
     position,
+    onUnscheduledTaskTitleChange,
 }: CollapsibleUnscheduledPanelProps) {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isRoutinesOpen, setIsRoutinesOpen] = useState(true);
@@ -149,6 +151,7 @@ export function CollapsibleUnscheduledPanel({
                                                 <div className="flex items-center">
                                                     <UnscheduledTaskItem
                                                         task={bigTask}
+                                                        onTitleChange={onUnscheduledTaskTitleChange}
                                                         draggable={false}
                                                         onRemove={() => handleRemoveUnscheduledBigTask?.(bigTask.id)}
                                                     />
@@ -160,7 +163,12 @@ export function CollapsibleUnscheduledPanel({
                                                 </div>
                                                 <CollapsibleContent className="pl-6 space-y-1 pt-1 overflow-hidden data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up">
                                                     {(bigTask.subtasks || []).map((subtask: UnscheduledTask) => (
-                                                        <UnscheduledTaskItem key={subtask.id} task={subtask} onRemove={() => handleRemoveUnscheduledSubTask?.(bigTask.id, subtask.id)} />
+                                                        <UnscheduledTaskItem
+                                                            key={subtask.id}
+                                                            task={subtask}
+                                                            onRemove={() => handleRemoveUnscheduledSubTask?.(bigTask.id, subtask.id)}
+                                                            onTitleChange={onUnscheduledTaskTitleChange}
+                                                        />
                                                     ))}
                                                 </CollapsibleContent>
                                             </Collapsible>
