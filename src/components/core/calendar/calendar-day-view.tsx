@@ -2,11 +2,13 @@
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
+import { UNSCHEDULED_SUBTASK_PREFIX } from "@/const/consts";
 import { dayJsToISOString, leftBoundIndex, uuid4 } from "@/lib/utils";
 import { Task, UnscheduledTask } from "@/model/task";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { ClipboardList } from "lucide-react";
 import { useContext, useRef } from "react";
+import { AlertModal } from "../alert-modal/alert-modal";
 import { RoundedButton } from "../button/rounded-button";
 import { DateRangeNavigator } from "../date-range-navigator/date-range-navigator";
 import { SegmentedControl } from "../segmented-control/segmented-control";
@@ -16,7 +18,6 @@ import { CalendarDayViewDroppableCell } from "./calendar-day-view-droppable-cell
 import { CollapsibleUnscheduledPanel } from "./collapsible-unscheduled-items-panel";
 import { DraggableTask } from "./draggable-task";
 import { UnscheduledTaskItem } from "./unscheduled-task-item";
-import { AlertModal } from "../alert-modal/alert-modal";
 
 export interface CalendarDayViewProps { };
 
@@ -54,10 +55,10 @@ export const CalendarDayView = () => {
         onNextDateRangeNavigatorClick,
         onPreviousDateRangeNavigatorClick,
         handleGoToToday,
-        currentMondayTime,
         activeDragId,
         alertMessage,
         setAlertMessage,
+        currentDate,
         onChangeUnscheduledTaskTitle,
     } = useContext<CalendarContextInterface>(CalendarContext);
 
@@ -110,7 +111,7 @@ export const CalendarDayView = () => {
                         <Table className="w-full table-fixed">
                             <TableBody>
                                 {hours.map((hour, index) => {
-                                    const newTime = currentMondayTime.add(index, "hour");
+                                    const newTime = currentDate.startOf("date").add(index, "hour");
                                     const id = dayJsToISOString(newTime);
                                     return (
                                         <TableRow key={hour} className="h-16">
@@ -188,7 +189,7 @@ export const CalendarDayView = () => {
                                     </div>
                                 </div>
                             )}
-                            {activeDragId?.includes('unscheduled-task') && (
+                            {activeDragId?.includes(UNSCHEDULED_SUBTASK_PREFIX) && (
                                 <UnscheduledTaskItem
                                     task={activeUnscheduledTask as UnscheduledTask}
                                 />

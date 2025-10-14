@@ -33,7 +33,8 @@ import { SubTaskList } from "./sortable-subtask"
 import { TaskStatusDropdown } from "./task-status-dropdown"
 import { TaskTypeDropdown } from "./task-type-dropdown"
 import { AlertMessage } from "../alert-modal/alert-modal"
-import { COLLIDING_WITH_SLEEP_TIME_WARNING } from "@/const/consts"
+import { COLLIDING_WITH_SLEEP_TIME_WARNING, SUBTASK_OUTSIDE_BIGTASK_TIME_RANGE_WARNING } from "@/const/consts"
+import { ValidationError } from "./validation-error"
 
 export interface TaskEditorProps {
     task: Task;
@@ -43,6 +44,7 @@ export interface TaskEditorProps {
     sleepStartTime: string;
     sleepEndTime: string;
     onDelete: () => void;
+    isOutBigTaskTimeRange: (task: Task) => boolean;
     onClose?: () => void;
     style?: CSSProperties;
 };
@@ -56,11 +58,12 @@ export const TaskEditor = ({
     style,
     sleepStartTime,
     sleepEndTime,
+    isOutBigTaskTimeRange,
     onDelete,
 }: TaskEditorProps) => {
     const [openStartTimePicker, setOpenStartTimePicker] = useState<boolean>(false);
     const [openEndTimePicker, setOpenEndTimePicker] = useState<boolean>(false);
-
+    const [isEmptyTitle, setIsEmptyTitle] = useState<boolean>(false);
     const {
         model,
         updateModel,
@@ -102,12 +105,28 @@ export const TaskEditor = ({
             cloneUpdatedTasks = [...cloneUpdatedTasks, model];
         }
 
+        if (!model?.title) {
+            setIsEmptyTitle(true);
+            return;
+        }
+
         if (hasTimeError) {
             return;
         }
 
         if (isCollidingWithSleepTime(model, sleepStartTime, sleepEndTime)) {
             setAlertMessage(COLLIDING_WITH_SLEEP_TIME_WARNING);
+            return;
+        }
+
+        if (isOutBigTaskTimeRange(model)) {
+            setAlertMessage({
+                ...SUBTASK_OUTSIDE_BIGTASK_TIME_RANGE_WARNING,
+                proceedAnyway: () => {
+                    setUpdatedTasks(reId(cloneUpdatedTasks));
+                    onClose?.();
+                },
+            });
             return;
         }
 
@@ -124,13 +143,16 @@ export const TaskEditor = ({
             <Card style={style} className="w-[380px] bg-[#F9FAFB] rounded-xl shadow-md font-sans p-4 absolute z-[10000]">
                 <CardContent className="p-2">
                     {/* Header Section */}
-                    <div className="flex justify-between items-center mb-4">
+                    <div className="flex justify-between items-center mb-4 gap-2">
                         <Input
                             placeholder="Task title"
-                            className="truncate font-semibold text-[#7D8FB3] text-base border-none focus:ring-0 shadow-none placeholder:text-gray-400 bg-transparent"
+                            className="truncate font-semibold text-[#1D2129] text-base border-none focus:ring-0 shadow-none placeholder:text-gray-400 bg-transparent"
                             onChange={(e) => updateModel("title", e.target.value)}
                             value={model?.title}
                         />
+                        {isEmptyTitle && (
+                            <ValidationError tooltip="Title should not be empty"/>
+                        )}
                         <div className="flex items-center space-x-2">
                             <Button className="bg-green-300 hover:bg-green-400 text-green-800 rounded-full px-5 text-sm font-semibold cursor-pointer" onClick={onSave}>Save</Button>
                             <Button variant="ghost" className="text-gray-500 rounded-full px-5 text-sm cursor-pointer" onClick={onCancel}>Cancel</Button>
@@ -199,14 +221,7 @@ export const TaskEditor = ({
                                 value={model?.type !== "big-task" ? isoToHHMM(model.endTime) : isoToStandardTime(model.endTime)}
                             />
                             {hasTimeError && (
-                                <Tooltip>
-                                    <TooltipTrigger>
-                                        <CircleAlertIcon color="white" size={14} fill={"red"} />
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>End time must be after start time</p>
-                                    </TooltipContent>
-                                </Tooltip>
+                                <ValidationError tooltip="End time must be after start time" />
                             )}
                             <DateTimePicker
                                 isOpen={openEndTimePicker}

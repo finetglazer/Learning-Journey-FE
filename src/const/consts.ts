@@ -52,3 +52,8 @@ export const OVERLAPPING_TIME_WARNING: AlertMessage = {
     type: "warning",
     title: "Your picked time is overlapping",
 };
+
+export const SUBTASK_OUTSIDE_BIGTASK_TIME_RANGE_WARNING: AlertMessage = {
+    type: "warning",
+    title: "Your picked time for task is conflict with the big time task range",
+};

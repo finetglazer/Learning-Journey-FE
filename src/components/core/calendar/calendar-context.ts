@@ -5,7 +5,7 @@ import dayjs, { Dayjs } from "dayjs";
 import { isNil } from "lodash";
 import React, { createContext, Dispatch, SetStateAction, useEffect, useState } from "react";
 import { AlertMessage } from "../alert-modal/alert-modal";
-import { COLLIDING_WITH_SLEEP_TIME_WARNING, OVERLAPPING_TIME_WARNING, UNSCHEDULED_BIGTASK_DEFAULT_TITLE, UNSCHEDULED_BIGTASK_PREFIX, UNSCHEDULED_SUBTASK_PREFIX } from "@/const/consts";
+import { COLLIDING_WITH_SLEEP_TIME_WARNING, OVERLAPPING_TIME_WARNING, SUBTASK_OUTSIDE_BIGTASK_TIME_RANGE_WARNING, UNSCHEDULED_BIGTASK_DEFAULT_TITLE, UNSCHEDULED_BIGTASK_PREFIX, UNSCHEDULED_SUBTASK_PREFIX } from "@/const/consts";
 
 export interface CalendarContextProps {
     initTasks?: Task[];
@@ -54,6 +54,7 @@ export interface CalendarContextInterface {
     alertMessage: AlertMessage | null;
     setAlertMessage: Dispatch<SetStateAction<AlertMessage | null>>;
     onChangeUnscheduledTaskTitle: (taskId: string, newTitle: string) => void;
+    isOutBigTaskTimeRange: (task: Task) => boolean;
 };
 
 export const CalendarContext = createContext<CalendarContextInterface>({
@@ -99,6 +100,7 @@ export const CalendarContext = createContext<CalendarContextInterface>({
     onNextDateRangeNavigatorClick: () => { },
     handleGoToToday: () => { },
     onChangeUnscheduledTaskTitle: () => { },
+    isOutBigTaskTimeRange: () => false,
 });
 
 export const useCalendarHooks = ({
@@ -117,7 +119,7 @@ export const useCalendarHooks = ({
     const [panelPosition, setPanelPosition] = useState({ x: 20, y: 100 });
     const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
     const [activeUnscheduledTask, setActiveUnscheduledTask] = useState<UnscheduledTask | undefined>(undefined);
-
+    const [removedUnscheduledBigTasks, setRemovedUnscheduledBigTasks] = useState<Record<string, any>>({});
     const initUnscheduledBigTasks: UnscheduledBigTask[] = [
         {
             id: "unscheduled-big-task-1",
@@ -127,6 +129,8 @@ export const useCalendarHooks = ({
                 { id: "unscheduled-task-1-2", parentBigTaskId: "unscheduled-big-task-1", title: "Unscheduled task 2" },
                 { id: "unscheduled-task-1-3", parentBigTaskId: "unscheduled-big-task-1", title: "Unscheduled task 3" },
             ],
+            bigTaskStartTime: dayJsToISOString(dayjs()),
+            bigTaskEndTime: dayJsToISOString(dayjs().add(1, "day"))
         },
         {
             id: "unscheduled-big-task-2",
@@ -247,6 +251,17 @@ export const useCalendarHooks = ({
         const newUnscheduledBigTasks = (unscheduledBigTasks || []).filter(
             task => task.id !== bigTaskId
         );
+        let updatedRemovedUnscheduledBigTasks = {...removedUnscheduledBigTasks};
+        const bigTask = unscheduledBigTasks.find(bigTask => bigTask.id === bigTaskId);
+        if (bigTask) {
+            updatedRemovedUnscheduledBigTasks[bigTaskId] = {
+                ...bigTask,
+                bigTaskStartTime: bigTask?.bigTaskStartTime,
+                bigTaskEndTime: bigTask?.bigTaskEndTime,
+            };
+        }
+        
+        setRemovedUnscheduledBigTasks(updatedRemovedUnscheduledBigTasks);
         setUnscheduledBigTasks?.(newUnscheduledBigTasks);
     };
 
@@ -297,6 +312,16 @@ export const useCalendarHooks = ({
         return (unscheduledBigTask?.subtasks || []).find(subtask => subtask.id === subtaskId);
     };
 
+    const isOutBigTaskTimeRange = (task: Task) => {
+        const bigTask = unscheduledBigTasks.find(bigTask => bigTask.id === task?.parentBigTaskId);
+        const bigTaskStartTime = bigTask ? bigTask?.bigTaskStartTime : removedUnscheduledBigTasks[task?.parentBigTaskId as string]?.bigTaskStartTime;
+        const bigTaskEndTime = bigTask ? bigTask?.bigTaskEndTime : removedUnscheduledBigTasks[task?.parentBigTaskId as string]?.bigTaskEndTime;
+        if (!bigTaskStartTime && !bigTaskEndTime) {
+            return false;
+        }
+        return task?.startTime < bigTaskStartTime || task?.endTime > bigTaskEndTime;
+    };
+
     const onDragEnd = (event: DragEndEvent) => {
         const droppedCellId = String(event.over?.id || null);
         // For unscheduled tasks panel
@@ -328,6 +353,17 @@ export const useCalendarHooks = ({
             } as Task;
             if (isCollidingWithSleepTime(newTask, sleepStartTime, sleepEndTime)) {
                 setAlertMessage(COLLIDING_WITH_SLEEP_TIME_WARNING);
+                return;
+            }
+            if (isOutBigTaskTimeRange(newTask)) {
+                setAlertMessage({
+                    ...SUBTASK_OUTSIDE_BIGTASK_TIME_RANGE_WARNING,
+                    proceedAnyway: () => {
+                        setUpdatedTasks(reId([...updatedTasks, newTask]));
+                        setEditingTask(newTask);
+                        handleRemoveUnscheduledSubTask(subtask?.parentBigTaskId || "", subtask.id);
+                    }
+                });
                 return;
             }
 
@@ -385,6 +421,8 @@ export const useCalendarHooks = ({
                         parentBigTaskId: UNSCHEDULED_BIGTASK_PREFIX.concat(postfix),
                         title: task?.title,
                     }],
+                    bigTaskStartTime: removedUnscheduledBigTasks[task?.parentBigTaskId]?.bigTaskStartTime,
+                    bigTaskEndTime: removedUnscheduledBigTasks[task?.parentBigTaskId]?.bigTaskEndTime,
                 }];
 
                 // Update all tasks in updatedTasks that have old parentBigTaskId
@@ -545,14 +583,14 @@ export const useCalendarHooks = ({
 
     useEffect(() => {
         const newTasks = [...updatedTasks];
-        const calendarMap = initCalendarMap(currentMondayTime, newTasks);
-        const newTasksStyle: any = {};
+        const updatedCalendarMap = initCalendarMap(currentMondayTime, newTasks);
+        const newTasksStyle: Record<string, any> = {};
         if (activeTask) {
             newTasksStyle[activeTask.id] = tasksStyle[activeTask.id];
         }
         let currentZIndex = 0;
 
-        setCalendarMap(calendarMap);
+        setCalendarMap(updatedCalendarMap);
 
         const visited: Record<string, boolean> = {};
         const getHeight = (timeKey: string, task: Task) => {
@@ -573,11 +611,10 @@ export const useCalendarHooks = ({
             if (startTime <= toDayJs(timeKey) && nextHour <= endTime) {
                 return CELL_HEIGHT;
             }
-
             return endDiff / 100 * CELL_HEIGHT;
         };
-        Object.keys(calendarMap).forEach(timeKey => {
-            const tasksVal = calendarMap[timeKey];
+        Object.keys(updatedCalendarMap).forEach(timeKey => {
+            const tasksVal = updatedCalendarMap[timeKey];
             tasksVal.forEach((task: Task, count: number) => {
                 let newStyle = newTasksStyle[task.id];
                 const diff = toDayJs(task.startTime).diff(toDayJs(timeKey)) / 60000 * (100 / 60);
@@ -666,5 +703,6 @@ export const useCalendarHooks = ({
         alertMessage,
         setAlertMessage,
         onChangeUnscheduledTaskTitle,
+        isOutBigTaskTimeRange,
     }
 };

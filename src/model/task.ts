@@ -30,6 +30,8 @@ export interface UnscheduledTask {
     id: string;
     parentBigTaskId?: string;
     title?: string;
+    bigTaskStartTime?: string;
+    bigTaskEndTime?: string;
 };
 
 export interface UnscheduledBigTask extends UnscheduledTask {

@@ -22,7 +22,12 @@ const alertConfig = {
     warning: {
         title: "Warning",
         titleColor: "text-yellow-500",
-        buttonColor: "bg-yellow-400 hover:bg-yellow-500 text-yellow-900",
+
+        // For the "Process anyway" button
+        primaryButtonColor: "bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-semibold",
+
+        // For the "Got it" or "Cancel" button
+        secondaryButtonColor: "bg-transparent border border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold",
     },
     info: {
         title: "Information",
@@ -35,6 +40,7 @@ export interface AlertMessage {
     type: AlertType;
     title?: string;
     description?: string;
+    proceedAnyway?: () => void;
 };
 
 export interface AlertModalProps {
@@ -50,7 +56,8 @@ export function AlertModal({
     const {
         type,
         title,
-        description
+        description,
+        proceedAnyway,
     } = alertMessage;
 
     const config = alertConfig[type] || alertConfig.info;
@@ -74,10 +81,18 @@ export function AlertModal({
                 <AlertDialogFooter className="sm:justify-center">
                     <Button
                         onClick={onClose}
-                        className={cn("font-semibold cursor-pointer", config.buttonColor)}
+                        className={cn("font-semibold cursor-pointer", (config as any)?.secondaryButtonColor || (config as any)?.buttonColor)}
                     >
                         Got it
                     </Button>
+                    {proceedAnyway && (
+                        <Button
+                            onClick={onClose}
+                            className={cn("font-semibold cursor-pointer", (config as any)?.primaryButtonColor || (config as any)?.buttonColor)}
+                        >
+                            Proceed anyway
+                        </Button>
+                    )}
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>

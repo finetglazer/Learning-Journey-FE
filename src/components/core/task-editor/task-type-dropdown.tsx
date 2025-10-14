@@ -34,9 +34,9 @@ export function TaskTypeDropdown({ currentType, onTypeChange }: TaskTypeDropdown
 
     const { label, Icon, color } = typeConfig[selectedTypeKey];
 
-    const { routine, ...typeConfigWithoutRoutine } = typeConfig;
+    const { routine, "big-task": bigTask, ...typeConfigWithoutRoutineAndBigTask } = typeConfig;
 
-    const customTypeConfig = currentView !== 'day' ? typeConfig : typeConfigWithoutRoutine;
+    const customTypeConfig = currentView !== 'day' ? typeConfig : typeConfigWithoutRoutineAndBigTask;
 
     return (
         <DropdownMenu>

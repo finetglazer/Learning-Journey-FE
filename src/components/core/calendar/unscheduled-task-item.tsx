@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UnscheduledTask } from "@/model/task";
 import React, { useState, useEffect, useRef } from "react";
+import { toDayJs } from "@/lib/utils";
 
 interface UnscheduledTaskItemProps {
     task: UnscheduledTask;
@@ -46,10 +47,12 @@ export function UnscheduledTaskItem({ task, onRemove, onTitleChange, draggable =
     };
 
     const style = { opacity: isDragging ? 0.5 : 1 };
+    const bigTaskStartDate = task?.bigTaskStartTime ? toDayJs(task?.bigTaskStartTime).get("date").toString().padStart(2, "0") : null;
+    const bigTaskEndDate = task?.bigTaskEndTime ? toDayJs(task?.bigTaskEndTime).get("date").toString().padStart(2, "0") : null;
 
     return (
         <div ref={setNodeRef} style={style} className="flex items-center justify-between p-2 rounded-md bg-white w-full">
-            <div className="flex items-center flex-grow">
+            <div className="flex items-center gap-3">
                 {draggable && (
                     <button {...listeners} {...attributes} className="cursor-grab text-gray-400">
                         <GripVertical size={18} />
@@ -72,6 +75,10 @@ export function UnscheduledTaskItem({ task, onRemove, onTitleChange, draggable =
                     >
                         {task?.title}
                     </span>
+                )}
+
+                {bigTaskStartDate && bigTaskEndDate && (
+                    <span className="italic text-gray-600 text-[0.95rem]">({bigTaskStartDate}-{bigTaskEndDate})</span>
                 )}
             </div>
 
