@@ -1,18 +1,20 @@
 "use client"
 
-import { CalendarContext, useCalendarHooks } from "@/components/core/calendar/calendar-context";
+import { CalendarContext, CalendarContextInterface, useCalendarHooks } from "@/components/core/calendar/calendar-context";
 import { CalendarDayView } from "@/components/core/calendar/calendar-day-view";
+import { CalendarMonthPlanning } from "@/components/core/calendar/calendar-month-planing";
+import { CalendarMonthView } from "@/components/core/calendar/calendar-month-view";
 import { CalendarWeekView } from "@/components/core/calendar/calendar-week-view";
 import { dayJsToISOString } from "@/lib/utils";
 import { Task } from "@/model/task";
 import dayjs from "dayjs";
 import { useMemo } from "react";
 export default function RootPage() {
+
   const tasks = useMemo(() => {
     const taskArray: Task[] = [];
     const today = dayjs();
     const startOfWeek = today.startOf('week');
-
     for (let i = 0; i < 1; i++) {
       const taskDay = startOfWeek.add(1, 'day');
       const startTime = dayJsToISOString(taskDay.hour(i <= 2 ? 9 : 7).minute(0).second(0));
@@ -31,10 +33,22 @@ export default function RootPage() {
     return taskArray;
   }, []);
 
+  const calendarContextValues = useCalendarHooks({ initTasks: tasks });
+
   return (
-    <CalendarContext.Provider value={useCalendarHooks({initTasks: tasks})}>
-      {/* <CalendarWeekView /> */}
-      <CalendarDayView />
+    <CalendarContext.Provider value={calendarContextValues}>
+      {calendarContextValues.currentView === "day" && (
+        <CalendarDayView />
+      )}
+      {calendarContextValues.currentView === "week" && (
+        <CalendarWeekView />
+      )}
+      {calendarContextValues.currentView === "month-view" && (
+        <CalendarMonthView />
+      )}
+      {calendarContextValues.currentView === "month-planning" && (
+        <CalendarMonthPlanning />
+      )}
     </CalendarContext.Provider>
   );
 }

@@ -1,4 +1,4 @@
-import { dayJsToISOString, getNearestMonday, initCalendarMap, isCollidingWithSleepTime, reId, toDayJs, uuid4 } from "@/lib/utils";
+import { dayJsToISOString, getEditorAdjustedPosition, getMonthName, getNearestMonday, initCalendarMap, isCollidingWithSleepTime, overlappingTasksExists, reId, toDayJs, uuid4 } from "@/lib/utils";
 import { Task, UnscheduledBigTask, UnscheduledTask } from "@/model/task";
 import { DragEndEvent, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import dayjs, { Dayjs } from "dayjs";
@@ -6,6 +6,7 @@ import { isNil } from "lodash";
 import React, { createContext, Dispatch, SetStateAction, useEffect, useState } from "react";
 import { AlertMessage } from "../alert-modal/alert-modal";
 import { COLLIDING_WITH_SLEEP_TIME_WARNING, OVERLAPPING_TIME_WARNING, SUBTASK_OUTSIDE_BIGTASK_TIME_RANGE_WARNING, UNSCHEDULED_BIGTASK_DEFAULT_TITLE, UNSCHEDULED_BIGTASK_PREFIX, UNSCHEDULED_SUBTASK_PREFIX } from "@/const/consts";
+import { m } from "framer-motion";
 
 export interface CalendarContextProps {
     initTasks?: Task[];
@@ -38,7 +39,7 @@ export interface CalendarContextInterface {
     sensors: ReturnType<typeof useSensors>;
     onDragStart: (event: DragStartEvent) => void;
     onDragEnd: (event: DragEndEvent) => void;
-    handleCellClick: (event: React.MouseEvent<HTMLTableCellElement>, cellId: string, scrollContainerRef: React.RefObject<HTMLDivElement | null>) => void;
+    handleCellClick: (event: React.MouseEvent<HTMLTableCellElement>, cellId: string) => void;
     handleTaskDoubleClick: (event: React.MouseEvent<HTMLDivElement>, task: Task, scrollContainerRef: React.RefObject<HTMLDivElement | null>) => void;
     handleRemoveUnscheduledBigTask: (bigTaskId: string) => void;
     handleRemoveUnscheduledSubTask: (bigTaskId: string, subTaskId: string) => void;
@@ -105,7 +106,7 @@ export const CalendarContext = createContext<CalendarContextInterface>({
 
 export const useCalendarHooks = ({
     initTasks,
-}: CalendarContextProps): CalendarContextInterface => {
+}: CalendarContextProps) => {
     const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
     const [tasksStyle, setTasksStyle] = useState<Record<string, any>>({});
     const [calendarMap, setCalendarMap] = useState<Record<string, any[]>>({});
@@ -192,12 +193,9 @@ export const useCalendarHooks = ({
 
             case 'month-view':
                 return currentDate.format('MMMM YYYY');
-
+            
             case 'month-planning':
-                const monthStart = currentDate.startOf('month');
-                const monthEnd = currentDate.endOf('month');
-                // Format: <start date>-<end date> / <month #> / <year>
-                return `${monthStart.format('D')} - ${monthEnd.format('D')} / ${currentDate.format('M')} / ${currentDate.format('YYYY')}`;
+                return getMonthName(currentDate.get("month"));
 
             case 'year':
                 return currentDate.format('YYYY');
@@ -251,7 +249,7 @@ export const useCalendarHooks = ({
         const newUnscheduledBigTasks = (unscheduledBigTasks || []).filter(
             task => task.id !== bigTaskId
         );
-        let updatedRemovedUnscheduledBigTasks = {...removedUnscheduledBigTasks};
+        let updatedRemovedUnscheduledBigTasks = { ...removedUnscheduledBigTasks };
         const bigTask = unscheduledBigTasks.find(bigTask => bigTask.id === bigTaskId);
         if (bigTask) {
             updatedRemovedUnscheduledBigTasks[bigTaskId] = {
@@ -260,7 +258,7 @@ export const useCalendarHooks = ({
                 bigTaskEndTime: bigTask?.bigTaskEndTime,
             };
         }
-        
+
         setRemovedUnscheduledBigTasks(updatedRemovedUnscheduledBigTasks);
         setUnscheduledBigTasks?.(newUnscheduledBigTasks);
     };
@@ -366,6 +364,11 @@ export const useCalendarHooks = ({
                 });
                 return;
             }
+            // There are no 2 tasks are overlapping
+            if (overlappingTasksExists(newTask, updatedTasks)) {
+                setAlertMessage(OVERLAPPING_TIME_WARNING);
+                return;
+            }
 
             setUpdatedTasks(reId([...updatedTasks, newTask]));
             setEditingTask(newTask);
@@ -378,11 +381,7 @@ export const useCalendarHooks = ({
             setActiveTask(null);
             return;
         }
-        // There are no 2 tasks with the same startTime
-        if ((calendarMap[droppedCellId] || []).length) {
-            setAlertMessage(OVERLAPPING_TIME_WARNING);
-            return;
-        }
+
         const updatedTaskIndex = updatedTasks.findIndex(task => task.id === activeDragId);
         const oldTask = updatedTasks[updatedTaskIndex];
         const newUpdatedTasks = [...updatedTasks];
@@ -394,6 +393,11 @@ export const useCalendarHooks = ({
                 startTime: droppedCellId,
                 endTime: dayJsToISOString(toDayJs(droppedCellId).add(taskDuration)),
             };
+        }
+        // There are no 2 tasks are overlapping
+        if (overlappingTasksExists(oldTask, updatedTasks)) {
+            setAlertMessage(OVERLAPPING_TIME_WARNING);
+            return;
         }
 
         const sleepTimeCollision = (newUpdatedTasks.some(task => isCollidingWithSleepTime(task, sleepStartTime, sleepEndTime)));
@@ -469,7 +473,7 @@ export const useCalendarHooks = ({
             return;
         }
 
-        const adjustedPosition = getAdjustedPosition(event.clientX, event.clientY);
+        const adjustedPosition = getEditorAdjustedPosition(event.clientX, event.clientY);
 
         setEditorPosition(adjustedPosition);
         const newTask = {
@@ -488,36 +492,6 @@ export const useCalendarHooks = ({
         setEditingTask(newTask);
     };
 
-    const getAdjustedPosition = (x: number, y: number) => {
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-        const EDITOR_WIDTH = 380;
-        const EDITOR_HEIGHT = 550;
-        const SCREEN_PADDING = 0;
-
-        let adjustedX = x;
-        let adjustedY = y;
-
-        // Adjust X if it's too far to the right
-        if (x + EDITOR_WIDTH + SCREEN_PADDING > viewportWidth) {
-            adjustedX = viewportWidth - EDITOR_WIDTH - SCREEN_PADDING;
-        }
-
-        // Adjust Y if it's too far down
-        if (y + EDITOR_HEIGHT + SCREEN_PADDING > viewportHeight) {
-            adjustedY = viewportHeight - EDITOR_HEIGHT - SCREEN_PADDING;
-        }
-
-        if (adjustedX < SCREEN_PADDING) {
-            adjustedX = SCREEN_PADDING;
-        }
-        if (adjustedY < SCREEN_PADDING) {
-            adjustedY = SCREEN_PADDING;
-        }
-
-        return { x: adjustedX, y: adjustedY };
-    };
-
     const handleTaskDoubleClick = (event: React.MouseEvent<HTMLDivElement>, task: Task, scrollContainerRef: React.RefObject<HTMLDivElement | null>) => {
         // if ((event.target as HTMLElement).closest('.cursor-grab')) {
         //     return;
@@ -526,7 +500,7 @@ export const useCalendarHooks = ({
         const container = scrollContainerRef.current;
         if (!container) return;
 
-        const adjustedPosition = getAdjustedPosition(event.clientX, event.clientY);
+        const adjustedPosition = getEditorAdjustedPosition(event.clientX, event.clientY);
 
         setEditorPosition(adjustedPosition);
 
@@ -704,5 +678,5 @@ export const useCalendarHooks = ({
         setAlertMessage,
         onChangeUnscheduledTaskTitle,
         isOutBigTaskTimeRange,
-    }
+    };
 };

@@ -35,7 +35,7 @@ export const CALENDAR_VIEW_OPTIONS = [
     'week',
     'month-view',
     'month-planning',
-    'year'
+    'year',
 ];
 
 export const UNSCHEDULED_BIGTASK_PREFIX = "unscheduled-big-task-";

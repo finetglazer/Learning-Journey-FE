@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { isCollidingWithSleepTime, isoStringToDate, isoToHHMM, isoToStandardTime, reId, uuid4 } from "@/lib/utils"
+import { isCollidingWithSleepTime, isoStringToDate, isoToHHMM, isoToStandardTime, overlappingTasksExists, reId, uuid4 } from "@/lib/utils"
 import { Task, TaskStep } from "@/model/task"
 import { formService } from "@/service/form-service"
 import {
@@ -33,7 +33,7 @@ import { SubTaskList } from "./sortable-subtask"
 import { TaskStatusDropdown } from "./task-status-dropdown"
 import { TaskTypeDropdown } from "./task-type-dropdown"
 import { AlertMessage } from "../alert-modal/alert-modal"
-import { COLLIDING_WITH_SLEEP_TIME_WARNING, SUBTASK_OUTSIDE_BIGTASK_TIME_RANGE_WARNING } from "@/const/consts"
+import { COLLIDING_WITH_SLEEP_TIME_WARNING, OVERLAPPING_TIME_WARNING, SUBTASK_OUTSIDE_BIGTASK_TIME_RANGE_WARNING } from "@/const/consts"
 import { ValidationError } from "./validation-error"
 
 export interface TaskEditorProps {
@@ -41,10 +41,10 @@ export interface TaskEditorProps {
     updatedTasks: Task[];
     setUpdatedTasks: Dispatch<SetStateAction<Task[]>>;
     setAlertMessage: Dispatch<SetStateAction<AlertMessage | null>>;
-    sleepStartTime: string;
-    sleepEndTime: string;
-    onDelete: () => void;
-    isOutBigTaskTimeRange: (task: Task) => boolean;
+    sleepStartTime?: string;
+    sleepEndTime?: string;
+    onDelete?: () => void;
+    isOutBigTaskTimeRange?: (task: Task) => boolean;
     onClose?: () => void;
     style?: CSSProperties;
 };
@@ -114,12 +114,12 @@ export const TaskEditor = ({
             return;
         }
 
-        if (isCollidingWithSleepTime(model, sleepStartTime, sleepEndTime)) {
+        if (sleepStartTime && sleepEndTime && isCollidingWithSleepTime(model, sleepStartTime, sleepEndTime)) {
             setAlertMessage(COLLIDING_WITH_SLEEP_TIME_WARNING);
             return;
         }
 
-        if (isOutBigTaskTimeRange(model)) {
+        if (isOutBigTaskTimeRange?.(model)) {
             setAlertMessage({
                 ...SUBTASK_OUTSIDE_BIGTASK_TIME_RANGE_WARNING,
                 proceedAnyway: () => {
@@ -127,6 +127,11 @@ export const TaskEditor = ({
                     onClose?.();
                 },
             });
+            return;
+        }
+
+        if (overlappingTasksExists(task, updatedTasks)) {
+            setAlertMessage(OVERLAPPING_TIME_WARNING);
             return;
         }
 
@@ -202,7 +207,8 @@ export const TaskEditor = ({
                                 placeholder="Start hour"
                                 className="border-none mt-0.25 focus:ring-0 shadow-none text-sm bg-transparent p-0"
                                 value={model?.type !== "big-task" ? isoToHHMM(model.startTime) : isoToStandardTime(model.startTime)}
-                            />
+                                readOnly
+                           />
                             <DateTimePicker
                                 isOpen={openStartTimePicker}
                                 setIsOpen={setOpenStartTimePicker}
@@ -219,6 +225,7 @@ export const TaskEditor = ({
                                 placeholder="End hour"
                                 className="border-none focus:ring-0 shadow-none text-sm bg-transparent p-0"
                                 value={model?.type !== "big-task" ? isoToHHMM(model.endTime) : isoToStandardTime(model.endTime)}
+                                readOnly
                             />
                             {hasTimeError && (
                                 <ValidationError tooltip="End time must be after start time" />

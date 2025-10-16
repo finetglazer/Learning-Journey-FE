@@ -3,6 +3,7 @@ import { PASSWORD_GOOD_LENGTH, PASSWORD_MINIMUM_LENGTH, PASSWORD_REGEX, TIME_STR
 import { FieldError } from "@/model/field-error";
 import { Task } from "@/model/task";
 import { clsx, type ClassValue } from "clsx"
+import { addWeeks, endOfMonth, endOfWeek, format, isBefore, startOfMonth, startOfWeek } from "date-fns";
 import dayjs, { Dayjs } from "dayjs";
 import { isNil } from "lodash";
 import { twMerge } from "tailwind-merge"
@@ -278,3 +279,74 @@ export const isCollidingWithSleepTime = (task: Task, sleepStartTime: string, sle
     return !(taskStartHHMM >= sleepEndTime || taskEndHHMM <= sleepStartTime);
   }
 };
+
+export const overlappingTasksExists = (task: Task, tasks: Task[]) => {
+  return tasks.some(taskItem => taskItem.startTime === task.startTime);
+};
+
+export const getDaysInMonth = (month: number) => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+
+  const days = [];
+  for (let day = 1; day <= lastDayOfMonth; day++) {
+    days.push(new Date(year, month, day));
+  }
+
+  return days;
+};
+
+export const getEditorAdjustedPosition = (
+  x: number,
+  y: number,
+  offsetX: number = 0,
+  offsetY: number = 0
+) => {
+  const EDITOR_WIDTH = 380;
+  const EDITOR_HEIGHT = 550;
+  const SCREEN_PADDING = 0;
+
+  const initialX = x + offsetX;
+  const initialY = y + offsetY;
+
+  const maxX = window.innerWidth - EDITOR_WIDTH - SCREEN_PADDING;
+  const maxY = window.innerHeight - EDITOR_HEIGHT - SCREEN_PADDING;
+
+  const finalX = Math.max(SCREEN_PADDING, Math.min(initialX, maxX));
+  const finalY = Math.max(SCREEN_PADDING, Math.min(initialY, maxY));
+
+  return { x: finalX, y: finalY };
+};
+
+export const getWeeksInMonth = (month: number, year?: number) => {
+  const date = new Date(year || dayjs().get("year"), month);
+
+  const firstDayOfMonth = startOfMonth(date);
+  const lastDayOfMonth = endOfMonth(date);
+  const weeks = [];
+
+  let currentWeekStart = startOfWeek(firstDayOfMonth, { weekStartsOn: 1 });
+
+  while (isBefore(currentWeekStart, lastDayOfMonth)) {
+    const currentWeekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 1 });
+
+    const startDay = format(currentWeekStart, 'd');
+    const endDay = format(currentWeekEnd, 'd');
+
+    weeks.push(`${startDay} - ${endDay}`);
+
+    currentWeekStart = addWeeks(currentWeekStart, 1);
+  }
+
+  return weeks;
+};
+
+export const getMonthName = (monthIndex: number) => {
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  return monthNames[monthIndex];
+}

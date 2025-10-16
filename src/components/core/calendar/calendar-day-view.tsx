@@ -60,6 +60,7 @@ export const CalendarDayView = () => {
         setAlertMessage,
         currentDate,
         onChangeUnscheduledTaskTitle,
+        isOutBigTaskTimeRange,
     } = useContext<CalendarContextInterface>(CalendarContext);
 
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -119,7 +120,7 @@ export const CalendarDayView = () => {
                                                 {hour}
                                             </TableCell>
                                             <TableCell
-                                                onClick={(e) => handleCellClick(e, id, scrollContainerRef)}
+                                                onClick={(e) => handleCellClick(e, id)}
                                                 className="w-14/15 cursor-pointer"
                                             >
                                                 <CalendarDayViewDroppableCell key={id + `-${uuid4()}`} id={id} bordered={false}>
@@ -193,7 +194,7 @@ export const CalendarDayView = () => {
                                 <UnscheduledTaskItem
                                     task={activeUnscheduledTask as UnscheduledTask}
                                 />
-                            )}   
+                            )}
                         </DragOverlay>
                     </DndContext>
                     {/* Current Time Indicator */}
@@ -217,6 +218,7 @@ export const CalendarDayView = () => {
                             sleepStartTime={sleepStartTime}
                             sleepEndTime={sleepEndTime}
                             onDelete={() => onRemoveDraggableTask(editingTask)}
+                            isOutBigTaskTimeRange={isOutBigTaskTimeRange}
                         />
                     )}
                 </div>
