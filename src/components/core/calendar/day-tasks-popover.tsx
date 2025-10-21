@@ -43,7 +43,7 @@ export function DayTasksPopover({
 
                         return (
                             <div
-                                key={task.id.concat("-").concat(uuid4())}
+                                key={task.id}
                                 className={cn(
                                     "flex items-center gap-3 rounded p-2 text-sm text-gray-800 cursor-pointer hover:bg-gray-100",
                                     { "bg-blue-200": isSelected }

@@ -34,7 +34,7 @@ export const CalendarDayView = () => {
         setEditingTask,
         editorPosition,
         panelPosition,
-        unscheduledBigTasks,
+        unscheduledMonthData,
         activeUnscheduledTask,
         CELL_HEIGHT,
         hours,
@@ -123,7 +123,7 @@ export const CalendarDayView = () => {
                                                 onClick={(e) => handleCellClick(e, id)}
                                                 className="w-14/15 cursor-pointer"
                                             >
-                                                <CalendarDayViewDroppableCell key={id + `-${uuid4()}`} id={id} bordered={false}>
+                                                <CalendarDayViewDroppableCell key={id} id={id} bordered={false}>
                                                     {(calendarMap[id] || []).map((task: Task) => {
                                                         const timeKeys = Object.keys(calendarMap);
                                                         const timeLeftBoundIndex = leftBoundIndex(timeKeys, task.startTime);
@@ -136,7 +136,7 @@ export const CalendarDayView = () => {
 
                                                         return (
                                                             <DraggableTask
-                                                                key={id + `-${uuid4()}`}
+                                                                key={id}
                                                                 handleTaskDoubleClick={handleTaskDoubleClick}
                                                                 task={task}
                                                                 scrollContainerRef={scrollContainerRef}
@@ -160,10 +160,10 @@ export const CalendarDayView = () => {
                             </TableBody>
                         </Table>
                         <CollapsibleUnscheduledPanel
-                            unscheduledBigTasks={unscheduledBigTasks}
+                            unscheduledMonthData={unscheduledMonthData}
+                            position={panelPosition}
                             handleRemoveUnscheduledBigTask={handleRemoveUnscheduledBigTask}
                             handleRemoveUnscheduledSubTask={handleRemoveUnscheduledSubTask}
-                            position={panelPosition}
                             onUnscheduledTaskTitleChange={onChangeUnscheduledTaskTitle}
                         />
                         <DragOverlay>

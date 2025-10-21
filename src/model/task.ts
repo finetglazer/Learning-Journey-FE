@@ -12,8 +12,7 @@ export class Task extends Model {
     public endTime: string = dayJsToISOString(dayjs());
     public type?: "event" | "routine" | "task" | "big-task";
     public parentBigTaskId?: string;
-    public routineStartTime?: string;
-    public routineEndTime?: string; 
+    public routineId?: string;
     public routineStartHour?: string;
     public routineEndHour?: string;
     public routinePatterns?: number[]; 
@@ -29,11 +28,30 @@ export interface TaskStep {
 export interface UnscheduledTask {
     id: string;
     parentBigTaskId?: string;
+    month: number;
+    active: boolean;
     title?: string;
     bigTaskStartTime?: string;
     bigTaskEndTime?: string;
 };
 
+export interface UnscheduledRoutine {
+    id: string;
+    month: number;
+    active: boolean;
+    title?: string;
+    routinePatterns?: number[];
+    routineStartHour?: string;
+    routineEndHour?: string;
+};
+
+export interface UnscheduledMonthData {
+    monthNumber: number;
+    unscheduledBigTasks?: UnscheduledBigTask[];
+    unscheduledRoutines?: UnscheduledRoutine[];
+}
+
 export interface UnscheduledBigTask extends UnscheduledTask {
     subtasks?: UnscheduledTask[];
+    active: boolean;
 };

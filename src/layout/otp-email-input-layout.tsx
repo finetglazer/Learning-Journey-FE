@@ -104,7 +104,7 @@ export const OtpEmailInputLayout = (props: OtpEmailInputLayoutProps) => {
                     {backButtonTitle ? (
                         <div className="flex">
                             <IntegratedButton
-                                id={`back-btn-${uuid4()}`}
+                                id={`back-btn`}
                                 label={backButtonTitle || ""}
                                 prefix={<Icon name="LeftArrow" className="opacity-[0.7] hover:opacity-[1]" />}
                                 variant="default"
@@ -127,7 +127,7 @@ export const OtpEmailInputLayout = (props: OtpEmailInputLayoutProps) => {
                     <Divider className="w-120 mb-4" />
                     {
                         (description || []).map((description: string, index: number) =>
-                            <p className="text-[1.7rem] italic font-light text-center" key={"desc-" + uuid4() + "-" + index}>{description}</p>
+                            <p className="text-[1.7rem] italic font-light text-center" key={"desc-" + index}>{description}</p>
                         )
                     }
                     <div className="mt-7">

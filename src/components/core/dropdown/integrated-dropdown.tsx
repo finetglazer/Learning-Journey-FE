@@ -66,7 +66,7 @@ export const IntegratedDropdown = (props: IntegratedDropdownProps) => {
         })
         : null;
 
-    const dropdownId = "integrated-dropdown-".concat(uuid4());
+    const dropdownId = "integrated-dropdown";
 
     return (
         <>

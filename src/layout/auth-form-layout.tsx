@@ -94,7 +94,7 @@ export default function AuthFormLayout(props: FormLayoutProps) {
                     {header?.backButtonTitle ? (
                         <div className="flex">
                             <IntegratedButton
-                                id={`back-btn-${uuid4()}`}
+                                id={`back-btn`}
                                 label={header?.backButtonTitle || ""}
                                 prefix={<Icon name="LeftArrow" className="opacity-[0.7]" />}
                                 variant="default"

@@ -37,7 +37,7 @@ export function TaskStatusDropdown({ currentStatus, onStatusChange }: TaskStatus
             </DropdownMenuTrigger>
             <DropdownMenuContent className="z-[99999]">
                 {Object.entries(statusConfig).map(([key, { label, Icon, color }]) => (
-                    <DropdownMenuItem key={key} onSelect={() => onStatusChange(key as Status)}>
+                    <DropdownMenuItem key={key} onSelect={() => onStatusChange(key as Status)} className="cursor-pointer">
                         <Icon className={`mr-2 h-4 w-4 ${color} ${key === 'in-progress' ? 'animate-spin' : ''}`} />
                         <span>{label}</span>
                     </DropdownMenuItem>

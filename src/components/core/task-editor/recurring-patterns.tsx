@@ -3,13 +3,13 @@
 import { cn } from "@/lib/utils";
 
 const dayLabels = [
-    "Every Sunday",
     "Every Monday",
     "Every Tuesday",
     "Every Wednesday",
     "Every Thursday",
     "Every Friday",
     "Every Saturday",
+    "Every Sunday",
 ];
 
 interface RecurringPatternsProps {

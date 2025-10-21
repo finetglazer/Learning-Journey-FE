@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn, dateToIsoString, isoStringToDate } from "@/lib/utils";
+import { Task } from "@/model/task";
 import { PopoverTrigger } from "@radix-ui/react-popover";
 import { isSameDay } from "date-fns";
 import { Dispatch, SetStateAction } from "react";
@@ -73,15 +74,84 @@ export const DateTimePicker = (props: DateTimePickerProps) => {
                 className={cn("w-auto p-0 mt-2 z-99999", wrapperClassName)}
             >
                 <div className="sm:flex">
-                    <Calendar
-                        mode="single"
-                        selected={isoStringToDate(model?.[fieldName])}
-                        onSelect={handleDateSelect}
-                        disabled={(day) => enabledDate ? !isSameDay(day, enabledDate) : false}
-                        month={enabledDate}
-                        disableNavigation={!!enabledDate}
-                    />
-                    {(type === 'date-time' || type === 'time-only') && (
+                    {type === "date-time" && (
+                        <Calendar
+                            mode="single"
+                            selected={isoStringToDate(model?.[fieldName])}
+                            onSelect={handleDateSelect}
+                            disabled={(day) => enabledDate ? !isSameDay(day, enabledDate) : false}
+                            month={enabledDate}
+                            disableNavigation={!!enabledDate}
+                        />
+                    )}
+                    {(type === 'time-only') && (
+                        <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
+                            <ScrollArea className="w-64 sm:w-auto">
+                                <div className="flex sm:flex-col p-2">
+                                    {hours.reverse().map((hour) => (
+                                        <Button
+                                            key={hour}
+                                            size="icon"
+                                            variant={
+                                                model?.[fieldName] && isoStringToDate(model?.[fieldName]).getHours() % 12 === hour % 12
+                                                    ? "default"
+                                                    : "ghost"
+                                            }
+                                            className="sm:w-full shrink-0 aspect-square"
+                                            onClick={() => handleTimeChange("hour", hour.toString())}
+                                        >
+                                            {hour}
+                                        </Button>
+                                    ))}
+                                </div>
+                                <ScrollBar orientation="horizontal" className="sm:hidden" />
+                            </ScrollArea>
+                            <ScrollArea className="w-64 sm:w-auto">
+                                <div className="flex sm:flex-col p-2">
+                                    {Array.from({ length: 12 }, (_, i) => i * 5).map((minute) => (
+                                        <Button
+                                            key={minute}
+                                            size="icon"
+                                            variant={
+                                                model?.[fieldName] && isoStringToDate(model?.[fieldName]).getMinutes() === minute
+                                                    ? "default"
+                                                    : "ghost"
+                                            }
+                                            className="sm:w-full shrink-0 aspect-square"
+                                            onClick={() =>
+                                                handleTimeChange("minute", minute.toString())
+                                            }
+                                        >
+                                            {minute}
+                                        </Button>
+                                    ))}
+                                </div>
+                                <ScrollBar orientation="horizontal" className="sm:hidden" />
+                            </ScrollArea>
+                            <ScrollArea className="">
+                                <div className="flex sm:flex-col p-2">
+                                    {["AM", "PM"].map((ampm) => (
+                                        <Button
+                                            key={ampm}
+                                            size="icon"
+                                            variant={
+                                                model?.[fieldName] &&
+                                                    ((ampm === "AM" && isoStringToDate(model?.[fieldName]).getHours() < 12) ||
+                                                        (ampm === "PM" && isoStringToDate(model?.[fieldName]).getHours() >= 12))
+                                                    ? "default"
+                                                    : "ghost"
+                                            }
+                                            className="sm:w-full shrink-0 aspect-square"
+                                            onClick={() => handleTimeChange("ampm", ampm)}
+                                        >
+                                            {ampm}
+                                        </Button>
+                                    ))}
+                                </div>
+                            </ScrollArea>
+                        </div>
+                    )}
+                    {(type === 'date-time') && (
                         <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
                             <ScrollArea className="w-64 sm:w-auto">
                                 <div className="flex sm:flex-col p-2">

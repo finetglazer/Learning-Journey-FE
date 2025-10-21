@@ -10,10 +10,12 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { DAYS_OF_WEEK } from "@/const/consts";
-import { dayJsToISOString, leftBoundIndex, uuid4 } from "@/lib/utils";
+import { dayJsToISOString, leftBoundIndex } from "@/lib/utils";
 import { Task, UnscheduledTask } from "@/model/task";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { ClipboardList, Clock } from "lucide-react";
+import { useContext, useRef } from "react";
+import { AlertModal } from "../alert-modal/alert-modal";
 import { RoundedButton } from "../button/rounded-button";
 import { DateRangeNavigator } from "../date-range-navigator/date-range-navigator";
 import { SegmentedControl } from "../segmented-control/segmented-control";
@@ -23,8 +25,6 @@ import { CalendarWeekViewDroppableCell } from "./calendar-week-view-droppable-ce
 import { CollapsibleUnscheduledPanel } from "./collapsible-unscheduled-items-panel";
 import { DraggableTask } from "./draggable-task";
 import { UnscheduledTaskItem } from "./unscheduled-task-item";
-import { useContext, useRef } from "react";
-import { AlertModal } from "../alert-modal/alert-modal";
 
 export interface WeekViewCalendarProps {
     tasks?: Task[];
@@ -34,6 +34,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
     const {
         tasksStyle,
         calendarMap,
+        unscheduledMonthData,
         currentView,
         setCurrentView,
         updatedTasks,
@@ -43,7 +44,6 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
         setEditingTask,
         editorPosition,
         panelPosition,
-        unscheduledBigTasks,
         activeUnscheduledTask,
         CELL_HEIGHT,
         hours,
@@ -68,7 +68,8 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
         alertMessage,
         currentMondayTime,
         setAlertMessage,
-        isOutBigTaskTimeRange
+        isOutBigTaskTimeRange,
+        onChangeUnscheduledTaskTitle,
     } = useContext<CalendarContextInterface>(CalendarContext);
 
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -159,7 +160,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                                 const id = dayJsToISOString(newTime);
                                                 return (
                                                     <CalendarWeekViewDroppableCell
-                                                        key={id + `-${uuid4()}`}
+                                                        key={id}
                                                         id={id}
                                                         wrapperClassName="w-16.5 h-[4.6rem]"
                                                         onClick={(e) => handleCellClick(e, id)}
@@ -176,7 +177,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
 
                                                             return (
                                                                 <DraggableTask
-                                                                    key={id + `-${uuid4()}`}
+                                                                    key={id}
                                                                     handleTaskDoubleClick={handleTaskDoubleClick}
                                                                     task={task}
                                                                     scrollContainerRef={scrollContainerRef}
@@ -199,10 +200,11 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                 </TableBody>
                             </Table>
                             <CollapsibleUnscheduledPanel
-                                unscheduledBigTasks={unscheduledBigTasks}
+                                unscheduledMonthData={unscheduledMonthData}
+                                position={panelPosition}
                                 handleRemoveUnscheduledBigTask={handleRemoveUnscheduledBigTask}
                                 handleRemoveUnscheduledSubTask={handleRemoveUnscheduledSubTask}
-                                position={panelPosition}
+                                onUnscheduledTaskTitleChange={onChangeUnscheduledTaskTitle}
                             />
                             <DragOverlay>
                                 {activeTask ? (

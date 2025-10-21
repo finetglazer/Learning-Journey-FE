@@ -25,7 +25,7 @@ export const DateRangeNavigator = (props: DateRangeNavigatorProps) => {
         <div className={cn("flex items-center justify-center space-x-4", wrapperClassName)}>
             {/* Previous Button */}
             <IntegratedButton
-                id={"prev-btn-".concat(uuid4())}
+                id={"prev-btn"}
                 onClick={onPreviousClick}
                 disabled={isPreviousDisabled}
                 wrapperClassName="w-auto m-0"
@@ -46,7 +46,7 @@ export const DateRangeNavigator = (props: DateRangeNavigatorProps) => {
 
             {/* Next Button */}
             <IntegratedButton
-                id={"next-btn-".concat(uuid4())}
+                id={"next-btn"}
                 onClick={onNextClick}
                 disabled={isNextDisabled}
                 wrapperClassName="w-auto m-0"

@@ -52,7 +52,7 @@ export const TimeDropdown = (props: TimeDropdownProps) => {
         setIsOpen(!(isNil(open) ? isOpen : open));
     };
 
-    const dropdownId = "time-dropdown-".concat(uuid4());
+    const dropdownId = "time-dropdown-";
 
     return (
         <>

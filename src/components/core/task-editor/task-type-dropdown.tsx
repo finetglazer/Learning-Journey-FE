@@ -48,7 +48,7 @@ export function TaskTypeDropdown({ currentType, onTypeChange }: TaskTypeDropdown
             </DropdownMenuTrigger>
             <DropdownMenuContent className="z-[99999]">
                 {Object.entries(customTypeConfig).map(([key, { label, Icon }]) => (
-                    <DropdownMenuItem key={key} onSelect={() => onTypeChange(key as TaskType)}>
+                    <DropdownMenuItem key={key} onSelect={() => onTypeChange(key as TaskType)} className="cursor-pointer">
                         <Icon className="mr-2 h-4 w-4" />
                         <span>{label}</span>
                     </DropdownMenuItem>

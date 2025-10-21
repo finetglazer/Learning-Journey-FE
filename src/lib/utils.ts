@@ -129,36 +129,11 @@ export const initCalendarMap = (mondayTime: Dayjs, tasks?: Task[]) => {
 
   (tasks || []).forEach((task: Task) => {
     const timeKeys = Object.keys(map);
-    const day = mondayTime;
-    if (task?.type === "routine") {
-      const leftBound = toDayJs(maxTime(task?.routineStartTime || dayJsToISOString(dayjs()), dayJsToISOString(day)));
-      const rightBound = toDayJs(minTime(dayJsToISOString(day.add(6, "day")), task?.routineEndTime || "9999-12-31T23:59:59.000Z"));
-      for (let j = leftBound; j <= rightBound; j = j.add(1, "day")) {
-        const startHour = task?.routineStartHour || "00:00";
-        const endHour = task?.routineEndHour || "23:59";
-        const isoStringStartTime = dayJsToISOString(j.hour(Number(startHour.split(":")[0])).minute(Number(startHour.split(":")[1])));
-        const isoStringEndTime = dayJsToISOString(j.hour(Number(endHour.split(":")[0])).minute(Number(endHour.split(":")[1])));
-        const dayTimeLeftIndex = leftBoundIndex(timeKeys, isoStringStartTime);
-        const dayTimeRightIndex = leftBoundIndex(timeKeys, isoStringEndTime);
-        if (dayTimeLeftIndex !== null && dayTimeRightIndex !== null) {
-          for (let k = dayTimeLeftIndex; k <= dayTimeRightIndex; ++k) {
-            map[timeKeys[k]].push({
-              ...task,
-              id: isoStringStartTime,
-              startTime: isoStringStartTime,
-              endTime: isoStringEndTime,
-            });
-          }
-        }
-      }
-    }
-    else {
-      const leftTimeIndex = leftBoundIndex(timeKeys, task.startTime);
-      const rightTimeIndex = leftBoundIndex(timeKeys, task.endTime);
-      if (leftTimeIndex !== null && rightTimeIndex !== null) {
-        for (let j = leftTimeIndex; j <= rightTimeIndex; ++j) {
-          map[timeKeys[j]].push(task);
-        }
+    const leftTimeIndex = leftBoundIndex(timeKeys, task.startTime);
+    const rightTimeIndex = leftBoundIndex(timeKeys, task.endTime);
+    if (leftTimeIndex !== null && rightTimeIndex !== null) {
+      for (let j = leftTimeIndex; j <= rightTimeIndex; ++j) {
+        map[timeKeys[j]].push(task);
       }
     }
   });
@@ -218,7 +193,7 @@ export const minTime = (a: string, b: string) => {
 };
 
 export const reId = (tasks: Task[]) => {
-  const newTasks = tasks;
+  const newTasks = [...tasks];
   for (let i = 0; i < newTasks.length; ++i) {
     const indexes: number[] = [];
     for (let j = i + 1; j < newTasks.length; ++j) {
@@ -255,7 +230,7 @@ export const isoToStandardTime = (isoString: string, gmt?: number) => {
 };
 
 export const getRoutineDates = (task: Task, startTime: string, endTime: string) => {
-  const currentTime = task?.routineStartTime || dayJsToISOString(dayjs());
+  const currentTime = task.startTime || dayJsToISOString(dayjs());
   let res = [];
   for (let i = toDayJs(maxTime(currentTime, startTime)); i <= toDayJs(endTime); i = i.add(1, "day")) {
     const isoString = dayJsToISOString(i);
@@ -281,7 +256,7 @@ export const isCollidingWithSleepTime = (task: Task, sleepStartTime: string, sle
 };
 
 export const overlappingTasksExists = (task: Task, tasks: Task[]) => {
-  return tasks.some(taskItem => taskItem.startTime === task.startTime);
+  return tasks.some(taskItem => taskItem.startTime === task.startTime && taskItem.id !== task.id);
 };
 
 export const getDaysInMonth = (month: number) => {

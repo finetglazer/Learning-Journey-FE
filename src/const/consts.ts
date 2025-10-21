@@ -21,13 +21,13 @@ export const MONTHS = [
 ];
 
 export enum ROUTINE_PATTERNS {
-    EVERY_SUNDAY,
     EVERY_MONDAY,
     EVERY_TUESDAY,
     EVERY_WEDNESDAY,
     EVERY_THURSDAY,
     EVERY_FRIDAY,
     EVERY_SATURDAY,
+    EVERY_SUNDAY,
 };
 
 export const CALENDAR_VIEW_OPTIONS = [
@@ -38,6 +38,8 @@ export const CALENDAR_VIEW_OPTIONS = [
     'year',
 ];
 
+export const UNSCHEDULED_ROUTINE_PREFIX = "unscheduled-routine-";
+export const NEW_ROUTINE_ID_PREFIX = "routine-";
 export const UNSCHEDULED_BIGTASK_PREFIX = "unscheduled-big-task-";
 export const UNSCHEDULED_BIGTASK_DEFAULT_TITLE = "New unscheduled big task ";
 export const UNSCHEDULED_SUBTASK_PREFIX = "unscheduled-task-";
