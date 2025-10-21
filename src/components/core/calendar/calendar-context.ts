@@ -3,7 +3,6 @@ import { dayJsToISOString, getEditorAdjustedPosition, getMonthName, getNearestMo
 import { Task, UnscheduledBigTask, UnscheduledMonthData, UnscheduledRoutine, UnscheduledTask } from "@/model/task";
 import { DragEndEvent, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import dayjs, { Dayjs } from "dayjs";
-import { isNil } from "lodash";
 import React, { createContext, Dispatch, SetStateAction, useEffect, useState } from "react";
 import { AlertMessage } from "../alert-modal/alert-modal";
 
@@ -369,6 +368,36 @@ export const useCalendarHooks = ({
         return undefined;
     };
 
+    const getUnscheduledSubtaskByIdBothActiveAndInactive = (monthData: UnscheduledMonthData[], subtaskId: string) => {
+        for (const monthDataItem of monthData) {
+            const foundTask = (monthDataItem?.unscheduledBigTasks || []).find(
+                unscheduledBigTask => unscheduledBigTask.active && (unscheduledBigTask?.subtasks || []).some(subtask =>
+                    subtask.id === subtaskId
+                )
+            );
+
+            if (foundTask) {
+                return (foundTask?.subtasks || []).find(subtask => subtask.id === subtaskId);
+            }
+        }
+
+        return undefined;
+    };
+
+    const getFirstInactiveUnscheduledSubtaskById = (monthData: UnscheduledMonthData[], bigTaskId: string) => {
+        const unscheduledBigTask = getUnscheduledBigTaskById(monthData, bigTaskId);
+        if (!unscheduledBigTask) {
+            return undefined;
+        }
+        let res: any = undefined;
+        (unscheduledBigTask?.subtasks || []).forEach(subtask => {
+            if (!subtask.active && !res) {
+                res = subtask;
+            }
+        });
+        return res;
+    };
+
     const updateUnscheduledBigTask = (monthData: UnscheduledMonthData[], updatedUnscheduledBigTask: UnscheduledBigTask) => {
         const updatedMonthData = [...monthData];
         const unscheduledBigTaskIndex = getUnscheduledBigTaskIndex(updatedMonthData, updatedUnscheduledBigTask);
@@ -381,9 +410,10 @@ export const useCalendarHooks = ({
 
     const updateUnscheduledSubTask = (monthData: UnscheduledMonthData[], updatedUnscheduledSubTask: UnscheduledTask) => {
         const updatedMonthData = [...monthData];
-        const unscheduledSubTaskIndex = getUnscheduledSubTaskIndex(updatedMonthData, updatedUnscheduledSubTask);
-        const unscheduledSubtask = getUnscheduledSubtaskById(updatedMonthData, updatedUnscheduledSubTask.id);
-        const unscheduledBigTask = getUnscheduledBigTaskById(updatedMonthData, unscheduledSubtask?.id || "");
+        const unscheduledSubTaskIndex = getUnscheduledSubTaskIndex(monthData, updatedUnscheduledSubTask);
+        const unscheduledSubtask = getUnscheduledSubtaskById(monthData, updatedUnscheduledSubTask.id);
+        const unscheduledBigTask = getUnscheduledBigTaskById(monthData, unscheduledSubtask?.parentBigTaskId || "");
+        
         if (!unscheduledBigTask) {
             return updatedMonthData;
         }
@@ -415,12 +445,20 @@ export const useCalendarHooks = ({
             ...(unscheduledBigTask?.subtasks || [])[unscheduledSubtaskIndex],
             active: false,
         };
-        const updatedUnscheduledMonthData = [...unscheduledMonthData];
-        updatedUnscheduledMonthData[unscheduledBigTask.month] = {
-            ...updatedUnscheduledMonthData[unscheduledBigTask.month],
-            ...unscheduledBigTask,
-        };
-        setUnscheduledMonthData(updatedUnscheduledMonthData);
+        let isAllInactive = true;
+        (unscheduledBigTask?.subtasks || []).forEach(subtask => {
+            if (subtask.active) {
+                isAllInactive = false;
+            }
+        });
+        if (isAllInactive) {
+            handleRemoveUnscheduledBigTask(unscheduledBigTask);
+            return;
+        }
+        const updatedUnscheduledMonthData = updateUnscheduledBigTask([...unscheduledMonthData], unscheduledBigTask);
+        if (updatedUnscheduledMonthData) {
+            setUnscheduledMonthData(updatedUnscheduledMonthData);
+        }
     };
 
     const onDragStart = (event: DragStartEvent) => {
@@ -489,13 +527,18 @@ export const useCalendarHooks = ({
                 });
                 return;
             }
+            const cloneUpdatedTasks = [...updatedTasks];
+            const updatedIndex = cloneUpdatedTasks.findIndex(updatedTask => updatedTask.id === newTask.id);
+            if (updatedIndex !== -1) {
+                cloneUpdatedTasks.splice(updatedIndex, 1);
+            }
             // There are no 2 tasks are overlapping
-            if (overlappingTasksExists(newTask, updatedTasks)) {
+            if (overlappingTasksExists(newTask, cloneUpdatedTasks)) {
                 setAlertMessage(OVERLAPPING_TIME_WARNING);
                 return;
             }
 
-            setUpdatedTasks(reId([...updatedTasks, newTask]));
+            setUpdatedTasks(reId([...cloneUpdatedTasks, newTask]));
             setEditingTask(newTask);
 
             handleRemoveUnscheduledSubTask(subtask);
@@ -509,21 +552,23 @@ export const useCalendarHooks = ({
 
         const updatedTaskIndex = updatedTasks.findIndex(task => task.id === activeDragId);
         const oldTask = updatedTasks[updatedTaskIndex];
-        const newUpdatedTasks = [...updatedTasks];
         const taskDuration = toDayJs(oldTask.endTime).diff(toDayJs(oldTask.startTime));
-        if (!isNil(updatedTaskIndex)) {
-            newUpdatedTasks[updatedTaskIndex] = {
-                ...oldTask,
-                id: droppedCellId,
-                startTime: droppedCellId,
-                endTime: dayJsToISOString(toDayJs(droppedCellId).add(taskDuration)),
-            };
+        const updatedTask = {
+            ...oldTask,
+            id: droppedCellId,
+            startTime: droppedCellId,
+            endTime: dayJsToISOString(toDayJs(droppedCellId).add(taskDuration)),
+        };
+        const newUpdatedTasks = [...updatedTasks];
+        if (updatedTaskIndex !== -1) {
+            newUpdatedTasks.splice(updatedTaskIndex, 1);
         }
         // There are no 2 tasks are overlapping
-        if (overlappingTasksExists(oldTask, updatedTasks)) {
+        if (overlappingTasksExists(updatedTask, newUpdatedTasks)) {
             setAlertMessage(OVERLAPPING_TIME_WARNING);
             return;
         }
+        newUpdatedTasks[updatedTaskIndex] = updatedTask;
 
         const sleepTimeCollision = (newUpdatedTasks.some(task => isCollidingWithSleepTime(task, sleepStartTime, sleepEndTime)));
         if (sleepTimeCollision) {
@@ -549,13 +594,14 @@ export const useCalendarHooks = ({
                 return;
             }
             else {
-                let unscheduledSubtask = getUnscheduledSubtaskById(unscheduledMonthData, task.id);
+                let unscheduledSubtask = getFirstInactiveUnscheduledSubtaskById(unscheduledMonthData, task?.parentBigTaskId || "");
                 if (!unscheduledSubtask) {
                     return;
                 }
                 unscheduledSubtask = {
-                    ...unscheduledSubtask,
-                    active: false,
+                    ...task,
+                    id: unscheduledSubtask.id,
+                    active: true,
                 };
                 updateUnscheduledSubTask([...unscheduledMonthData], unscheduledSubtask);
             }
@@ -564,7 +610,7 @@ export const useCalendarHooks = ({
         setUpdatedTasks(reId([...updatedTasks.filter(updatedTask => updatedTask.id !== task.id)]));
         setEditingTask(null);
     };
-
+// TODO: Remove unscheduled subtask of Unscheduled big task A making Unscheduled big task B lost unscheduled big task
     const handleCellClick = (event: React.MouseEvent<HTMLTableCellElement>, cellId: string) => {
         if ((event.target as HTMLElement).closest('.cursor-grab')) {
             return;
@@ -698,15 +744,11 @@ export const useCalendarHooks = ({
             };
         }
 
-        // if (activeTask) {
-        //     newTasksStyle[activeTask.id] = undefined;
-        // }
-
         setTasksStyle(newTasksStyle);
 
     }, [currentMondayTime, updatedTasks]);
-console.log("updatedTasks", updatedTasks);
-console.log("calendarMap", calendarMap)
+    // console.log("updatedTasks", updatedTasks);
+    // console.log("calendarMap", calendarMap);
     return {
         currentDate,
         setCurrentDate,

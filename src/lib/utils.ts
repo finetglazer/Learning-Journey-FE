@@ -256,7 +256,7 @@ export const isCollidingWithSleepTime = (task: Task, sleepStartTime: string, sle
 };
 
 export const overlappingTasksExists = (task: Task, tasks: Task[]) => {
-  return tasks.some(taskItem => taskItem.startTime === task.startTime && taskItem.id !== task.id);
+  return tasks.some(taskItem => taskItem.startTime === task.startTime);
 };
 
 export const getDaysInMonth = (month: number) => {

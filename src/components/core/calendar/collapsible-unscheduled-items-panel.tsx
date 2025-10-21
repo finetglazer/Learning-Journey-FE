@@ -9,9 +9,11 @@ import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-    ClipboardList
+    ClipboardList,
+    X
 } from "lucide-react";
-import { useState } from "react";
+// --- 1. Import useMemo ---
+import { useState, useMemo } from "react";
 import { UnscheduledItemsForMonth } from "./unscheduled-items-for-month";
 
 export interface CollapsibleUnscheduledPanelProps {
@@ -37,6 +39,29 @@ export function CollapsibleUnscheduledPanel({
     const dragStyle = transform ? {
         transform: CSS.Transform.toString(transform),
     } : undefined;
+
+    // --- 2. Memoize the expensive list rendering ---
+    // This content will now only be recalculated if the data or handlers change,
+    // not when the panel is being dragged (i.e., when `transform` changes).
+    const memoizedPanelContent = useMemo(() => {
+        return (unscheduledMonthData || []).map((monthData) => (
+            <UnscheduledItemsForMonth
+                // --- 3. Add a stable key ---
+                key={monthData.monthNumber}
+                monthName={MONTHS[monthData.monthNumber]}
+                unscheduledRoutines={monthData.unscheduledRoutines}
+                unscheduledBigTasks={monthData.unscheduledBigTasks}
+                handleRemoveUnscheduledSubTask={handleRemoveUnscheduledSubTask}
+                handleRemoveUnscheduledBigTask={handleRemoveUnscheduledBigTask}
+                onUnscheduledTaskTitleChange={onUnscheduledTaskTitleChange}
+            />
+        ));
+    }, [
+        unscheduledMonthData,
+        handleRemoveUnscheduledBigTask,
+        handleRemoveUnscheduledSubTask,
+        onUnscheduledTaskTitleChange
+    ]);
 
     return (
         <div
@@ -70,24 +95,35 @@ export function CollapsibleUnscheduledPanel({
                 ) : (
                     // 4. The Expanded View (Full Panel)
                     <motion.div
+                        // --- 4. Apply draggable props to the expanded panel as well ---
+                        ref={setNodeRef}
+                        style={dragStyle}
                         key={"panel"}
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
                         transition={{ duration: 0.2 }}
-                        className="w-[350px] bg-white shadow-lg rounded-lg p-4 font-sans"
+                        // --- 5. Use flex-col and remove padding ---
+                        className="w-[350px] bg-white shadow-lg rounded-lg font-sans flex flex-col"
                     >
-                        <ScrollArea className="h-[50vh]">
-                            {(unscheduledMonthData || []).map((monthData) => (
-                                <UnscheduledItemsForMonth
-                                    monthName={MONTHS[monthData.monthNumber]}
-                                    unscheduledRoutines={monthData.unscheduledRoutines}
-                                    unscheduledBigTasks={monthData.unscheduledBigTasks}
-                                    handleRemoveUnscheduledSubTask={handleRemoveUnscheduledSubTask}
-                                    handleRemoveUnscheduledBigTask={handleRemoveUnscheduledBigTask}
-                                    onUnscheduledTaskTitleChange={onUnscheduledTaskTitleChange}
-                                />
-                            ))}
+                        <div
+                            {...listeners}
+                            {...attributes}
+                            className="flex justify-between items-center p-4 border-b cursor-grab" // Added padding here
+                        >
+                            <h3 className="font-semibold text-lg">Unscheduled Tasks</h3>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setIsCollapsed(true)}
+                                className="cursor-pointer"
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        {/* --- 6. Add padding to ScrollArea and render memoized content --- */}
+                        <ScrollArea className="h-[50vh] p-4">
+                            {memoizedPanelContent}
                         </ScrollArea>
                     </motion.div>
                 )}

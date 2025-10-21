@@ -62,7 +62,7 @@ export function UnscheduledItemsForMonth({
                         <CollapsibleContent className="overflow-hidden data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up">
                             <ScrollArea className="h-40 rounded-md border p-2 mt-1">
                                 <div className="space-y-1">
-                                    {(unscheduledRoutines || []).map((routine) => (
+                                    {(unscheduledRoutines || []).filter(routine => routine.active).map((routine) => (
                                         <UnscheduledRoutineItem
                                             routine={routine}
 
@@ -86,7 +86,7 @@ export function UnscheduledItemsForMonth({
                         <CollapsibleContent className="overflow-hidden data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up">
                             <ScrollArea className="h-60 rounded-md border p-2">
                                 <div className="space-y-1">
-                                    {(unscheduledBigTasks || []).map((bigTask: UnscheduledBigTask) => (
+                                    {(unscheduledBigTasks || []).filter(unscheduledBigTask => unscheduledBigTask.active).map((bigTask: UnscheduledBigTask) => (
                                         <Collapsible key={bigTask.id} open={openTasks[bigTask.id] ?? true} onOpenChange={() => toggleBigTask(bigTask.id)}>
                                             <div className="flex items-center">
                                                 <UnscheduledTaskItem
@@ -102,7 +102,7 @@ export function UnscheduledItemsForMonth({
                                                 </CollapsibleTrigger>
                                             </div>
                                             <CollapsibleContent className="pl-6 space-y-1 pt-1 overflow-hidden data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up">
-                                                {(bigTask.subtasks || []).map((subtask: UnscheduledTask) => (
+                                                {(bigTask.subtasks || []).filter(subtask => subtask.active).map((subtask: UnscheduledTask) => (
                                                     <UnscheduledTaskItem
                                                         key={subtask.id}
                                                         task={subtask}

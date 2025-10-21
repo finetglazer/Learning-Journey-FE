@@ -101,7 +101,7 @@ export const TaskEditor = ({
         let cloneUpdatedTasks = [...updatedTasks];
         const updatedIndex = cloneUpdatedTasks.findIndex(updatedTask => updatedTask.id === task.id);
         if (updatedIndex !== -1) {
-            cloneUpdatedTasks[updatedIndex] = model;
+            cloneUpdatedTasks.splice(updatedIndex, 1);
         }
         else {
             cloneUpdatedTasks = [...cloneUpdatedTasks, model];
@@ -138,17 +138,17 @@ export const TaskEditor = ({
             });
             return;
         }
-
-        if (overlappingTasksExists(task, updatedTasks)) {
+        if (overlappingTasksExists(model, cloneUpdatedTasks)) {
             setAlertMessage(OVERLAPPING_TIME_WARNING);
             return;
         }
+
+        cloneUpdatedTasks.push(model);
 
         if (model?.type === "routine") {
             // Remove all old routines
             let newRoutineId = task?.routineId || "";
             cloneUpdatedTasks = cloneUpdatedTasks.filter(updatedTask => updatedTask?.type !== "routine" || updatedTask?.routineId !== task?.routineId);
-            console.log("cloneUpdatedTasks", cloneUpdatedTasks)
             const curDay = (dayjs().get("day") + 6) % 7;
             (model?.routinePatterns || []).forEach((routinePattern: number) => {
                 if (routinePattern >= curDay) {
@@ -266,7 +266,7 @@ export const TaskEditor = ({
                                 updateModel={updateModel}
                                 fieldName={"startTime"}
                                 type={getDateTimePickerType()}
-                                enabledDate={model?.type !== "big-task" ? isoStringToDate(model.startTime) : undefined}
+                                enabledDate={model?.type !== "routine" ? undefined : isoStringToDate(model.startTime)}
                             />
                         </div>
                         <div className="relative flex items-center space-x-3 text-gray-500 px-2 border-l border-gray-200 cursor-pointer">
@@ -287,7 +287,7 @@ export const TaskEditor = ({
                                 updateModel={updateModel}
                                 fieldName={"endTime"}
                                 type={getDateTimePickerType()}
-                                enabledDate={model?.type !== "big-task" ? isoStringToDate(model.endTime) : undefined}
+                                enabledDate={model?.type !== "routine" ? undefined : isoStringToDate(model.startTime)}
                             />
                         </div>
                     </div>
