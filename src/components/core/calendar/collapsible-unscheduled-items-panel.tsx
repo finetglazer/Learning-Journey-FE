@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MONTHS } from "@/const/consts";
 import { cn } from "@/lib/utils";
-import { UnscheduledBigTask, UnscheduledMonthData, UnscheduledTask } from "@/model/task";
+import { UnscheduledBigTask, UnscheduledMonthData, UnscheduledRoutine, UnscheduledTask } from "@/model/task";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { AnimatePresence, motion } from "framer-motion";
@@ -12,7 +12,6 @@ import {
     ClipboardList,
     X
 } from "lucide-react";
-// --- 1. Import useMemo ---
 import { useState, useMemo } from "react";
 import { UnscheduledItemsForMonth } from "./unscheduled-items-for-month";
 
@@ -43,14 +42,17 @@ export function CollapsibleUnscheduledPanel({
     // --- 2. Memoize the expensive list rendering ---
     // This content will now only be recalculated if the data or handlers change,
     // not when the panel is being dragged (i.e., when `transform` changes).
+    const isAllRoutinesRemoved = (unscheduledRoutines: UnscheduledRoutine[]) => {
+        return !unscheduledRoutines.some(routine => routine.active);
+    }
+    const isAllBigTasksRemoved = (unscheduledBigTasks: UnscheduledBigTask[]) => {
+        return !unscheduledBigTasks.some(bigTask => bigTask.active);
+    }
     const memoizedPanelContent = useMemo(() => {
-        return (unscheduledMonthData || []).map((monthData) => (
+        return (unscheduledMonthData || []).filter(monthData => !isAllBigTasksRemoved(monthData?.unscheduledBigTasks || []) || !isAllRoutinesRemoved(monthData?.unscheduledRoutines || [])).map((monthData) => (
             <UnscheduledItemsForMonth
-                // --- 3. Add a stable key ---
                 key={monthData.monthNumber}
-                monthName={MONTHS[monthData.monthNumber]}
-                unscheduledRoutines={monthData.unscheduledRoutines}
-                unscheduledBigTasks={monthData.unscheduledBigTasks}
+                monthData={monthData}
                 handleRemoveUnscheduledSubTask={handleRemoveUnscheduledSubTask}
                 handleRemoveUnscheduledBigTask={handleRemoveUnscheduledBigTask}
                 onUnscheduledTaskTitleChange={onUnscheduledTaskTitleChange}

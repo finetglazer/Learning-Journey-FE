@@ -9,9 +9,9 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { DAYS_OF_WEEK } from "@/const/consts";
+import { DAYS_OF_WEEK, UNSCHEDULED_ROUTINE_PREFIX, UNSCHEDULED_SUBTASK_PREFIX } from "@/const/consts";
 import { dayJsToISOString, leftBoundIndex } from "@/lib/utils";
-import { Task, UnscheduledTask } from "@/model/task";
+import { Task, UnscheduledRoutine, UnscheduledTask } from "@/model/task";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { ClipboardList, Clock } from "lucide-react";
 import { useContext, useRef } from "react";
@@ -25,6 +25,7 @@ import { CalendarWeekViewDroppableCell } from "./calendar-week-view-droppable-ce
 import { CollapsibleUnscheduledPanel } from "./collapsible-unscheduled-items-panel";
 import { DraggableTask } from "./draggable-task";
 import { UnscheduledTaskItem } from "./unscheduled-task-item";
+import { UnscheduledRoutineItem } from "./unscheduled-routine-item";
 
 export interface WeekViewCalendarProps {
     tasks?: Task[];
@@ -45,6 +46,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
         editorPosition,
         panelPosition,
         activeUnscheduledTask,
+        activeUnscheduledRoutine,
         CELL_HEIGHT,
         hours,
         sleepStartTime,
@@ -178,6 +180,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                                             return (
                                                                 <DraggableTask
                                                                     key={id}
+                                                                    draggable={!(task?.type === "routine")}
                                                                     handleTaskDoubleClick={handleTaskDoubleClick}
                                                                     task={task}
                                                                     scrollContainerRef={scrollContainerRef}
@@ -230,9 +233,14 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                         </div>
                                     </div>
                                 )}
-                                {activeDragId?.includes('unscheduled-task') && (
+                                {activeDragId?.includes(UNSCHEDULED_SUBTASK_PREFIX) && activeUnscheduledTask && (
                                     <UnscheduledTaskItem
-                                        task={activeUnscheduledTask as UnscheduledTask}
+                                        task={activeUnscheduledTask}
+                                    />
+                                )}
+                                {activeDragId?.includes(UNSCHEDULED_ROUTINE_PREFIX) && activeUnscheduledRoutine && (
+                                    <UnscheduledRoutineItem
+                                        routine={activeUnscheduledRoutine}
                                     />
                                 )}
                             </DragOverlay>

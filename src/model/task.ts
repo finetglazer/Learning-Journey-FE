@@ -39,6 +39,7 @@ export interface UnscheduledRoutine {
     id: string;
     month: number;
     active: boolean;
+    parentBigTaskId?: string;
     title?: string;
     routinePatterns?: number[];
     routineStartHour?: string;

@@ -9,15 +9,17 @@ export interface DraggableTaskProps extends BaseTaskProps {
     scrollContainerRef: React.RefObject<HTMLDivElement | null>;
     isOverlay?: boolean;
     onRemove?: (taskId: string) => void;
+    draggable?: boolean;
 }
 
-export const DraggableTask = ({ 
-    task, 
-    isOverlay = false, 
+export const DraggableTask = ({
+    task,
+    isOverlay = false,
     handleTaskDoubleClick,
     onRemove,
     scrollContainerRef,
-    ...baseTaskProps 
+    draggable = true,
+    ...baseTaskProps
 }: DraggableTaskProps) => {
     // Get `isDragging` from the hook
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -48,26 +50,21 @@ export const DraggableTask = ({
     }
 
     return (
-        <div
-            ref={setNodeRef}
-            style={style}
-            {...listeners}
-            {...attributes}
-            className="cursor-grab"
-            onDoubleClick={(e) => handleTaskDoubleClick(e, task, scrollContainerRef)}
-        >
-            <BaseTask task={task} {...baseTaskProps} />
-            {/* <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-1 left-[100%] h-6 w-6 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onRemove?.(task.id);
-                }}
-            >
-                <Trash2 size={14} />
-            </Button> */}
-        </div>
+        <>
+            {draggable ? (
+                <div
+                    ref={setNodeRef}
+                    style={style}
+                    {...listeners}
+                    {...attributes}
+                    className="cursor-grab"
+                    onDoubleClick={(e) => handleTaskDoubleClick(e, task, scrollContainerRef)}
+                >
+                    <BaseTask task={task} {...baseTaskProps} />
+                </div>
+            ) : (
+                <BaseTask task={task} {...baseTaskProps} />
+            )}
+        </>
     );
 }

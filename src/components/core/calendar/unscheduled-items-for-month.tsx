@@ -4,32 +4,31 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { UnscheduledBigTask, UnscheduledRoutine, UnscheduledTask } from "@/model/task";
+import { UnscheduledBigTask, UnscheduledMonthData, UnscheduledTask } from "@/model/task";
 import { ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { UnscheduledRoutineItem } from "./unscheduled-routine-item";
 import { UnscheduledTaskItem } from "./unscheduled-task-item";
 
 export interface UnscheduledItemsForMonthProps {
-    monthName: string;
-    unscheduledRoutines?: UnscheduledRoutine[];
-    unscheduledBigTasks?: UnscheduledBigTask[];
+    monthData: UnscheduledMonthData;
     handleRemoveUnscheduledSubTask?: (unscheduledSubtask: UnscheduledTask) => void;
     handleRemoveUnscheduledBigTask?: (unscheduledBigTask: UnscheduledBigTask) => void;
     onUnscheduledTaskTitleChange?: (taskId: string, newTitle: string) => void;
 }
 
-export function UnscheduledItemsForMonth({
-    monthName,
-    unscheduledRoutines,
-    unscheduledBigTasks,
+export const UnscheduledItemsForMonth = ({
+    monthData,
     onUnscheduledTaskTitleChange,
     handleRemoveUnscheduledBigTask,
     handleRemoveUnscheduledSubTask,
-}: UnscheduledItemsForMonthProps) {
+}: UnscheduledItemsForMonthProps) => {
+    const unscheduledRoutines = monthData?.unscheduledRoutines;
+    const unscheduledBigTasks = monthData?.unscheduledBigTasks;
+    const monthName = monthData?.monthNumber;
     const [isPanelOpen, setIsPanelOpen] = useState(true);
-    const [isRoutinesOpen, setIsRoutinesOpen] = useState(true);
-    const [isTasksOpen, setIsTasksOpen] = useState(true);
+    const [isRoutinesOpen, setIsRoutinesOpen] = useState((unscheduledRoutines || []).some(routine => routine.active));
+    const [isTasksOpen, setIsTasksOpen] = useState((unscheduledBigTasks || []).some(bigTask => bigTask.active));
     const [selectedItem, setSelectedItem] = useState<string>("");
     const [openTasks, setOpenTasks] = useState(Object.fromEntries(
         (unscheduledBigTasks || []).map(task => [task.id, false])
@@ -40,6 +39,24 @@ export function UnscheduledItemsForMonth({
         newOpenTasks[bigTaskId] = !newOpenTasks[bigTaskId];
         setOpenTasks(newOpenTasks);
     };
+
+    useEffect(() => {
+        setIsRoutinesOpen((unscheduledRoutines || []).some(routine => routine.active));
+        setIsTasksOpen((unscheduledBigTasks || []).some(bigTask => bigTask.active));
+
+        setOpenTasks(prevOpenTasks => {
+            const newOpenTasks = { ...prevOpenTasks };
+            (unscheduledBigTasks || []).forEach(task => {
+                if (!(task.id in newOpenTasks)) {
+                    newOpenTasks[task.id] = false;
+                }
+            });
+            return newOpenTasks;
+        });
+    }, [
+        (unscheduledRoutines || []).some(routine => routine.active),
+        (unscheduledBigTasks || []).some(bigTask => bigTask.active),
+    ]);
 
     return (
         <>
@@ -64,10 +81,9 @@ export function UnscheduledItemsForMonth({
                                 <div className="space-y-1">
                                     {(unscheduledRoutines || []).filter(routine => routine.active).map((routine) => (
                                         <UnscheduledRoutineItem
+                                            key={routine.id}
                                             routine={routine}
-
-                                        >
-                                        </UnscheduledRoutineItem>
+                                        />
                                     ))}
                                 </div>
                             </ScrollArea>

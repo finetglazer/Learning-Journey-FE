@@ -1,4 +1,4 @@
-import { COLLIDING_WITH_SLEEP_TIME_WARNING, OVERLAPPING_TIME_WARNING, SUBTASK_OUTSIDE_BIGTASK_TIME_RANGE_WARNING, UNSCHEDULED_SUBTASK_PREFIX } from "@/const/consts";
+import { COLLIDING_WITH_SLEEP_TIME_WARNING, OVERLAPPING_TIME_WARNING, SUBTASK_OUTSIDE_BIGTASK_TIME_RANGE_WARNING, UNSCHEDULED_ROUTINE_PREFIX, UNSCHEDULED_SUBTASK_PREFIX } from "@/const/consts";
 import { dayJsToISOString, getEditorAdjustedPosition, getMonthName, getNearestMonday, initCalendarMap, isCollidingWithSleepTime, overlappingTasksExists, reId, toDayJs } from "@/lib/utils";
 import { Task, UnscheduledBigTask, UnscheduledMonthData, UnscheduledRoutine, UnscheduledTask } from "@/model/task";
 import { DragEndEvent, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
@@ -27,6 +27,7 @@ export interface CalendarContextInterface {
     unscheduledMonthData: UnscheduledMonthData[];
     setUnscheduledMonthData: Dispatch<SetStateAction<UnscheduledMonthData[]>>;
     activeUnscheduledTask?: UnscheduledTask;
+    activeUnscheduledRoutine?: UnscheduledRoutine;
     CELL_HEIGHT: number;
     hours: string[];
     startPositionInHours: number;
@@ -73,6 +74,7 @@ export const CalendarContext = createContext<CalendarContextInterface>({
     unscheduledMonthData: [],
     setUnscheduledMonthData: () => { },
     activeUnscheduledTask: undefined,
+    activeUnscheduledRoutine: undefined,
     CELL_HEIGHT: 4.6,
     hours: [],
     sleepStartTime: "22:00",
@@ -118,6 +120,7 @@ export const useCalendarHooks = ({
     const [panelPosition, setPanelPosition] = useState({ x: 20, y: 100 });
     const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
     const [activeUnscheduledTask, setActiveUnscheduledTask] = useState<UnscheduledTask | undefined>(undefined);
+    const [activeUnscheduledRoutine, setActiveUnscheduledRoutine] = useState<UnscheduledRoutine | undefined>(undefined);
     const initUnscheduledBigTasks: UnscheduledBigTask[] = [
         {
             id: "unscheduled-big-task-1",
@@ -173,7 +176,6 @@ export const useCalendarHooks = ({
             routinePatterns: [4, 5, 6],
             routineStartHour: "07:00",
             routineEndHour: "09:15",
-
         },
         {
             id: "unscheduled-routine-3",
@@ -186,18 +188,18 @@ export const useCalendarHooks = ({
         },
     ];
 
-    const [unscheduledMonthData, setUnscheduledMonthData] = useState<UnscheduledMonthData[]>([
-        {
-            monthNumber: 9,
-            unscheduledBigTasks: initUnscheduledBigTasks,
-            unscheduledRoutines: initUnscheduledRoutines,
-        },
-        {
-            monthNumber: 10,
-            unscheduledBigTasks: initUnscheduledBigTasks,
-            unscheduledRoutines: initUnscheduledRoutines,
-        }
-    ]);
+    const [unscheduledMonthData, setUnscheduledMonthData] = useState<UnscheduledMonthData[]>(
+        Array.from({ length: 12 }, (_, i) => {
+            if (i === 9) {
+                return {
+                    monthNumber: 9,
+                    unscheduledBigTasks: initUnscheduledBigTasks,
+                    unscheduledRoutines: initUnscheduledRoutines,
+                };
+            }
+            return { monthNumber: i };
+        })
+    );
 
     const CELL_HEIGHT = 4.57; // rem;
     const now = dayjs();
@@ -368,6 +370,19 @@ export const useCalendarHooks = ({
         return undefined;
     };
 
+    const getUnscheduledRoutineById = (monthData: UnscheduledMonthData[], routineId: string) => {
+        let res: any = undefined;
+        for (const monthDataItem of monthData) {
+            (monthDataItem?.unscheduledRoutines || []).forEach(unscheduledRoutine => {
+                if (unscheduledRoutine.active && unscheduledRoutine.id === routineId && !res) {
+                    res = unscheduledRoutine;
+                }
+            });
+        }
+
+        return res;
+    };
+
     const getUnscheduledSubtaskByIdBothActiveAndInactive = (monthData: UnscheduledMonthData[], subtaskId: string) => {
         for (const monthDataItem of monthData) {
             const foundTask = (monthDataItem?.unscheduledBigTasks || []).find(
@@ -411,9 +426,9 @@ export const useCalendarHooks = ({
     const updateUnscheduledSubTask = (monthData: UnscheduledMonthData[], updatedUnscheduledSubTask: UnscheduledTask) => {
         const updatedMonthData = [...monthData];
         const unscheduledSubTaskIndex = getUnscheduledSubTaskIndex(monthData, updatedUnscheduledSubTask);
-        const unscheduledSubtask = getUnscheduledSubtaskById(monthData, updatedUnscheduledSubTask.id);
+        const unscheduledSubtask = getUnscheduledSubtaskByIdBothActiveAndInactive(monthData, updatedUnscheduledSubTask.id);
         const unscheduledBigTask = getUnscheduledBigTaskById(monthData, unscheduledSubtask?.parentBigTaskId || "");
-        
+
         if (!unscheduledBigTask) {
             return updatedMonthData;
         }
@@ -427,24 +442,24 @@ export const useCalendarHooks = ({
 
     const handleRemoveUnscheduledBigTask = (unscheduledBigTask: UnscheduledBigTask) => {
         const updatedUnscheduledMonthData = [...unscheduledMonthData];
-        const unscheduledBigTaskIndex = getUnscheduledBigTaskIndex(updatedUnscheduledMonthData, unscheduledBigTask);
-        if (unscheduledBigTaskIndex === -1) {
+        let updatedUnscheduledBigTask = getUnscheduledBigTaskById(updatedUnscheduledMonthData, unscheduledBigTask.id);
+        if (!updatedUnscheduledBigTask) {
             return;
         }
-        (updatedUnscheduledMonthData[unscheduledBigTask.month].unscheduledBigTasks || [])[unscheduledBigTaskIndex] = inactiveUnscheduledBigTask(unscheduledBigTask);
-        setUnscheduledMonthData(updatedUnscheduledMonthData);
+        updatedUnscheduledBigTask = inactiveUnscheduledBigTask(unscheduledBigTask);
+        updateUnscheduledBigTask(updatedUnscheduledMonthData, updatedUnscheduledBigTask);
     };
 
     const handleRemoveUnscheduledSubTask = (unscheduledSubtask: UnscheduledTask) => {
         const unscheduledBigTask = getUnscheduledBigTaskById(unscheduledMonthData, unscheduledSubtask?.parentBigTaskId || "");
-        const unscheduledSubtaskIndex = getUnscheduledSubTaskIndex(unscheduledMonthData, unscheduledSubtask);
-        if (!unscheduledBigTask || unscheduledSubtaskIndex === -1) {
+        let updatedUnscheduledSubtask = getUnscheduledSubtaskById(unscheduledMonthData, unscheduledSubtask.id);
+        if (!unscheduledBigTask || !updatedUnscheduledSubtask) {
             return;
         }
-        (unscheduledBigTask?.subtasks || [])[unscheduledSubtaskIndex] = {
-            ...(unscheduledBigTask?.subtasks || [])[unscheduledSubtaskIndex],
+        updatedUnscheduledSubtask = {
+            ...unscheduledSubtask,
             active: false,
-        };
+        }
         let isAllInactive = true;
         (unscheduledBigTask?.subtasks || []).forEach(subtask => {
             if (subtask.active) {
@@ -455,16 +470,53 @@ export const useCalendarHooks = ({
             handleRemoveUnscheduledBigTask(unscheduledBigTask);
             return;
         }
-        const updatedUnscheduledMonthData = updateUnscheduledBigTask([...unscheduledMonthData], unscheduledBigTask);
-        if (updatedUnscheduledMonthData) {
-            setUnscheduledMonthData(updatedUnscheduledMonthData);
+        updateUnscheduledSubTask([...unscheduledMonthData], updatedUnscheduledSubtask);
+    };
+
+    const getUnscheduledRoutineIndex = (monthData: UnscheduledMonthData[], unscheduledRoutine: UnscheduledRoutine) => {
+        let res = -1;
+        monthData.forEach(monthDataItem => {
+            const unscheduledRoutineIndex = (monthDataItem?.unscheduledRoutines || []).findIndex(routine => routine.id === unscheduledRoutine.id);
+            if (unscheduledRoutineIndex !== -1 && res === -1) {
+                res = unscheduledRoutineIndex;
+            }
+        });
+        return res;
+    };
+
+    const updateUnscheduledRoutine = (monthData: UnscheduledMonthData[], unscheduledRoutine: UnscheduledRoutine) => {
+        const updatedMonthData = [...monthData];
+        const unscheduledRoutineIndex = getUnscheduledRoutineIndex(monthData, unscheduledRoutine);
+        updatedMonthData.forEach(updatedMonthDataItem => {
+            if ((updatedMonthDataItem?.unscheduledRoutines || []).some(routine => routine.id === unscheduledRoutine.id)) {
+                (updatedMonthDataItem?.unscheduledRoutines || [])[unscheduledRoutineIndex] = unscheduledRoutine;
+            }
+        });
+        setUnscheduledMonthData(updatedMonthData);
+    };
+
+    const handleRemoveUnscheduledRoutine = (unscheduledRoutine: UnscheduledRoutine) => {
+        const updatedUnscheduledMonthData = [...unscheduledMonthData];
+        let updatedUnscheduledRoutine = getUnscheduledRoutineById(updatedUnscheduledMonthData, unscheduledRoutine.id);
+        if (!updatedUnscheduledRoutine) {
+            return;
         }
+        updatedUnscheduledRoutine = {
+            ...updatedUnscheduledRoutine,
+            active: false,
+        };
+        updateUnscheduledRoutine(updatedUnscheduledMonthData, updatedUnscheduledRoutine);
     };
 
     const onDragStart = (event: DragStartEvent) => {
         setActiveDragId(String(event.active.id));
+
         if (event.active.id.toString().includes(UNSCHEDULED_SUBTASK_PREFIX)) {
             setActiveUnscheduledTask(event.active?.data?.current?.task);
+            return;
+        }
+        if (event.active.id.toString().includes(UNSCHEDULED_ROUTINE_PREFIX)) {
+            setActiveUnscheduledRoutine(event.active?.data?.current?.routine);
             return;
         }
         const task: Task | undefined = updatedTasks.find(t => t.id === event.active.id);
@@ -528,7 +580,7 @@ export const useCalendarHooks = ({
                 return;
             }
             const cloneUpdatedTasks = [...updatedTasks];
-            const updatedIndex = cloneUpdatedTasks.findIndex(updatedTask => updatedTask.id === newTask.id);
+            const updatedIndex = cloneUpdatedTasks.findIndex(updatedTask => updatedTask.id === event.active.id);
             if (updatedIndex !== -1) {
                 cloneUpdatedTasks.splice(updatedIndex, 1);
             }
@@ -542,6 +594,53 @@ export const useCalendarHooks = ({
             setEditingTask(newTask);
 
             handleRemoveUnscheduledSubTask(subtask);
+            return;
+        }
+        // For unscheduled routine
+        if (event.active.id.toString().includes(UNSCHEDULED_ROUTINE_PREFIX)) {
+            setActiveUnscheduledRoutine(undefined);
+            if (!event.over?.id) {
+                return;
+            }
+            const routine = getUnscheduledRoutineById(unscheduledMonthData, String(event.active.id));
+            if (!routine) {
+                return;
+            }
+            const cellId = String(event.over?.id);
+            const newTask = {
+                id: cellId,
+                startTime: cellId,
+                endTime: dayJsToISOString(toDayJs(cellId).add(5, "minute")),
+                parentBigTaskId: routine?.parentBigTaskId,
+                type: "routine",
+                title: routine?.title || "",
+            } as Task;
+            if (isCollidingWithSleepTime(newTask, sleepStartTime, sleepEndTime)) {
+                setAlertMessage(COLLIDING_WITH_SLEEP_TIME_WARNING);
+                return;
+            }
+            if (isOutBigTaskTimeRange(newTask)) {
+                setAlertMessage({
+                    ...SUBTASK_OUTSIDE_BIGTASK_TIME_RANGE_WARNING,
+                    proceedAnyway: () => {
+                        setUpdatedTasks(reId([...updatedTasks, newTask]));
+                        setEditingTask(newTask);
+                        handleRemoveUnscheduledRoutine(routine);
+                    }
+                });
+                return;
+            }
+            
+            // There are no 2 tasks are overlapping
+            if (overlappingTasksExists(newTask, updatedTasks)) {
+                setAlertMessage(OVERLAPPING_TIME_WARNING);
+                return;
+            }
+
+            setUpdatedTasks(reId([...updatedTasks, newTask]));
+            setEditingTask(newTask);
+
+            handleRemoveUnscheduledRoutine(routine);
             return;
         }
         if (!droppedCellId) {
@@ -581,36 +680,36 @@ export const useCalendarHooks = ({
     };
 
     const onRemoveDraggableTask = (task: Task) => {
-        if (task?.parentBigTaskId) {
-            let unscheduledBigTask = getUnscheduledBigTaskByIdBothActiveAndInactive(unscheduledMonthData, task?.parentBigTaskId);
-            if (!unscheduledBigTask) {
-                return;
-            }
-            // Unscheduled big task had been removed
-            if (!unscheduledBigTask.active) {
-                unscheduledBigTask = activeUnscheduledBigTask(unscheduledBigTask);
-                updateUnscheduledBigTask(unscheduledMonthData, unscheduledBigTask);
-                setEditingTask(null);
-                return;
-            }
-            else {
-                let unscheduledSubtask = getFirstInactiveUnscheduledSubtaskById(unscheduledMonthData, task?.parentBigTaskId || "");
-                if (!unscheduledSubtask) {
-                    return;
-                }
-                unscheduledSubtask = {
-                    ...task,
-                    id: unscheduledSubtask.id,
-                    active: true,
-                };
-                updateUnscheduledSubTask([...unscheduledMonthData], unscheduledSubtask);
-            }
-        }
+        // if (task?.parentBigTaskId) {
+        //     let unscheduledBigTask = getUnscheduledBigTaskByIdBothActiveAndInactive(unscheduledMonthData, task?.parentBigTaskId);
+        //     if (!unscheduledBigTask) {
+        //         return;
+        //     }
+        //     // Unscheduled big task had been removed
+        //     if (!unscheduledBigTask.active) {
+        //         unscheduledBigTask = activeUnscheduledBigTask(unscheduledBigTask);
+        //         updateUnscheduledBigTask(unscheduledMonthData, unscheduledBigTask);
+        //         setEditingTask(null);
+        //         return;
+        //     }
+        //     else {
+        //         let unscheduledSubtask = getFirstInactiveUnscheduledSubtaskById(unscheduledMonthData, task?.parentBigTaskId || "");
+        //         if (!unscheduledSubtask) {
+        //             return;
+        //         }
+        //         unscheduledSubtask = {
+        //             ...task,
+        //             id: unscheduledSubtask.id,
+        //             active: true,
+        //         };
+        //         updateUnscheduledSubTask([...unscheduledMonthData], unscheduledSubtask);
+        //     }
+        // }
 
         setUpdatedTasks(reId([...updatedTasks.filter(updatedTask => updatedTask.id !== task.id)]));
         setEditingTask(null);
     };
-// TODO: Remove unscheduled subtask of Unscheduled big task A making Unscheduled big task B lost unscheduled big task
+
     const handleCellClick = (event: React.MouseEvent<HTMLTableCellElement>, cellId: string) => {
         if ((event.target as HTMLElement).closest('.cursor-grab')) {
             return;
@@ -769,6 +868,7 @@ export const useCalendarHooks = ({
         unscheduledMonthData,
         setUnscheduledMonthData,
         activeUnscheduledTask,
+        activeUnscheduledRoutine,
         CELL_HEIGHT,
         hours,
         sleepStartTime,
