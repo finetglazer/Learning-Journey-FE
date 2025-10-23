@@ -5,6 +5,7 @@ import React, { CSSProperties } from 'react';
 
 export interface BaseTaskProps {
     task: Task;
+    handleDoubleClick?: (event: React.MouseEvent<HTMLDivElement>, task: Task, _scrollContainerRef?: React.RefObject<HTMLDivElement | null>) => void;
     key?: string;
     calendarType?: (typeof CALENDAR_VIEW_OPTIONS)[number];
     wrapperClassName?: string;
@@ -17,6 +18,7 @@ export interface BaseTaskProps {
 
 export const BaseTask: React.FC<BaseTaskProps> = ({
     task,
+    handleDoubleClick,
     key,
     calendarType,
     wrapperClassName,
@@ -30,11 +32,16 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
 
     if (calendarType === 'month-view') {
         return (
-            <div key={key} className={cn("grid grid-cols-2 items-center gap-4 rounded-lg border-3 border-[#E62E7B] bg-stone-50 p-4 w-full",
-                { "border-sky-300": type === "event" },
-                { "border-[#68DE79]": type === "routine" },
-                wrapperClassName,
-            )} style={{ ...wrapperStyle }}>
+            <div
+                key={key}
+                className={cn("grid grid-cols-2 cursor-pointer items-center gap-4 rounded-lg border-3 border-[#E62E7B] bg-stone-50 p-4 w-full",
+                    { "border-sky-300": type === "event" },
+                    { "border-[#68DE79]": type === "routine" },
+                    wrapperClassName,
+                )}
+                style={{ ...wrapperStyle }}
+                onDoubleClick={(e) => handleDoubleClick?.(e, task)}
+            >
                 <span className={cn("font-semibold text-slate-700 text-lg text-left truncate", titleClassName)}>
                     {task?.title}
                 </span>
@@ -47,12 +54,15 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
 
     if (calendarType === 'month-planning') {
         return (
-            <div key={key} className={cn("grid grid-cols-3 items-center gap-4 rounded-lg border-3 border-[#E62E7B] bg-stone-50 p-4 w-full",
+            <div key={key} className={cn("grid grid-cols-3 cursor-pointer items-center gap-4 rounded-lg border-3 border-[#E62E7B] bg-stone-50 p-4 w-full",
                 { "grid-cols-2": type !== "big-task" },
                 { "border-sky-300": type === "event" },
                 { "border-[#68DE79]": type === "routine" },
                 wrapperClassName,
-            )} style={{ ...wrapperStyle }}>
+            )}
+                style={{ ...wrapperStyle }}
+                onDoubleClick={(e) => handleDoubleClick?.(e, task)}
+            >
                 <span className={cn("font-bold text-slate-700 text-lg text-left truncate", titleClassName)}>
                     {task?.title}
                 </span>
@@ -74,11 +84,16 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
     }
 
     return (
-        <div key={key} className={cn("border-3 border-sky-300 bg-stone-50 rounded-lg p-4 w-full",
-            { "border-[#E62E7B]": type === "task" || type === "big-task" },
-            { "border-[#68DE79]": type === "routine" },
-            wrapperClassName,
-        )} style={{ ...wrapperStyle }}>
+        <div
+            key={key}
+            className={cn("border-3 border-sky-300 bg-stone-50  cursor-pointer rounded-lg p-4 w-full",
+                { "border-[#E62E7B]": type === "task" || type === "big-task" },
+                { "border-[#68DE79]": type === "routine" },
+                wrapperClassName,
+            )}
+            style={{ ...wrapperStyle }}
+            onDoubleClick={(e) => handleDoubleClick?.(e, task)}
+        >
             <div className={cn("flex items-center gap-2", badgeWrapperClassName)}>
                 <div className={cn("rounded bg-sky-400 px-2 py-1 text-xs font-bold text-white",
                     { "bg-[#68DE79]": type === "routine" },

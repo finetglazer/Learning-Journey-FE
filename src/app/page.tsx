@@ -5,6 +5,7 @@ import { CalendarDayView } from "@/components/core/calendar/calendar-day-view";
 import { CalendarMonthPlanning } from "@/components/core/calendar/calendar-month-planing";
 import { CalendarMonthView } from "@/components/core/calendar/calendar-month-view";
 import { CalendarWeekView } from "@/components/core/calendar/calendar-week-view";
+import { CalendarYearView } from "@/components/core/calendar/calendar-year-view";
 import { dayJsToISOString } from "@/lib/utils";
 import { Task } from "@/model/task";
 import dayjs from "dayjs";
@@ -15,10 +16,10 @@ export default function RootPage() {
     const taskArray: Task[] = [];
     const today = dayjs();
     const startOfWeek = today.startOf('week');
-    for (let i = 0; i < 1; i++) {
+    for (let i = 0; i < 6; i++) {
       const taskDay = startOfWeek.add(1, 'day');
-      const startTime = dayJsToISOString(taskDay.hour(i <= 2 ? 9 : 7).minute(0).second(0));
-      const endTime = dayJsToISOString(taskDay.hour(i <= 2 ? 17 : 12).minute(30).second(0));
+      const startTime = dayJsToISOString(taskDay.hour(7 + i).minute(0).second(0));
+      const endTime = dayJsToISOString(taskDay.hour(10 + i).minute(30).second(0));
 
       taskArray.push({
         id: startTime,
@@ -48,6 +49,9 @@ export default function RootPage() {
       )}
       {calendarContextValues.currentView === "month-planning" && (
         <CalendarMonthPlanning />
+      )}
+      {calendarContextValues.currentView === "year" && (
+        <CalendarYearView />
       )}
     </CalendarContext.Provider>
   );

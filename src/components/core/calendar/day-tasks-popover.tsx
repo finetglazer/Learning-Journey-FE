@@ -38,7 +38,6 @@ export function DayTasksPopover({
             <ScrollArea className="h-72">
                 <div className="space-y-1 p-1">
                     {tasks.map((task) => {
-                        const isEvent = task.type === 'event';
                         const isSelected = selectedTaskId === task.id;
 
                         return (
@@ -56,8 +55,9 @@ export function DayTasksPopover({
                             >
                                 <div
                                     className={cn("h-4 w-1.5 rounded-full shrink-0", {
-                                        "bg-blue-400": isEvent,
-                                        "bg-[#E62E7B]": !isEvent,
+                                        "bg-blue-400": task?.type === "event",
+                                        "bg-[#68DE79]": task?.type === "routine",
+                                        "bg-[#E62E7B]": task?.type === "task" || task?.type === "big-task",
                                     })}
                                 />
                                 <span className="truncate">{task?.title}</span>

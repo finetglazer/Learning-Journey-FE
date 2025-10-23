@@ -1,5 +1,5 @@
 import { COLLIDING_WITH_SLEEP_TIME_WARNING, OVERLAPPING_TIME_WARNING, SUBTASK_OUTSIDE_BIGTASK_TIME_RANGE_WARNING, UNSCHEDULED_ROUTINE_PREFIX, UNSCHEDULED_SUBTASK_PREFIX } from "@/const/consts";
-import { dayJsToISOString, getEditorAdjustedPosition, getMonthName, getNearestMonday, initCalendarMap, isCollidingWithSleepTime, overlappingTasksExists, reId, toDayJs } from "@/lib/utils";
+import { dayJsToISOString, getEditorAdjustedPosition, getMondayOfThisWeek, getMonthName, initCalendarMap, isCollidingWithSleepTime, isoToHHMM, overlappingTasksExists, reId, toDayJs } from "@/lib/utils";
 import { Task, UnscheduledBigTask, UnscheduledMonthData, UnscheduledRoutine, UnscheduledTask } from "@/model/task";
 import { DragEndEvent, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import dayjs, { Dayjs } from "dayjs";
@@ -39,7 +39,7 @@ export interface CalendarContextInterface {
     onDragStart: (event: DragStartEvent) => void;
     onDragEnd: (event: DragEndEvent) => void;
     handleCellClick: (event: React.MouseEvent<HTMLTableCellElement>, cellId: string) => void;
-    handleTaskDoubleClick: (event: React.MouseEvent<HTMLDivElement>, task: Task, scrollContainerRef: React.RefObject<HTMLDivElement | null>) => void;
+    handleTaskDoubleClick: (event: React.MouseEvent<HTMLDivElement>, task: Task, _scrollContainerRef?: React.RefObject<HTMLDivElement | null>) => void;
     handleRemoveUnscheduledBigTask: (unscheduledBigTask: UnscheduledBigTask) => void;
     handleRemoveUnscheduledSubTask: (unscheduledSubtask: UnscheduledTask) => void;
     onRemoveDraggableTask: (task: Task) => void;
@@ -54,7 +54,7 @@ export interface CalendarContextInterface {
     alertMessage: AlertMessage | null;
     setAlertMessage: Dispatch<SetStateAction<AlertMessage | null>>;
     onChangeUnscheduledTaskTitle: (taskId: string, newTitle: string) => void;
-    isOutBigTaskTimeRange: (task: Task) => boolean;
+    isOutBigTaskTimeRange: (task: Task) => boolean | "" | undefined;
 };
 
 export const CalendarContext = createContext<CalendarContextInterface>({
@@ -110,7 +110,7 @@ export const useCalendarHooks = ({
     const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
     const [tasksStyle, setTasksStyle] = useState<Record<string, any>>({});
     const [calendarMap, setCalendarMap] = useState<Record<string, any[]>>({});
-    const [currentMondayTime, setCurrentMondayTime] = useState<Dayjs>(getNearestMonday());
+    const [currentMondayTime, setCurrentMondayTime] = useState<Dayjs>(getMondayOfThisWeek());
     const [currentView, setCurrentView] = useState<string>("day");
     const [updatedTasks, setUpdatedTasks] = useState<Task[]>(reId(initTasks || []));
     const [activeDragId, setActiveDragId] = useState<string | null>(null);
@@ -613,6 +613,8 @@ export const useCalendarHooks = ({
                 endTime: dayJsToISOString(toDayJs(cellId).add(5, "minute")),
                 parentBigTaskId: routine?.parentBigTaskId,
                 type: "routine",
+                routineStartHour: isoToHHMM(cellId),
+                routineEndHour: isoToHHMM(dayJsToISOString(toDayJs(cellId).add(5, "minute"))),
                 title: routine?.title || "",
             } as Task;
             if (isCollidingWithSleepTime(newTask, sleepStartTime, sleepEndTime)) {
@@ -721,7 +723,7 @@ export const useCalendarHooks = ({
         const newTask = {
             id: cellId,
             startTime: cellId,
-            endTime: dayJsToISOString(toDayJs(cellId).add(5, "minute")),
+            endTime: dayJsToISOString(toDayJs(cellId).add(5, "minute").millisecond(0)),
             type: "task",
             title: "",
         } as Task;
@@ -734,9 +736,7 @@ export const useCalendarHooks = ({
         setEditingTask(newTask);
     };
 
-    const handleTaskDoubleClick = (event: React.MouseEvent<HTMLDivElement>, task: Task, scrollContainerRef: React.RefObject<HTMLDivElement | null>) => {
-        const container = scrollContainerRef.current;
-        if (!container) return;
+    const handleTaskDoubleClick = (event: React.MouseEvent<HTMLDivElement>, task: Task, _scrollContainerRef?: React.RefObject<HTMLDivElement | null>) => {
 
         const adjustedPosition = getEditorAdjustedPosition(event.clientX, event.clientY);
 
@@ -769,7 +769,7 @@ export const useCalendarHooks = ({
     };
 
     useEffect(() => {
-        setCurrentMondayTime(getNearestMonday(currentDate));
+        setCurrentMondayTime(getMondayOfThisWeek(currentDate));
     }, [currentDate]);
 
     useEffect(() => {

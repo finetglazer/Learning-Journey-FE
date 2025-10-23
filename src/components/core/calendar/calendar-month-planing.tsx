@@ -1,11 +1,11 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import {
     Card,
     CardContent,
     CardHeader,
 } from "@/components/ui/card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
     Table,
     TableBody,
@@ -14,29 +14,38 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { useContext, useMemo, useState } from "react";
+import { dayJsToISOString, getWeeksInMonth } from "@/lib/utils";
+import { Task } from "@/model/task";
+import { useContext, useState } from "react";
+import { RoundedButton } from "../button/rounded-button";
 import { DateRangeNavigator } from "../date-range-navigator/date-range-navigator";
 import { SegmentedControl } from "../segmented-control/segmented-control";
-import { CalendarContext, CalendarContextInterface } from "./calendar-context";
-import { RoundedButton } from "../button/rounded-button";
-import { dayJsToISOString, getWeeksInMonth, isoStringToDate, toDayJs } from "@/lib/utils";
-import { Task } from "@/model/task";
-import dayjs from "dayjs";
-import { BaseTask } from "../task/base-task";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { DayTasksPopover } from "./day-tasks-popover";
 import { TaskEditor } from "../task-editor/task-editor";
+import { BaseTask } from "../task/base-task";
+import { CalendarContext, CalendarContextInterface } from "./calendar-context";
+import { DayTasksPopover } from "./day-tasks-popover";
+import { AlertModal } from "../alert-modal/alert-modal";
 
 export function CalendarMonthPlanning() {
     const {
         currentView,
+        updatedTasks,
+        setUpdatedTasks,
         setCurrentView,
         generateDateRangeLabel,
         onNextDateRangeNavigatorClick,
         onPreviousDateRangeNavigatorClick,
         handleGoToToday,
+        handleTaskDoubleClick,
         currentDate,
+        editingTask,
+        setEditingTask,
         setAlertMessage,
+        sleepStartTime,
+        sleepEndTime,
+        isOutBigTaskTimeRange,
+        onRemoveDraggableTask,
+        alertMessage,
     } = useContext<CalendarContextInterface>(CalendarContext);
 
     const categories = ['Event', 'Routine', 'Task'];
@@ -50,28 +59,6 @@ export function CalendarMonthPlanning() {
         tasks: Task[];
     }>({ open: false, id: null, tasks: [] });
 
-    const tasks = useMemo(() => {
-        const taskArray: Task[] = [];
-        const today = dayjs();
-        const startOfWeek = today.startOf('week');
-        for (let i = 0; i < 15; i++) {
-            const taskDay = startOfWeek.add(1, 'day');
-            const startTime = dayJsToISOString(taskDay.hour(i <= 2 ? 9 : 7).minute(i).second(0));
-            const endTime = dayJsToISOString(taskDay.hour(i <= 2 ? 17 : 12).minute(30).second(0));
-
-            taskArray.push({
-                id: startTime,
-                startTime,
-                endTime,
-                type: i % 2 === 0 ? "event" : "big-task",
-                title: "Task 1",
-                description: "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibus. Vivamus elementum semper nisi. Aenean vulputate eleifend tellus. Aenean leo ligula, porttitor eu, consequat vitae, eleifend ac, enim. Aliquam lorem ante, dapibus in, viverra quis, feugiat a, tellus. Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget condimentum rhoncus, sem quam semper libero, sit amet adipiscing sem neque sed ipsum. Nam quam nunc, blandit vel, luctus pulvinar, hendrerit id, lorem. Maecenas nec odio et ante tincidunt tempus. Donec vitae sapien ut libero venenatis faucibus. Nullam quis ante. Etiam sit amet orci eget eros faucibus tincidunt. Duis leo. Sed fringilla mauris sit amet nibh. Donec sodales sagittis magna. Sed consequat, leo eget bibendum sodales, augue velit cursus nunc,",
-            });
-        }
-        return taskArray;
-    }, []);
-
-    const [initTasks, setInitTasks] = useState<Task[]>(tasks);
     const [selectedTaskId, setSelectedTaskId] = useState<string>("");
     const [editorPosition, setEditorPosition] = useState({ x: 0, y: 0 });
 
@@ -122,7 +109,7 @@ export function CalendarMonthPlanning() {
                                 {/* Empty Cells for Tasks */}
                                 {weeks.map((week) => {
                                     // Filter tasks for this specific cell
-                                    const tasksForCell = tasks.filter(task => {
+                                    const tasksForCell = updatedTasks.filter(task => {
                                         const taskType = task.type === 'big-task' ? 'task' : task.type;
                                         const taskTime = task.startTime;
                                         const weekStartDate = Number(week.split("-")[0]);
@@ -139,6 +126,7 @@ export function CalendarMonthPlanning() {
                                                     <BaseTask
                                                         key={task.id}
                                                         task={task}
+                                                        handleDoubleClick={handleTaskDoubleClick}
                                                         calendarType="month-planning"
                                                         wrapperClassName="h-[30px] mb-2 mt-1"
                                                         titleClassName="text-[0.8rem]"
@@ -165,7 +153,7 @@ export function CalendarMonthPlanning() {
                                                             <DayTasksPopover
                                                                 week={week}
                                                                 type="month-planning"
-                                                                tasks={tasksForCell}
+                                                                tasks={tasksForCell.slice(MAX_VISIBLE_TASKS, tasksForCell.length)}
                                                                 selectedTaskId={selectedTaskId}
                                                                 setSelectedTaskId={setSelectedTaskId}
                                                                 setEditorPosition={setEditorPosition}
@@ -180,15 +168,28 @@ export function CalendarMonthPlanning() {
                                 })}
                             </TableRow>
                         ))}
-                        {selectedTaskId && (
+                        {alertMessage && (
+                            <AlertModal
+                                alertMessage={alertMessage}
+                                onClose={() => setAlertMessage(null)}
+                            />
+                        )}
+                        {(editingTask || selectedTaskId) && (
                             <TaskEditor
-                                key={selectedTaskId}
-                                task={new Task}
-                                updatedTasks={initTasks}
-                                setUpdatedTasks={setInitTasks}
+                                key={editingTask?.id || selectedTaskId}
+                                task={editingTask || updatedTasks.find(task => task.id === selectedTaskId) || new Task}
+                                updatedTasks={updatedTasks}
+                                setUpdatedTasks={setUpdatedTasks}
                                 setAlertMessage={setAlertMessage}
-                                onClose={() => setSelectedTaskId("")}
+                                onClose={() => {
+                                    editingTask ? setEditingTask(null)
+                                        : (selectedTaskId ? setSelectedTaskId("") : {})
+                                }}
                                 style={{ top: editorPosition.y, left: editorPosition.x }}
+                                sleepStartTime={sleepStartTime}
+                                sleepEndTime={sleepEndTime}
+                                onDelete={() => onRemoveDraggableTask(editingTask || updatedTasks.find(task => task.id === selectedTaskId) || new Task)}
+                                isOutBigTaskTimeRange={isOutBigTaskTimeRange}
                             />
                         )}
                     </TableBody>

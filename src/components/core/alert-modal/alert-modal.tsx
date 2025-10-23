@@ -64,7 +64,7 @@ export function AlertModal({
 
     return (
         <AlertDialog open>
-            <AlertDialogContent className="max-w-md">
+            <AlertDialogContent className="max-w-md z-[99999]">
                 <AlertDialogHeader className="items-center text-center">
                     <AlertDialogTitle className={cn("font-semibold tracking-wide", config.titleColor)}>
                         {config.title}

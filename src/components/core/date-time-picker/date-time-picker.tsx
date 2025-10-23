@@ -7,7 +7,7 @@ import {
     PopoverContent
 } from "@/components/ui/popover";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { cn, dateToIsoString, isoStringToDate } from "@/lib/utils";
+import { cn, dateToIsoString, isoStringToDate, isoToHHMM } from "@/lib/utils";
 import { Task } from "@/model/task";
 import { PopoverTrigger } from "@radix-ui/react-popover";
 import { isSameDay } from "date-fns";
@@ -20,6 +20,7 @@ export interface DateTimePickerProps {
     model: Model;
     updateModel: (fieldName: string, value: any) => void;
     fieldName: string;
+    taskType?: string;
     wrapperClassName?: string;
     type?: 'date-only' | 'date-time' | 'time-only';
     enabledDate?: Date;
@@ -32,6 +33,7 @@ export const DateTimePicker = (props: DateTimePickerProps) => {
         model,
         updateModel,
         fieldName,
+        taskType,
         wrapperClassName,
         type,
         enabledDate,
@@ -64,7 +66,15 @@ export const DateTimePicker = (props: DateTimePickerProps) => {
             );
         }
 
-        updateModel(fieldName, dateToIsoString(newDate));
+        const t = dateToIsoString(newDate);
+        updateModel(fieldName, t);
+        // For routines, update startTime and routineStartHour, endTime and routineEndHour
+        if (taskType === "routine" && fieldName === "startTime") {
+            updateModel("routineStartHour", isoToHHMM(t));
+        }
+        if (taskType === "routine" && fieldName === "endTime") {
+            updateModel("routineEndHour", isoToHHMM(t));
+        }
     };
 
     return (

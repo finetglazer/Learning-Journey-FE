@@ -44,7 +44,7 @@ export interface TaskEditorProps {
     sleepStartTime?: string;
     sleepEndTime?: string;
     onDelete?: () => void;
-    isOutBigTaskTimeRange?: (task: Task) => boolean;
+    isOutBigTaskTimeRange?: (task: Task) => boolean | "" | undefined;
     onClose?: () => void;
     style?: CSSProperties;
 };
@@ -99,13 +99,7 @@ export const TaskEditor = ({
 
     const onSave = () => {
         let cloneUpdatedTasks = [...updatedTasks];
-        const updatedIndex = cloneUpdatedTasks.findIndex(updatedTask => updatedTask.id === task.id);
-        if (updatedIndex !== -1) {
-            cloneUpdatedTasks.splice(updatedIndex, 1);
-        }
-        else {
-            cloneUpdatedTasks = [...cloneUpdatedTasks, model];
-        }
+        cloneUpdatedTasks = cloneUpdatedTasks.filter(updatedTask => updatedTask.id !== model.id);
 
         if (!model?.title) {
             setIsEmptyTitle(true);
@@ -138,6 +132,7 @@ export const TaskEditor = ({
             });
             return;
         }
+
         if (overlappingTasksExists(model, cloneUpdatedTasks)) {
             setAlertMessage(OVERLAPPING_TIME_WARNING);
             return;
@@ -148,9 +143,11 @@ export const TaskEditor = ({
         if (model?.type === "routine") {
             // Remove all old routines
             let newRoutineId = task?.routineId || "";
+            let t: Task[] = [];
+            let isOverlapping = false;
             cloneUpdatedTasks = cloneUpdatedTasks.filter(updatedTask => updatedTask?.type !== "routine" || updatedTask?.routineId !== task?.routineId);
             const curDay = (dayjs().get("day") + 6) % 7;
-            (model?.routinePatterns || []).forEach((routinePattern: number) => {
+            for (const routinePattern of (model?.routinePatterns || [])) {
                 if (routinePattern >= curDay) {
                     const dayDiff = routinePattern - curDay;
                     const taskDay = dayjs().add(dayDiff, 'day');
@@ -171,9 +168,21 @@ export const TaskEditor = ({
                         endTime,
                     };
 
-                    cloneUpdatedTasks.push(newTask);
+                    if (overlappingTasksExists(newTask, cloneUpdatedTasks)) {
+                        isOverlapping = true;
+                        break;
+                    }
+
+                    t.push(newTask);
                 }
-            });
+            };
+            if (isOverlapping) {
+                
+                setAlertMessage(OVERLAPPING_TIME_WARNING);
+            }
+            else {
+                t.forEach(item => cloneUpdatedTasks.push(item));
+            }
         }
         setUpdatedTasks(reId(cloneUpdatedTasks));
         onClose?.();
@@ -264,6 +273,7 @@ export const TaskEditor = ({
                                 setIsOpen={setOpenStartTimePicker}
                                 model={model}
                                 updateModel={updateModel}
+                                taskType={model?.type}
                                 fieldName={"startTime"}
                                 type={getDateTimePickerType()}
                                 enabledDate={model?.type !== "routine" ? undefined : isoStringToDate(model.startTime)}
@@ -283,8 +293,9 @@ export const TaskEditor = ({
                             <DateTimePicker
                                 isOpen={openEndTimePicker}
                                 setIsOpen={setOpenEndTimePicker}
-                                model={model}
+                                model={model}                                
                                 updateModel={updateModel}
+                                taskType={model?.type}
                                 fieldName={"endTime"}
                                 type={getDateTimePickerType()}
                                 enabledDate={model?.type !== "routine" ? undefined : isoStringToDate(model.startTime)}

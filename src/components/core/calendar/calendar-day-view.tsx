@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
-import { UNSCHEDULED_SUBTASK_PREFIX } from "@/const/consts";
+import { UNSCHEDULED_ROUTINE_PREFIX, UNSCHEDULED_SUBTASK_PREFIX } from "@/const/consts";
 import { dayJsToISOString, leftBoundIndex, uuid4 } from "@/lib/utils";
 import { Task, UnscheduledTask } from "@/model/task";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
@@ -18,6 +18,7 @@ import { CalendarDayViewDroppableCell } from "./calendar-day-view-droppable-cell
 import { CollapsibleUnscheduledPanel } from "./collapsible-unscheduled-items-panel";
 import { DraggableTask } from "./draggable-task";
 import { UnscheduledTaskItem } from "./unscheduled-task-item";
+import { UnscheduledRoutineItem } from "./unscheduled-routine-item";
 
 export interface CalendarDayViewProps { };
 
@@ -36,6 +37,7 @@ export const CalendarDayView = () => {
         panelPosition,
         unscheduledMonthData,
         activeUnscheduledTask,
+        activeUnscheduledRoutine,
         CELL_HEIGHT,
         hours,
         sleepStartTime,
@@ -139,6 +141,7 @@ export const CalendarDayView = () => {
                                                                 key={id}
                                                                 handleTaskDoubleClick={handleTaskDoubleClick}
                                                                 task={task}
+                                                                draggable={!(task?.type === "routine")}
                                                                 scrollContainerRef={scrollContainerRef}
                                                                 onRemove={() => onRemoveDraggableTask(task)}
                                                                 wrapperClassName="truncate absolute rounded-lg pl-2"
@@ -193,6 +196,11 @@ export const CalendarDayView = () => {
                             {activeDragId?.includes(UNSCHEDULED_SUBTASK_PREFIX) && (
                                 <UnscheduledTaskItem
                                     task={activeUnscheduledTask as UnscheduledTask}
+                                />
+                            )}
+                            {activeDragId?.includes(UNSCHEDULED_ROUTINE_PREFIX) && activeUnscheduledRoutine && (
+                                <UnscheduledRoutineItem
+                                    routine={activeUnscheduledRoutine}
                                 />
                             )}
                         </DragOverlay>

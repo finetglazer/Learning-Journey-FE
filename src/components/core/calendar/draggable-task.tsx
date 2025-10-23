@@ -1,11 +1,9 @@
+import { Task } from '@/model/task';
 import { useDraggable } from '@dnd-kit/core';
 import { BaseTask, BaseTaskProps } from '../task/base-task';
-import { Task } from '@/model/task';
-import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
 
 export interface DraggableTaskProps extends BaseTaskProps {
-    handleTaskDoubleClick: (e: React.MouseEvent<HTMLDivElement>, task: Task, scrollContainerRef: React.RefObject<HTMLDivElement | null>) => void;
+    handleTaskDoubleClick: (e: React.MouseEvent<HTMLDivElement>, task: Task, scrollContainerRef?: React.RefObject<HTMLDivElement | null>) => void;
     scrollContainerRef: React.RefObject<HTMLDivElement | null>;
     isOverlay?: boolean;
     onRemove?: (taskId: string) => void;
@@ -63,7 +61,14 @@ export const DraggableTask = ({
                     <BaseTask task={task} {...baseTaskProps} />
                 </div>
             ) : (
-                <BaseTask task={task} {...baseTaskProps} />
+                <div
+                    ref={setNodeRef}
+                    style={style}
+                    className="cursor-grab"
+                    onDoubleClick={(e) => handleTaskDoubleClick(e, task, scrollContainerRef)}
+                >
+                    <BaseTask task={task} {...baseTaskProps} />
+                </div>
             )}
         </>
     );

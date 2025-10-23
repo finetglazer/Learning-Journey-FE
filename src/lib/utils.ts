@@ -93,7 +93,7 @@ export const toISOString = (dateString: string) => {
 }
 
 export const dayJsToISOString = (dayjs: Dayjs) => {
-  dayjs = dayjs.add(7, "hour");
+  dayjs = dayjs.add(7, "hour").millisecond(0);
   return dayjs.toISOString();
 };
 
@@ -110,10 +110,27 @@ export const isoStringToDate = (isoString: string) => {
   return dayjs.toDate();
 };
 
-export const getNearestMonday = (currentDate?: Dayjs): Dayjs => {
+export const getMondayOfThisWeek = (currentDate?: Dayjs): Dayjs => {
   const dateToProcess = currentDate || dayjs();
+  const dayOfWeek = dateToProcess.day(); // 0 = Sunday, 1 = Monday, ...
 
-  return dateToProcess.startOf('week').add(1, "day").startOf("day");
+  // If dayOfWeek is 0 (Sunday), subtract 6 days.
+  // Otherwise, subtract (dayOfWeek - 1) days.
+  const adjustment = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+  return dateToProcess.subtract(adjustment, 'day').startOf('day');
+};
+
+export const getTasksForDay = <T extends { id: string }>(
+  tasks: T[],
+  curDayAsDate: Date
+): T[] => {
+  return tasks.filter(task => {
+    const taskId = task.id.endsWith("Z") ? task.id : task.id.replace(/[+-]\d+$/, ""); // 2025-10-20T09:00:00.000Z-1
+    const curDay = dayjs(curDayAsDate);
+    const taskDate = dayjs(taskId);
+    return taskDate.isSame(curDay, 'day');
+  });
 };
 
 export const initCalendarMap = (mondayTime: Dayjs, tasks?: Task[]) => {

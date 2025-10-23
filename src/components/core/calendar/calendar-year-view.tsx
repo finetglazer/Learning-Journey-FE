@@ -2,43 +2,64 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { DateRangeNavigator } from "../date-range-navigator/date-range-navigator";
-import { SegmentedControl, SegmentedControlOption } from "../segmented-control/segmented-control";
-import { Month } from "./calendar-year-view-each-month"; 
+import { SegmentedControl } from "../segmented-control/segmented-control";
+import { Month } from "./calendar-year-view-each-month";
+import { RoundedButton } from "../button/rounded-button";
+import { CalendarContext, CalendarContextInterface } from "./calendar-context";
+import { AlertModal } from "../alert-modal/alert-modal";
+import { TaskEditor } from "../task-editor/task-editor";
+import { Task } from "@/model/task";
 
 export function CalendarYearView() {
-    const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-    const [currentView, setCurrentView] = useState("year"); 
+    const {
+        currentView,
+        updatedTasks,
+        setUpdatedTasks,
+        setCurrentView,
+        generateDateRangeLabel,
+        onNextDateRangeNavigatorClick,
+        onPreviousDateRangeNavigatorClick,
+        handleGoToToday,
+        currentDate,
+        editingTask,
+        setEditingTask,
+        setAlertMessage,
+        sleepStartTime,
+        sleepEndTime,
+        isOutBigTaskTimeRange,
+        onRemoveDraggableTask,
+        alertMessage,
+    } = useContext<CalendarContextInterface>(CalendarContext);
 
-    const viewOptions: SegmentedControlOption[] = [
-        { label: "Year", value: "year" },
-        { label: "Month", value: "month" },
-        { label: "Week", value: "week" },
-        { label: "Day", value: "day" },
-    ];
+    const [selectedDay, setSelectedDay] = useState<Date>(currentDate.toDate());
+    const [editorPosition, setEditorPosition] = useState({ x: 0, y: 0 });
+    const [selectedTaskId, setSelectedTaskId] = useState<string>("");
 
-    const handleGoToToday = () => setCurrentYear(new Date().getFullYear());
-    const handlePreviousYear = () => setCurrentYear(currentYear - 1);
-    const handleNextYear = () => setCurrentYear(currentYear + 1);
+    useEffect(() => {
+        setSelectedDay(currentDate.toDate());
+    }, [currentDate]);
 
     return (
         <Card className="w-full h-full mx-auto rounded-xl shadow-lg bg-white p-0">
             {/* ====== Header Controls ====== */}
-            <CardHeader className="flex flex-row items-center justify-between p-4 border-b">
-                <Button variant="outline" onClick={handleGoToToday}>Today</Button>
-                <div className="flex items-center gap-4">
+            <CardHeader className="grid grid-cols-[auto_1fr] items-center p-4 border-b border-gray-200 bg-slate-100/60 rounded-t-xl">
+                <div className="text-sm font-semibold text-slate-600 whitespace-nowrap">
+                    Calendar / <span className="text-slate-800">Year view</span>
+                </div>
+                <div className="flex items-center justify-end gap-4">
+                    <RoundedButton label="Today" id="calendar-today-btn" onClick={handleGoToToday} />
                     <DateRangeNavigator
-                        dateRangeLabel={currentYear.toString()}
-                        onPreviousClick={handlePreviousYear}
-                        onNextClick={handleNextYear}
+                        dateRangeLabel={generateDateRangeLabel()}
+                        onNextClick={onNextDateRangeNavigatorClick}
+                        onPreviousClick={onPreviousDateRangeNavigatorClick}
                     />
                     <SegmentedControl
-                        options={viewOptions}
                         value={currentView}
                         onValueChange={setCurrentView}
                     />
-                    <Button variant="outline">UTC</Button>
+                    <RoundedButton label="UTC" id="calendar-utc-btn" />
                 </div>
             </CardHeader>
 
@@ -46,9 +67,43 @@ export function CalendarYearView() {
             <CardContent className="p-8">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-12">
                     {Array.from({ length: 12 }).map((_, index) => (
-                        <Month key={index} year={currentYear} monthIndex={index} />
+                        <Month
+                            key={index}
+                            updatedTasks={updatedTasks}
+                            year={currentDate.get("year")}
+                            monthIndex={index}
+                            onDayClick={setSelectedDay}
+                            selectedDay={selectedDay}
+                            setEditorPosition={setEditorPosition}
+                            selectedTaskId={selectedTaskId}
+                            setSelectedTaskId={setSelectedTaskId}
+                        />
                     ))}
                 </div>
+                {alertMessage && (
+                    <AlertModal
+                        alertMessage={alertMessage}
+                        onClose={() => setAlertMessage(null)}
+                    />
+                )}
+                {(editingTask || selectedTaskId) && (
+                    <TaskEditor
+                        key={editingTask?.id || selectedTaskId}
+                        task={editingTask || updatedTasks.find(task => task.id === selectedTaskId) || new Task}
+                        updatedTasks={updatedTasks}
+                        setUpdatedTasks={setUpdatedTasks}
+                        setAlertMessage={setAlertMessage}
+                        onClose={() => {
+                            editingTask ? setEditingTask(null)
+                                : (selectedTaskId ? setSelectedTaskId("") : {})
+                        }}
+                        style={{ top: editorPosition.y, left: editorPosition.x }}
+                        sleepStartTime={sleepStartTime}
+                        sleepEndTime={sleepEndTime}
+                        onDelete={() => onRemoveDraggableTask(editingTask || updatedTasks.find(task => task.id === selectedTaskId) || new Task)}
+                        isOutBigTaskTimeRange={isOutBigTaskTimeRange}
+                    />
+                )}
             </CardContent>
         </Card>
     );
