@@ -18,9 +18,11 @@ export class AuthRepository extends BaseRepository {
     public signIn = (form?: Model): Observable<any> => {
         return this.http.post(API_SIGN_IN, form)
             .pipe(map(res => {
-                const token = res?.data?.data;
-                if (token) {
-                    localStorage.setItem("accessToken", token);
+                const data = res?.data?.data;
+                if (data) {
+                    localStorage.setItem("accessToken", data.accessToken);
+                    localStorage.setItem("refreshToken", data.refreshToken);
+                    localStorage.setItem("userId", data?.user?.id);
                 }
                 return res?.data;
             }));

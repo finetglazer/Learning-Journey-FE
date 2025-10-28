@@ -43,10 +43,10 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                 onDoubleClick={(e) => handleDoubleClick?.(e, task)}
             >
                 <span className={cn("font-semibold text-slate-700 text-lg text-left truncate", titleClassName)}>
-                    {task?.title}
+                    {task?.name}
                 </span>
                 <span className={cn("text-slate-600 text-center truncate", descriptionClassName)}>
-                    {task?.description}
+                    {task?.note}
                 </span>
             </div>
         );
@@ -64,10 +64,10 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                 onDoubleClick={(e) => handleDoubleClick?.(e, task)}
             >
                 <span className={cn("font-bold text-slate-700 text-lg text-left truncate", titleClassName)}>
-                    {task?.title}
+                    {task?.name}
                 </span>
                 <span className={cn("text-slate-600 text-center truncate", descriptionClassName)}>
-                    {task?.description}
+                    {task?.note}
                 </span>
                 {type === "big-task" && (
                     <div className={cn("flex items-center justify-self-center gap-3", badgeWrapperClassName)}>
@@ -111,10 +111,10 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                 </div>
             </div>
             <div className={cn("mt-3 pb-2 text-slate-600 font-bold", titleClassName)}>
-                <span>{task?.title}</span>
+                <span>{task?.name}</span>
             </div>
             <div className={cn("mt-2 text-slate-600", descriptionClassName)}>
-                <span>{task?.description}</span>
+                <span>{task?.note}</span>
             </div>
         </div>
     );

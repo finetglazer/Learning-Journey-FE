@@ -22,6 +22,7 @@ export const DraggableTask = ({
     // Get `isDragging` from the hook
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: task.id,
+        data: task,
     });
 
     const style = transform && !isOverlay ? {

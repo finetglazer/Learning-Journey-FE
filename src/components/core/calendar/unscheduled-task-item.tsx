@@ -3,26 +3,27 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toDayJs } from "@/lib/utils";
-import { UnscheduledTask } from "@/model/task";
+import { UnscheduledBigTask, UnscheduledTask } from "@/model/task";
 import { useDraggable } from "@dnd-kit/core";
 import { GripVertical, MinusCircle } from "lucide-react";
-import React, { useEffect, useRef, useState } from "react";
+import React, { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 
 interface UnscheduledTaskItemProps {
-    task: UnscheduledTask;
+    task?: UnscheduledTask;
+    bigTask?: UnscheduledBigTask;
     onRemove?: (taskId: string) => void;
     onTitleChange?: (taskId: string, newTitle: string) => void;
     draggable?: boolean;
 }
 
-export function UnscheduledTaskItem({ task, onRemove, onTitleChange, draggable = true }: UnscheduledTaskItemProps) {
+export function UnscheduledTaskItem({ task, bigTask, onRemove, onTitleChange, draggable = true }: UnscheduledTaskItemProps) {
     const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-        id: task.id,
+        id: task?.id,
         data: { type: 'unscheduled-task', task }
     });
 
     const [isEditing, setIsEditing] = useState(false);
-    const [title, setTitle] = useState(task.title || "");
+    const [title, setTitle] = useState(task?.name || bigTask?.name || "");
     const inputRef = useRef<HTMLInputElement>(null);
 
     // Auto-focus the input when entering edit mode
@@ -41,14 +42,14 @@ export function UnscheduledTaskItem({ task, onRemove, onTitleChange, draggable =
         if (event.key === 'Enter') {
             handleSave();
         } else if (event.key === 'Escape') {
-            setTitle(task.title || "");
+            setTitle(task?.name || bigTask?.name || "");
             setIsEditing(false);
         }
     };
 
     const style = { opacity: isDragging ? 0.5 : 1 };
-    const bigTaskStartDate = task?.bigTaskStartTime ? toDayJs(task?.bigTaskStartTime).get("date").toString().padStart(2, "0") : null;
-    const bigTaskEndDate = task?.bigTaskEndTime ? toDayJs(task?.bigTaskEndTime).get("date").toString().padStart(2, "0") : null;
+    const bigTaskStartDate = bigTask?.estimatedStartDate ? toDayJs(bigTask?.estimatedStartDate).get("date").toString().padStart(2, "0") : null;
+    const bigTaskEndDate = bigTask?.estimatedEndDate ? toDayJs(bigTask?.estimatedEndDate).get("date").toString().padStart(2, "0") : null;
 
     return (
         <div ref={setNodeRef} style={style} className="flex items-center justify-between p-2 rounded-md bg-white w-full">
@@ -73,7 +74,7 @@ export function UnscheduledTaskItem({ task, onRemove, onTitleChange, draggable =
                         onDoubleClick={() => setIsEditing(true)}
                         className="text-sm text-gray-600 ml-2 flex-grow"
                     >
-                        {task?.title}
+                        {task?.name || bigTask?.name}
                     </span>
                 )}
 

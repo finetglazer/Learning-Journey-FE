@@ -2,9 +2,9 @@
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MONTHS } from "@/const/consts";
-import { cn } from "@/lib/utils";
+import { cn, uuid4 } from "@/lib/utils";
 import { UnscheduledBigTask, UnscheduledMonthData, UnscheduledRoutine, UnscheduledTask } from "@/model/task";
+import { calendarRepository } from "@/repository/calendar-repository";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { AnimatePresence, motion } from "framer-motion";
@@ -12,7 +12,7 @@ import {
     ClipboardList,
     X
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { Dispatch, SetStateAction, useEffect, useMemo, useState } from "react";
 import { UnscheduledItemsForMonth } from "./unscheduled-items-for-month";
 
 export interface CollapsibleUnscheduledPanelProps {
@@ -21,6 +21,11 @@ export interface CollapsibleUnscheduledPanelProps {
     handleRemoveUnscheduledBigTask?: (unscheduledBigTask: UnscheduledBigTask) => void;
     handleRemoveUnscheduledSubTask?: (unscheduledSubtask: UnscheduledTask) => void;
     onUnscheduledTaskTitleChange?: (taskId: string, newTitle: string) => void;
+    setUnscheduledMonthData?: Dispatch<SetStateAction<UnscheduledMonthData[]>>;
+    draggingUnscheduledTaskId?: number | string | null;
+    draggingUnscheduledRoutineId?: number | string | null;
+    selectedTaskId?: number | string | null;
+    selectedRoutineId?: number | string | null;
 };
 
 export function CollapsibleUnscheduledPanel({
@@ -29,6 +34,11 @@ export function CollapsibleUnscheduledPanel({
     onUnscheduledTaskTitleChange,
     handleRemoveUnscheduledSubTask,
     handleRemoveUnscheduledBigTask,
+    setUnscheduledMonthData,
+    draggingUnscheduledTaskId,
+    draggingUnscheduledRoutineId,
+    selectedTaskId,
+    selectedRoutineId,
 }: CollapsibleUnscheduledPanelProps) {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -38,20 +48,20 @@ export function CollapsibleUnscheduledPanel({
     const dragStyle = transform ? {
         transform: CSS.Transform.toString(transform),
     } : undefined;
-
+    
     // --- 2. Memoize the expensive list rendering ---
     // This content will now only be recalculated if the data or handlers change,
     // not when the panel is being dragged (i.e., when `transform` changes).
     const isAllRoutinesRemoved = (unscheduledRoutines: UnscheduledRoutine[]) => {
-        return !unscheduledRoutines.some(routine => routine.active);
+        return !unscheduledRoutines.length;
     }
     const isAllBigTasksRemoved = (unscheduledBigTasks: UnscheduledBigTask[]) => {
-        return !unscheduledBigTasks.some(bigTask => bigTask.active);
+        return !unscheduledBigTasks.length;
     }
     const memoizedPanelContent = useMemo(() => {
         return (unscheduledMonthData || []).filter(monthData => !isAllBigTasksRemoved(monthData?.unscheduledBigTasks || []) || !isAllRoutinesRemoved(monthData?.unscheduledRoutines || [])).map((monthData) => (
             <UnscheduledItemsForMonth
-                key={monthData.monthNumber}
+                key={monthData.month}
                 monthData={monthData}
                 handleRemoveUnscheduledSubTask={handleRemoveUnscheduledSubTask}
                 handleRemoveUnscheduledBigTask={handleRemoveUnscheduledBigTask}
@@ -62,7 +72,65 @@ export function CollapsibleUnscheduledPanel({
         unscheduledMonthData,
         handleRemoveUnscheduledBigTask,
         handleRemoveUnscheduledSubTask,
-        onUnscheduledTaskTitleChange
+        onUnscheduledTaskTitleChange,
+    ]);
+
+    useEffect(() => {
+        // Get all unscheduled items, attach IDs for each unscheduled task and unscheduled routine
+        calendarRepository.getUnscheduledItems()
+            .subscribe({
+                next: res => {
+                    const updatedUnscheduledMonthData: UnscheduledMonthData[] = (res?.data?.data?.monthGroups || []).map((monthGroup: any) => ({
+                        ...monthGroup,
+                        unscheduledBigTasks: (monthGroup?.unscheduledTasks || []).map((unscheduledTask: UnscheduledBigTask) => ({
+                            ...unscheduledTask,
+                            suggestedSubtasks: (unscheduledTask?.suggestedSubtasks || []).map((subtask: UnscheduledTask) => ({
+                                ...subtask,
+                                type: 'unscheduled-task',
+                                parentBigTaskId: unscheduledTask.bigTaskId,
+                            }))
+                        })),
+                        unscheduledRoutines: (monthGroup?.unscheduledRoutines || []).map((unscheduledRoutine: UnscheduledRoutine) => ({
+                            ...unscheduledRoutine,
+                            type: 'unscheduled-routine',
+                        })),
+                        unscheduledTasks: undefined,    // Replaced by unscheduledBigTasks
+                    }));
+
+                    setUnscheduledMonthData?.(updatedUnscheduledMonthData);
+                },
+                error: err => {
+                    console.log("Error occurs while fetching unscheduled items", err);
+                }
+            });
+    }, []);
+
+    // Mark items that are being dragged or edited
+    useEffect(() => {
+        const updatedUnscheduledMonthData: UnscheduledMonthData[] = [...(unscheduledMonthData || [])].map((monthGroup: any) => ({
+            ...monthGroup,
+            unscheduledBigTasks: (monthGroup?.unscheduledBigTasks || []).map((unscheduledBigTask: UnscheduledBigTask) => ({
+                ...unscheduledBigTask,
+                suggestedSubtasks: (unscheduledBigTask?.suggestedSubtasks || []).map((subtask: UnscheduledTask) => ({
+                    ...subtask,
+                    type: 'unscheduled-task',
+                    parentBigTaskId: unscheduledBigTask.bigTaskId,
+                    isDraggedOrEdited: subtask?.id === draggingUnscheduledTaskId || subtask?.id === selectedTaskId
+                }))
+            })),
+            unscheduledRoutines: (monthGroup?.unscheduledRoutines || []).map((unscheduledRoutine: UnscheduledRoutine) => ({
+                ...unscheduledRoutine,
+                type: 'unscheduled-routine',
+                isDraggedOrEdited: unscheduledRoutine?.id === draggingUnscheduledRoutineId || unscheduledRoutine?.id === selectedRoutineId
+            })),
+        }));
+
+        setUnscheduledMonthData?.(updatedUnscheduledMonthData);
+    }, [
+        draggingUnscheduledTaskId,
+        draggingUnscheduledRoutineId,
+        selectedTaskId,
+        selectedRoutineId,
     ]);
 
     return (

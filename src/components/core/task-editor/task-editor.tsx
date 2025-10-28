@@ -14,10 +14,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { COLLIDING_WITH_SLEEP_TIME_WARNING, NEW_ROUTINE_ID_PREFIX, OVERLAPPING_TIME_WARNING, SUBTASK_OUTSIDE_BIGTASK_TIME_RANGE_WARNING } from "@/const/consts"
-import { dayJsToISOString, isCollidingWithSleepTime, isoStringToDate, isoToHHMM, isoToStandardTime, overlappingTasksExists, reId, uuid4 } from "@/lib/utils"
-import { Task, TaskStep } from "@/model/task"
+import { getDetails, isoStringToDate, isoToHHMM, isoToStandardTime, uuid4 } from "@/lib/utils"
+import { Task } from "@/model/task"
+import { calendarRepository } from "@/repository/calendar-repository"
 import { formService } from "@/service/form-service"
+import { isNil } from "lodash"
 import {
     Calendar,
     ChevronDown,
@@ -26,21 +27,24 @@ import {
     Plus,
     Trash2
 } from "lucide-react"
-import { CSSProperties, Dispatch, SetStateAction, useEffect, useState } from "react"
+import { CSSProperties, Dispatch, SetStateAction, useState } from "react"
+import { toast } from "sonner"
 import { AlertMessage } from "../alert-modal/alert-modal"
 import { DateTimePicker } from "../date-time-picker/date-time-picker"
 import { RecurringPatterns } from "./recurring-patterns"
 import { SubTaskList } from "./sortable-subtask"
 import { TaskStatusDropdown } from "./task-status-dropdown"
-import { TaskTypeDropdown } from "./task-type-dropdown"
+import { TaskType, TaskTypeDropdown, typeConfig } from "./task-type-dropdown"
 import { ValidationError } from "./validation-error"
-import dayjs from "dayjs"
 
 export interface TaskEditorProps {
-    task: Task;
+    task: Task | Omit<Task, "id"> | null;
     updatedTasks: Task[];
     setUpdatedTasks: Dispatch<SetStateAction<Task[]>>;
     setAlertMessage: Dispatch<SetStateAction<AlertMessage | null>>;
+    setSelectedTaskId?: Dispatch<SetStateAction<string | number | null>>;
+    setSelectedRoutineId?: Dispatch<SetStateAction<string | number | null>>;
+    handleReload?: () => void;
     sleepStartTime?: string;
     sleepEndTime?: string;
     onDelete?: () => void;
@@ -54,6 +58,9 @@ export const TaskEditor = ({
     updatedTasks,
     setUpdatedTasks,
     setAlertMessage,
+    setSelectedTaskId,
+    setSelectedRoutineId,
+    handleReload,
     onClose,
     style,
     sleepStartTime,
@@ -73,21 +80,11 @@ export const TaskEditor = ({
         Task,
         undefined,
         undefined,
-        task,
+        {
+            ...task,
+            type: (task?.type || "task").toLowerCase(),
+        } as Task | Omit<Task, "id">,
     );
-
-    const getDateTimePickerType = () => {
-        switch (model?.type) {
-            case "task":
-            case "event":
-            case "routine":
-                return "time-only";
-            case "big-task":
-                return "date-only";
-            default:
-                break;
-        }
-    };
 
     const hasTimeError = model.startTime > model.endTime;
 
@@ -98,97 +95,47 @@ export const TaskEditor = ({
     };
 
     const onSave = () => {
-        let cloneUpdatedTasks = [...updatedTasks];
-        cloneUpdatedTasks = cloneUpdatedTasks.filter(updatedTask => updatedTask.id !== model.id);
-
-        if (!model?.title) {
-            setIsEmptyTitle(true);
-            return;
-        }
-        setIsEmptyTitle(false);
-
-        if (hasTimeError) {
-            return;
-        }
-
-        if (sleepStartTime && sleepEndTime && isCollidingWithSleepTime(model, sleepStartTime, sleepEndTime)) {
-            setAlertMessage(COLLIDING_WITH_SLEEP_TIME_WARNING);
-            return;
-        }
-
-        if (!(model?.routinePatterns || []).length && model?.type === "routine") {
-            setIsNotChooseRoutinePattern(true);
-            return;
-        }
-        setIsNotChooseRoutinePattern(false);
-
-        if (model?.type === "task" && isOutBigTaskTimeRange?.(model)) {
-            setAlertMessage({
-                ...SUBTASK_OUTSIDE_BIGTASK_TIME_RANGE_WARNING,
-                proceedAnyway: () => {
-                    setUpdatedTasks(reId(cloneUpdatedTasks));
-                    onClose?.();
+        // Update case
+        if (!isNil(model?.id)) {
+            calendarRepository.updateCalendarItem(
+                model.id as number,
+                {
+                    ...model,
+                    timeSlot: {
+                        startTime: model?.startTime,
+                        endTime: model?.endTime,
+                    },
+                    ...getDetails(model),
                 },
+            ).subscribe({
+                next: res => {
+                    const success = res?.status;
+                    if (success) {
+                        toast.success(res?.msg);
+                        setSelectedTaskId?.(null);
+                        setSelectedRoutineId?.(null);
+                        handleReload?.();
+                        // onClose?.();
+                    }
+                    else {
+                        setAlertMessage({
+                            type: "warning",
+                            title: res?.msg,
+                            description: res?.data
+                        });
+                    }
+                },
+                error: err => { },
             });
-            return;
         }
-
-        if (overlappingTasksExists(model, cloneUpdatedTasks)) {
-            setAlertMessage(OVERLAPPING_TIME_WARNING);
-            return;
-        }
-
-        cloneUpdatedTasks.push(model);
-
-        if (model?.type === "routine") {
-            // Remove all old routines
-            let newRoutineId = task?.routineId || "";
-            let t: Task[] = [];
-            let isOverlapping = false;
-            cloneUpdatedTasks = cloneUpdatedTasks.filter(updatedTask => updatedTask?.type !== "routine" || updatedTask?.routineId !== task?.routineId);
-            const curDay = (dayjs().get("day") + 6) % 7;
-            for (const routinePattern of (model?.routinePatterns || [])) {
-                if (routinePattern >= curDay) {
-                    const dayDiff = routinePattern - curDay;
-                    const taskDay = dayjs().add(dayDiff, 'day');
-                    const startHour = Number((model?.routineStartHour || "").split(":")[0]);
-                    const endHour = Number((model?.routineEndHour || "").split(":")[0]);
-                    const startMinute = Number((model?.routineStartHour || "").split(":")[1]);
-                    const endMinute = Number((model?.routineEndHour || "").split(":")[1]);
-                    const startTime = dayJsToISOString(taskDay.hour(startHour).minute(startMinute).second(0));
-                    const endTime = dayJsToISOString(taskDay.hour(endHour).minute(endMinute).second(0));
-                    if (!newRoutineId) {
-                        newRoutineId = NEW_ROUTINE_ID_PREFIX.concat(uuid4());
-                    }
-                    const newTask: Task = {
-                        ...model,
-                        id: startTime,
-                        routineId: newRoutineId,
-                        startTime,
-                        endTime,
-                    };
-
-                    if (overlappingTasksExists(newTask, cloneUpdatedTasks)) {
-                        isOverlapping = true;
-                        break;
-                    }
-
-                    t.push(newTask);
-                }
-            };
-            if (isOverlapping) {
-                
-                setAlertMessage(OVERLAPPING_TIME_WARNING);
-            }
-            else {
-                t.forEach(item => cloneUpdatedTasks.push(item));
-            }
-        }
-        setUpdatedTasks(reId(cloneUpdatedTasks));
-        onClose?.();
+        // Create case
+        // TODO: Handle later
     };
 
     const onCancel = () => {
+        // TODO: Handle onCancel in 2 cases: CREATING new item, UPDATING item 
+
+        // TODO: Handle clicking outside
         onClose?.();
     };
 
@@ -201,8 +148,8 @@ export const TaskEditor = ({
                         <Input
                             placeholder="Task title"
                             className="truncate font-semibold text-[#1D2129] text-base border-none focus:ring-0 shadow-none placeholder:text-gray-400 bg-transparent"
-                            onChange={(e) => updateModel("title", e.target.value)}
-                            value={model?.title}
+                            onChange={(e) => updateModel("name", e.target.value)}
+                            value={model?.name}
                         />
                         {isEmptyTitle && (
                             <ValidationError tooltip="Title should not be empty" />
@@ -210,40 +157,61 @@ export const TaskEditor = ({
                         <div className="flex items-center space-x-2">
                             <Button className="bg-green-300 hover:bg-green-400 text-green-800 rounded-full px-5 text-sm font-semibold cursor-pointer" onClick={onSave}>Save</Button>
                             <Button variant="ghost" className="text-gray-500 rounded-full px-5 text-sm cursor-pointer" onClick={onCancel}>Cancel</Button>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="text-gray-500 cursor-pointer hover:text-red-500 rounded-full"
-                                        onClick={onDelete}
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent className="z-[99999]">
-                                    <p>Delete</p>
-                                </TooltipContent>
-                            </Tooltip>
+                            {/* Delete button only appears in UPDATE mode, not CREATE one */}
+                            {model?.id && (
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-gray-500 cursor-pointer hover:text-red-500 rounded-full"
+                                            onClick={onDelete}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="z-[99999]">
+                                        <p>Delete</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            )}
                         </div>
                     </div>
 
                     {/* Tags Section */}
                     <div className="mb-4">
-                        <TaskTypeDropdown
-                            currentType={model?.type}
-                            onTypeChange={(newType: any) => {
-                                updateModel('type', newType);
-                                if (newType === 'routine') {
-                                    setModel({
-                                        ...model,
-                                        type: "routine",
-                                        routineStartHour: isoToHHMM(model.startTime),
-                                        routineEndHour: isoToHHMM(model.endTime),
-                                    })
-                                }
-                            }}
-                        />
+                        {model.id ? (
+                            // --- EDIT MODE: Show static badge ---
+                            (() => {
+                                const typeKey =
+                                    model.type && typeConfig[model?.type as TaskType]
+                                        ? (model.type as TaskType)
+                                        : "task";
+                                const { label, Icon, color } = typeConfig[typeKey];
+                                return (
+                                    <div
+                                        className={`flex items-center cursor-default gap-2 rounded-md px-3 py-1 h-auto w-[100px] text-xs font-medium text-white ${color}`}
+                                    >
+                                        <Icon size={14} />
+                                        {label}
+                                    </div>
+                                );
+                            })()
+                        ) : (
+                            // --- CREATE MODE: Show dropdown ---
+                            <TaskTypeDropdown
+                                currentType={model?.type as TaskType}
+                                onTypeChange={(newType: any) => {
+                                    updateModel("type", newType);
+                                    if (newType === "routine") {
+                                        setModel({
+                                            ...model,
+                                            type: "routine",
+                                        });
+                                    }
+                                }}
+                            />
+                        )}
                     </div>
 
                     <div className="border-t border-gray-200 my-4"></div>
@@ -265,7 +233,7 @@ export const TaskEditor = ({
                             <Input
                                 placeholder="Start hour"
                                 className="border-none mt-0.25 focus:ring-0 shadow-none text-sm bg-transparent p-0"
-                                value={model?.type !== "big-task" ? isoToHHMM(model.startTime) : isoToStandardTime(model.startTime)}
+                                value={isoToStandardTime(model.startTime)}
                                 readOnly
                             />
                             <DateTimePicker
@@ -275,8 +243,8 @@ export const TaskEditor = ({
                                 updateModel={updateModel}
                                 taskType={model?.type}
                                 fieldName={"startTime"}
-                                type={getDateTimePickerType()}
-                                enabledDate={model?.type !== "routine" ? undefined : isoStringToDate(model.startTime)}
+                                type={'date-time'}
+                                enabledDate={isoStringToDate(model.startTime)}
                             />
                         </div>
                         <div className="relative flex items-center space-x-3 text-gray-500 px-2 border-l border-gray-200 cursor-pointer">
@@ -284,7 +252,7 @@ export const TaskEditor = ({
                             <Input
                                 placeholder="End hour"
                                 className="border-none focus:ring-0 shadow-none text-sm bg-transparent p-0"
-                                value={model?.type !== "big-task" ? isoToHHMM(model.endTime) : isoToStandardTime(model.endTime)}
+                                value={isoToStandardTime(model.endTime)}
                                 readOnly
                             />
                             {hasTimeError && (
@@ -293,12 +261,12 @@ export const TaskEditor = ({
                             <DateTimePicker
                                 isOpen={openEndTimePicker}
                                 setIsOpen={setOpenEndTimePicker}
-                                model={model}                                
+                                model={model}
                                 updateModel={updateModel}
                                 taskType={model?.type}
                                 fieldName={"endTime"}
-                                type={getDateTimePickerType()}
-                                enabledDate={model?.type !== "routine" ? undefined : isoStringToDate(model.startTime)}
+                                type={'date-time'}
+                                enabledDate={isoStringToDate(model.endTime)}
                             />
                         </div>
                     </div>
@@ -318,7 +286,7 @@ export const TaskEditor = ({
                                         <CollapsibleTrigger asChild>
                                             <div className="flex items-center cursor-pointer mt-0.5">
                                                 <Label htmlFor="subtask-toggle" className="text-gray-700 cursor-pointer text-sm">
-                                                    {model?.type === "big-task" ? "Sub task list" : (model?.type === "routine" ? "Routine patterns" : "Steps")}
+                                                    {(model?.type === "routine" ? "Routine patterns" : "Steps")}
                                                 </Label>
                                                 <ChevronDown className="h-4 w-4 ml-1 text-gray-500" />
                                             </div>
@@ -333,8 +301,13 @@ export const TaskEditor = ({
                                     <ScrollArea className="mt-3 ml-2 h-30">
                                         {model.type === 'routine' ? (
                                             <RecurringPatterns
-                                                selectedPatterns={model.routinePatterns || []}
-                                                onPatternChange={(patterns) => updateModel('routinePatterns', patterns)}
+                                                selectedPatterns={model.pattern?.daysOfWeek || []}
+                                                onPatternChange={(patterns) => setModel({
+                                                    ...model,
+                                                    pattern: {
+                                                        daysOfWeek: patterns
+                                                    }
+                                                })}
                                             />
                                         ) : (
                                             <SubTaskList
@@ -358,8 +331,8 @@ export const TaskEditor = ({
                         <Input
                             placeholder="Notes"
                             className="border-none focus:ring-0 shadow-none text-sm bg-transparent p-0"
-                            value={model?.description}
-                            onChange={(e) => { updateModel("description", e.target.value) }}
+                            value={model?.note}
+                            onChange={(e) => { updateModel("note", e.target.value) }}
                         />
                     </div>
                 </CardContent>

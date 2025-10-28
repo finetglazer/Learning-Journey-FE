@@ -9,6 +9,8 @@ import { ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { UnscheduledRoutineItem } from "./unscheduled-routine-item";
 import { UnscheduledTaskItem } from "./unscheduled-task-item";
+import { MONTHS, UNSCHEDULED_ROUTINE_PREFIX, UNSCHEDULED_SUBTASK_PREFIX } from "@/const/consts";
+import { isNil } from "lodash";
 
 export interface UnscheduledItemsForMonthProps {
     monthData: UnscheduledMonthData;
@@ -25,37 +27,37 @@ export const UnscheduledItemsForMonth = ({
 }: UnscheduledItemsForMonthProps) => {
     const unscheduledRoutines = monthData?.unscheduledRoutines;
     const unscheduledBigTasks = monthData?.unscheduledBigTasks;
-    const monthName = monthData?.monthNumber;
+    const monthName = !isNil(monthData?.month) ? MONTHS[monthData?.month - 1] : "Undefined";
     const [isPanelOpen, setIsPanelOpen] = useState(true);
-    const [isRoutinesOpen, setIsRoutinesOpen] = useState((unscheduledRoutines || []).some(routine => routine.active));
-    const [isTasksOpen, setIsTasksOpen] = useState((unscheduledBigTasks || []).some(bigTask => bigTask.active));
+    const [isRoutinesOpen, setIsRoutinesOpen] = useState(!!(unscheduledRoutines || []).length);
+    const [isTasksOpen, setIsTasksOpen] = useState(!!(unscheduledBigTasks || []).length);
     const [selectedItem, setSelectedItem] = useState<string>("");
     const [openTasks, setOpenTasks] = useState(Object.fromEntries(
-        (unscheduledBigTasks || []).map(task => [task.id, false])
+        (unscheduledBigTasks || []).map(task => [task?.bigTaskId, false])
     ));
 
-    const toggleBigTask = (bigTaskId: string) => {
+    const toggleBigTask = (bigTaskId: number) => {
         const newOpenTasks = { ...openTasks };
         newOpenTasks[bigTaskId] = !newOpenTasks[bigTaskId];
         setOpenTasks(newOpenTasks);
     };
 
     useEffect(() => {
-        setIsRoutinesOpen((unscheduledRoutines || []).some(routine => routine.active));
-        setIsTasksOpen((unscheduledBigTasks || []).some(bigTask => bigTask.active));
+        setIsRoutinesOpen(!!(unscheduledRoutines || []).length);
+        setIsTasksOpen(!!(unscheduledBigTasks || []).length);
 
         setOpenTasks(prevOpenTasks => {
             const newOpenTasks = { ...prevOpenTasks };
             (unscheduledBigTasks || []).forEach(task => {
-                if (!(task.id in newOpenTasks)) {
-                    newOpenTasks[task.id] = false;
+                if (!(task?.bigTaskId in newOpenTasks)) {
+                    newOpenTasks[task?.bigTaskId] = false;
                 }
             });
             return newOpenTasks;
         });
     }, [
-        (unscheduledRoutines || []).some(routine => routine.active),
-        (unscheduledBigTasks || []).some(bigTask => bigTask.active),
+        (unscheduledRoutines || []).length,
+        (unscheduledBigTasks || []).length,
     ]);
 
     return (
@@ -79,9 +81,9 @@ export const UnscheduledItemsForMonth = ({
                         <CollapsibleContent className="overflow-hidden data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up">
                             <ScrollArea className="h-40 rounded-md border p-2 mt-1">
                                 <div className="space-y-1">
-                                    {(unscheduledRoutines || []).filter(routine => routine.active).map((routine) => (
+                                    {(unscheduledRoutines || []).filter(routine => !routine.isDraggedOrEdited).map((routine, index) => (
                                         <UnscheduledRoutineItem
-                                            key={routine.id}
+                                            key={UNSCHEDULED_ROUTINE_PREFIX + index}
                                             routine={routine}
                                         />
                                     ))}
@@ -102,25 +104,25 @@ export const UnscheduledItemsForMonth = ({
                         <CollapsibleContent className="overflow-hidden data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up">
                             <ScrollArea className="h-60 rounded-md border p-2">
                                 <div className="space-y-1">
-                                    {(unscheduledBigTasks || []).filter(unscheduledBigTask => unscheduledBigTask.active).map((bigTask: UnscheduledBigTask) => (
-                                        <Collapsible key={bigTask.id} open={openTasks[bigTask.id] ?? true} onOpenChange={() => toggleBigTask(bigTask.id)}>
+                                    {(unscheduledBigTasks || []).map((bigTask: UnscheduledBigTask) => (
+                                        <Collapsible key={bigTask?.bigTaskId} open={openTasks[bigTask?.bigTaskId] ?? true} onOpenChange={() => toggleBigTask(bigTask?.bigTaskId)}>
                                             <div className="flex items-center">
                                                 <UnscheduledTaskItem
-                                                    task={bigTask}
+                                                    bigTask={bigTask}
                                                     onTitleChange={onUnscheduledTaskTitleChange}
                                                     draggable={false}
                                                     onRemove={() => handleRemoveUnscheduledBigTask?.(bigTask)}
                                                 />
                                                 <CollapsibleTrigger asChild>
                                                     <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                        <ChevronDown size={16} className={cn("transition-transform cursor-pointer", { "-rotate-90": !(openTasks[bigTask.id] ?? true) })} />
+                                                        <ChevronDown size={16} className={cn("transition-transform cursor-pointer", { "-rotate-90": !(openTasks[bigTask?.bigTaskId] ?? true) })} />
                                                     </Button>
                                                 </CollapsibleTrigger>
                                             </div>
                                             <CollapsibleContent className="pl-6 space-y-1 pt-1 overflow-hidden data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up">
-                                                {(bigTask.subtasks || []).filter(subtask => subtask.active).map((subtask: UnscheduledTask) => (
+                                                {(bigTask.suggestedSubtasks || []).filter(subtask => !subtask.isDraggedOrEdited).map((subtask: UnscheduledTask, index: number) => (
                                                     <UnscheduledTaskItem
-                                                        key={subtask.id}
+                                                        key={UNSCHEDULED_SUBTASK_PREFIX + index}
                                                         task={subtask}
                                                         onRemove={() => handleRemoveUnscheduledSubTask?.(subtask)}
                                                         onTitleChange={onUnscheduledTaskTitleChange}

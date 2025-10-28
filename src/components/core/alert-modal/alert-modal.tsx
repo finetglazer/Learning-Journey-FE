@@ -39,7 +39,7 @@ const alertConfig = {
 export interface AlertMessage {
     type: AlertType;
     title?: string;
-    description?: string;
+    description?: string | string[];
     proceedAnyway?: () => void;
 };
 
@@ -62,6 +62,20 @@ export function AlertModal({
 
     const config = alertConfig[type] || alertConfig.info;
 
+    const getDescription = () => {
+        const descriptionClassName = "font-normal";
+        if (typeof alertMessage?.description === "string") {
+            return (
+                <p className={descriptionClassName}>{alertMessage?.description}</p>
+            )
+        }
+        if ((alertMessage?.description || []).length) {
+            return (alertMessage?.description || []).map(descriptionItem => (
+                <p className={descriptionClassName}>{descriptionItem}</p>
+            ));
+        }
+    };
+
     return (
         <AlertDialog open>
             <AlertDialogContent className="max-w-md z-[99999]">
@@ -75,7 +89,7 @@ export function AlertModal({
                     <AlertDialogDescription className="text-slate-600 text-base font-bold text-center">
                         {title}
                         {description && <br />}
-                        {description}
+                        {getDescription()}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter className="sm:justify-center">

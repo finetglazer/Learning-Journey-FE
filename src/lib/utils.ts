@@ -1,9 +1,9 @@
 import { DropdownItem } from "@/components/core/dropdown/type";
 import { PASSWORD_GOOD_LENGTH, PASSWORD_MINIMUM_LENGTH, PASSWORD_REGEX, TIME_STR_REGEX } from "@/const/consts";
 import { FieldError } from "@/model/field-error";
-import { Task } from "@/model/task";
+import { Task, UnscheduledMonthData } from "@/model/task";
 import { clsx, type ClassValue } from "clsx"
-import { addWeeks, endOfMonth, endOfWeek, format, isBefore, startOfMonth, startOfWeek } from "date-fns";
+import { addWeeks, endOfMonth, endOfWeek, format, isBefore, roundToNearestHours, startOfMonth, startOfWeek } from "date-fns";
 import dayjs, { Dayjs } from "dayjs";
 import { isNil } from "lodash";
 import { twMerge } from "tailwind-merge"
@@ -133,29 +133,89 @@ export const getTasksForDay = <T extends { id: string }>(
   });
 };
 
-export const initCalendarMap = (mondayTime: Dayjs, tasks?: Task[]) => {
-  const map: Record<string, any[]> = {};
+export const initCalendarMap = (tasks?: Task[]) => {
+  const map: Record<string, Task[]> = {};
+  if (!tasks || tasks.length === 0) {
+    return map;
+  }
+  for (const task of tasks) {
+    const taskStartTime = toDayJs(task.startTime);
+    const targetTime = taskStartTime.startOf("hour");
+    if (
+      task.type?.toLowerCase() === "routine" &&
+      task.pattern &&
+      (task.pattern?.daysOfWeek || []).length > 0
+    ) {
+      // --- ROUTINE LOGIC ---
 
-  for (let i = 0; i < 7; i++) {
-    const day = mondayTime.add(i, "day");
-    for (let j = 0; j < 24; ++j) {
-      const isoKey = dayJsToISOString(day.add(j, "hour")); // e.g. "2025-09-29T00:00:00"
-      map[isoKey] = [];
+      // Create a Set for efficient lookup, e.g., {"MONDAY", "FRIDAY"}
+      const patternDays = new Set(task.pattern.daysOfWeek);
+
+      // Define loop boundaries
+      let currentDay = taskStartTime.clone().startOf("day");
+      const endOfMonth = taskStartTime.clone().endOf("month");
+
+      // Iterate from the task's start day to the end of the month
+      while (currentDay.isBefore(endOfMonth) || currentDay.isSame(endOfMonth, "day")) {
+
+        const dayName = currentDay.format("dddd").toUpperCase(); // e.g., "TUESDAY"
+
+        // Check if the current day is in the routine's pattern
+        if (patternDays.has(dayName)) {
+          // If it matches, create the key for this day at the target time
+          const keyTime = currentDay
+            .hour(targetTime.hour())
+            .minute(targetTime.minute())
+            .second(0).millisecond(0);
+
+          const key = dayJsToISOString(keyTime);
+
+          if (!map[key]) {
+            map[key] = [];
+          }
+          map[key].push(task);
+        }
+
+        // Move to the next day
+        currentDay = currentDay.add(1, "day");
+      }
+      continue;
     }
+    const taskTime = toDayJs(task.startTime);
+    const roundedTime = taskTime.startOf("hour");
+    const key = dayJsToISOString(roundedTime);
+    if (!map[key]) {
+      map[key] = [];
+    }
+    map[key].push(task);
   }
 
-  (tasks || []).forEach((task: Task) => {
-    const timeKeys = Object.keys(map);
-    const leftTimeIndex = leftBoundIndex(timeKeys, task.startTime);
-    const rightTimeIndex = leftBoundIndex(timeKeys, task.endTime);
-    if (leftTimeIndex !== null && rightTimeIndex !== null) {
-      for (let j = leftTimeIndex; j <= rightTimeIndex; ++j) {
-        map[timeKeys[j]].push(task);
-      }
-    }
-  });
-
   return map;
+};
+
+export const getPercentageHeight = (task: Task): number => {
+  if (!task || !task.startTime || !task.endTime) {
+    return 0; // or a default height, e.g., 100
+  }
+
+  const startTime = dayjs(task.startTime);
+  const endTime = dayjs(task.endTime);
+
+  if (!startTime.isValid() || !endTime.isValid()) {
+    return 0; // Invalid dates
+  }
+
+  // Calculate the difference in minutes
+  const diffInMinutes = endTime.diff(startTime, "minute");
+
+  if (diffInMinutes <= 0) {
+    return 0;
+  }
+
+  // 1 hour = 60 minutes.
+  const percentageHeight = (diffInMinutes / 60) * 100;
+
+  return percentageHeight / 100;
 };
 
 export const leftBoundIndex = (timeKeys: string[], timeStr: string) => {
@@ -243,7 +303,7 @@ export const isoToHHMM = (isoString: string, gmt?: number) => {
 export const isoToStandardTime = (isoString: string, gmt?: number) => {
   const dayjsObject = toDayJs(isoString, gmt);
 
-  return dayjsObject.format('DD/MM/YYYY');
+  return dayjsObject.format('DD/MM HH:mm');
 };
 
 export const getRoutineDates = (task: Task, startTime: string, endTime: string) => {
@@ -342,3 +402,78 @@ export const getMonthName = (monthIndex: number) => {
 
   return monthNames[monthIndex];
 }
+
+export const getTaskById = (monthData: UnscheduledMonthData[], subtaskId?: string | number | null, updatedTasks?: Task[]) => {
+  if (!(updatedTasks || []).length) {
+    for (const monthDataItem of monthData) {
+      const foundTask = (monthDataItem?.unscheduledBigTasks || []).find(
+        unscheduledBigTask => (unscheduledBigTask?.suggestedSubtasks || []).some(subtask => subtask.id === subtaskId)
+      );
+
+      if (foundTask) {
+        return (foundTask?.suggestedSubtasks || []).find(subtask => subtask.id === subtaskId);
+      }
+    }
+  }
+  return (updatedTasks || []).find(updatedTask => updatedTask.id === subtaskId);
+};
+
+export const getRoutineById = (monthData: UnscheduledMonthData[], routineId?: string | number | null, updatedTasks?: Task[]) => {
+  if (!(updatedTasks || []).length) {
+    let foundRoutine: any = undefined;
+    for (const monthDataItem of monthData) {
+      foundRoutine = (monthDataItem?.unscheduledRoutines || []).find(
+        unscheduledRoutine => unscheduledRoutine?.id === routineId
+      );
+    }
+    if (foundRoutine) {
+      return foundRoutine;
+    }
+  }
+  return (updatedTasks || []).find(updatedTask => updatedTask?.id === routineId);
+};
+
+export const getBigTask = (monthData: UnscheduledMonthData[], bigTaskId: number) => {
+  let monthItemRes: any = undefined;
+  let monthItemIndex: number = -1;
+  monthData.forEach((monthItem, index) => {
+    if ((monthItem?.unscheduledBigTasks || []).some(bigTask => bigTask?.bigTaskId === bigTaskId) && !monthItemRes) {
+      monthItemRes = monthItem;
+      monthItemIndex = index;
+    }
+  });
+  if (!monthItemRes) {
+    return { index: -1, item: undefined, monthDataIndex: -1 };
+  }
+  const bigTask = (monthItemRes?.unscheduledBigTasks || []).find((bigTask: any) => bigTask?.bigTaskId === bigTaskId);
+  const bigTaskIndex = (monthData[monthItemIndex]?.unscheduledBigTasks || []).findIndex(bigTask => bigTask?.bigTaskId === bigTask?.bigTaskId);
+  return { index: bigTaskIndex, item: bigTask, monthDataIndex: monthItemIndex };
+};
+
+export const getDetails = (model: Task | Omit<Task, "id">) => {
+  if (model?.type === "task") {
+    return {
+      taskDetails: {
+        estimatedHours: model?.estimatedHours,
+        dueDate: model?.dueDate,
+        parentBigTaskId: model?.parentBigTaskId,
+      },
+    };
+  }
+  if (model?.type === "event") {
+    return {
+      eventDetails: {
+        location: model?.location,
+        attendees: model?.attendees,
+        isAllDay: model?.isAllDay || false,
+      }
+    };
+  }
+  if (model?.type === "routine") {
+    return {
+      routineDetails: {
+        pattern: model?.pattern,
+      }
+    }
+  }
+};

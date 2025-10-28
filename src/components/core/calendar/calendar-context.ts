@@ -1,5 +1,5 @@
 import { COLLIDING_WITH_SLEEP_TIME_WARNING, OVERLAPPING_TIME_WARNING, SUBTASK_OUTSIDE_BIGTASK_TIME_RANGE_WARNING, UNSCHEDULED_ROUTINE_PREFIX, UNSCHEDULED_SUBTASK_PREFIX } from "@/const/consts";
-import { dayJsToISOString, getEditorAdjustedPosition, getMondayOfThisWeek, getMonthName, initCalendarMap, isCollidingWithSleepTime, isoToHHMM, overlappingTasksExists, reId, toDayJs } from "@/lib/utils";
+import { dayJsToISOString, getEditorAdjustedPosition, getMondayOfThisWeek, getMonthName, getPercentageHeight, initCalendarMap, isCollidingWithSleepTime, isoToHHMM, overlappingTasksExists, reId, toDayJs } from "@/lib/utils";
 import { Task, UnscheduledBigTask, UnscheduledMonthData, UnscheduledRoutine, UnscheduledTask } from "@/model/task";
 import { DragEndEvent, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import dayjs, { Dayjs } from "dayjs";
@@ -55,6 +55,10 @@ export interface CalendarContextInterface {
     setAlertMessage: Dispatch<SetStateAction<AlertMessage | null>>;
     onChangeUnscheduledTaskTitle: (taskId: string, newTitle: string) => void;
     isOutBigTaskTimeRange: (task: Task) => boolean | "" | undefined;
+    setPanelPosition: Dispatch<React.SetStateAction<{
+        x: number;
+        y: number;
+    }>>;
 };
 
 export const CalendarContext = createContext<CalendarContextInterface>({
@@ -102,12 +106,13 @@ export const CalendarContext = createContext<CalendarContextInterface>({
     handleGoToToday: () => { },
     onChangeUnscheduledTaskTitle: () => { },
     isOutBigTaskTimeRange: () => false,
+    setPanelPosition: () => { },
 });
 
 export const useCalendarHooks = ({
     initTasks,
 }: CalendarContextProps) => {
-    const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
+    const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs().date(8).month(10));
     const [tasksStyle, setTasksStyle] = useState<Record<string, any>>({});
     const [calendarMap, setCalendarMap] = useState<Record<string, any[]>>({});
     const [currentMondayTime, setCurrentMondayTime] = useState<Dayjs>(getMondayOfThisWeek());
@@ -354,21 +359,6 @@ export const useCalendarHooks = ({
         return ((unscheduledBigTask?.subtasks || []).findIndex(subtask => subtask.id === unscheduledSubtask.id));
     };
 
-    const getUnscheduledSubtaskById = (monthData: UnscheduledMonthData[], subtaskId: string) => {
-        for (const monthDataItem of monthData) {
-            const foundTask = (monthDataItem?.unscheduledBigTasks || []).find(
-                unscheduledBigTask => unscheduledBigTask.active && (unscheduledBigTask?.subtasks || []).some(subtask =>
-                    subtask.active && subtask.id === subtaskId
-                )
-            );
-
-            if (foundTask) {
-                return (foundTask?.subtasks || []).find(subtask => subtask.active && subtask.id === subtaskId);
-            }
-        }
-
-        return undefined;
-    };
 
     const getUnscheduledRoutineById = (monthData: UnscheduledMonthData[], routineId: string) => {
         let res: any = undefined;
@@ -774,47 +764,54 @@ export const useCalendarHooks = ({
 
     useEffect(() => {
         const newTasks = [...updatedTasks];
-        const updatedCalendarMap = initCalendarMap(currentMondayTime, newTasks);
+        const updatedCalendarMap = initCalendarMap(newTasks);
         const newTasksStyle: Record<string, any> = {};
-        if (activeTask) {
-            newTasksStyle[activeTask.id] = tasksStyle[activeTask.id];
-        }
         let currentZIndex = 0;
 
         setCalendarMap(updatedCalendarMap);
 
         const visited: Record<string, boolean> = {};
-        const getHeight = (timeKey: string, task: Task) => {
-            const startTime = toDayJs(task.startTime);
-            const endTime = toDayJs(task.endTime);
-            const startDiff = startTime.diff(toDayJs(timeKey)) / 60000 * (100 / 60);
-            const endDiff = endTime.diff(toDayJs(timeKey)) / 60000 * (100 / 60);
-            const nextHour = toDayJs(timeKey).add(1, "hour");
+        // const getHeight = (timeKey: string, task: Task) => {
+        //     const startTime = toDayJs(task.startTime);
+        //     const endTime = toDayJs(task.endTime);
+        //     const startDiff = startTime.diff(toDayJs(timeKey)) / 60000 * (100 / 60);
+        //     const endDiff = endTime.diff(toDayJs(timeKey)) / 60000 * (100 / 60);
+        //     const nextHour = toDayJs(timeKey).add(1, "hour");
 
-            if (startTime <= nextHour && endTime <= nextHour && !visited[task.id]) {
-                visited[task.id] = true;
-                return (endTime.diff(startTime) / 60000 * (100 / 60)) / 100 * CELL_HEIGHT;
-            }
-            if (!visited[task.id]) {
-                visited[task.id] = true;
-                return (100 - startDiff) / 100 * CELL_HEIGHT;
-            }
-            if (startTime <= toDayJs(timeKey) && nextHour <= endTime) {
-                return CELL_HEIGHT;
-            }
-            return endDiff / 100 * CELL_HEIGHT;
-        };
+        //     if (startTime <= nextHour && endTime <= nextHour && !visited[task.id]) {
+        //         visited[task.id] = true;
+        //         return (endTime.diff(startTime) / 60000 * (100 / 60)) / 100 * CELL_HEIGHT;
+        //     }
+        //     if (!visited[task.id]) {
+        //         visited[task.id] = true;
+        //         return (100 - startDiff) / 100 * CELL_HEIGHT;
+        //     }
+        //     if (startTime <= toDayJs(timeKey) && nextHour <= endTime) {
+        //         return CELL_HEIGHT;
+        //     }
+        //     return endDiff / 100 * CELL_HEIGHT;
+        // };
         Object.keys(updatedCalendarMap).forEach(timeKey => {
             const tasksVal = updatedCalendarMap[timeKey];
             tasksVal.forEach((task: Task, count: number) => {
                 let newStyle = newTasksStyle[task.id];
-                const diff = toDayJs(task.startTime).diff(toDayJs(timeKey)) / 60000 * (100 / 60);
+                const startTimeObj = toDayJs(task.startTime);
+                const timeKeyObj = toDayJs(timeKey);
+// TODO: Handle single click, double click, create default calendar
+                const timeKeyOnSameDay = timeKeyObj
+                    .year(startTimeObj.year())
+                    .month(startTimeObj.month())
+                    .date(startTimeObj.date());
+
+                const diffInMinutes = startTimeObj.diff(timeKeyOnSameDay, "minute");
+
+                const diff = (diffInMinutes / 60) * 100;
 
                 newStyle = {
                     zIndex: !visited[task.id] ? ++currentZIndex : newStyle?.zIndex,
                     top: !visited[task.id] ? diff : newStyle?.top,    // %
                     left: count * 10,    // %
-                    height: (newStyle?.height || 0) + getHeight(timeKey, task), // rem
+                    height: getPercentageHeight(task) * CELL_HEIGHT, // rem
                     width: Math.min(newStyle?.width || 90, 90 / tasksVal.length),   // %
                 }
 
@@ -832,7 +829,7 @@ export const useCalendarHooks = ({
                 toDayJs(otherTask.startTime).isBefore(toDayJs(task.endTime))
             );
             const width = 90 / overlappingTasks.length;
-            overlappingTasks.sort((a, b) => a.id.localeCompare(b.id));
+            overlappingTasks.sort((a, b) => String(a.id).localeCompare(String(b.id)));
             const columnIndex = overlappingTasks.findIndex(t => t.id === task.id);
             const left = columnIndex * width;
 
@@ -846,8 +843,9 @@ export const useCalendarHooks = ({
         setTasksStyle(newTasksStyle);
 
     }, [currentMondayTime, updatedTasks]);
-    // console.log("updatedTasks", updatedTasks);
-    // console.log("calendarMap", calendarMap);
+// console.log("updatedTasks", updatedTasks);
+// console.log("calendarMap", calendarMap)
+
     return {
         currentDate,
         setCurrentDate,
@@ -893,5 +891,6 @@ export const useCalendarHooks = ({
         setAlertMessage,
         onChangeUnscheduledTaskTitle,
         isOutBigTaskTimeRange,
+        setPanelPosition,
     };
 };

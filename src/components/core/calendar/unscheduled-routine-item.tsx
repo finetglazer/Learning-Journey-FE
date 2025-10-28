@@ -21,7 +21,7 @@ export function UnscheduledRoutineItem({ routine, onRemove, onTitleChange, dragg
     });
 
     const [isEditing, setIsEditing] = useState(false);
-    const [title, setTitle] = useState(routine?.title || "");
+    const [title, setTitle] = useState(routine?.name || "");
     const inputRef = useRef<HTMLInputElement>(null);
 
     // Auto-focus the input when entering edit mode
@@ -40,7 +40,7 @@ export function UnscheduledRoutineItem({ routine, onRemove, onTitleChange, dragg
         if (event.key === 'Enter') {
             handleSave();
         } else if (event.key === 'Escape') {
-            setTitle(routine.title || "");
+            setTitle(routine?.name || "");
             setIsEditing(false);
         }
     };
@@ -70,7 +70,7 @@ export function UnscheduledRoutineItem({ routine, onRemove, onTitleChange, dragg
                         onDoubleClick={() => setIsEditing(true)}
                         className="text-sm text-gray-600 ml-2 flex-grow"
                     >
-                        {routine?.title}
+                        {routine?.name}
                     </span>
                 )}
             </div>

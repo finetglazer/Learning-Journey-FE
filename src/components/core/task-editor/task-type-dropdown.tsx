@@ -11,7 +11,7 @@ import { Calendar, CheckSquare, Repeat } from "lucide-react";
 import { useContext } from "react";
 import { CalendarContext, CalendarContextInterface } from "../calendar/calendar-context";
 
-const typeConfig = {
+export const typeConfig = {
     event: { label: "Event", Icon: Calendar, color: "bg-blue-400" },
     task: { label: "Task", Icon: CheckSquare, color: "bg-pink-500" },
     "big-task": { label: "Big task", Icon: CheckSquare, color: "bg-pink-500" },

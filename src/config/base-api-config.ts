@@ -4,5 +4,6 @@ export const baseApiConfig = (baseApiUrl?: string) => ({
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'X-User-Id': localStorage.getItem('userId'),
     },
 });
