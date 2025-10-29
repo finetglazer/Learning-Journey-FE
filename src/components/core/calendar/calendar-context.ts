@@ -23,6 +23,7 @@ export interface CalendarContextInterface {
     editingTask: Task | null;
     setEditingTask: Dispatch<SetStateAction<Task | null>>;
     editorPosition: { x: number; y: number; };
+    setEditorPosition: Dispatch<SetStateAction<{x: number, y: number}>>;
     panelPosition: { x: number; y: number; };
     unscheduledMonthData: UnscheduledMonthData[];
     setUnscheduledMonthData: Dispatch<SetStateAction<UnscheduledMonthData[]>>;
@@ -74,6 +75,7 @@ export const CalendarContext = createContext<CalendarContextInterface>({
     editingTask: null,
     setEditingTask: () => { },
     editorPosition: { x: 0, y: 0 },
+    setEditorPosition: () => { },
     panelPosition: { x: 0, y: 0 },
     unscheduledMonthData: [],
     setUnscheduledMonthData: () => { },
@@ -794,10 +796,10 @@ export const useCalendarHooks = ({
         Object.keys(updatedCalendarMap).forEach(timeKey => {
             const tasksVal = updatedCalendarMap[timeKey];
             tasksVal.forEach((task: Task, count: number) => {
-                let newStyle = newTasksStyle[task.id];
+                let newStyle = newTasksStyle[task?.id as number];
                 const startTimeObj = toDayJs(task.startTime);
                 const timeKeyObj = toDayJs(timeKey);
-// TODO: Handle single click, double click, create default calendar
+
                 const timeKeyOnSameDay = timeKeyObj
                     .year(startTimeObj.year())
                     .month(startTimeObj.month())
@@ -808,14 +810,14 @@ export const useCalendarHooks = ({
                 const diff = (diffInMinutes / 60) * 100;
 
                 newStyle = {
-                    zIndex: !visited[task.id] ? ++currentZIndex : newStyle?.zIndex,
-                    top: !visited[task.id] ? diff : newStyle?.top,    // %
+                    zIndex: !visited[task?.id as number] ? ++currentZIndex : newStyle?.zIndex,
+                    top: !visited[task?.id as number] ? diff : newStyle?.top,    // %
                     left: count * 10,    // %
                     height: getPercentageHeight(task) * CELL_HEIGHT, // rem
                     width: Math.min(newStyle?.width || 90, 90 / tasksVal.length),   // %
                 }
 
-                newTasksStyle[task.id] = newStyle;
+                newTasksStyle[task?.id as number] = newStyle;
             });
         });
 
@@ -833,8 +835,8 @@ export const useCalendarHooks = ({
             const columnIndex = overlappingTasks.findIndex(t => t.id === task.id);
             const left = columnIndex * width;
 
-            newTasksStyle[task.id] = {
-                ...newTasksStyle[task.id],
+            newTasksStyle[task?.id as number] = {
+                ...newTasksStyle[task?.id as number],
                 width,
                 left,
             };
@@ -845,7 +847,7 @@ export const useCalendarHooks = ({
     }, [currentMondayTime, updatedTasks]);
 // console.log("updatedTasks", updatedTasks);
 // console.log("calendarMap", calendarMap)
-
+// console.log("tasksStyle", tasksStyle);
     return {
         currentDate,
         setCurrentDate,
@@ -862,6 +864,7 @@ export const useCalendarHooks = ({
         editingTask,
         setEditingTask,
         editorPosition,
+        setEditorPosition,
         panelPosition,
         unscheduledMonthData,
         setUnscheduledMonthData,

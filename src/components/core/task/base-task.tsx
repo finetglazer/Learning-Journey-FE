@@ -5,7 +5,7 @@ import React, { CSSProperties } from 'react';
 
 export interface BaseTaskProps {
     task: Task;
-    handleDoubleClick?: (event: React.MouseEvent<HTMLDivElement>, task: Task, _scrollContainerRef?: React.RefObject<HTMLDivElement | null>) => void;
+    handleDoubleClick?: (event: React.MouseEvent<HTMLDivElement>, taskId: number) => void;
     key?: string;
     calendarType?: (typeof CALENDAR_VIEW_OPTIONS)[number];
     wrapperClassName?: string;
@@ -40,7 +40,7 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                     wrapperClassName,
                 )}
                 style={{ ...wrapperStyle }}
-                onDoubleClick={(e) => handleDoubleClick?.(e, task)}
+                onDoubleClick={(e) => handleDoubleClick?.(e, task?.id as number)}
             >
                 <span className={cn("font-semibold text-slate-700 text-lg text-left truncate", titleClassName)}>
                     {task?.name}
@@ -61,7 +61,7 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                 wrapperClassName,
             )}
                 style={{ ...wrapperStyle }}
-                onDoubleClick={(e) => handleDoubleClick?.(e, task)}
+                onDoubleClick={(e) => handleDoubleClick?.(e, task?.id as number)}
             >
                 <span className={cn("font-bold text-slate-700 text-lg text-left truncate", titleClassName)}>
                     {task?.name}
@@ -92,7 +92,7 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                 wrapperClassName,
             )}
             style={{ ...wrapperStyle }}
-            onDoubleClick={(e) => handleDoubleClick?.(e, task)}
+            onDoubleClick={(e) => handleDoubleClick?.(e, task?.id as number)}
         >
             <div className={cn("flex items-center gap-2", badgeWrapperClassName)}>
                 <div className={cn("rounded bg-sky-400 px-2 py-1 text-xs font-bold text-white",

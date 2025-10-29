@@ -26,8 +26,8 @@ export function TaskStatusDropdown({
     onStatusChange,
 }: TaskStatusDropdownProps) {
     const selectedStatusKey =
-        currentStatus && statusConfig[currentStatus] ? currentStatus : "incomplete";
-    const { Icon, color, label } = statusConfig[selectedStatusKey];
+        currentStatus && statusConfig[currentStatus.toLowerCase() as keyof typeof statusConfig] ? currentStatus.toLowerCase() : "incomplete";
+    const { Icon, color, label } = statusConfig[selectedStatusKey as keyof typeof statusConfig];
 
     return (
         <DropdownMenu>

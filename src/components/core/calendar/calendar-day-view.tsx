@@ -2,13 +2,14 @@
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
-import { UNSCHEDULED_ROUTINE_PREFIX, UNSCHEDULED_SUBTASK_PREFIX } from "@/const/consts";
-import { dayJsToISOString, getBigTask, getDetails, getRoutineById, getTaskById, leftBoundIndex, toDayJs } from "@/lib/utils";
+import { dayJsToISOString, getBigTask, getDetails, getEditorAdjustedPosition, getRoutineById, getTaskById, toDayJs } from "@/lib/utils";
 import { Task, UnscheduledBigTask, UnscheduledMonthData, UnscheduledRoutine, UnscheduledTask } from "@/model/task";
 import { calendarRepository } from "@/repository/calendar-repository";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from "@dnd-kit/core";
+import { isNil } from "lodash";
 import { ClipboardList } from "lucide-react";
 import { useContext, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { AlertModal } from "../alert-modal/alert-modal";
 import { RoundedButton } from "../button/rounded-button";
 import { DateRangeNavigator } from "../date-range-navigator/date-range-navigator";
@@ -20,9 +21,6 @@ import { CollapsibleUnscheduledPanel } from "./collapsible-unscheduled-items-pan
 import { DraggableTask } from "./draggable-task";
 import { UnscheduledRoutineItem } from "./unscheduled-routine-item";
 import { UnscheduledTaskItem } from "./unscheduled-task-item";
-import { toast } from "sonner";
-import { isNil } from "lodash";
-import dayjs from "dayjs";
 
 export interface CalendarDayViewProps { };
 
@@ -34,8 +32,8 @@ export const CalendarDayView = () => {
         setCurrentView,
         updatedTasks,
         setUpdatedTasks,
-        activeTask,
         editorPosition,
+        setEditorPosition,
         panelPosition,
         unscheduledMonthData,
         setUnscheduledMonthData,
@@ -47,8 +45,6 @@ export const CalendarDayView = () => {
         startPositionInHours,
         endPositionInHours,
         sensors,
-        handleCellClick,
-        handleTaskDoubleClick,
         handleRemoveUnscheduledBigTask,
         handleRemoveUnscheduledSubTask,
         onRemoveDraggableTask,
@@ -67,7 +63,7 @@ export const CalendarDayView = () => {
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
     // For EDITING unscheduled and scheduled task
     const [selectedTaskId, setSelectedTaskId] = useState<string | number | null>(null);
-    // For EDITING unscheduled routine
+    // For EDITING unscheduled and scdeduled routine
     const [selectedRoutineId, setSelectedRoutineId] = useState<string | number | null>(null);
     // For DRAGGING unscheduled task
     const [draggingUnscheduledTaskId, setDraggingUnscheduledTaskId] = useState<string | number | null>(null);
@@ -78,7 +74,7 @@ export const CalendarDayView = () => {
     // For DRAGGING unscheduled items panel
     const [isPanelDragging, setIsPanelDragging] = useState<boolean>(false);
     // For editing CREATED task and NEW task 
-    const [editingTask, setEditingTask] = useState<Task | Omit<Task, "id"> | null>(null);
+    const [editingTask, setEditingTask] = useState<Task | Partial<Task> | null>(null);
 
     const onDragStart = (event: DragStartEvent) => {
         if (event.active?.data?.current?.type === "unscheduled-task") {
@@ -223,20 +219,23 @@ export const CalendarDayView = () => {
             });
     };
 
-    const onDeleteCalendarItem = (itemId: number) => {
-        calendarRepository.deleteCalendarItem(itemId)
+    const onDeleteCalendarItem = (itemId?: number | string | null) => {
+        // itemId could only be number
+        calendarRepository.deleteCalendarItem(itemId as number)
             .subscribe({
                 next: res => {
                     const success = res?.status;
                     if (success) {
-                        toast.success(res?.msg);
+                        toast.success(res?.msg || res?.message);
                         setSelectedTaskId(null);
                         setSelectedRoutineId(null);
+                        setEditingTask(null);
+                        handleReload();
                     }
                     else {
                         setAlertMessage({
                             type: "warning",
-                            title: res?.msg,
+                            title: res?.msg || res?.message,
                             description: res?.data,
                         });
                     }
@@ -256,6 +255,8 @@ export const CalendarDayView = () => {
                     const { createdAt, updatedAt, ...restItem } = item;
                     return {
                         ...restItem,
+                        status: (restItem?.status || "").toLowerCase(),
+                        type: (restItem?.type || "").toLowerCase(),
                         startTime: (restItem?.timeSlot?.startTime || "").concat("Z"),
                         endTime: (restItem?.timeSlot?.endTime || "").concat("Z"),
                         timeSlot: undefined,
@@ -266,6 +267,57 @@ export const CalendarDayView = () => {
             error: err => {
                 console.log("Error occurs while fetching scheduled items", err);
             }
+        });
+    };
+
+    const handleCellClick = (event: React.MouseEvent<HTMLTableCellElement>, cellId: string) => {
+        if ((event.target as HTMLElement).closest('.cursor-grab')) {
+            return;
+        }
+
+        const adjustedPosition = getEditorAdjustedPosition(event.clientX, event.clientY);
+
+        setEditorPosition(adjustedPosition);
+        // New task would NOT have Id and would not be pushed to updatedTasks
+        const newTask = {
+            startTime: cellId,
+            endTime: dayJsToISOString(toDayJs(cellId).add(15, "minute").second(0).millisecond(0)),
+            type: "task",
+            name: "",
+            completionPercentage: 0,
+        } as Task;
+
+        setEditorPosition(adjustedPosition);
+        setEditingTask(newTask);
+    };
+
+    const handleTaskDoubleClick = (event: React.MouseEvent<HTMLDivElement>, taskId: number) => {
+        const adjustedPosition = getEditorAdjustedPosition(event.clientX, event.clientY);
+
+        setEditorPosition(adjustedPosition);
+
+        // Call get calendar item detail API
+        calendarRepository.getCalendarItem({ itemId: taskId })
+        .subscribe({
+            next: res => {
+                const success = res?.status;
+                if (success) {
+                    setSelectedTaskId(taskId);
+                    setEditingTask({
+                        ...res?.data,
+                        startTime: (res?.data?.timeSlot?.startTime as string).concat("Z"),
+                        endTime: (res?.data?.timeSlot?.endTime as string).concat("Z"),
+                    });
+                }
+                else {
+                    setAlertMessage({
+                        type: "warning",
+                        title: res?.msg || res?.message,
+                        description: res?.data,
+                    });
+                }
+            },
+            error: err => { }
         });
     };
 
@@ -282,11 +334,11 @@ export const CalendarDayView = () => {
                 scrollContainerRef={scrollContainerRef}
                 wrapperClassName="truncate absolute rounded-lg border-black border-[0.5px] pl-2"
                 wrapperStyle={{
-                    ...tasksStyle[draggingTask.id],
-                    top: `${tasksStyle[draggingTask.id].top}%`,
-                    left: `${tasksStyle[draggingTask.id].left}%`,
-                    height: `${tasksStyle[draggingTask.id].height}rem`,
-                    width: `${tasksStyle[draggingTask.id].width}%`,
+                    ...tasksStyle[draggingTask.id as number],
+                    top: `${tasksStyle[draggingTask.id as number].top}%`,
+                    left: `${tasksStyle[draggingTask.id as number].left}%`,
+                    height: `${tasksStyle[draggingTask.id as number].height}rem`,
+                    width: `${tasksStyle[draggingTask.id as number].width}%`,
                 }}
             />
         );
@@ -443,7 +495,7 @@ export const CalendarDayView = () => {
                     const itemId = res?.data;
                     const success = res?.status;
                     if (success) {
-                        getNewCalendarItem(itemId); 
+                        getNewCalendarItem(itemId);
                     }
                     else {
                         setAlertMessage({
@@ -532,14 +584,13 @@ export const CalendarDayView = () => {
                                                                 task={{ ...task, type: (task?.type || "").toLowerCase() }}
                                                                 draggable={!((task?.type || "").toLowerCase() === "routine")}
                                                                 scrollContainerRef={scrollContainerRef}
-                                                                onRemove={() => onRemoveDraggableTask(task)}
                                                                 wrapperClassName="truncate absolute rounded-lg pl-2"
                                                                 wrapperStyle={{
-                                                                    ...tasksStyle[task.id],
-                                                                    top: `${tasksStyle[task.id].top}%`,
-                                                                    left: `${tasksStyle[task.id].left}%`,
-                                                                    height: `${tasksStyle[task.id].height}rem`,
-                                                                    width: `${tasksStyle[task.id].width}%`,
+                                                                    ...tasksStyle[task.id as number],
+                                                                    top: `${tasksStyle[task.id as number].top}%`,
+                                                                    left: `${tasksStyle[task.id as number].left}%`,
+                                                                    height: `${tasksStyle[task.id as number].height}rem`,
+                                                                    width: `${tasksStyle[task.id as number].width}%`,
                                                                 }}
                                                                 badgeWrapperClassName="-mt-2.5"
                                                             />
@@ -600,8 +651,8 @@ export const CalendarDayView = () => {
                     </div>
                     {editingTask && (
                         <TaskEditor
-                            key={editingTask.id}
-                            task={{...editingTask, type: (editingTask?.type || "").toLowerCase()}}
+                            key={editingTask?.id || "none"}
+                            task={{ ...editingTask, type: (editingTask?.type || "").toLowerCase() }}
                             updatedTasks={updatedTasks}
                             setUpdatedTasks={setUpdatedTasks}
                             setAlertMessage={setAlertMessage}
@@ -618,6 +669,7 @@ export const CalendarDayView = () => {
                             isOutBigTaskTimeRange={isOutBigTaskTimeRange}
                             setSelectedTaskId={setSelectedTaskId}
                             setSelectedRoutineId={setSelectedRoutineId}
+                            setEditingTask={setEditingTask}
                         />
                     )}
                 </div>

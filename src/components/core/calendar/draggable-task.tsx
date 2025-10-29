@@ -3,10 +3,9 @@ import { useDraggable } from '@dnd-kit/core';
 import { BaseTask, BaseTaskProps } from '../task/base-task';
 
 export interface DraggableTaskProps extends BaseTaskProps {
-    handleTaskDoubleClick: (e: React.MouseEvent<HTMLDivElement>, task: Task, scrollContainerRef?: React.RefObject<HTMLDivElement | null>) => void;
+    handleTaskDoubleClick: (e: React.MouseEvent<HTMLDivElement>, taskId: number) => void;
     scrollContainerRef: React.RefObject<HTMLDivElement | null>;
     isOverlay?: boolean;
-    onRemove?: (taskId: string) => void;
     draggable?: boolean;
 }
 
@@ -14,14 +13,13 @@ export const DraggableTask = ({
     task,
     isOverlay = false,
     handleTaskDoubleClick,
-    onRemove,
     scrollContainerRef,
     draggable = true,
     ...baseTaskProps
 }: DraggableTaskProps) => {
     // Get `isDragging` from the hook
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-        id: task.id,
+        id: task?.id as number,
         data: task,
     });
 
@@ -57,7 +55,7 @@ export const DraggableTask = ({
                     {...listeners}
                     {...attributes}
                     className="cursor-grab"
-                    onDoubleClick={(e) => handleTaskDoubleClick(e, task, scrollContainerRef)}
+                    onDoubleClick={(e) => handleTaskDoubleClick(e, task?.id as number)}
                 >
                     <BaseTask task={task} {...baseTaskProps} />
                 </div>
@@ -66,7 +64,7 @@ export const DraggableTask = ({
                     ref={setNodeRef}
                     style={style}
                     className="cursor-grab"
-                    onDoubleClick={(e) => handleTaskDoubleClick(e, task, scrollContainerRef)}
+                    onDoubleClick={(e) => handleTaskDoubleClick(e, task?.id as number)}
                 >
                     <BaseTask task={task} {...baseTaskProps} />
                 </div>

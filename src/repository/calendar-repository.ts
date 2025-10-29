@@ -8,6 +8,7 @@ const API_GET_SCHEDULED_ITEMS = "/items";
 const API_UPDATE_CALENDAR_ITEM = "/items/";
 const API_GET_CALENDAR_ITEM = "/items";
 const API_DELETE_CALENDAR_ITEM = "/items";
+const API_CREATE_CALENDAR_ITEM = "/items/create";
 
 export class CalendarRepository extends BaseRepository {
     constructor() {
@@ -30,7 +31,11 @@ export class CalendarRepository extends BaseRepository {
     };
 
     public updateCalendarItem = (itemId: number, body: any): Observable<any> => {
-        return this.http.put(API_UPDATE_CALENDAR_ITEM + `/${itemId}`, body)
+        return this.http.put(API_UPDATE_CALENDAR_ITEM + `/${itemId}`, {
+            ...body,
+            type: (body?.type || "").toUpperCase(),
+            status: (body?.status || "").toUpperCase(),
+        })
             .pipe(map(res => res?.data));
     };
 
@@ -41,6 +46,15 @@ export class CalendarRepository extends BaseRepository {
     
     public deleteCalendarItem = (itemId: number): Observable<any> => {
         return this.http.delete(API_DELETE_CALENDAR_ITEM + `/${itemId}`)
+            .pipe(map(res => res?.data));
+    };
+
+    public createCalendarItem = (body: any): Observable<any> => {
+        return this.http.post(API_CREATE_CALENDAR_ITEM, {
+            ...body,
+            type: (body?.type || "").toUpperCase(),
+            status: (body?.status || "").toUpperCase(),
+        })
             .pipe(map(res => res?.data));
     };
 };

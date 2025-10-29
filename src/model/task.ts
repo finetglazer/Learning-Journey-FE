@@ -4,7 +4,7 @@ import { Model } from "react-3layer-common";
 
 export class Task extends Model {
     // id can be string (from unscheduled task), and number (from scheduled task)
-    public id: number | string = 1;
+    public id: number | string | null = null;
     public status?: 'complete' | 'incomplete';
     //2025-10-03T10:45:00.000Z
     public name: string = "";

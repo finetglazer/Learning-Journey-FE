@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { isNil } from "lodash";
 
 export type AlertType = 'danger' | 'warning' | 'info';
 
@@ -64,16 +65,37 @@ export function AlertModal({
 
     const getDescription = () => {
         const descriptionClassName = "font-normal";
+        if (isNil(alertMessage?.description)) {
+            return <></>
+        }
         if (typeof alertMessage?.description === "string") {
             return (
                 <p className={descriptionClassName}>{alertMessage?.description}</p>
             )
         }
-        if ((alertMessage?.description || []).length) {
-            return (alertMessage?.description || []).map(descriptionItem => (
-                <p className={descriptionClassName}>{descriptionItem}</p>
-            ));
+        if (!(alertMessage?.description || []).length) {
+            const errors: any = alertMessage?.description;
+            let errorDescriptions: any[] = [];
+            Object.keys(errors).forEach(key => {
+                errorDescriptions.push({
+                    [key]: errors[key]
+                });
+            });
+            return (errorDescriptions || []).map(descriptionItem => {
+                const keys = Object.keys(descriptionItem);
+                return keys.map(key => (
+                    <div className="flex align-center gap-2">
+                        <p className="font-bold">{key}</p>
+                        <p className="font-normal">{descriptionItem[key]}</p>
+                    </div>
+                ))
+            });
         }
+        return (alertMessage?.description || []).map((descriptionItem: any) => {
+            return (
+                <p className={descriptionClassName}>{descriptionItem}</p>
+            );
+        })
     };
 
     return (

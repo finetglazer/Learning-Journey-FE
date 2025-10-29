@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { getDetails, isoStringToDate, isoToHHMM, isoToStandardTime, uuid4 } from "@/lib/utils"
+import { getDetails, isoStringToDate, isoToStandardTime, uuid4 } from "@/lib/utils"
 import { Task } from "@/model/task"
 import { calendarRepository } from "@/repository/calendar-repository"
 import { formService } from "@/service/form-service"
@@ -27,7 +27,7 @@ import {
     Plus,
     Trash2
 } from "lucide-react"
-import { CSSProperties, Dispatch, SetStateAction, useState } from "react"
+import { CSSProperties, Dispatch, SetStateAction, useEffect, useState } from "react"
 import { toast } from "sonner"
 import { AlertMessage } from "../alert-modal/alert-modal"
 import { DateTimePicker } from "../date-time-picker/date-time-picker"
@@ -35,15 +35,15 @@ import { RecurringPatterns } from "./recurring-patterns"
 import { SubTaskList } from "./sortable-subtask"
 import { TaskStatusDropdown } from "./task-status-dropdown"
 import { TaskType, TaskTypeDropdown, typeConfig } from "./task-type-dropdown"
-import { ValidationError } from "./validation-error"
 
 export interface TaskEditorProps {
-    task: Task | Omit<Task, "id"> | null;
+    task: Task | Partial<Task>;
     updatedTasks: Task[];
     setUpdatedTasks: Dispatch<SetStateAction<Task[]>>;
     setAlertMessage: Dispatch<SetStateAction<AlertMessage | null>>;
     setSelectedTaskId?: Dispatch<SetStateAction<string | number | null>>;
     setSelectedRoutineId?: Dispatch<SetStateAction<string | number | null>>;
+    setEditingTask?: Dispatch<SetStateAction<Task | Partial<Task> | null>>;
     handleReload?: () => void;
     sleepStartTime?: string;
     sleepEndTime?: string;
@@ -60,6 +60,7 @@ export const TaskEditor = ({
     setAlertMessage,
     setSelectedTaskId,
     setSelectedRoutineId,
+    setEditingTask,
     handleReload,
     onClose,
     style,
@@ -70,8 +71,14 @@ export const TaskEditor = ({
 }: TaskEditorProps) => {
     const [openStartTimePicker, setOpenStartTimePicker] = useState<boolean>(false);
     const [openEndTimePicker, setOpenEndTimePicker] = useState<boolean>(false);
-    const [isEmptyTitle, setIsEmptyTitle] = useState<boolean>(false);
-    const [isNotChooseRoutinePattern, setIsNotChooseRoutinePattern] = useState<boolean>(false);
+    const getInitialModel = (): Task => {
+        const newModel = new Task();
+        return {
+            ...newModel,
+            ...(task as Partial<Task>),
+            type: (task?.type || "task").toLowerCase(),
+        };
+    };
     const {
         model,
         updateModel,
@@ -80,13 +87,12 @@ export const TaskEditor = ({
         Task,
         undefined,
         undefined,
-        {
-            ...task,
-            type: (task?.type || "task").toLowerCase(),
-        } as Task | Omit<Task, "id">,
+        getInitialModel(),
     );
 
-    const hasTimeError = model.startTime > model.endTime;
+    useEffect(() => {
+        setModel(getInitialModel());
+    }, [task]);
 
     const handleAddSubtask = () => {
         updateModel(model?.type === "big-task" ? "subtasks" : "steps",
@@ -114,28 +120,71 @@ export const TaskEditor = ({
                         toast.success(res?.msg);
                         setSelectedTaskId?.(null);
                         setSelectedRoutineId?.(null);
+                        setEditingTask?.(null);
                         handleReload?.();
-                        // onClose?.();
+                        onClose?.();
                     }
                     else {
                         setAlertMessage({
                             type: "warning",
-                            title: res?.msg,
+                            title: res?.msg || res?.message,
                             description: res?.data
                         });
                     }
                 },
                 error: err => { },
             });
+            return;
         }
         // Create case
-        // TODO: Handle later
+        calendarRepository.createCalendarItem({
+            calendarId: 2,
+            type: (model?.type || "").toUpperCase(),
+            name: model?.name,
+            note: model?.note,
+            timeSlot: {
+                startTime: model?.startTime,
+                endTime: model?.endTime,
+            },
+            color: model?.color,
+            ...getDetails(model),
+        }).subscribe({
+            next: res => {
+                const success = res?.status;
+                if (success) {
+                    toast.success(res?.message || res?.msg);
+                    setSelectedTaskId?.(null);
+                    setSelectedRoutineId?.(null);
+                    setEditingTask?.(null);
+                    handleReload?.();
+                    onClose?.();
+                }
+                else {
+                    setAlertMessage({
+                        type: "warning",
+                        title: res?.message || res?.msg,
+                        description: res?.data,
+                    });
+                    setEditingTask?.(model);
+                }
+            },
+            error: err => {
+                const errors = err?.response?.data?.data;
+                const message = err?.response?.data?.msg || err?.response?.data?.message;
+                setAlertMessage({
+                    type: "warning",
+                    title: message,
+                    description: errors,
+                });
+                setEditingTask?.(model);
+            },
+        })
     };
 
     const onCancel = () => {
-        // TODO: Handle onCancel in 2 cases: CREATING new item, UPDATING item 
-
-        // TODO: Handle clicking outside
+        setEditingTask?.(null);
+        setSelectedTaskId?.(null);
+        setSelectedRoutineId?.(null);
         onClose?.();
     };
 
@@ -151,9 +200,9 @@ export const TaskEditor = ({
                             onChange={(e) => updateModel("name", e.target.value)}
                             value={model?.name}
                         />
-                        {isEmptyTitle && (
+                        {/* {isEmptyTitle && (
                             <ValidationError tooltip="Title should not be empty" />
-                        )}
+                        )} */}
                         <div className="flex items-center space-x-2">
                             <Button className="bg-green-300 hover:bg-green-400 text-green-800 rounded-full px-5 text-sm font-semibold cursor-pointer" onClick={onSave}>Save</Button>
                             <Button variant="ghost" className="text-gray-500 rounded-full px-5 text-sm cursor-pointer" onClick={onCancel}>Cancel</Button>
@@ -207,6 +256,9 @@ export const TaskEditor = ({
                                         setModel({
                                             ...model,
                                             type: "routine",
+                                            pattern: {
+                                                daysOfWeek: ['MONDAY'], // Default pattern
+                                            }
                                         });
                                     }
                                 }}
@@ -255,9 +307,9 @@ export const TaskEditor = ({
                                 value={isoToStandardTime(model.endTime)}
                                 readOnly
                             />
-                            {hasTimeError && (
+                            {/* {hasTimeError && (
                                 <ValidationError tooltip="End time must be after start time" />
-                            )}
+                            )} */}
                             <DateTimePicker
                                 isOpen={openEndTimePicker}
                                 setIsOpen={setOpenEndTimePicker}
@@ -274,9 +326,9 @@ export const TaskEditor = ({
                     <div className="border-t border-gray-200 my-4"></div>
 
                     {/* Sub-task || Steps List || Recurring patterns Section */}
-                    {isNotChooseRoutinePattern && (
+                    {/* {isNotChooseRoutinePattern && (
                         <ValidationError tooltip="Please choose the routine pattern" />
-                    )}
+                    )} */}
                     {model?.type !== 'event' && (
                         <>
                             <Collapsible defaultOpen className="px-2">
