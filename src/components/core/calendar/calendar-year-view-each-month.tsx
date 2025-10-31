@@ -22,13 +22,14 @@ interface MonthProps {
     monthIndex: number; // 0 for January, 1 for February, etc.
     selectedDay: Date;
     onDayClick: (day: Date) => void;
-    updatedTasks: Task[];
-    selectedTaskId: string;
+    dayTasks: Task[];
+    setEditingTask: Dispatch<SetStateAction<Task | Partial<Task> | null>>;
+    selectedTaskId: number | string | null;
     setEditorPosition: Dispatch<SetStateAction<{
         x: number;
         y: number;
     }>>;
-    setSelectedTaskId: Dispatch<SetStateAction<string>>;
+    setSelectedTaskId: Dispatch<SetStateAction<number | string | null>>;
 }
 
 export function Month({
@@ -36,8 +37,9 @@ export function Month({
     monthIndex,
     selectedDay,
     onDayClick,
-    updatedTasks,
+    dayTasks,
     selectedTaskId,
+    setEditingTask,
     setSelectedTaskId,
     setEditorPosition,
 }: MonthProps) {
@@ -67,17 +69,14 @@ export function Month({
 
                 {/* --- Day numbers --- */}
                 {days.map((day) => {
-                    const tasks = getTasksForDay(updatedTasks, day);
-                    const hasTasks = tasks.length > 0 && isSameMonth(day, monthDate);
-
                     return (
                         // 2. Each day is wrapped in its own Popover
                         <Popover
                             key={day.toISOString()}
                             open={popoverState.open && isSameDay(day, popoverState.day!)}
                             onOpenChange={(isOpen) => {
-                                if (isOpen && hasTasks) {
-                                    setPopoverState({ open: true, day, tasks: tasks });
+                                if (isOpen) {
+                                    setPopoverState({ open: true, day, tasks: dayTasks });
                                 } else {
                                     setPopoverState({ open: false, day: null, tasks: [] });
                                 }
@@ -119,7 +118,7 @@ export function Month({
                                 >
                                     {format(day, "d")}
 
-                                    {/* 5. Add a visual dot indicator for tasks */}
+                                    {/* 5. Add a visual dot indicator for tasks
                                     {hasTasks && (
                                         <div
                                             className={cn(
@@ -130,15 +129,16 @@ export function Month({
                                                     : "bg-orange-600"
                                             )}
                                         ></div>
-                                    )}
+                                    )} */}
                                 </div>
                             </PopoverTrigger>
 
                             <PopoverContent className="w-auto p-0" side="bottom" align="start">
                                 <DayTasksPopover
                                     day={day}
-                                    tasks={tasks}
+                                    tasks={dayTasks}
                                     selectedTaskId={selectedTaskId}
+                                    setEditingTask={setEditingTask}
                                     setSelectedTaskId={setSelectedTaskId}
                                     setEditorPosition={setEditorPosition}
                                     editorOffset={{ x: 120, y: 0 }}

@@ -9,10 +9,11 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { DAYS_OF_WEEK, UNSCHEDULED_ROUTINE_PREFIX, UNSCHEDULED_SUBTASK_PREFIX } from "@/const/consts";
-import { dayJsToISOString, leftBoundIndex } from "@/lib/utils";
+import { DAYS_OF_WEEK } from "@/const/consts";
+import { dayJsToISOString } from "@/lib/utils";
 import { Task, UnscheduledRoutine, UnscheduledTask } from "@/model/task";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
+import { isNil } from "lodash";
 import { ClipboardList, Clock } from "lucide-react";
 import { useContext, useRef } from "react";
 import { AlertModal } from "../alert-modal/alert-modal";
@@ -24,8 +25,8 @@ import { CalendarContext, CalendarContextInterface } from "./calendar-context";
 import { CalendarWeekViewDroppableCell } from "./calendar-week-view-droppable-cell";
 import { CollapsibleUnscheduledPanel } from "./collapsible-unscheduled-items-panel";
 import { DraggableTask } from "./draggable-task";
-import { UnscheduledTaskItem } from "./unscheduled-task-item";
 import { UnscheduledRoutineItem } from "./unscheduled-routine-item";
+import { UnscheduledTaskItem } from "./unscheduled-task-item";
 
 export interface WeekViewCalendarProps {
     tasks?: Task[];
@@ -38,40 +39,44 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
         unscheduledMonthData,
         currentView,
         setCurrentView,
-        updatedTasks,
-        setUpdatedTasks,
-        activeTask,
-        editingTask,
-        setEditingTask,
         editorPosition,
         panelPosition,
-        activeUnscheduledTask,
-        activeUnscheduledRoutine,
         CELL_HEIGHT,
         hours,
-        sleepStartTime,
-        sleepEndTime,
         topPosition,
         startPositionInHours,
         endPositionInHours,
         sensors,
-        onDragStart,
-        onDragEnd,
-        handleCellClick,
-        handleTaskDoubleClick,
         handleRemoveUnscheduledBigTask,
         handleRemoveUnscheduledSubTask,
-        onRemoveDraggableTask,
         generateDateRangeLabel,
         onNextDateRangeNavigatorClick,
         onPreviousDateRangeNavigatorClick,
         handleGoToToday,
-        activeDragId,
         alertMessage,
         currentMondayTime,
         setAlertMessage,
-        isOutBigTaskTimeRange,
         onChangeUnscheduledTaskTitle,
+        handleReload,
+        handleTaskDoubleClick,
+        selectedTaskId,
+        setSelectedTaskId,
+        selectedRoutineId,
+        setSelectedRoutineId,
+        draggingUnscheduledTaskId,
+        draggingScheduledTaskId,
+        draggingUnscheduledRoutineId,
+        isPanelDragging,
+        editingTask,
+        setEditingTask,
+        getDraggingRoutine,
+        getDraggingTask,
+        getDraggableTaskOverlay,
+        onDeleteCalendarItem,
+        setUnscheduledMonthData,
+        onDragStart,
+        onDragEnd,
+        handleCellClick,
     } = useContext<CalendarContextInterface>(CalendarContext);
 
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -168,30 +173,21 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                                         onClick={(e) => handleCellClick(e, id)}
                                                     >
                                                         {(calendarMap[id] || []).map((task: Task) => {
-                                                            const timeKeys = Object.keys(calendarMap);
-                                                            const timeLeftBoundIndex = leftBoundIndex(timeKeys, task.startTime);
-                                                            if (timeLeftBoundIndex === null ||
-                                                                !timeKeys[timeLeftBoundIndex].includes(id) ||
-                                                                !tasksStyle[task.id]
-                                                            ) {
-                                                                return null;
-                                                            }
-
                                                             return (
                                                                 <DraggableTask
                                                                     key={id}
-                                                                    draggable={!(task?.type === "routine")}
                                                                     handleTaskDoubleClick={handleTaskDoubleClick}
-                                                                    task={task}
-                                                                    scrollContainerRef={scrollContainerRef}
-                                                                    wrapperClassName="truncate absolute rounded-lg border-black border-[0.5px] pl-2"
+                                                                    task={{ ...task, type: (task?.type || "").toLowerCase() }}
+                                                                    draggable={!((task?.type || "").toLowerCase() === "routine")}
+                                                                    wrapperClassName="truncate absolute rounded-lg pl-2"
                                                                     wrapperStyle={{
-                                                                        ...tasksStyle[task.id],
-                                                                        top: `${tasksStyle[task.id].top}%`,
-                                                                        left: `${tasksStyle[task.id].left}%`,
-                                                                        height: `${tasksStyle[task.id].height}rem`,
-                                                                        width: `${tasksStyle[task.id].width}%`,
+                                                                        ...tasksStyle[task.id as number],
+                                                                        top: `${tasksStyle[task.id as number].top}%`,
+                                                                        left: `${tasksStyle[task.id as number].left}%`,
+                                                                        height: `${tasksStyle[task.id as number].height}rem`,
+                                                                        width: `${tasksStyle[task.id as number].width}%`,
                                                                     }}
+                                                                    badgeWrapperClassName="-mt-2.5"
                                                                 />
                                                             );
                                                         })}
@@ -208,39 +204,32 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                 handleRemoveUnscheduledBigTask={handleRemoveUnscheduledBigTask}
                                 handleRemoveUnscheduledSubTask={handleRemoveUnscheduledSubTask}
                                 onUnscheduledTaskTitleChange={onChangeUnscheduledTaskTitle}
+                                setUnscheduledMonthData={setUnscheduledMonthData}
+                                draggingUnscheduledTaskId={draggingUnscheduledTaskId}
+                                draggingUnscheduledRoutineId={draggingUnscheduledRoutineId}
+                                selectedTaskId={selectedTaskId}
+                                selectedRoutineId={selectedRoutineId}
                             />
                             <DragOverlay>
-                                {activeTask ? (
-                                    <DraggableTask
-                                        isOverlay={true}
-                                        handleTaskDoubleClick={handleTaskDoubleClick}
-                                        task={activeTask}
-                                        scrollContainerRef={scrollContainerRef}
-                                        wrapperClassName="truncate rounded-lg border-black border-[0.5px] pl-2"
-                                        wrapperStyle={{
-                                            ...tasksStyle[activeTask.id],
-                                            top: `${tasksStyle[activeTask.id].top}%`,
-                                            left: `${tasksStyle[activeTask.id].left}%`,
-                                            height: `${tasksStyle[activeTask.id].height}rem`,
-                                            width: `${tasksStyle[activeTask.id].width}%`,
-                                        }}
-                                    />
+                                {/* For scheduled items */}
+                                {!isNil(draggingScheduledTaskId) ? (
+                                    getDraggableTaskOverlay()
                                 ) : null}
-                                {activeDragId === 'draggable-panel' && (
+                                {isPanelDragging && (
                                     <div className="h-16 w-16 rounded-full bg-gray-700 border-4 border-white p-0 shadow-lg">
                                         <div className="flex h-full w-full items-center justify-center rounded-full bg-sky-300">
                                             <ClipboardList className="h-8 w-8 text-black" />
                                         </div>
                                     </div>
                                 )}
-                                {activeDragId?.includes(UNSCHEDULED_SUBTASK_PREFIX) && activeUnscheduledTask && (
+                                {!isNil(draggingUnscheduledTaskId) && (
                                     <UnscheduledTaskItem
-                                        task={activeUnscheduledTask}
+                                        task={getDraggingTask() as UnscheduledTask}
                                     />
                                 )}
-                                {activeDragId?.includes(UNSCHEDULED_ROUTINE_PREFIX) && activeUnscheduledRoutine && (
+                                {!isNil(draggingUnscheduledRoutineId) && (
                                     <UnscheduledRoutineItem
-                                        routine={activeUnscheduledRoutine}
+                                        routine={getDraggingRoutine() as UnscheduledRoutine}
                                     />
                                 )}
                             </DragOverlay>
@@ -254,21 +243,23 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                             <div className="w-full h-0.5 bg-orange-500"></div>
                             <div className="w-2.5 h-2.5 bg-orange-500 rounded-full -mr-[5px]"></div>
                         </div>
-                        {editingTask && (
+                        {editingTask ? (
                             <TaskEditor
-                                key={editingTask.id}
-                                task={editingTask}
-                                updatedTasks={updatedTasks}
-                                setUpdatedTasks={setUpdatedTasks}
+                                key={editingTask?.id || "none"}
+                                task={{ ...editingTask, type: (editingTask?.type || "").toLowerCase() }}
                                 setAlertMessage={setAlertMessage}
-                                onClose={() => setEditingTask(null)}
+                                onClose={() => {
+                                    setEditingTask(null);
+                                    setSelectedTaskId(null);
+                                }}
                                 style={{ top: editorPosition.y, left: editorPosition.x }}
-                                sleepStartTime={sleepStartTime}
-                                sleepEndTime={sleepEndTime}
-                                onDelete={() => onRemoveDraggableTask(editingTask)}
-                                isOutBigTaskTimeRange={isOutBigTaskTimeRange}
+                                handleReload={handleReload}
+                                onDelete={() => onDeleteCalendarItem(editingTask?.id)}
+                                setSelectedTaskId={setSelectedTaskId}
+                                setSelectedRoutineId={setSelectedRoutineId}
+                                setEditingTask={setEditingTask}
                             />
-                        )}
+                        ) : null}
                     </div>
                     {alertMessage && (
                         <AlertModal

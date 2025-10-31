@@ -121,16 +121,21 @@ export const getMondayOfThisWeek = (currentDate?: Dayjs): Dayjs => {
   return dateToProcess.subtract(adjustment, 'day').startOf('day');
 };
 
-export const getTasksForDay = <T extends { id: string }>(
-  tasks: T[],
+export const getTasksForDay = (
+  calendarMap: Record<string, Task[]>,
   curDayAsDate: Date
-): T[] => {
-  return tasks.filter(task => {
-    const taskId = task.id.endsWith("Z") ? task.id : task.id.replace(/[+-]\d+$/, ""); // 2025-10-20T09:00:00.000Z-1
-    const curDay = dayjs(curDayAsDate);
-    const taskDate = dayjs(taskId);
-    return taskDate.isSame(curDay, 'day');
-  });
+): Task[] => {
+  const tasksForDay: Task[] = [];
+  const startOfDay = dayjs(curDayAsDate).startOf('day');
+  for (let i = 0; i < 24; i++) {
+    const currentHour = startOfDay.add(i, 'hour');
+    const key = currentHour.toISOString();
+    if (calendarMap[key]) {
+      tasksForDay.push(...calendarMap[key]);
+    }
+  }
+
+  return tasksForDay;
 };
 
 export const initCalendarMap = (tasks?: Task[]) => {
@@ -476,4 +481,42 @@ export const getDetails = (model: Task | Omit<Task, "id">) => {
       }
     }
   }
+};
+
+// Week: "31-06", "02-09"
+export const getWeekStartTimeEndTime = (week: string, currentDate: Dayjs) => {
+  const weekParts = week.split("-");
+  const weekStartDateNum = Number(weekParts[0]); // 31
+  const weekEndDateNum = Number(weekParts[1]);   // 7
+
+  let startDate, endDate;
+
+  // Check if the week spans across two different months (e.g., start date 31, end date 7)
+  if (weekStartDateNum > weekEndDateNum) {
+
+    const currentDayOfMonth = currentDate.date(); // 3
+
+    // Check if the current date is in the *first* part of the week (e.g., Oct 31st)
+    // or the *second* part (e.g., Nov 3rd)
+    if (currentDayOfMonth >= weekStartDateNum) {
+      // We are in the first month (e.g., October)
+      // e.g., if currentDate was Oct 31st, currentDayOfMonth (31) >= weekStartDateNum (31)
+      startDate = currentDate.date(weekStartDateNum);
+      // The end date must be in the *next* month
+      endDate = currentDate.add(1, 'month').date(weekEndDateNum);
+    } else {
+      // We are in the second month (e.g., November)
+      // e.g., if currentDate is Nov 3rd, currentDayOfMonth (3) < weekStartDateNum (31)
+      // The start date must be in the *previous* month
+      startDate = currentDate.subtract(1, 'month').date(weekStartDateNum);
+      endDate = currentDate.date(weekEndDateNum);
+    }
+
+  } else {
+    // The week is fully within the current month (e.g., "10-17")
+    startDate = currentDate.date(weekStartDateNum);
+    endDate = currentDate.date(weekEndDateNum);
+  }
+
+  return { startDate, endDate };
 };

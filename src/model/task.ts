@@ -88,3 +88,21 @@ export interface UnscheduledBigTask {
     prority?: string,
     suggestedSubtasks?: UnscheduledTask[],
 };
+
+export class MonthPlanningEvent {
+    public id?: number;
+    public name: string = "New event";
+    public note?: string;
+    public specificDate: string = dayjs().format('YYYY-MM-DD');
+    public startTime: string = "07:00";
+    public endTime: string = "07:15";
+}
+
+export class MonthPlanningBigTask {
+    public id?: number;
+    public name: string = "New big task";
+    public estimatedStartDate: string = dayjs().format('YYYY-MM-DD');
+    public estimatedEndDate: string = dayjs().format('YYYY-MM-DD');
+    public derivedTasksCount: number = 0;
+    public completionPercentage: number = 0;
+};

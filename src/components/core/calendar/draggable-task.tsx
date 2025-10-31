@@ -4,7 +4,6 @@ import { BaseTask, BaseTaskProps } from '../task/base-task';
 
 export interface DraggableTaskProps extends BaseTaskProps {
     handleTaskDoubleClick: (e: React.MouseEvent<HTMLDivElement>, taskId: number) => void;
-    scrollContainerRef: React.RefObject<HTMLDivElement | null>;
     isOverlay?: boolean;
     draggable?: boolean;
 }
@@ -13,7 +12,6 @@ export const DraggableTask = ({
     task,
     isOverlay = false,
     handleTaskDoubleClick,
-    scrollContainerRef,
     draggable = true,
     ...baseTaskProps
 }: DraggableTaskProps) => {

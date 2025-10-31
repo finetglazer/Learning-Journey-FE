@@ -9,6 +9,7 @@ const API_UPDATE_CALENDAR_ITEM = "/items/";
 const API_GET_CALENDAR_ITEM = "/items";
 const API_DELETE_CALENDAR_ITEM = "/items";
 const API_CREATE_CALENDAR_ITEM = "/items/create";
+const API_GET_MONTH_PLANNING_ITEMS = "/planning/months";
 
 export class CalendarRepository extends BaseRepository {
     constructor() {
@@ -41,9 +42,9 @@ export class CalendarRepository extends BaseRepository {
 
     public getCalendarItem = (params: any): Observable<any> => {
         return this.http.get(API_GET_CALENDAR_ITEM + `/${params?.itemId}`)
-        .pipe(map(res => res?.data));  
+            .pipe(map(res => res?.data));
     };
-    
+
     public deleteCalendarItem = (itemId: number): Observable<any> => {
         return this.http.delete(API_DELETE_CALENDAR_ITEM + `/${itemId}`)
             .pipe(map(res => res?.data));
@@ -55,6 +56,11 @@ export class CalendarRepository extends BaseRepository {
             type: (body?.type || "").toUpperCase(),
             status: (body?.status || "").toUpperCase(),
         })
+            .pipe(map(res => res?.data));
+    };
+
+    public getMonthPlaningItems = (params: any): Observable<any> => {
+        return this.http.get(API_GET_MONTH_PLANNING_ITEMS + `/${params?.monthPlanId}`)
             .pipe(map(res => res?.data));
     };
 };

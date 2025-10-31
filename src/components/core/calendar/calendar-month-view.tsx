@@ -28,9 +28,8 @@ import { DayTasksPopover } from "./day-tasks-popover";
 
 export function CalendarMonthView() {
     const {
+        calendarMap,
         currentView,
-        updatedTasks,
-        setUpdatedTasks,
         setCurrentView,
         generateDateRangeLabel,
         onNextDateRangeNavigatorClick,
@@ -41,11 +40,9 @@ export function CalendarMonthView() {
         editingTask,
         setEditingTask,
         setAlertMessage,
-        sleepStartTime,
-        sleepEndTime,
-        isOutBigTaskTimeRange,
-        onRemoveDraggableTask,
         alertMessage,
+        handleReload,
+        onDeleteCalendarItem,
     } = useContext<CalendarContextInterface>(CalendarContext);
 
     const currentMonthDate = currentDate.toDate();
@@ -63,7 +60,7 @@ export function CalendarMonthView() {
         tasks: Task[];
     }>({ open: false, day: null, tasks: [] });
 
-    const [selectedTaskId, setSelectedTaskId] = useState<string>("");
+    const [selectedTaskId, setSelectedTaskId] = useState<number | string | null>(null);
     const [editorPosition, setEditorPosition] = useState({ x: 0, y: 0 });
 
     return (
@@ -100,7 +97,8 @@ export function CalendarMonthView() {
                 {/* --- Day cells --- */}
                 <div className="grid grid-cols-7 grid-rows-6 border-l flex-1 relative">
                     {days.map((day, index) => {
-                        const tasks = getTasksForDay(updatedTasks, day);
+                        // Use calendarMap not updatedTasks because calendarMap would handle routine items
+                        const tasks = getTasksForDay(calendarMap, day);
                         return (
                             <div
                                 key={index}
@@ -116,11 +114,11 @@ export function CalendarMonthView() {
                                     {format(day, "d")}
                                 </span>
                                 <div className="flex-1 overflow-y-auto mt-2">
-                                    {tasks.slice(0, MAX_VISIBLE_TASKS).map(task => (
+                                    {tasks.slice(0, MAX_VISIBLE_TASKS).map((task: any) => (
                                         <BaseTask
-                                            key={task.id}
+                                            key={task?.id}
                                             task={task}
-                                            handleDoubleClick={handleTaskDoubleClick}
+                                            handleDoubleClick={() => handleTaskDoubleClick}
                                             calendarType="month-view"
                                             wrapperClassName="h-[30px] mb-2 mt-1"
                                             titleClassName="text-[0.8rem]"
@@ -149,6 +147,7 @@ export function CalendarMonthView() {
                                             day={day}
                                             tasks={tasks.slice(MAX_VISIBLE_TASKS, tasks.length)}
                                             selectedTaskId={selectedTaskId}
+                                            setEditingTask={setEditingTask}
                                             setSelectedTaskId={setSelectedTaskId}
                                             setEditorPosition={setEditorPosition}
                                             editorOffset={{ x: 120, y: 0 }}
@@ -165,22 +164,20 @@ export function CalendarMonthView() {
                         onClose={() => setAlertMessage(null)}
                     />
                 )}
-                {(editingTask || selectedTaskId) && (
+                {editingTask && (
                     <TaskEditor
-                        key={editingTask?.id || selectedTaskId}
-                        task={editingTask || updatedTasks.find(task => task.id === selectedTaskId) || new Task}
-                        updatedTasks={updatedTasks}
-                        setUpdatedTasks={setUpdatedTasks}
+                        key={editingTask?.id || "none"}
+                        task={{ ...editingTask, type: (editingTask?.type || "").toLowerCase() }}
                         setAlertMessage={setAlertMessage}
                         onClose={() => {
-                            editingTask ? setEditingTask(null) 
-                            : (selectedTaskId ? setSelectedTaskId("") : {}) 
+                            setEditingTask(null);
+                            setSelectedTaskId(null);
                         }}
                         style={{ top: editorPosition.y, left: editorPosition.x }}
-                        sleepStartTime={sleepStartTime}
-                        sleepEndTime={sleepEndTime}
-                        onDelete={() => onRemoveDraggableTask(editingTask || updatedTasks.find(task => task.id === selectedTaskId) || new Task)}
-                        isOutBigTaskTimeRange={isOutBigTaskTimeRange}
+                        handleReload={handleReload}
+                        onDelete={() => onDeleteCalendarItem(editingTask?.id)}
+                        setSelectedTaskId={setSelectedTaskId}
+                        setEditingTask={setEditingTask}
                     />
                 )}
             </CardContent>

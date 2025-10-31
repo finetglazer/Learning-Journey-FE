@@ -1,12 +1,13 @@
 import { CALENDAR_VIEW_OPTIONS } from '@/const/consts';
 import { cn, isoToHHMM, toDayJs } from '@/lib/utils';
-import { Task } from '@/model/task';
+import { MonthPlanningBigTask, MonthPlanningEvent, Task } from '@/model/task';
 import React, { CSSProperties } from 'react';
 
 export interface BaseTaskProps {
-    task: Task;
-    handleDoubleClick?: (event: React.MouseEvent<HTMLDivElement>, taskId: number) => void;
+    task: Task | MonthPlanningBigTask | MonthPlanningEvent | string;
+    handleDoubleClick?: (event?: React.MouseEvent<HTMLDivElement>, taskId?: number) => void;
     key?: string;
+    taskType?: string;
     calendarType?: (typeof CALENDAR_VIEW_OPTIONS)[number];
     wrapperClassName?: string;
     wrapperStyle?: CSSProperties;
@@ -20,6 +21,7 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
     task,
     handleDoubleClick,
     key,
+    taskType,
     calendarType,
     wrapperClassName,
     wrapperStyle,
@@ -28,7 +30,7 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
     badgeWrapperClassName,
     badgeClassName,
 }) => {
-    const type = task?.type || 'task';
+    const type = taskType || (task as Task)?.type || 'task';
 
     if (calendarType === 'month-view') {
         return (
@@ -40,13 +42,13 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                     wrapperClassName,
                 )}
                 style={{ ...wrapperStyle }}
-                onDoubleClick={(e) => handleDoubleClick?.(e, task?.id as number)}
+                onDoubleClick={(e) => handleDoubleClick?.(e, (task as Task)?.id as number)}
             >
                 <span className={cn("font-semibold text-slate-700 text-lg text-left truncate", titleClassName)}>
-                    {task?.name}
+                    {(task as Task)?.name}
                 </span>
                 <span className={cn("text-slate-600 text-center truncate", descriptionClassName)}>
-                    {task?.note}
+                    {(task as Task)?.note}
                 </span>
             </div>
         );
@@ -61,21 +63,25 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                 wrapperClassName,
             )}
                 style={{ ...wrapperStyle }}
-                onDoubleClick={(e) => handleDoubleClick?.(e, task?.id as number)}
+                onDoubleClick={() => handleDoubleClick?.()}
             >
-                <span className={cn("font-bold text-slate-700 text-lg text-left truncate", titleClassName)}>
-                    {task?.name}
-                </span>
-                <span className={cn("text-slate-600 text-center truncate", descriptionClassName)}>
-                    {task?.note}
-                </span>
+                {typeof task !== "string" && (
+                    <span className={cn("font-bold text-slate-700 text-lg text-left truncate", titleClassName)}>
+                        {task?.name}
+                    </span>
+                )}
+                {typeof task !== "string" && !(task instanceof MonthPlanningBigTask) && (
+                    <span className={cn("text-slate-600 text-center truncate", descriptionClassName)}>
+                        {task?.note}
+                    </span>
+                )}
                 {type === "big-task" && (
                     <div className={cn("flex items-center justify-self-center gap-3", badgeWrapperClassName)}>
                         <div className={cn("flex h-10 w-14 items-center justify-center rounded-lg bg-[#E62E7B] text-white font-bold", badgeClassName)}>
-                            {toDayJs(task.startTime).get("date").toString().padStart(2)}
+                            {toDayJs((task as MonthPlanningBigTask).estimatedStartDate).get("date").toString().padStart(2)}
                         </div>
                         <div className={cn("flex h-10 w-14 items-center justify-center rounded-lg bg-[#E62E7B] text-white font-bold", badgeClassName)}>
-                            {toDayJs(task.endTime).get("date").toString().padStart(2)}
+                            {toDayJs((task as MonthPlanningBigTask).estimatedEndDate).get("date").toString().padStart(2)}
                         </div>
                     </div>
                 )}
@@ -92,7 +98,7 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                 wrapperClassName,
             )}
             style={{ ...wrapperStyle }}
-            onDoubleClick={(e) => handleDoubleClick?.(e, task?.id as number)}
+            onDoubleClick={(e) => handleDoubleClick?.(e, (task as Task)?.id as number)}
         >
             <div className={cn("flex items-center gap-2", badgeWrapperClassName)}>
                 <div className={cn("rounded bg-sky-400 px-2 py-1 text-xs font-bold text-white",
@@ -100,21 +106,21 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                     { "bg-[#E62E7B]": type === "task" || type === "big-task" },
                     badgeClassName,
                 )}>
-                    {isoToHHMM(task.startTime)}
+                    {isoToHHMM((task as Task).startTime)}
                 </div>
                 <div className={cn("rounded bg-sky-400 px-2 py-1 text-xs font-bold text-white",
                     { "bg-[#68DE79]": type === "routine" },
                     { "bg-[#E62E7B]": type === "task" || type === "big-task" },
                     badgeClassName,
                 )}>
-                    {isoToHHMM(task.endTime)}
+                    {isoToHHMM((task as Task).endTime)}
                 </div>
             </div>
             <div className={cn("mt-3 pb-2 text-slate-600 font-bold", titleClassName)}>
-                <span>{task?.name}</span>
+                <span>{(task as Task)?.name}</span>
             </div>
             <div className={cn("mt-2 text-slate-600", descriptionClassName)}>
-                <span>{task?.note}</span>
+                <span>{(task as Task)?.note}</span>
             </div>
         </div>
     );

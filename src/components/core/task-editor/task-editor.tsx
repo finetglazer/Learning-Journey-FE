@@ -38,25 +38,18 @@ import { TaskType, TaskTypeDropdown, typeConfig } from "./task-type-dropdown"
 
 export interface TaskEditorProps {
     task: Task | Partial<Task>;
-    updatedTasks: Task[];
-    setUpdatedTasks: Dispatch<SetStateAction<Task[]>>;
     setAlertMessage: Dispatch<SetStateAction<AlertMessage | null>>;
     setSelectedTaskId?: Dispatch<SetStateAction<string | number | null>>;
     setSelectedRoutineId?: Dispatch<SetStateAction<string | number | null>>;
     setEditingTask?: Dispatch<SetStateAction<Task | Partial<Task> | null>>;
     handleReload?: () => void;
-    sleepStartTime?: string;
-    sleepEndTime?: string;
     onDelete?: () => void;
-    isOutBigTaskTimeRange?: (task: Task) => boolean | "" | undefined;
     onClose?: () => void;
     style?: CSSProperties;
 };
 
 export const TaskEditor = ({
     task,
-    updatedTasks,
-    setUpdatedTasks,
     setAlertMessage,
     setSelectedTaskId,
     setSelectedRoutineId,
@@ -64,9 +57,6 @@ export const TaskEditor = ({
     handleReload,
     onClose,
     style,
-    sleepStartTime,
-    sleepEndTime,
-    isOutBigTaskTimeRange,
     onDelete,
 }: TaskEditorProps) => {
     const [openStartTimePicker, setOpenStartTimePicker] = useState<boolean>(false);

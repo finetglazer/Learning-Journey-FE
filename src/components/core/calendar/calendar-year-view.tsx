@@ -1,22 +1,22 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useContext, useEffect, useState } from "react";
+import { AlertModal } from "../alert-modal/alert-modal";
+import { RoundedButton } from "../button/rounded-button";
 import { DateRangeNavigator } from "../date-range-navigator/date-range-navigator";
 import { SegmentedControl } from "../segmented-control/segmented-control";
-import { Month } from "./calendar-year-view-each-month";
-import { RoundedButton } from "../button/rounded-button";
-import { CalendarContext, CalendarContextInterface } from "./calendar-context";
-import { AlertModal } from "../alert-modal/alert-modal";
 import { TaskEditor } from "../task-editor/task-editor";
+import { CalendarContext, CalendarContextInterface } from "./calendar-context";
+import { Month } from "./calendar-year-view-each-month";
+import { calendarRepository } from "@/repository/calendar-repository";
+import dayjs from "dayjs";
 import { Task } from "@/model/task";
 
 export function CalendarYearView() {
     const {
         currentView,
-        updatedTasks,
-        setUpdatedTasks,
+        calendarMap,
         setCurrentView,
         generateDateRangeLabel,
         onNextDateRangeNavigatorClick,
@@ -26,20 +26,48 @@ export function CalendarYearView() {
         editingTask,
         setEditingTask,
         setAlertMessage,
-        sleepStartTime,
-        sleepEndTime,
-        isOutBigTaskTimeRange,
-        onRemoveDraggableTask,
         alertMessage,
+        setEditorPosition,
+        setSelectedTaskId,
+        selectedTaskId,
+        handleReload,
+        editorPosition,
+        onDeleteCalendarItem,
+        setSelectedRoutineId,
     } = useContext<CalendarContextInterface>(CalendarContext);
 
     const [selectedDay, setSelectedDay] = useState<Date>(currentDate.toDate());
-    const [editorPosition, setEditorPosition] = useState({ x: 0, y: 0 });
-    const [selectedTaskId, setSelectedTaskId] = useState<string>("");
+    const [dayTasks, setDayTasks] = useState<Task[]>([]);
 
     useEffect(() => {
         setSelectedDay(currentDate.toDate());
     }, [currentDate]);
+
+    useEffect(() => {
+        calendarRepository.getScheduledItems({
+            view: 'DAY',
+            date: dayjs(selectedDay).format('YYYY-MM-DD'),
+            calendarId: 2,
+        }).subscribe({
+            next: res => {
+                const newDayTasks = (res?.data?.items || []).map((item: any) => {
+                    const { createdAt, updatedAt, ...restItem } = item;
+                    return {
+                        ...restItem,
+                        status: (restItem?.status || "").toLowerCase(),
+                        type: (restItem?.type || "").toLowerCase(),
+                        startTime: (restItem?.timeSlot?.startTime || "").concat("Z"),
+                        endTime: (restItem?.timeSlot?.endTime || "").concat("Z"),
+                        timeSlot: undefined,
+                    };
+                });
+                setDayTasks(newDayTasks);
+            },
+            error: err => {
+                console.log("Error occurs while fetching scheduled items", err);
+            }
+        });
+    }, [selectedDay]);
 
     return (
         <Card className="w-full h-full mx-auto rounded-xl shadow-lg bg-white p-0">
@@ -69,13 +97,14 @@ export function CalendarYearView() {
                     {Array.from({ length: 12 }).map((_, index) => (
                         <Month
                             key={index}
-                            updatedTasks={updatedTasks}
+                            dayTasks={dayTasks}
                             year={currentDate.get("year")}
                             monthIndex={index}
                             onDayClick={setSelectedDay}
                             selectedDay={selectedDay}
                             setEditorPosition={setEditorPosition}
                             selectedTaskId={selectedTaskId}
+                            setEditingTask={setEditingTask}
                             setSelectedTaskId={setSelectedTaskId}
                         />
                     ))}
@@ -86,22 +115,21 @@ export function CalendarYearView() {
                         onClose={() => setAlertMessage(null)}
                     />
                 )}
-                {(editingTask || selectedTaskId) && (
+                {editingTask && (
                     <TaskEditor
-                        key={editingTask?.id || selectedTaskId}
-                        task={editingTask || updatedTasks.find(task => task.id === selectedTaskId) || new Task}
-                        updatedTasks={updatedTasks}
-                        setUpdatedTasks={setUpdatedTasks}
+                        key={editingTask?.id || "none"}
+                        task={{ ...editingTask, type: (editingTask?.type || "").toLowerCase() }}
                         setAlertMessage={setAlertMessage}
                         onClose={() => {
-                            editingTask ? setEditingTask(null)
-                                : (selectedTaskId ? setSelectedTaskId("") : {})
+                            setEditingTask(null);
+                            setSelectedTaskId(null);
                         }}
                         style={{ top: editorPosition.y, left: editorPosition.x }}
-                        sleepStartTime={sleepStartTime}
-                        sleepEndTime={sleepEndTime}
-                        onDelete={() => onRemoveDraggableTask(editingTask || updatedTasks.find(task => task.id === selectedTaskId) || new Task)}
-                        isOutBigTaskTimeRange={isOutBigTaskTimeRange}
+                        handleReload={handleReload}
+                        onDelete={() => onDeleteCalendarItem(editingTask?.id)}
+                        setSelectedTaskId={setSelectedTaskId}
+                        setSelectedRoutineId={setSelectedRoutineId}
+                        setEditingTask={setEditingTask}
                     />
                 )}
             </CardContent>
