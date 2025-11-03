@@ -38,10 +38,12 @@ export interface Subtask {
     completedAt?: string; // 2025-10-28T04:36:30
 }
 
-export interface UnscheduledTask {
+
+export class UnscheduledTask {
     id?: string | number;
     name?: string;
     description?: string;
+    note?: string;
     estimated?: string;
     type?: string;   // 'unscheduled-task'
     parentBigTaskId?: number;
@@ -103,6 +105,8 @@ export class MonthPlanningBigTask {
     public name: string = "New big task";
     public estimatedStartDate: string = dayjs().format('YYYY-MM-DD');
     public estimatedEndDate: string = dayjs().format('YYYY-MM-DD');
+    public unscheduledTasks?: UnscheduledTask[];    // {id, name, note}
     public derivedTasksCount: number = 0;
     public completionPercentage: number = 0;
+    public description?: string;
 };

@@ -10,6 +10,11 @@ const API_GET_CALENDAR_ITEM = "/items";
 const API_DELETE_CALENDAR_ITEM = "/items";
 const API_CREATE_CALENDAR_ITEM = "/items/create";
 const API_GET_MONTH_PLANNING_ITEMS = "/planning/months";
+const API_UPDATE_MONTH_PLANNING_ROUTINES = "/planning/months";
+const API_GET_BIG_TASK = "/planning/months";
+const API_UPDATE_UNSCHEDULED_TASK = "/planning/months";
+const API_UPDATE_BIG_TASK = "/planning/months";
+const API_UPDATE_ROUTINE_LIST = "/planning/months/";
 
 export class CalendarRepository extends BaseRepository {
     constructor() {
@@ -61,6 +66,41 @@ export class CalendarRepository extends BaseRepository {
 
     public getMonthPlaningItems = (params: any): Observable<any> => {
         return this.http.get(API_GET_MONTH_PLANNING_ITEMS + `/${params?.monthPlanId}`)
+            .pipe(map(res => res?.data));
+    };
+
+    public getMonthPlanIdByDate = (params: { year: number, month: number }): Observable<any> => {
+        return this.http.get(API_GET_MONTH_PLANNING_ITEMS, {
+            params: {
+                year: params.year,
+                month: params.month,
+            }
+        })
+            .pipe(map(res => res?.data));
+    };
+
+    public updateMonthPlanRoutines = (monthPlanId: number, body: any): Observable<any> => {
+        return this.http.put(API_UPDATE_MONTH_PLANNING_ROUTINES + `/${monthPlanId}/routines`, body)
+            .pipe(map(res => res?.data));
+    };
+
+    public getBigTask = (params: any): Observable<any> => {
+        return this.http.get(API_GET_BIG_TASK + `/${params.monthPlanId}/big-tasks/${params.bigTaskId}`)
+            .pipe(map(res => res?.data));
+    };
+
+    public updateUnscheduledTask = (params: any, body: any): Observable<any> => {
+        return this.http.put(API_UPDATE_UNSCHEDULED_TASK + `/${params.monthPlanId}/big-tasks/${params.bigTaskId}/unscheduled-tasks/${params.unscheduledTaskId}`, body)
+            .pipe(map(res => res?.data));
+    };
+
+    public updateBigTask = (params: any, body: any): Observable<any> => {
+        return this.http.put(API_UPDATE_BIG_TASK + `/${params.monthPlanId}/big-tasks/${params.bigTaskId}`, body)
+            .pipe(map(res => res?.data));
+    };
+
+    public updateRoutineList = (params: any, body: any): Observable<any> => {
+        return this.http.put(API_UPDATE_ROUTINE_LIST + `/${params.monthPlanId}/routines`, body)
             .pipe(map(res => res?.data));
     };
 };

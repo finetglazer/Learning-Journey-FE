@@ -118,7 +118,7 @@ export const DateTimePicker = (props: DateTimePickerProps) => {
                             </ScrollArea>
                             <ScrollArea className="w-64 sm:w-auto">
                                 <div className="flex sm:flex-col p-2">
-                                    {Array.from({ length: 12 }, (_, i) => i * 5).map((minute) => (
+                                    {Array.from({ length: 12 }, (_, i) => i * 15).map((minute) => (
                                         <Button
                                             key={minute}
                                             size="icon"
@@ -185,7 +185,7 @@ export const DateTimePicker = (props: DateTimePickerProps) => {
                             </ScrollArea>
                             <ScrollArea className="w-64 sm:w-auto">
                                 <div className="flex sm:flex-col p-2">
-                                    {Array.from({ length: 12 }, (_, i) => i * 5).map((minute) => (
+                                    {Array.from({ length: 12 }, (_, i) => i * 15).map((minute) => (
                                         <Button
                                             key={minute}
                                             size="icon"

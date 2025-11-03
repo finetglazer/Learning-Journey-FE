@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { getDetails, isoStringToDate, isoToStandardTime, uuid4 } from "@/lib/utils"
-import { Task } from "@/model/task"
+import { MonthPlanningEvent, Task, UnscheduledTask } from "@/model/task"
 import { calendarRepository } from "@/repository/calendar-repository"
 import { formService } from "@/service/form-service"
 import { isNil } from "lodash"
@@ -37,11 +37,14 @@ import { TaskStatusDropdown } from "./task-status-dropdown"
 import { TaskType, TaskTypeDropdown, typeConfig } from "./task-type-dropdown"
 
 export interface TaskEditorProps {
-    task: Task | Partial<Task>;
+    task: Task | Partial<Task> | MonthPlanningEvent | UnscheduledTask;
+    currentView?: string;
+    currentTaskType?: string;
     setAlertMessage: Dispatch<SetStateAction<AlertMessage | null>>;
     setSelectedTaskId?: Dispatch<SetStateAction<string | number | null>>;
     setSelectedRoutineId?: Dispatch<SetStateAction<string | number | null>>;
     setEditingTask?: Dispatch<SetStateAction<Task | Partial<Task> | null>>;
+    setEditingItem?: Dispatch<SetStateAction<MonthPlanningEvent | UnscheduledTask | null>>;
     handleReload?: () => void;
     onDelete?: () => void;
     onClose?: () => void;
@@ -50,38 +53,36 @@ export interface TaskEditorProps {
 
 export const TaskEditor = ({
     task,
+    currentView,
+    currentTaskType,
     setAlertMessage,
     setSelectedTaskId,
     setSelectedRoutineId,
     setEditingTask,
     handleReload,
+    setEditingItem,
     onClose,
     style,
     onDelete,
 }: TaskEditorProps) => {
     const [openStartTimePicker, setOpenStartTimePicker] = useState<boolean>(false);
     const [openEndTimePicker, setOpenEndTimePicker] = useState<boolean>(false);
-    const getInitialModel = (): Task => {
-        const newModel = new Task();
-        return {
-            ...newModel,
-            ...(task as Partial<Task>),
-            type: (task?.type || "task").toLowerCase(),
-        };
+    const getInitialModel = (): Task | UnscheduledTask | MonthPlanningEvent => {
+        return currentView === 'month-planning' ? (currentTaskType === 'big-task' ? new UnscheduledTask : new MonthPlanningEvent) : new Task;
     };
     const {
         model,
         updateModel,
         setModel,
     } = formService.useForm(
-        Task,
+        currentView === 'month-planning' ? (currentTaskType === 'big-task' ? UnscheduledTask : MonthPlanningEvent) : Task,
         undefined,
         undefined,
-        getInitialModel(),
+        { ...getInitialModel(), ...task },
     );
 
     useEffect(() => {
-        setModel(getInitialModel());
+        setModel({ ...getInitialModel(), ...task });
     }, [task]);
 
     const handleAddSubtask = () => {
@@ -89,8 +90,8 @@ export const TaskEditor = ({
             model?.type === "big-task" ? [...(model?.subtasks || []), new Task] : [...(model?.steps || []), { id: uuid4() } as TaskStep]
         );
     };
-
-    const onSave = () => {
+    // For currentView !== 'month-planning' or model is an instance of Task
+    const onSaveEditingTask = () => {
         // Update case
         if (!isNil(model?.id)) {
             calendarRepository.updateCalendarItem(
@@ -98,23 +99,22 @@ export const TaskEditor = ({
                 {
                     ...model,
                     timeSlot: {
-                        startTime: model?.startTime,
-                        endTime: model?.endTime,
+                        startTime: (model as Task)?.startTime,
+                        endTime: (model as Task)?.endTime,
                     },
-                    ...getDetails(model),
+                    ...getDetails(model as Task),
                 },
             ).subscribe({
                 next: res => {
                     const success = res?.status;
                     if (success) {
-                        toast.success(res?.msg);
+                        toast.success(res?.msg || res?.message);
                         setSelectedTaskId?.(null);
                         setSelectedRoutineId?.(null);
                         setEditingTask?.(null);
                         handleReload?.();
                         onClose?.();
-                    }
-                    else {
+                    } else {
                         setAlertMessage({
                             type: "warning",
                             title: res?.msg || res?.message,
@@ -129,15 +129,15 @@ export const TaskEditor = ({
         // Create case
         calendarRepository.createCalendarItem({
             calendarId: 2,
-            type: (model?.type || "").toUpperCase(),
-            name: model?.name,
-            note: model?.note,
+            type: ((model as Task)?.type || "").toUpperCase(),
+            name: (model as Task)?.name,
+            note: (model as Task)?.note,
             timeSlot: {
-                startTime: model?.startTime,
-                endTime: model?.endTime,
+                startTime: (model as Task)?.startTime,
+                endTime: (model as Task)?.endTime,
             },
-            color: model?.color,
-            ...getDetails(model),
+            color: (model as Task)?.color,
+            ...getDetails(model as Task),
         }).subscribe({
             next: res => {
                 const success = res?.status;
@@ -148,14 +148,13 @@ export const TaskEditor = ({
                     setEditingTask?.(null);
                     handleReload?.();
                     onClose?.();
-                }
-                else {
+                } else {
                     setAlertMessage({
                         type: "warning",
                         title: res?.message || res?.msg,
                         description: res?.data,
                     });
-                    setEditingTask?.(model);
+                    setEditingTask?.(model as Task);
                 }
             },
             error: err => {
@@ -166,13 +165,92 @@ export const TaskEditor = ({
                     title: message,
                     description: errors,
                 });
-                setEditingTask?.(model);
+                setEditingTask?.(model as Task);
             },
         })
     };
 
+    // For currentView === 'month-planning' && model != Task
+    const onSaveEditingItem = () => {
+        // Update if model?.id is not null
+        if ((model as any)?.id) {
+            // If model is MonthPlanningBigTask
+            if (model?.estimatedStartDate) {
+                calendarRepository.updateBigTask({
+                    monthPlanId: localStorage.getItem("monthPlanId"),
+                    bigTaskId: model?.id,
+                }, {
+                    ...model,
+                }).subscribe({
+                    next: res => {
+                        const success = res?.status;
+                        if (success) {
+                            toast.success(res?.message || res?.msg);
+                            setEditingItem?.(null);
+                            setEditingTask?.(null);
+                            handleReload?.();
+                            onClose?.();
+                        }
+                        else {
+                            setAlertMessage({
+                                type: "warning",
+                                title: res?.message || res?.msg,
+                                description: res?.data,
+                            });
+                        }
+                    },
+                    error: err => {
+                        const errors = err?.response?.data?.data;
+                        const message = err?.response?.data?.msg || err?.response?.data?.message;
+                        setAlertMessage({
+                            type: "warning",
+                            title: message,
+                            description: errors,
+                        });
+                        setEditingTask?.(model as Task);
+                    },
+                })
+            }
+            // Else
+            else {
+                calendarRepository.updateUnscheduledTask({
+                    monthPlanId: localStorage.getItem("monthPlanId"),
+                    bigTaskId: (model as any)?.bigTaskId,
+                    unscheduledTaskId: (model as any)?.id,
+                }, {
+                    name: model?.name,
+                    note: model?.note,
+                }).subscribe({
+                    next: res => {
+                        const success = res?.status;
+                        if (success) {
+                            toast.success(res?.msg || res?.message);
+                            setEditingItem?.(null);
+                            setEditingTask?.(null);
+                            handleReload?.();
+                            onClose?.();
+                        }
+                        else {
+                            setAlertMessage({
+                                type: "warning",
+                                title: res?.msg || res?.message,
+                                description: res?.data,
+                            })
+                        }
+                    },
+                    error: err => { }
+                });
+            }
+        }
+        // Else it is create case (create big task, create unscheduled task)
+        else {
+
+        }
+    };
+
     const onCancel = () => {
         setEditingTask?.(null);
+        setEditingItem?.(null);
         setSelectedTaskId?.(null);
         setSelectedRoutineId?.(null);
         onClose?.();
@@ -194,7 +272,7 @@ export const TaskEditor = ({
                             <ValidationError tooltip="Title should not be empty" />
                         )} */}
                         <div className="flex items-center space-x-2">
-                            <Button className="bg-green-300 hover:bg-green-400 text-green-800 rounded-full px-5 text-sm font-semibold cursor-pointer" onClick={onSave}>Save</Button>
+                            <Button className="bg-green-300 hover:bg-green-400 text-green-800 rounded-full px-5 text-sm font-semibold cursor-pointer" onClick={currentView !== 'month-planning' || !model?.estimatedStartDate ? onSaveEditingTask : onSaveEditingItem}>Save</Button>
                             <Button variant="ghost" className="text-gray-500 rounded-full px-5 text-sm cursor-pointer" onClick={onCancel}>Cancel</Button>
                             {/* Delete button only appears in UPDATE mode, not CREATE one */}
                             {model?.id && (
