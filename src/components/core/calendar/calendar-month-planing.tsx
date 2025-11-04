@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/table";
 import {
     cn,
+    dayJsToISOString,
     getEditorAdjustedPosition,
     getWeeksInMonth,
     getWeekStartTimeEndTime,
@@ -27,6 +28,7 @@ import {
     UnscheduledTask
 } from "@/model/task";
 import { calendarRepository } from "@/repository/calendar-repository";
+import { isNil } from "lodash";
 import { useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AlertModal } from "../alert-modal/alert-modal";
@@ -41,7 +43,7 @@ import {
     CalendarContextInterface,
 } from "./calendar-context";
 import { DayTasksPopover } from "./day-tasks-popover";
-import { isNil } from "lodash";
+import { RoutineEditor } from "./routine-editor";
 
 export function CalendarMonthPlanning() {
     const {
@@ -66,6 +68,7 @@ export function CalendarMonthPlanning() {
         open: boolean;
         id: string | null;
         tasks: (MonthPlanningBigTask | MonthPlanningEvent | string)[];
+        bigTaskId?: number;
     }>({ open: false, id: null, tasks: [] });
 
     const [weekPopoverState, setWeekPopoverState] = useState<{
@@ -82,6 +85,8 @@ export function CalendarMonthPlanning() {
     const [monthPlanningBigTasks, setMonthPlanningBigTasks] = useState<MonthPlanningBigTask[]>([]);
     const [bigTaskStyles, setBigTaskStyles] = useState<Record<string, any>>({});
     const [selectedItemId, setSelectedItemId] = useState<number | string | null>(null);
+    // For discriminate edit and create routine case
+    const [openRoutineEditor, setOpenRoutineEditor] = useState<boolean>(false);
 
     const getType = (category: string): TaskType => {
         switch (category) {
@@ -99,11 +104,24 @@ export function CalendarMonthPlanning() {
     const handleCellClick = (type: TaskType) => {
         let newItem =
             type === "event"
-                ? new MonthPlanningEvent()
+                ? {
+                    ...new MonthPlanningEvent,
+                    // Add startTime & endTime for task editor
+                    startTime: dayJsToISOString(toDayJs()),
+                    endTime: dayJsToISOString(toDayJs()),
+                }
                 : type === "routine"
-                    ? "New routine"
-                    : new MonthPlanningBigTask();
+                    ? ""        // Set "" to call updateRoutineList("", <new name>) with create case
+                    : {
+                        ...new MonthPlanningBigTask,
+                        // Add startTime & endTime for task editor
+                        startTime: dayJsToISOString(toDayJs()),
+                        endTime: dayJsToISOString(toDayJs()),
+                    };
         setEditingItem(newItem);
+        if (type === "routine") {
+            setOpenRoutineEditor(true);
+        }
     };
 
     const handleBigTaskClick = (e: React.MouseEvent<HTMLDivElement>, bigTask: MonthPlanningBigTask) => {
@@ -126,12 +144,14 @@ export function CalendarMonthPlanning() {
                             id: "big-task-popover",
                             tasks: (res?.data?.unscheduledTasks || []).map((unscheduledTask: any) => ({
                                 ...unscheduledTask,
+                                type: "task",
                                 bigTaskId: bigTask?.id,
                             })),
+                            bigTaskId: bigTask?.id,
                         });
 
                     } else {
-                        setPopoverState({ open: false, id: null, tasks: [] });
+                        setPopoverState({ open: false, id: null, tasks: [], bigTaskId: undefined });
                         toast.error(res?.msg || res?.message);
                     }
                 },
@@ -257,6 +277,9 @@ export function CalendarMonthPlanning() {
                             if (success) {
                                 setEditingItem({
                                     ...res?.data?.bigTask,
+                                    // Add startTime & endTime for task editor
+                                    startTime: dayJsToISOString(toDayJs(res?.data?.bigTask?.estimatedStartDate)),
+                                    endTime: dayJsToISOString(toDayJs(res?.data?.bigTask?.estimatedEndDate)),
                                 });
                                 setEditingTask(null);
                             }
@@ -275,18 +298,22 @@ export function CalendarMonthPlanning() {
         }
     };
 
-    const updateRoutineList = (oldName: string, newName?: string) => {
+    const updateRoutineList = (oldName?: string, newName?: string) => {
         const newMonthPlanningRoutines = [...monthPlanningRoutines];
         const index = newMonthPlanningRoutines.findIndex(routine => routine === oldName);
-        const isDelete = newName === "" || isNil(newName);
-        if (index === -1 && !isDelete) {
+        const isDelete = !isNil(oldName) && oldName !== "" && (newName === "" || isNil(newName));
+        const isCreate = (oldName === "" || isNil(oldName)) && newName !== "" && !isNil(newName);
+        if (index === -1 && !isDelete && !isCreate) {
             return;
         }
         if (isDelete) {
             newMonthPlanningRoutines.splice(index, 1);
         }
+        else if (isCreate) {
+            newMonthPlanningRoutines.push(newName);
+        }
         else {
-            newMonthPlanningRoutines[index] = newName;
+            newMonthPlanningRoutines[index] = newName as string;
         }
         const monthPlanId = localStorage.getItem("monthPlanId");
         calendarRepository.updateRoutineList({
@@ -301,6 +328,7 @@ export function CalendarMonthPlanning() {
                     loadMonthPlanningItems(Number(monthPlanId));
                     setEditingItem(null);
                     setEditingTask(null);
+                    setOpenRoutineEditor(false);
                 }
                 else {
                     setAlertMessage({
@@ -377,7 +405,7 @@ export function CalendarMonthPlanning() {
                             ))}
                         </TableRow>
                     </TableHeader>
-                    <TableBody>
+                    <TableBody className="relative">
                         {categories.map((category) => (
                             <TableRow key={category} className="h-[28vh]">
                                 <TableCell className="font-semibold text-gray-700 align-top pt-4 w-15 border-r-2">
@@ -411,7 +439,7 @@ export function CalendarMonthPlanning() {
                                         <TableCell
                                             key={`${category}-${week}`}
                                             className="relative align-top p-2 border-r-2 w-55"
-                                            onClick={() => handleCellClick(getType(category))}
+                                            onClick={() => { handleCellClick(getType(category)) }}
                                         >
                                             <div className="flex-1 overflow-y-auto space-y-1">
                                                 {tasksForCell.slice(0, MAX_VISIBLE_TASKS).map((task, i) => (
@@ -422,6 +450,7 @@ export function CalendarMonthPlanning() {
                                                             taskType={currentType}
                                                             isEditing={!!editingItem && editingItem === task && typeof task === 'string'}    // For routine
                                                             updateRoutineList={updateRoutineList}
+                                                            setOpenRoutineEditor={setOpenRoutineEditor}
                                                             handleCancelEdit={() => {
                                                                 setEditingItem(null);
                                                                 setEditingTask(null);
@@ -459,14 +488,14 @@ export function CalendarMonthPlanning() {
                                                         open={
                                                             weekPopoverState.open && weekPopoverState.id === week
                                                         }
-                                                        onOpenChange={(isOpen) =>
+                                                        onOpenChange={(isOpen) => {
                                                             setWeekPopoverState({
                                                                 open: isOpen,
                                                                 id: isOpen ? week : null,
-                                                            })
-                                                        }
+                                                            });
+                                                        }}
                                                     >
-                                                        <PopoverTrigger asChild>
+                                                        <PopoverTrigger asChild onClick={(e) => e.stopPropagation()}>
                                                             <div
                                                                 className={cn(
                                                                     "rounded-lg z-[9] cursor-pointer bg-gray-200 text-center px-2 py-1 text-xs text-gray-600 hover:bg-gray-300 font-medium",
@@ -490,7 +519,9 @@ export function CalendarMonthPlanning() {
                                                                     MAX_VISIBLE_TASKS,
                                                                     tasksForCell.length
                                                                 )}
+                                                                currentTaskType={currentType}
                                                                 type="month-planning"
+                                                                setOpenRoutineEditor={setOpenRoutineEditor}
                                                                 selectedTaskId={selectedItemId}
                                                                 setSelectedTaskId={setSelectedItemId}
                                                                 setEditingMonthPlanItem={setEditingItem}
@@ -535,6 +566,7 @@ export function CalendarMonthPlanning() {
                             <PopoverContent className="w-auto p-0 z-[999]" side="bottom" align="start">
                                 <DayTasksPopover
                                     tasks={popoverState.tasks}
+                                    currentTaskType="big-task"
                                     type="month-planning"
                                     selectedTaskId={selectedItemId}
                                     setSelectedTaskId={setSelectedItemId}
@@ -542,21 +574,24 @@ export function CalendarMonthPlanning() {
                                     setEditorPosition={setEditorPosition}
                                     editorOffset={{ x: 120, y: 0 }}
                                     onAddTaskClick={() => {
-                                        setEditingItem(new UnscheduledTask);
+                                        setEditingItem({
+                                            ...new UnscheduledTask,
+                                            type: "task",
+                                            // Add startTime & endTime for task editor
+                                            startTime: dayJsToISOString(toDayJs()),
+                                            endTime: dayJsToISOString(toDayJs()),
+                                            parentBigTaskId: popoverState?.bigTaskId,
+                                        });
                                     }}
                                 />
                             </PopoverContent>
                         </Popover>
+
                         {((editingItem && typeof editingItem !== "string") || editingTask) && (
                             <TaskEditor
                                 key="month-planning-task-editor"
                                 currentView="month-planning"
-                                currentTaskType={
-                                    editingTask?.startTime !== undefined ? "task" :
-                                        (editingItem as any as MonthPlanningEvent)?.specificDate !== undefined
-                                            ? "event"
-                                            : "big-task"
-                                }
+                                currentTaskType={(editingTask || editingItem as any)?.type}
                                 task={(editingItem as any) || editingTask}
                                 setAlertMessage={setAlertMessage}
                                 onClose={() => {
@@ -566,6 +601,13 @@ export function CalendarMonthPlanning() {
                                 handleReload={() => loadMonthPlanningItems(Number(localStorage.getItem("monthPlanId")))}
                                 style={{ top: editorPosition.y, left: editorPosition.x }}
                                 onDelete={() => onDeleteItem((editingItem as any)?.id)}
+                            />
+                        )}
+                        {openRoutineEditor && (
+                            <RoutineEditor
+                                editingItem={editingItem as string}
+                                setOpenRoutineEditor={setOpenRoutineEditor}
+                                updateRoutineList={updateRoutineList}
                             />
                         )}
                     </TableBody>

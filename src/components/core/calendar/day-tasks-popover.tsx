@@ -11,8 +11,10 @@ interface DayTasksPopoverProps {
     tasks: (Task | MonthPlanningBigTask | MonthPlanningEvent | string)[];
     day?: Date;
     week?: string;
+    currentTaskType?: string;
     type?: 'month-planning' | 'month-view';
     selectedTaskId?: number | string | null;
+    setOpenRoutineEditor?: Dispatch<SetStateAction<boolean>>;
     setSelectedTaskId?: Dispatch<SetStateAction<number | string | null>>;
     setEditorPosition?: Dispatch<SetStateAction<any>>;
     setEditingTask?: Dispatch<SetStateAction<Task | Partial<Task> | null>>;
@@ -24,9 +26,11 @@ interface DayTasksPopoverProps {
 export function DayTasksPopover({
     day,
     tasks,
+    currentTaskType,
     type,
     week,
     selectedTaskId,
+    setOpenRoutineEditor,
     setSelectedTaskId,
     setEditingTask,
     setEditorPosition,
@@ -70,12 +74,16 @@ export function DayTasksPopover({
                                     { "bg-blue-200": isSelected }
                                 )}
                                 onClick={(e) => {
+                                    e.stopPropagation();
                                     const editorPosition = getEditorAdjustedPosition(e.clientX, e.clientY, editorOffset?.x, editorOffset?.y)
                                     setSelectedTaskId?.(typeof task === "string" ? task : task?.id as number);
                                     setEditorPosition?.(editorPosition);
 
                                     if (typeof task === "string" || isBigTask(task) || isEvent(task)) {
                                         setEditingMonthPlanItem?.(task);
+                                        if (typeof task === "string") {
+                                            setOpenRoutineEditor?.(true);
+                                        }
                                         setEditingTask?.(null);
                                     }
                                     else if (type === 'month-planning') {
@@ -101,7 +109,7 @@ export function DayTasksPopover({
                     })}
                 </div>
             </ScrollArea>
-            {type === 'month-planning' && (
+            {type === 'month-planning' && currentTaskType === 'big-task' && (
                 <div
                     className="flex items-center gap-2 p-2 mt-1 border-t border-gray-100 text-sm text-gray-500 cursor-pointer rounded-md hover:bg-gray-100"
                     onClick={onAddTaskClick}

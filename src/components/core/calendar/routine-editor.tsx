@@ -1,0 +1,55 @@
+"use client"
+
+import { cn } from "@/lib/utils";
+import { MonthPlanningBigTask, MonthPlanningEvent, UnscheduledTask } from "@/model/task";
+import { Save } from "lucide-react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
+
+export interface RoutineEditorProps {
+    // editingItem should always have "string" type since it is a routine
+    editingItem: string;
+    setOpenRoutineEditor?: Dispatch<SetStateAction<boolean>>;
+    setEditingItem?: Dispatch<SetStateAction<MonthPlanningEvent | MonthPlanningBigTask | UnscheduledTask | string | null>>;
+    updateRoutineList?: (oldName?: string, newName?: string) => void;
+};
+
+export const RoutineEditor = ({
+    editingItem,
+    setOpenRoutineEditor,    
+    updateRoutineList,
+}: RoutineEditorProps) => {
+
+    const [routineName, setRoutineName] = useState<string>(editingItem as string);
+
+    useEffect(() => {
+        setRoutineName(editingItem as string);
+    }, [editingItem]);
+
+    return (
+        <div className={cn("z-[999] absolute top-[50%] h-auto grid grid-cols-[1fr,auto,auto] cursor-default items-center gap-2 rounded-lg border-3 border-[#68DE79] bg-stone-50 p-4 w-full")}>
+            <input
+                type="text"
+                value={routineName}
+                onChange={(e) => setRoutineName(e.target.value)}
+                className="font-bold text-slate-700 text-lg text-left truncate bg-white border border-gray-300 rounded px-2 py-1"
+                autoFocus
+                onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                        setOpenRoutineEditor?.(false);
+                    }
+                }}
+                onClick={(e) => e.stopPropagation()} // Stop click from propagating
+            />
+            <div className="flex">
+                <button onClick={() => {
+                    updateRoutineList?.(editingItem, routineName);
+                }} className="cursor-pointer text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-100" aria-label="Save">
+                    <Save size={20} />
+                </button>
+                <button className="cursor-pointer ml-3 text-cyan-950" onClick={() => {
+                    setOpenRoutineEditor?.(false);
+                }}>Cancel</button>
+            </div>
+        </div>
+    );
+}

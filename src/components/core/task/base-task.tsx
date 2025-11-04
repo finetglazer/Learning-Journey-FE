@@ -3,7 +3,7 @@ import { cn, isoToHHMM, toDayJs } from '@/lib/utils';
 import { MonthPlanningBigTask, MonthPlanningEvent, Task } from '@/model/task';
 import { Tooltip } from 'antd';
 import { Save, Trash2 } from 'lucide-react';
-import React, { CSSProperties, useEffect, useState } from 'react';
+import React, { CSSProperties, Dispatch, SetStateAction, useEffect, useState } from 'react';
 
 export interface BaseTaskProps {
     task: Task | MonthPlanningBigTask | MonthPlanningEvent | string;
@@ -16,7 +16,8 @@ export interface BaseTaskProps {
         event?: React.MouseEvent<HTMLDivElement>,
         task?: MonthPlanningBigTask,
     ) => void;
-    updateRoutineList?: (oldName: string, newName?: string) => void;
+    updateRoutineList?: (oldName?: string, newName?: string) => void;
+    setOpenRoutineEditor?: Dispatch<SetStateAction<boolean>>;
     handleCancelEdit?: () => void;
     key?: string;
     taskType?: string;
@@ -34,6 +35,7 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
     task,
     handleDoubleClick,
     handleCellClick,
+    setOpenRoutineEditor,
     updateRoutineList,
     handleCancelEdit,
     key,
@@ -101,7 +103,7 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
     if (calendarType === 'month-planning') {
         if (type === 'routine' && isEditing) {
             return (
-                <div key={key} className={cn("h-[105px]! grid grid-cols-[1fr,auto,auto] cursor-default items-center gap-2 rounded-lg border-3 border-[#68DE79] bg-stone-50 p-4 w-full",
+                <div key={key} className={cn("h-[105px]! z-[99999] grid grid-cols-[1fr,auto,auto] cursor-default items-center gap-2 rounded-lg border-3 border-[#68DE79] bg-stone-50 p-4 w-full",
                     wrapperClassName
                 )}
                     style={{ ...wrapperStyle }}
@@ -122,7 +124,6 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                     />
                     <div className="flex">
                         <button onClick={() => {
-                            setRoutineNewName(task as string);
                             updateRoutineList?.(task as string, routineNewName)
                         }} className="cursor-pointer text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-100" aria-label="Save">
                             <Save size={20} />
@@ -147,7 +148,10 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                     wrapperClassName,
                 )}
                     style={{ ...wrapperStyle }}
-                    onDoubleClick={(e) => { handleDoubleClick?.(e, typeof task === "string" ? "" : task?.id as number, task as any) }}
+                    onDoubleClick={(e) => {
+                        setOpenRoutineEditor?.(false);
+                        handleDoubleClick?.(e, typeof task === "string" ? "" : task?.id as number, task as any);
+                    }}
                     onClick={(e) => handleCellClick?.(e, task as MonthPlanningBigTask)}
                 >
                     {typeof task !== "string" && (
@@ -184,7 +188,7 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
         <Tooltip title={getTooltipTitle()} placement="top">
             <div
                 key={key}
-                className={cn("border-3 border-sky-300 bg-stone-50  cursor-pointer rounded-lg p-4 w-full",
+                className={cn("border-3 border-sky-300 bg-stone-50 cursor-pointer rounded-lg p-4 w-full",
                     { "border-[#E62E7B]": type === "task" || type === "big-task" },
                     { "border-[#68DE79]": type === "routine" },
                     wrapperClassName,

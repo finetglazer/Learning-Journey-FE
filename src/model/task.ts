@@ -38,14 +38,13 @@ export interface Subtask {
     completedAt?: string; // 2025-10-28T04:36:30
 }
 
-
 export class UnscheduledTask {
     id?: string | number;
     name?: string;
     description?: string;
     note?: string;
     estimated?: string;
-    type?: string;   // 'unscheduled-task'
+    type?: string = 'task';
     parentBigTaskId?: number;
     isDraggedOrEdited?: boolean;
 };
@@ -61,7 +60,7 @@ export interface UnscheduledRoutine {
     needsScheduling?: boolean;
     canUsePreviousTiming?: boolean;
     previousTiming?: PreviousTiming;
-    type?: string;  // 'unscheduled-routine'
+    type?: string;
     isDraggedOrEdited?: boolean;
 };
 
@@ -93,6 +92,7 @@ export interface UnscheduledBigTask {
 
 export class MonthPlanningEvent {
     public id?: number;
+    public type: string = 'event';
     public name: string = "New event";
     public note?: string;
     public specificDate: string = dayjs().format('YYYY-MM-DD');
@@ -102,6 +102,7 @@ export class MonthPlanningEvent {
 
 export class MonthPlanningBigTask {
     public id?: number;
+    public type: string = 'big-task';
     public name: string = "New big task";
     public estimatedStartDate: string = dayjs().format('YYYY-MM-DD');
     public estimatedEndDate: string = dayjs().format('YYYY-MM-DD');

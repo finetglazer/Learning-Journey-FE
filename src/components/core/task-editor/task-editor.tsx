@@ -14,8 +14,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { getDetails, isoStringToDate, isoToStandardTime, uuid4 } from "@/lib/utils"
-import { MonthPlanningEvent, Task, UnscheduledTask } from "@/model/task"
+import { getDetails, isoStringToDate, isoToStandardTime, toDayJs, uuid4 } from "@/lib/utils"
+import { MonthPlanningBigTask, MonthPlanningEvent, Task, UnscheduledTask } from "@/model/task"
 import { calendarRepository } from "@/repository/calendar-repository"
 import { formService } from "@/service/form-service"
 import { isNil } from "lodash"
@@ -35,6 +35,7 @@ import { RecurringPatterns } from "./recurring-patterns"
 import { SubTaskList } from "./sortable-subtask"
 import { TaskStatusDropdown } from "./task-status-dropdown"
 import { TaskType, TaskTypeDropdown, typeConfig } from "./task-type-dropdown"
+import { Dayjs } from "dayjs"
 
 export interface TaskEditorProps {
     task: Task | Partial<Task> | MonthPlanningEvent | UnscheduledTask;
@@ -68,21 +69,21 @@ export const TaskEditor = ({
     const [openStartTimePicker, setOpenStartTimePicker] = useState<boolean>(false);
     const [openEndTimePicker, setOpenEndTimePicker] = useState<boolean>(false);
     const getInitialModel = (): Task | UnscheduledTask | MonthPlanningEvent => {
-        return currentView === 'month-planning' ? (currentTaskType === 'big-task' ? new UnscheduledTask : new MonthPlanningEvent) : new Task;
+        return currentView === 'month-planning' ? (currentTaskType === 'big-task' ? new MonthPlanningBigTask : (currentTaskType === 'event' ? new MonthPlanningEvent : new UnscheduledTask)) : new Task;
     };
     const {
         model,
         updateModel,
         setModel,
     } = formService.useForm(
-        currentView === 'month-planning' ? (currentTaskType === 'big-task' ? UnscheduledTask : MonthPlanningEvent) : Task,
+        currentView === 'month-planning' ? (currentTaskType === 'big-task' ? MonthPlanningBigTask : (currentTaskType === 'event' ? MonthPlanningEvent : UnscheduledTask)) : Task,
         undefined,
         undefined,
-        { ...getInitialModel(), ...task },
+        { ...getInitialModel(), ...task } as any,
     );
 
     useEffect(() => {
-        setModel({ ...getInitialModel(), ...task });
+        setModel({ ...getInitialModel(), ...task } as any);
     }, [task]);
 
     const handleAddSubtask = () => {
@@ -235,7 +236,7 @@ export const TaskEditor = ({
                                 type: "warning",
                                 title: res?.msg || res?.message,
                                 description: res?.data,
-                            })
+                            });
                         }
                     },
                     error: err => { }
@@ -244,7 +245,84 @@ export const TaskEditor = ({
         }
         // Else it is create case (create big task, create unscheduled task)
         else {
-
+            // If create big task
+            if (model?.estimatedStartDate) {
+                calendarRepository.createBigTask({
+                    monthPlanId: localStorage.getItem("monthPlanId"),
+                }, {
+                    name: model?.name,
+                    description: model?.note,
+                    estimatedStartDate: toDayJs(model?.startTime as string).format("YYYY-MM-DD"),
+                    estimatedEndDate: toDayJs(model?.endTime as string).format("YYYY-MM-DD"),
+                    unscheduledTasks: model?.unscheduledTasks || [],
+                }).subscribe({
+                    next: res => {
+                        const success = res?.status;
+                        if (success) {
+                            toast.success(res?.msg || res?.message);
+                            setEditingItem?.(null);
+                            setEditingTask?.(null);
+                            handleReload?.();
+                            onClose?.();
+                        }
+                        else {
+                            setAlertMessage({
+                                type: "warning",
+                                title: res?.msg || res?.message,
+                                description: res?.data,
+                            });
+                        }
+                    },
+                    error: err => {
+                        const errors = err?.response?.data?.data;
+                        const message = err?.response?.data?.msg || err?.response?.data?.message;
+                        setAlertMessage({
+                            type: "warning",
+                            title: message,
+                            description: errors,
+                        });
+                    },
+                });
+                return;
+            }
+            // If create unscheduled task
+            else {
+                calendarRepository.createUnscheduledTask({
+                    monthPlanId: localStorage.getItem("monthPlanId"),
+                    bigTaskId: model?.parentBigTaskId,
+                }, {
+                    name: model?.name,
+                    note: model?.note,
+                }).subscribe({
+                    next: res => {
+                        const success = res?.status;
+                        if (success) {
+                            toast.success(res?.msg || res?.message);
+                            setEditingItem?.(null);
+                            setEditingTask?.(null);
+                            handleReload?.();
+                            onClose?.();
+                        }
+                        else {
+                            setAlertMessage({
+                                type: "warning",
+                                title: res?.msg || res?.message,
+                                description: res?.data,
+                            });
+                        }
+                    },
+                    error: err => {
+                        const errors = err?.response?.data?.data;
+                        const message = err?.response?.data?.msg || err?.response?.data?.message;
+                        setAlertMessage({
+                            type: "warning",
+                            title: message,
+                            description: errors,
+                        });
+                    },
+                });
+                return;
+            }
         }
     };
 
@@ -272,7 +350,12 @@ export const TaskEditor = ({
                             <ValidationError tooltip="Title should not be empty" />
                         )} */}
                         <div className="flex items-center space-x-2">
-                            <Button className="bg-green-300 hover:bg-green-400 text-green-800 rounded-full px-5 text-sm font-semibold cursor-pointer" onClick={currentView !== 'month-planning' || !model?.estimatedStartDate ? onSaveEditingTask : onSaveEditingItem}>Save</Button>
+                            <Button className="bg-green-300 hover:bg-green-400 text-green-800 rounded-full px-5 text-sm font-semibold cursor-pointer"
+                                onClick={currentView !== 'month-planning' || model?.specificDate ? onSaveEditingTask : onSaveEditingItem}
+                            // onSaveEditingTask would be invoked when it is not month-planning mode or update event (apply for event only) in month-planning mode
+                            >
+                                Save
+                            </Button>
                             <Button variant="ghost" className="text-gray-500 rounded-full px-5 text-sm cursor-pointer" onClick={onCancel}>Cancel</Button>
                             {/* Delete button only appears in UPDATE mode, not CREATE one */}
                             {model?.id && (
@@ -297,8 +380,8 @@ export const TaskEditor = ({
 
                     {/* Tags Section */}
                     <div className="mb-4">
-                        {model.id ? (
-                            // --- EDIT MODE: Show static badge ---
+                        {model.id || currentView === 'month-planning' ? (
+                            // --- EDIT MODE OR MONTH-PLANNING MODE: Show static badge ---
                             (() => {
                                 const typeKey =
                                     model.type && typeConfig[model?.type as TaskType]
@@ -336,68 +419,74 @@ export const TaskEditor = ({
 
                     <div className="border-t border-gray-200 my-4"></div>
 
-                    {/* Status Dropdown Section */}
-                    <div className="mb-4">
-                        <TaskStatusDropdown
-                            currentStatus={model?.status}
-                            onStatusChange={(newStatus) => updateModel('status', newStatus)}
-                        />
-                    </div>
+                    {/* Status Dropdown Section: Only show if current view is not MONTH-PLANNING MODE VIEW */}
+                    {currentView !== 'month-planning' && (
+                        <>
+                            <div className="mb-4">
+                                <TaskStatusDropdown
+                                    currentStatus={model?.status}
+                                    onStatusChange={(newStatus) => updateModel('status', newStatus)}
+                                />
+                            </div>
 
-                    <div className="border-t border-gray-200 my-4"></div>
+                            <div className="border-t border-gray-200 my-4"></div>
+                        </>
+                    )}
 
                     {/* Time Inputs Section */}
-                    <div className="grid grid-cols-2">
-                        <div className="relative flex items-center space-x-3 text-gray-500 px-2 cursor-pointer">
-                            <Calendar size={20} onClick={() => setOpenStartTimePicker(!openStartTimePicker)} />
-                            <Input
-                                placeholder="Start hour"
-                                className="border-none mt-0.25 focus:ring-0 shadow-none text-sm bg-transparent p-0"
-                                value={isoToStandardTime(model.startTime)}
-                                readOnly
-                            />
-                            <DateTimePicker
-                                isOpen={openStartTimePicker}
-                                setIsOpen={setOpenStartTimePicker}
-                                model={model}
-                                updateModel={updateModel}
-                                taskType={model?.type}
-                                fieldName={"startTime"}
-                                type={'date-time'}
-                                enabledDate={isoStringToDate(model.startTime)}
-                            />
-                        </div>
-                        <div className="relative flex items-center space-x-3 text-gray-500 px-2 border-l border-gray-200 cursor-pointer">
-                            <Calendar size={20} onClick={() => setOpenEndTimePicker(!openEndTimePicker)} />
-                            <Input
-                                placeholder="End hour"
-                                className="border-none focus:ring-0 shadow-none text-sm bg-transparent p-0"
-                                value={isoToStandardTime(model.endTime)}
-                                readOnly
-                            />
-                            {/* {hasTimeError && (
+                    {currentView === 'month-planning' && currentTaskType === 'task' ? null : (
+                        <>
+                            <div className="grid grid-cols-2">
+                                <div className="relative flex items-center space-x-3 text-gray-500 px-2 cursor-pointer">
+                                    <Calendar size={20} onClick={() => setOpenStartTimePicker(!openStartTimePicker)} />
+                                    <Input
+                                        placeholder="Start hour"
+                                        className="border-none mt-0.25 focus:ring-0 shadow-none text-sm bg-transparent p-0"
+                                        value={currentTaskType === 'big-task' ? isoToStandardTime(model.startTime).substring(0, 2) : isoToStandardTime(model.startTime)}
+                                        readOnly
+                                    />
+                                    <DateTimePicker
+                                        isOpen={openStartTimePicker}
+                                        setIsOpen={setOpenStartTimePicker}
+                                        model={model}
+                                        updateModel={updateModel}
+                                        taskType={model?.type}
+                                        fieldName={"startTime"}
+                                        type={currentTaskType === 'big-task' ? 'date-only' : 'date-time'}
+                                    />
+                                </div>
+                                <div className="relative flex items-center space-x-3 text-gray-500 px-2 border-l border-gray-200 cursor-pointer">
+                                    <Calendar size={20} onClick={() => setOpenEndTimePicker(!openEndTimePicker)} />
+                                    <Input
+                                        placeholder="End hour"
+                                        className="border-none focus:ring-0 shadow-none text-sm bg-transparent p-0"
+                                        value={currentTaskType === 'big-task' ? isoToStandardTime(model.endTime).substring(0, 2) : isoToStandardTime(model.endTime)}
+                                        readOnly
+                                    />
+                                    {/* {hasTimeError && (
                                 <ValidationError tooltip="End time must be after start time" />
                             )} */}
-                            <DateTimePicker
-                                isOpen={openEndTimePicker}
-                                setIsOpen={setOpenEndTimePicker}
-                                model={model}
-                                updateModel={updateModel}
-                                taskType={model?.type}
-                                fieldName={"endTime"}
-                                type={'date-time'}
-                                enabledDate={isoStringToDate(model.endTime)}
-                            />
-                        </div>
-                    </div>
+                                    <DateTimePicker
+                                        isOpen={openEndTimePicker}
+                                        setIsOpen={setOpenEndTimePicker}
+                                        model={model}
+                                        updateModel={updateModel}
+                                        taskType={model?.type}  // Handle changing time of routines (scheduled)
+                                        fieldName={"endTime"}
+                                        type={currentTaskType === 'big-task' ? 'date-only' : 'date-time'}
+                                    />
+                                </div>
+                            </div>
 
-                    <div className="border-t border-gray-200 my-4"></div>
+                            <div className="border-t border-gray-200 my-4"></div>
+                        </>
+                    )}
 
                     {/* Sub-task || Steps List || Recurring patterns Section */}
                     {/* {isNotChooseRoutinePattern && (
                         <ValidationError tooltip="Please choose the routine pattern" />
                     )} */}
-                    {model?.type !== 'event' && (
+                    {model?.type !== 'event' && currentView !== 'month-planning' && (
                         <>
                             <Collapsible defaultOpen className="px-2">
                                 <div className="flex items-center justify-between">
