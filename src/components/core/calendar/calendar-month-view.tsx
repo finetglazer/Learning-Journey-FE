@@ -118,7 +118,7 @@ export function CalendarMonthView() {
                                         <BaseTask
                                             key={task?.id}
                                             task={task}
-                                            handleDoubleClick={() => handleTaskDoubleClick}
+                                            handleDoubleClick={handleTaskDoubleClick as any}
                                             calendarType="month-view"
                                             wrapperClassName="h-[30px] mb-2 mt-1"
                                             titleClassName="text-[0.8rem]"

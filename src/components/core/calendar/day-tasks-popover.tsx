@@ -1,7 +1,7 @@
 "use client";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn, getEditorAdjustedPosition } from "@/lib/utils";
+import { cn, dayJsToISOString, getEditorAdjustedPosition, toDayJs } from "@/lib/utils";
 import { MonthPlanningBigTask, MonthPlanningEvent, Task, UnscheduledTask } from "@/model/task";
 import { format } from "date-fns";
 import { PlusCircle } from "lucide-react";
@@ -142,7 +142,12 @@ export function DayTasksPopover({
                                             onClick={(e) => {
                                                 e.stopPropagation(); // Prevent parent onClick
                                                 // 1. "Edit big task"
-                                                setEditingMonthPlanItem?.(task);
+                                                setEditingMonthPlanItem?.({
+                                                    ...task,
+                                                    // Add startTime & endTime for Task editor
+                                                    startTime: dayJsToISOString(toDayJs(task?.estimatedStartDate)),
+                                                    endTime: dayJsToISOString(toDayJs(task?.estimatedEndDate)),
+                                                });
                                                 setEditingTask?.(null);
                                                 setBigTaskMenuOpen(null); // Close menu
                                                 const editorPosition = getEditorAdjustedPosition(e.clientX, e.clientY, editorOffset?.x, editorOffset?.y)

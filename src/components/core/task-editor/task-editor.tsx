@@ -182,7 +182,10 @@ export const TaskEditor = ({
                     monthPlanId: localStorage.getItem("monthPlanId"),
                     bigTaskId: model?.id,
                 }, {
-                    ...model,
+                    name: model?.name,
+                    note: model?.note,
+                    estimatedStartDate: toDayJs(model?.startTime).format('YYYY-MM-DD'),
+                    estimatedEndDate: toDayJs(model?.endTime).format('YYYY-MM-DD'),
                 }).subscribe({
                     next: res => {
                         const success = res?.status;
@@ -399,8 +402,8 @@ export const TaskEditor = ({
                                 Save
                             </Button>
                             <Button variant="ghost" className="text-gray-500 rounded-full px-5 text-sm cursor-pointer" onClick={onCancel}>Cancel</Button>
-                            {/* Delete button only appears in UPDATE mode, not CREATE one */}
-                            {model?.id && (
+
+                            {(model?.id || (currentView === 'month-planning' && model?.bigTaskId)) && (
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <Button
@@ -550,7 +553,7 @@ export const TaskEditor = ({
                                     <Input
                                         placeholder="Start hour"
                                         className="border-none mt-0.25 focus:ring-0 shadow-none text-sm bg-transparent p-0"
-                                        value={isoToStandardTime(model.startTime)}
+                                        value={currentTaskType === 'big-task' ? isoToStandardTime(model.startTime).substring(0, 2) : isoToStandardTime(model.startTime)}
                                         readOnly
                                     />
                                     <DateTimePicker
@@ -560,7 +563,7 @@ export const TaskEditor = ({
                                         updateModel={updateModel}
                                         taskType={model?.type}
                                         fieldName={"startTime"}
-                                        type={'date-time'}
+                                        type={currentTaskType === 'big-task' ? 'date-only' : 'date-time'}
                                     />
                                 </div>
                                 <div className="relative flex items-center space-x-3 text-gray-500 px-2 border-l border-gray-200 cursor-pointer">
@@ -568,12 +571,9 @@ export const TaskEditor = ({
                                     <Input
                                         placeholder="End hour"
                                         className="border-none focus:ring-0 shadow-none text-sm bg-transparent p-0"
-                                        value={isoToStandardTime(model.endTime)}
+                                        value={currentTaskType === 'big-task' ? isoToStandardTime(model.endTime).substring(0, 2) : isoToStandardTime(model.endTime)}
                                         readOnly
                                     />
-                                    {/* {hasTimeError && (
-                                <ValidationError tooltip="End time must be after start time" />
-                            )} */}
                                     <DateTimePicker
                                         isOpen={openEndTimePicker}
                                         setIsOpen={setOpenEndTimePicker}
@@ -581,7 +581,7 @@ export const TaskEditor = ({
                                         updateModel={updateModel}
                                         taskType={model?.type}  // Handle changing time of routines (scheduled)
                                         fieldName={"endTime"}
-                                        type={'date-time'}
+                                        type={currentTaskType === 'big-task' ? 'date-only' : 'date-time'}
                                     />
                                 </div>
                             </div>
@@ -643,7 +643,7 @@ export const TaskEditor = ({
                     )}
 
                     {/* Notes Section */}
-                    <div className="flex items-center space-x-3 text-gray-500 px-2">
+                    <div className="flex items-center space-x-3 text-black px-2">
                         <Pencil size={20} />
                         <Input
                             placeholder="Notes"

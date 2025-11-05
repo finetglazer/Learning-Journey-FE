@@ -191,91 +191,11 @@ export const useCalendarHooks = ({
     const [currentView, setCurrentView] = useState<string>("day");
     const [updatedTasks, setUpdatedTasks] = useState<Task[]>(reId(initTasks || []));
     const [activeDragId, setActiveDragId] = useState<string | null>(null);
-    const [activeTask, setActiveTask] = useState<Task | null>(null);
     const [editorPosition, setEditorPosition] = useState({ x: 0, y: 0 });
     const [panelPosition, setPanelPosition] = useState({ x: 20, y: 100 });
     const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
-    const [activeUnscheduledTask, setActiveUnscheduledTask] = useState<UnscheduledTask | undefined>(undefined);
-    const [activeUnscheduledRoutine, setActiveUnscheduledRoutine] = useState<UnscheduledRoutine | undefined>(undefined);
-    const initUnscheduledBigTasks: UnscheduledBigTask[] = [
-        {
-            id: "unscheduled-big-task-1",
-            title: "Unscheduled big task 1",
-            month: 9,
-            active: true,
-            subtasks: [
-                { id: "unscheduled-task-1-1", parentBigTaskId: "unscheduled-big-task-1", title: "Unscheduled task 1", month: 9, active: true },
-                { id: "unscheduled-task-1-2", parentBigTaskId: "unscheduled-big-task-1", title: "Unscheduled task 2", month: 9, active: true },
-                { id: "unscheduled-task-1-3", parentBigTaskId: "unscheduled-big-task-1", title: "Unscheduled task 3", month: 9, active: true },
-            ],
-            bigTaskStartTime: dayJsToISOString(dayjs()),
-            bigTaskEndTime: dayJsToISOString(dayjs().add(1, "day"))
-        },
-        {
-            id: "unscheduled-big-task-2",
-            title: "Unscheduled big task 2",
-            month: 9,
-            active: true,
-            subtasks: [
-                { id: "unscheduled-task-2-1", parentBigTaskId: "unscheduled-big-task-2", title: "Unscheduled task 1", month: 9, active: true },
-                { id: "unscheduled-task-2-2", parentBigTaskId: "unscheduled-big-task-2", title: "Unscheduled task 2", month: 9, active: true },
-                { id: "unscheduled-task-2-3", parentBigTaskId: "unscheduled-big-task-2", title: "Unscheduled task 3", month: 9, active: true },
-            ],
-        },
-        {
-            id: "unscheduled-big-task-3",
-            title: "Unscheduled big task 3",
-            active: true,
-            month: 9,
-            subtasks: [
-                { id: "unscheduled-task-3-1", parentBigTaskId: "unscheduled-big-task-3", title: "Unscheduled task 1", month: 9, active: true },
-                { id: "unscheduled-task-3-2", parentBigTaskId: "unscheduled-big-task-3", title: "Unscheduled task 2", month: 9, active: true },
-                { id: "unscheduled-task-3-3", parentBigTaskId: "unscheduled-big-task-3", title: "Unscheduled task 3", month: 9, active: true },
-            ],
-        },
-    ];
-    const initUnscheduledRoutines: UnscheduledRoutine[] = [
-        {
-            id: "unscheduled-routine-1",
-            title: "Unscheduled routine 1",
-            month: 9,
-            active: true,
-            routinePatterns: [0, 1, 2, 3],
-            routineStartHour: "07:00",
-            routineEndHour: "09:15",
-        },
-        {
-            id: "unscheduled-routine-2",
-            title: "Unscheduled routine 2",
-            month: 9,
-            active: true,
-            routinePatterns: [4, 5, 6],
-            routineStartHour: "07:00",
-            routineEndHour: "09:15",
-        },
-        {
-            id: "unscheduled-routine-3",
-            title: "Unscheduled routine 3",
-            month: 9,
-            active: true,
-            routinePatterns: [0, 3, 5],
-            routineStartHour: "07:00",
-            routineEndHour: "09:15",
-        },
-    ];
 
-    const [unscheduledMonthData, setUnscheduledMonthData] = useState<UnscheduledMonthData[]>(
-        Array.from({ length: 12 }, (_, i) => {
-            if (i === 9) {
-                return {
-                    monthNumber: 9,
-                    unscheduledBigTasks: initUnscheduledBigTasks,
-                    unscheduledRoutines: initUnscheduledRoutines,
-                };
-            }
-            return { monthNumber: i };
-        })
-    );
+    const [unscheduledMonthData, setUnscheduledMonthData] = useState<UnscheduledMonthData[]>([]);
 
     const CELL_HEIGHT = 4.57; // rem;
     const now = dayjs();
@@ -368,199 +288,7 @@ export const useCalendarHooks = ({
         setCurrentDate(toDayJs());
     };
 
-    const inactiveUnscheduledBigTask = (unscheduledBigTask: UnscheduledBigTask) => {
-        return {
-            ...unscheduledBigTask,
-            active: false,
-            subtasks: (unscheduledBigTask?.subtasks || []).map(subtask => ({
-                ...subtask,
-                active: false,
-            })),
-        };
-    };
-
-    const activeUnscheduledBigTask = (unscheduledBigTask: UnscheduledBigTask) => {
-        return {
-            ...unscheduledBigTask,
-            active: true,
-            subtasks: (unscheduledBigTask?.subtasks || []).map(subtask => ({
-                ...subtask,
-                active: updatedTasks.some(updatedTask => updatedTask.id === subtask.id) ? false : true,
-            })),
-        };
-    };
-
-    const getUnscheduledBigTaskIndex = (monthData: UnscheduledMonthData[], unscheduledBigTask: UnscheduledBigTask) => {
-        return ((monthData[unscheduledBigTask.month]?.unscheduledBigTasks || []).findIndex(bigTask => bigTask.id === unscheduledBigTask.id));
-    };
-
-    const getUnscheduledBigTaskById = (monthData: UnscheduledMonthData[], unscheduledBigTaskId: string) => {
-        for (const monthDataItem of monthData) {
-            const foundTask = (monthDataItem?.unscheduledBigTasks || []).find(
-                unscheduledBigTask => unscheduledBigTask.active && unscheduledBigTask.id === unscheduledBigTaskId
-            );
-
-            if (foundTask) {
-                return foundTask;
-            }
-        }
-
-        return undefined;
-    };
-
-    const getUnscheduledBigTaskByIdBothActiveAndInactive = (monthData: UnscheduledMonthData[], unscheduledBigTaskId: string) => {
-        for (const monthDataItem of monthData) {
-            const foundTask = (monthDataItem?.unscheduledBigTasks || []).find(
-                unscheduledBigTask => unscheduledBigTask.id === unscheduledBigTaskId
-            );
-
-            if (foundTask) {
-                return foundTask;
-            }
-        }
-
-        return undefined;
-    };
-
-    const getUnscheduledSubTaskIndex = (monthData: UnscheduledMonthData[], unscheduledSubtask: UnscheduledTask) => {
-        const unscheduledBigTask = getUnscheduledBigTaskById(monthData, unscheduledSubtask?.parentBigTaskId || "");
-        if (!unscheduledBigTask) {
-            return -1;
-        }
-        return ((unscheduledBigTask?.subtasks || []).findIndex(subtask => subtask.id === unscheduledSubtask.id));
-    };
-
-
-    const getUnscheduledRoutineById = (monthData: UnscheduledMonthData[], routineId: string) => {
-        let res: any = undefined;
-        for (const monthDataItem of monthData) {
-            (monthDataItem?.unscheduledRoutines || []).forEach(unscheduledRoutine => {
-                if (unscheduledRoutine.active && unscheduledRoutine.id === routineId && !res) {
-                    res = unscheduledRoutine;
-                }
-            });
-        }
-
-        return res;
-    };
-
-    const getUnscheduledSubtaskByIdBothActiveAndInactive = (monthData: UnscheduledMonthData[], subtaskId: string) => {
-        for (const monthDataItem of monthData) {
-            const foundTask = (monthDataItem?.unscheduledBigTasks || []).find(
-                unscheduledBigTask => unscheduledBigTask.active && (unscheduledBigTask?.subtasks || []).some(subtask =>
-                    subtask.id === subtaskId
-                )
-            );
-
-            if (foundTask) {
-                return (foundTask?.subtasks || []).find(subtask => subtask.id === subtaskId);
-            }
-        }
-
-        return undefined;
-    };
-
-    const getFirstInactiveUnscheduledSubtaskById = (monthData: UnscheduledMonthData[], bigTaskId: string) => {
-        const unscheduledBigTask = getUnscheduledBigTaskById(monthData, bigTaskId);
-        if (!unscheduledBigTask) {
-            return undefined;
-        }
-        let res: any = undefined;
-        (unscheduledBigTask?.subtasks || []).forEach(subtask => {
-            if (!subtask.active && !res) {
-                res = subtask;
-            }
-        });
-        return res;
-    };
-
-    const updateUnscheduledBigTask = (monthData: UnscheduledMonthData[], updatedUnscheduledBigTask: UnscheduledBigTask) => {
-        const updatedMonthData = [...monthData];
-        const unscheduledBigTaskIndex = getUnscheduledBigTaskIndex(updatedMonthData, updatedUnscheduledBigTask);
-        if (unscheduledBigTaskIndex === -1) {
-            return updatedMonthData;
-        }
-        (updatedMonthData[updatedUnscheduledBigTask.month]?.unscheduledBigTasks || [])[unscheduledBigTaskIndex] = updatedUnscheduledBigTask;
-        setUnscheduledMonthData(updatedMonthData);
-    };
-
-    const updateUnscheduledSubTask = (monthData: UnscheduledMonthData[], updatedUnscheduledSubTask: UnscheduledTask) => {
-        const updatedMonthData = [...monthData];
-        const unscheduledSubTaskIndex = getUnscheduledSubTaskIndex(monthData, updatedUnscheduledSubTask);
-        const unscheduledSubtask = getUnscheduledSubtaskByIdBothActiveAndInactive(monthData, updatedUnscheduledSubTask.id);
-        const unscheduledBigTask = getUnscheduledBigTaskById(monthData, unscheduledSubtask?.parentBigTaskId || "");
-
-        if (!unscheduledBigTask) {
-            return updatedMonthData;
-        }
-        const unscheduledBigTaskIndex = getUnscheduledBigTaskIndex(updatedMonthData, unscheduledBigTask);
-        if (unscheduledSubTaskIndex === -1 || unscheduledBigTaskIndex === -1) {
-            return updatedMonthData;
-        }
-        ((updatedMonthData[unscheduledBigTask.month]?.unscheduledBigTasks || [])[unscheduledBigTaskIndex]?.subtasks || [])[unscheduledSubTaskIndex] = updatedUnscheduledSubTask;
-        setUnscheduledMonthData(updatedMonthData);
-    };
-
-    const handleRemoveUnscheduledBigTask = (unscheduledBigTask: UnscheduledBigTask) => {
-        const updatedUnscheduledMonthData = [...unscheduledMonthData];
-        let updatedUnscheduledBigTask = getUnscheduledBigTaskById(updatedUnscheduledMonthData, unscheduledBigTask.id);
-        if (!updatedUnscheduledBigTask) {
-            return;
-        }
-        updatedUnscheduledBigTask = inactiveUnscheduledBigTask(unscheduledBigTask);
-        updateUnscheduledBigTask(updatedUnscheduledMonthData, updatedUnscheduledBigTask);
-    };
-
-    const handleRemoveUnscheduledSubTask = (unscheduledSubtask: UnscheduledTask) => {
-        const unscheduledBigTask = getUnscheduledBigTaskById(unscheduledMonthData, unscheduledSubtask?.parentBigTaskId || "");
-        let updatedUnscheduledSubtask = getUnscheduledSubtaskById(unscheduledMonthData, unscheduledSubtask.id);
-        if (!unscheduledBigTask || !updatedUnscheduledSubtask) {
-            return;
-        }
-        updatedUnscheduledSubtask = {
-            ...unscheduledSubtask,
-            active: false,
-        }
-        let isAllInactive = true;
-        (unscheduledBigTask?.subtasks || []).forEach(subtask => {
-            if (subtask.active) {
-                isAllInactive = false;
-            }
-        });
-        if (isAllInactive) {
-            handleRemoveUnscheduledBigTask(unscheduledBigTask);
-            return;
-        }
-        updateUnscheduledSubTask([...unscheduledMonthData], updatedUnscheduledSubtask);
-    };
-
     const onRemoveDraggableTask = (task: Task) => {
-        // if (task?.parentBigTaskId) {
-        //     let unscheduledBigTask = getUnscheduledBigTaskByIdBothActiveAndInactive(unscheduledMonthData, task?.parentBigTaskId);
-        //     if (!unscheduledBigTask) {
-        //         return;
-        //     }
-        //     // Unscheduled big task had been removed
-        //     if (!unscheduledBigTask.active) {
-        //         unscheduledBigTask = activeUnscheduledBigTask(unscheduledBigTask);
-        //         updateUnscheduledBigTask(unscheduledMonthData, unscheduledBigTask);
-        //         setEditingTask(null);
-        //         return;
-        //     }
-        //     else {
-        //         let unscheduledSubtask = getFirstInactiveUnscheduledSubtaskById(unscheduledMonthData, task?.parentBigTaskId || "");
-        //         if (!unscheduledSubtask) {
-        //             return;
-        //         }
-        //         unscheduledSubtask = {
-        //             ...task,
-        //             id: unscheduledSubtask.id,
-        //             active: true,
-        //         };
-        //         updateUnscheduledSubTask([...unscheduledMonthData], unscheduledSubtask);
-        //     }
-        // }
-
         setUpdatedTasks(reId([...updatedTasks.filter(updatedTask => updatedTask.id !== task.id)]));
         setEditingTask(null);
     };
@@ -574,26 +302,6 @@ export const useCalendarHooks = ({
         setCalendarMap(updatedCalendarMap);
 
         const visited: Record<string, boolean> = {};
-        // const getHeight = (timeKey: string, task: Task) => {
-        //     const startTime = toDayJs(task.startTime);
-        //     const endTime = toDayJs(task.endTime);
-        //     const startDiff = startTime.diff(toDayJs(timeKey)) / 60000 * (100 / 60);
-        //     const endDiff = endTime.diff(toDayJs(timeKey)) / 60000 * (100 / 60);
-        //     const nextHour = toDayJs(timeKey).add(1, "hour");
-
-        //     if (startTime <= nextHour && endTime <= nextHour && !visited[task.id]) {
-        //         visited[task.id] = true;
-        //         return (endTime.diff(startTime) / 60000 * (100 / 60)) / 100 * CELL_HEIGHT;
-        //     }
-        //     if (!visited[task.id]) {
-        //         visited[task.id] = true;
-        //         return (100 - startDiff) / 100 * CELL_HEIGHT;
-        //     }
-        //     if (startTime <= toDayJs(timeKey) && nextHour <= endTime) {
-        //         return CELL_HEIGHT;
-        //     }
-        //     return endDiff / 100 * CELL_HEIGHT;
-        // };
         Object.keys(updatedCalendarMap).forEach(timeKey => {
             const tasksVal = updatedCalendarMap[timeKey];
             tasksVal.forEach((task: Task, count: number) => {
@@ -612,7 +320,7 @@ export const useCalendarHooks = ({
 
                 newStyle = {
                     zIndex: !visited[task?.id as number] ? ++currentZIndex : newStyle?.zIndex,
-                    top: !visited[task?.id as number] ? diff : newStyle?.top,    // %
+                    top: Math.max((!visited[task?.id as number] ? diff : newStyle?.top) - 20, 0),    // %
                     left: count * 10,    // %
                     height: getPercentageHeight(task) * CELL_HEIGHT, // rem
                     width: Math.min(newStyle?.width || 90, 90 / tasksVal.length),   // %
@@ -724,7 +432,6 @@ export const useCalendarHooks = ({
 
     const handleTaskDoubleClick = (event: React.MouseEvent<HTMLDivElement>, taskId: number) => {
         const adjustedPosition = getEditorAdjustedPosition(event.clientX, event.clientY);
-
         setEditorPosition(adjustedPosition);
 
         // Call get calendar item detail API
@@ -1145,14 +852,11 @@ export const useCalendarHooks = ({
         onPreviousDateRangeNavigatorClick,
         updatedTasks,
         setUpdatedTasks,
-        activeTask,
         editorPosition,
         setEditorPosition,
         panelPosition,
         unscheduledMonthData,
         setUnscheduledMonthData,
-        activeUnscheduledTask,
-        activeUnscheduledRoutine,
         CELL_HEIGHT,
         hours,
         sleepStartTime,
@@ -1161,8 +865,6 @@ export const useCalendarHooks = ({
         startPositionInHours,
         endPositionInHours,
         sensors,
-        handleRemoveUnscheduledBigTask,
-        handleRemoveUnscheduledSubTask,
         onRemoveDraggableTask,
         currentMondayTime,
         setCurrentMondayTime,

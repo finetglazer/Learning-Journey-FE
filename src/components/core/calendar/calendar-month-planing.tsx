@@ -509,59 +509,37 @@ export function CalendarMonthPlanning() {
                                                                 }),
                                                             }}
                                                             badgeWrapperClassName="mr-3"
-                                                            titleClassName="text-[0.8rem] w-[150px]"
                                                         />
                                                     </div>
                                                 ))}
 
                                                 {tasksForCell.length > MAX_VISIBLE_TASKS && (
-                                                    <Popover
-                                                        open={
-                                                            weekPopoverState.open && weekPopoverState.id === week
-                                                        }
-                                                        onOpenChange={(isOpen) => {
-                                                            setWeekPopoverState({
+                                                    <div
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setEditorPosition({x: e.clientX, y: e.clientY - 500});
+                                                            const isOpen = !popoverState.open;
+                                                            setPopoverState({
                                                                 open: isOpen,
                                                                 id: isOpen ? week : null,
+                                                                tasks: isOpen ? tasksForCell.slice(MAX_VISIBLE_TASKS, tasksForCell.length) : [],  
                                                             });
                                                         }}
+                                                        className={cn(
+                                                            "rounded-lg z-[9] cursor-pointer bg-gray-200 text-center px-2 py-1 text-xs text-gray-600 hover:bg-gray-300 font-medium",
+                                                            {
+                                                                "absolute bottom-1 left-1 w-[95%]": [
+                                                                    "routine",
+                                                                    "big-task",
+                                                                ].includes(currentType),
+                                                            },
+                                                            {
+                                                                "w-[500%]": currentType === "routine",
+                                                            }
+                                                        )}
                                                     >
-                                                        <PopoverTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                                            <div
-                                                                className={cn(
-                                                                    "rounded-lg z-[9] cursor-pointer bg-gray-200 text-center px-2 py-1 text-xs text-gray-600 hover:bg-gray-300 font-medium",
-                                                                    {
-                                                                        "absolute bottom-1 left-1 w-[95%]": [
-                                                                            "routine",
-                                                                            "big-task",
-                                                                        ].includes(currentType),
-                                                                    },
-                                                                    {
-                                                                        "w-[500%]": currentType === "routine",
-                                                                    }
-                                                                )}
-                                                            >
-                                                                {tasksForCell.length - MAX_VISIBLE_TASKS} more
-                                                            </div>
-                                                        </PopoverTrigger>
-                                                        <PopoverContent className="w-auto p-0 z-[999]" side="bottom" align="start">
-                                                            <DayTasksPopover
-                                                                tasks={tasksForCell.slice(
-                                                                    MAX_VISIBLE_TASKS,
-                                                                    tasksForCell.length
-                                                                )}
-                                                                currentTaskType={currentType}
-                                                                type="month-planning"
-                                                                setOpenRoutineEditor={setOpenRoutineEditor}
-                                                                handleBigTaskClick={handleBigTaskClick}
-                                                                selectedTaskId={selectedItemId}
-                                                                setSelectedTaskId={setSelectedItemId}
-                                                                setEditingMonthPlanItem={setEditingItem}
-                                                                setEditorPosition={setEditorPosition}
-                                                                editorOffset={{ x: 120, y: 0 }}
-                                                            />
-                                                        </PopoverContent>
-                                                    </Popover>
+                                                        {tasksForCell.length - MAX_VISIBLE_TASKS} more
+                                                    </div>
                                                 )}
                                             </div>
                                         </TableCell>
@@ -570,21 +548,50 @@ export function CalendarMonthPlanning() {
                             </TableRow>
                         ))}
 
+                        {/* For showing big tasks, routines, events */}
+                        {/* <Popover
+                            open={weekPopoverState.open && weekPopoverState.id === week}
+                            onOpenChange={(isOpen) => {
+                                setWeekPopoverState({
+                                    open: isOpen,
+                                    id: isOpen ? week : null,
+                                });
+                            }}
+                        >
+                            <PopoverTrigger asChild onClick={(e) => {
+                                e.stopPropagation();
+                            }}>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0 z-[999]" side="bottom" align="start">
+                                <DayTasksPopover
+                                    tasks={tasksForCell.slice(
+                                        MAX_VISIBLE_TASKS,
+                                        tasksForCell.length
+                                    )}
+                                    currentTaskType={currentType}
+                                    type="month-planning"
+                                    setOpenRoutineEditor={setOpenRoutineEditor}
+                                    handleBigTaskClick={handleBigTaskClick}
+                                    selectedTaskId={selectedItemId}
+                                    setSelectedTaskId={setSelectedItemId}
+                                    setEditingMonthPlanItem={setEditingItem}
+                                    setEditorPosition={setEditorPosition}
+                                    editorOffset={{ x: 120, y: 0 }}
+                                />
+                            </PopoverContent>
+                        </Popover> */}
                         {alertMessage && (
                             <AlertModal
                                 alertMessage={alertMessage}
                                 onClose={() => setAlertMessage(null)}
                             />
                         )}
-
+                        {/* For showing unscheduled tasks of a big task */}
                         <Popover
-                            open={popoverState.open && popoverState.id === "big-task-popover"}
-                            onOpenChange={(isOpen) => {
-                                if (!isOpen)
-                                    setPopoverState({ open: false, id: null, tasks: [] });
-                            }}
+                            open={popoverState.open }
+                            onOpenChange={() => {}}
                         >
-                            <PopoverTrigger asChild>
+                            <PopoverTrigger asChild onClick={(e) => {e.stopPropagation()}}>
                                 <div
                                     className="absolute"
                                     style={{
@@ -604,6 +611,7 @@ export function CalendarMonthPlanning() {
                                     setSelectedTaskId={setSelectedItemId}
                                     setEditingMonthPlanItem={setEditingItem}
                                     setEditorPosition={setEditorPosition}
+                                    handleBigTaskClick={handleBigTaskClick}
                                     editorOffset={{ x: 120, y: 0 }}
                                     onAddTaskClick={() => {
                                         setEditingItem({

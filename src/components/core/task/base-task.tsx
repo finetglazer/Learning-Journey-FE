@@ -140,8 +140,9 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
 
         return (
             <Tooltip title={getTooltipTitle()} placement="top">
-                <div key={key} className={cn("h-[105px]! grid grid-cols-3 cursor-pointer items-center gap-4 rounded-lg border-3 border-[#E62E7B] bg-stone-50 p-4 w-full",
-                    { "grid-cols-2": type !== "big-task" },
+                <div key={key} className={cn(
+                    "h-auto sm:h-[105px]! overflow-hidden flex justify-between sm:grid cursor-pointer items-center gap-2 sm:gap-4 rounded-lg border-3 border-[#E62E7B] bg-stone-50 p-4 w-full",
+                    type === "big-task" ? "sm:grid-cols-2" : "sm:grid-cols-2",
                     { "border-sky-300": type === "event" },
                     { "border-[#68DE79]": type === "routine" },
                     wrapperClassName,
@@ -154,26 +155,26 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                     onClick={(e) => handleCellClick?.(e, task as MonthPlanningBigTask)}
                 >
                     {typeof task !== "string" && (
-                        <span className={cn("font-bold text-slate-700 text-lg text-left truncate", titleClassName)}>
+                        <span className={cn("font-bold text-slate-700 text-[0.9rem]! text-base text-center sm:text-left truncate w-[110%]", titleClassName)}>
                             {task?.name}
                         </span>
                     )}
                     {typeof task === "string" && (
-                        <span className={cn("font-bold text-slate-700 text-lg text-left truncate", titleClassName)}>
+                        <span className={cn("font-bold text-slate-700 text-base sm:text-lg text-center sm:text-left truncate w-full", titleClassName)}>
                             {task}
                         </span>
                     )}
                     {typeof task !== "string" && !isBigTask(task) && (
-                        <span className={cn("text-slate-600 text-center truncate", descriptionClassName)}>
+                        <span className={cn("text-slate-600 text-center truncate text-sm sm:text-base", descriptionClassName)}>
                             {(task as Task)?.note}
                         </span>
                     )}
                     {type === "big-task" && (
-                        <div className={cn("flex items-center justify-self-center gap-3", badgeWrapperClassName)}>
-                            <div className={cn("flex h-10 w-14 items-center justify-center rounded-lg bg-[#E62E7B] text-white font-bold", badgeClassName)}>
+                        <div className={cn("flex items-center justify-center sm:justify-self-center gap-2 sm:gap-3", badgeWrapperClassName)}>
+                            <div className={cn("flex h-8 w-10 items-center justify-center rounded-lg bg-[#E62E7B] text-white text-sm sm:text-base font-bold", badgeClassName)}>
                                 {toDayJs((task as MonthPlanningBigTask).estimatedStartDate).get("date").toString().padStart(2)}
                             </div>
-                            <div className={cn("flex h-10 w-14 items-center justify-center rounded-lg bg-[#E62E7B] text-white font-bold", badgeClassName)}>
+                            <div className={cn("flex h-8 w-10 items-center justify-center rounded-lg bg-[#E62E7B] text-white text-sm sm:text-base font-bold", badgeClassName)}>
                                 {toDayJs((task as MonthPlanningBigTask).estimatedEndDate).get("date").toString().padStart(2)}
                             </div>
                         </div>
@@ -202,7 +203,6 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                         badgeClassName,
                     )}>
                         {isoToHHMM((task as Task).startTime)}
-                        section-divider-eof
                     </div>
                     <div className={cn("rounded bg-sky-400 px-2 py-1 text-xs font-bold text-white",
                         { "bg-[#68DE79]": type === "routine" },
