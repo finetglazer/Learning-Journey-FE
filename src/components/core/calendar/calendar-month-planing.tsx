@@ -166,8 +166,8 @@ export function CalendarMonthPlanning() {
                     const approvedRoutines = res?.data?.approvedRoutineNames || [];
                     const bigTasks = res?.data?.bigTasks || [];
                     const events = res?.data?.events || [];
-                    setMonthPlanningEvents(events);
-                    setMonthPlanningBigTasks(bigTasks);
+                    setMonthPlanningEvents(events.map((event: any) => ({ ...event, type: "event" })));
+                    setMonthPlanningBigTasks(bigTasks.map((bigTask: any) => ({ ...bigTask, type: "big-task" })));
                     setMonthPlanningRoutines(approvedRoutines);
                 } else {
                     toast.error(res?.msg || res?.message);
@@ -199,10 +199,11 @@ export function CalendarMonthPlanning() {
         });
     };
 
-    const onDeleteItem = (itemId: string | number) => {
-        if (typeof itemId === "string") {
+    const onDeleteItem = (item: MonthPlanningBigTask | MonthPlanningEvent | UnscheduledTask | string) => {
+        // For unscheduled routine
+        if (typeof item === "string") {
             const updatedMonthPlanningRoutines = [...monthPlanningRoutines];
-            const index = updatedMonthPlanningRoutines.findIndex((r) => r === itemId);
+            const index = updatedMonthPlanningRoutines.findIndex((r) => r === item);
             const monthPlanId = localStorage.getItem("monthPlanId");
             updatedMonthPlanningRoutines.splice(index, 1);
             calendarRepository
@@ -213,16 +214,44 @@ export function CalendarMonthPlanning() {
                     next: (res) => {
                         if (res?.status) {
                             setEditingItem(null);
+                            setEditingTask(null);
                             loadMonthPlanningItems(Number(monthPlanId));
                             toast.success(res?.msg || res?.message);
-                        } else toast.error(res?.msg || res?.message);
+                        }
+                        else {
+                            toast.error(res?.msg || res?.message);
+                        }
                     },
                     error: () => { },
                 });
             return;
         }
+        // For big task
+        else if ((item as MonthPlanningBigTask)?.estimatedStartDate) {
+            const monthPlanId = localStorage.getItem("monthPlanId");
+            calendarRepository.deleteBigTask({
+                monthPlanId: monthPlanId,
+                bigTaskId: item?.id,
+            }).subscribe({
+                next: res => {
+                    const success = res?.status;
+                    if (success) {
+                        toast.success(res?.message || res?.msg);
+                        setEditingItem(null);
+                        setEditingTask(null);
+                        loadMonthPlanningItems(Number(monthPlanId));
+                    }
+                    else {
+                        toast.error(res?.msg || res?.message);
+                    }
+                },
+                error: err => { },
+            });
+            return;
+        }
 
-        calendarRepository.deleteCalendarItem(itemId as number).subscribe({
+        // For event & unscheduled task
+        calendarRepository.deleteCalendarItem(item?.id as number).subscribe({
             next: (res) => {
                 if (res?.status) {
                     const monthPlanId = localStorage.getItem("monthPlanId");
@@ -250,6 +279,7 @@ export function CalendarMonthPlanning() {
                         if (res?.status) {
                             setEditingTask({
                                 ...res?.data,
+                                type: "event",
                                 startTime: `${res?.data?.timeSlot?.startTime}Z`,
                                 endTime: `${res?.data?.timeSlot?.endTime}Z`,
                             });
@@ -277,6 +307,7 @@ export function CalendarMonthPlanning() {
                             if (success) {
                                 setEditingItem({
                                     ...res?.data?.bigTask,
+                                    type: "big-task",
                                     // Add startTime & endTime for task editor
                                     startTime: dayJsToISOString(toDayJs(res?.data?.bigTask?.estimatedStartDate)),
                                     endTime: dayJsToISOString(toDayJs(res?.data?.bigTask?.estimatedEndDate)),
@@ -419,7 +450,6 @@ export function CalendarMonthPlanning() {
                                             : currentType === "routine"
                                                 ? monthPlanningRoutines
                                                 : monthPlanningBigTasks;
-
                                     const tasksForCell = monthPlanningItems.filter((task) => {
                                         const { startDate, endDate } = getWeekStartTimeEndTime(week, currentDate);
                                         const weekStart = startDate.format("YYYY-MM-DD");
@@ -467,6 +497,7 @@ export function CalendarMonthPlanning() {
                                                                 }),
                                                                 ...(currentType === "big-task" && {
                                                                     position: "absolute",
+                                                                    top: `${i * 40}%`,
                                                                     left: `${bigTaskStyles[
                                                                         (task as MonthPlanningBigTask).id as number
                                                                     ]?.left || 0
@@ -500,7 +531,7 @@ export function CalendarMonthPlanning() {
                                                                 className={cn(
                                                                     "rounded-lg z-[9] cursor-pointer bg-gray-200 text-center px-2 py-1 text-xs text-gray-600 hover:bg-gray-300 font-medium",
                                                                     {
-                                                                        "absolute bottom-1": [
+                                                                        "absolute bottom-1 left-1 w-[95%]": [
                                                                             "routine",
                                                                             "big-task",
                                                                         ].includes(currentType),
@@ -522,6 +553,7 @@ export function CalendarMonthPlanning() {
                                                                 currentTaskType={currentType}
                                                                 type="month-planning"
                                                                 setOpenRoutineEditor={setOpenRoutineEditor}
+                                                                handleBigTaskClick={handleBigTaskClick}
                                                                 selectedTaskId={selectedItemId}
                                                                 setSelectedTaskId={setSelectedItemId}
                                                                 setEditingMonthPlanItem={setEditingItem}
@@ -600,7 +632,7 @@ export function CalendarMonthPlanning() {
                                 }}
                                 handleReload={() => loadMonthPlanningItems(Number(localStorage.getItem("monthPlanId")))}
                                 style={{ top: editorPosition.y, left: editorPosition.x }}
-                                onDelete={() => onDeleteItem((editingItem as any)?.id)}
+                                onDelete={() => onDeleteItem((editingTask || editingItem as any))}
                             />
                         )}
                         {openRoutineEditor && (

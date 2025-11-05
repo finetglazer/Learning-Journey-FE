@@ -1,4 +1,4 @@
-import { dayJsToISOString } from "@/lib/utils";
+import { dayJsToISOString, isoToStandardTime, toDayJs } from "@/lib/utils";
 import dayjs from "dayjs";
 import { Model } from "react-3layer-common";
 
@@ -47,6 +47,9 @@ export class UnscheduledTask {
     type?: string = 'task';
     parentBigTaskId?: number;
     isDraggedOrEdited?: boolean;
+    // For task editor
+    startTime: string = dayJsToISOString(toDayJs().hour(7).minute(0).second(0).millisecond(0));
+    endTime: string = dayJsToISOString(toDayJs().hour(7).minute(15).second(0).millisecond(0));
 };
 
 export interface RecurringPattern {
@@ -96,8 +99,9 @@ export class MonthPlanningEvent {
     public name: string = "New event";
     public note?: string;
     public specificDate: string = dayjs().format('YYYY-MM-DD');
-    public startTime: string = "07:00";
-    public endTime: string = "07:15";
+    // For task editor
+    public startTime: string = dayJsToISOString(toDayJs().hour(7).minute(0).second(0).millisecond(0));
+    public endTime: string = dayJsToISOString(toDayJs().hour(7).minute(15).second(0).millisecond(0));
 }
 
 export class MonthPlanningBigTask {
@@ -110,4 +114,7 @@ export class MonthPlanningBigTask {
     public derivedTasksCount: number = 0;
     public completionPercentage: number = 0;
     public description?: string;
+    // For task editor
+    public startTime: string = dayJsToISOString(toDayJs().hour(7).minute(0).second(0).millisecond(0));
+    public endTime: string = dayJsToISOString(toDayJs().hour(7).minute(15).second(0).millisecond(0));
 };

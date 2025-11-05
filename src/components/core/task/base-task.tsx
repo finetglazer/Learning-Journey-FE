@@ -63,7 +63,6 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
         return (task as Task).name;
     };
 
-    // --- FIX 2: Use "duck typing" property checks instead of instanceof ---
     const isBigTask = (task: any): task is MonthPlanningBigTask => {
         return typeof task === "object" && task !== null && (task as MonthPlanningBigTask).estimatedStartDate !== undefined;
     }
