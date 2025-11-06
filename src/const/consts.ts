@@ -59,3 +59,45 @@ export const SUBTASK_OUTSIDE_BIGTASK_TIME_RANGE_WARNING: AlertMessage = {
     type: "warning",
     title: "Your picked time for task is conflict with the big time task range",
 };
+
+export const timezoneGroups = [
+    {
+        group: "Americas",
+        zones: [
+            { label: "(UTC-10:00) Hawaii-Aleutian", value: "Pacific/Honolulu", utc: "UTC-10:00" },
+            { label: "(UTC-09:00) Alaska", value: "America/Anchorage", utc: "UTC-09:00" },
+            { label: "(UTC-08:00) Pacific Time (US & Canada)", value: "America/Los_Angeles", utc: "UTC-08:00" },
+            { label: "(UTC-07:00) Mountain Time (US & Canada)", value: "America/Denver", utc: "UTC-07:00" },
+            { label: "(UTC-06:00) Central Time (US & Canada)", value: "America/Chicago", utc: "UTC-06:00" },
+            { label: "(UTC-05:00) Eastern Time (US & Canada)", value: "America/New_York", utc: "UTC-05:00" },
+            { label: "(UTC-04:00) Caracas", value: "America/Caracas", utc: "UTC-04:00" },
+            { label: "(UTC-04:00) Atlantic Time (Canada)", value: "America/Halifax", utc: "UTC-04:00" },
+            { label: "(UTC-03:00) Brasilia, Sao Paulo", value: "America/Sao_Paulo", utc: "UTC-03:00" },
+            { label: "(UTC-03:00) Buenos Aires", value: "America/Argentina/Buenos_Aires", utc: "UTC-03:00" },
+            { label: "(UTC-02:30) Newfoundland", value: "America/St_Johns", utc: "UTC-02:30" },
+        ],
+    },
+    {
+        group: "Europe & Africa",
+        zones: [
+            { label: "(UTC+00:00) London, Dublin, Lisbon", value: "Europe/London", utc: "UTC+00:00" },
+            { label: "(UTC+01:00) Amsterdam, Berlin, Paris, Rome", value: "Europe/Berlin", utc: "UTC+01:00" },
+            { label: "(UTC+02:00) Athens, Helsinki, Kyiv", value: "Europe/Athens", utc: "UTC+02:00" },
+            { label: "(UTC+02:00) Cairo", value: "Africa/Cairo", utc: "UTC+02:00" },
+        ],
+    },
+    {
+        group: "Asia & Pacific",
+        zones: [
+            { label: "(UTC+03:00) Moscow, Baghdad", value: "Europe/Moscow", utc: "UTC+03:00" },
+            { label: "(UTC+04:00) Dubai, Baku", value: "Asia/Dubai", utc: "UTC+04:00" },
+            { label: "(UTC+05:30) New Delhi", value: "Asia/Kolkata", utc: "UTC+05:30" },
+            { label: "(UTC+07:00) Bangkok, Ho Chi Minh City", value: "Asia/Ho_Chi_Minh", utc: "UTC+07:00" },
+            { label: "(UTC+08:00) Beijing, Singapore, Kuala Lumpur", value: "Asia/Singapore", utc: "UTC+08:00" },
+            { label: "(UTC+09:00) Tokyo, Seoul", value: "Asia/Tokyo", utc: "UTC+09:00" },
+            { label: "(UTC+10:00) Sydney, Melbourne", value: "Australia/Sydney", utc: "UTC+10:00" },
+            { label: "(UTC+12:00) Auckland, Wellington", value: "Pacific/Auckland", utc: "UTC+12:00" },
+        ],
+    },
+];
+

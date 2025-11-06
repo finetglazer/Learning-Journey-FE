@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased h-[100vh] grid place-items-center`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased h-[100vh] grid`}
       >
         <AppProvider>{children}</AppProvider>
         <Toaster position="top-center" />

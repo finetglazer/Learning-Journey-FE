@@ -1,5 +1,5 @@
 import { DropdownItem } from "@/components/core/dropdown/type";
-import { PASSWORD_GOOD_LENGTH, PASSWORD_MINIMUM_LENGTH, PASSWORD_REGEX, TIME_STR_REGEX } from "@/const/consts";
+import { PASSWORD_GOOD_LENGTH, PASSWORD_MINIMUM_LENGTH, PASSWORD_REGEX, TIME_STR_REGEX, timezoneGroups } from "@/const/consts";
 import { FieldError } from "@/model/field-error";
 import { Task, UnscheduledMonthData } from "@/model/task";
 import { clsx, type ClassValue } from "clsx"
@@ -519,4 +519,14 @@ export const getWeekStartTimeEndTime = (week: string, currentDate: Dayjs) => {
   }
 
   return { startDate, endDate };
+};
+
+export const findTimezone = (utc: string) => {
+  let res = { label: "(UTC+00:00) London, Dublin, Lisbon", value: "Europe/London", utc: "UTC+00:00" };
+  timezoneGroups.forEach(group => group.zones.forEach(zone => {
+    if (zone.utc === utc) {
+      res = zone;
+    }
+  }));
+  return res;
 };
