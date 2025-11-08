@@ -46,7 +46,7 @@ export function CalendarYearView() {
         calendarRepository.getScheduledItems({
             view: 'YEAR',
             date: currentDate.format('YYYY-MM-DD'),
-            calendarId: 2,
+            calendarId: Number(localStorage.getItem("calendarId")),
         }).subscribe({
             next: res => {
                 if (res?.status) {

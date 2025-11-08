@@ -130,7 +130,7 @@ export const TaskEditor = ({
         }
         // Create case
         calendarRepository.createCalendarItem({
-            calendarId: 2,
+            calendarId: Number(localStorage.getItem("calendarId")),
             type: ((model as Task)?.type || "").toUpperCase(),
             name: (model as Task)?.name,
             note: (model as Task)?.note,
@@ -254,7 +254,7 @@ export const TaskEditor = ({
                 calendarRepository.createMonthPlanningEvent({
                     monthPlanId: localStorage.getItem("monthPlanId"),
                 }, {
-                    calendarId: 2,
+                    calendarId: Number(localStorage.getItem("calendarId")),
                     name: model?.name,
                     note: model?.note,
                     specificDate: toDayJs(model?.specificDate).format("YYYY-MM-DD"),

@@ -193,6 +193,21 @@ export default function RootPage() {
         localStorage.removeItem("monthPlanId");
       },
     });
+
+    calendarRepository.getCalendars().subscribe({
+      next: res => {
+        if (res?.status) {
+          localStorage.setItem("calendarId", (res?.data?.calendars || [])[0]?.id);
+        }
+        else {
+          localStorage.removeItem("calendarId");
+          toast.error(res?.msg || res?.message);
+        }
+      },
+      error: err => { 
+        localStorage.removeItem("calendarId");
+      },
+    })
   }, [setSleepHours]);
 
   useEffect(() => {

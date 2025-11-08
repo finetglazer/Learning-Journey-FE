@@ -418,7 +418,7 @@ export const useCalendarHooks = ({
         calendarRepository.getScheduledItems({
             view: getRequestView(),
             date: currentDate.format('YYYY-MM-DD'),
-            calendarId: 2,
+            calendarId: Number(localStorage.getItem("calendarId")),
         }).subscribe({
             next: res => {
                 const newUpdatedTasks = (res?.data?.items || []).map((item: any) => {
@@ -781,7 +781,7 @@ export const useCalendarHooks = ({
                     ...newTask,
                     type: (newTask?.type as string).toUpperCase(),
                     name: newTask?.name,
-                    calendarId: 2,
+                    calendarId: Number(localStorage.getItem("calendarId")),
                     monthPlanId: Number(localStorage.getItem("monthPlanId")),
                     timeSlot: {
                         startTime: newTask?.startTime,
@@ -840,7 +840,7 @@ export const useCalendarHooks = ({
                     ...newRoutine,
                     type: (newRoutine?.type as string).toUpperCase(),
                     name: newRoutine?.name,
-                    calendarId: 2,
+                    calendarId: Number(localStorage.getItem("calendarId")),
                     monthPlanId: Number(localStorage.getItem("monthPlanId")),
                     timeSlot: {
                         startTime: newRoutine?.startTime,
@@ -888,7 +888,7 @@ export const useCalendarHooks = ({
                 ...scheduledItem,
                 type: (scheduledItem?.type as string).toUpperCase(),
                 name: scheduledItem?.name,
-                calendarId: 2,
+                calendarId: Number(localStorage.getItem("calendarId")),
                 timeSlot: {
                     startTime: droppedCellId,
                     endTime: dayJsToISOString(newEndTime),

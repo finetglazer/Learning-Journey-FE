@@ -41,6 +41,11 @@ export class CalendarRepository extends BaseRepository {
             .pipe(map(res => res?.data));
     };
 
+    public getCalendars = (): Observable<any> => {
+        return this.http.get("")
+            .pipe(map(res => res?.data));
+    };
+
     public updateCalendarItem = (itemId: number, body: any): Observable<any> => {
         return this.http.put(API_UPDATE_CALENDAR_ITEM + `/${itemId}`, {
             ...body,
