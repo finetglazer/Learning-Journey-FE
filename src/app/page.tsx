@@ -16,6 +16,7 @@ import {
   Image,
   KeyRound,
   Lock,
+  LogOut,
   Mail,
   MoreHorizontal,
   PersonStanding,
@@ -37,8 +38,11 @@ import { CalendarMonthView } from "@/components/core/calendar/calendar-month-vie
 import { CalendarWeekView } from "@/components/core/calendar/calendar-week-view";
 import { CalendarYearView } from "@/components/core/calendar/calendar-year-view";
 import { calendarRepository } from "@/repository/calendar-repository";
+import { useRouter } from "next/navigation";
+import { SIGN_IN_ROUTE } from "@/const/routes-const";
 
 export default function RootPage() {
+  const router = useRouter();
   const [currentView, setCurrentView] = useState<"home" | "settings">("home");
   const [activeItem, setActiveItem] = useState("private-calendar");
 
@@ -49,6 +53,12 @@ export default function RootPage() {
     currentDate,
     setAlertMessage,
   } = calendarContextValues;
+
+  const handleLogOut = () => {
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("accessToken");
+    router.push(SIGN_IN_ROUTE);
+  };
 
   // --- Sidebar sections ---
   const homeSections: SidebarSectionConfig[] = [
@@ -75,6 +85,17 @@ export default function RootPage() {
         { id: "com-2", label: "Com 2", icon: <Users size={16} />, onClick: () => setActiveItem("com-2") },
       ],
     },
+    {
+      title: "",
+      items: [
+        {
+          id: "logout",
+          label: <span className="text-red-600 font-medium">Logout</span>,
+          icon: <LogOut size={16} className="text-red-600" />,
+          onClick: handleLogOut
+        }
+      ]
+    }
   ];
 
   const settingsSections: SidebarSectionConfig[] = [

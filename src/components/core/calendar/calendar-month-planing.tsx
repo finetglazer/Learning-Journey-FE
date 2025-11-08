@@ -34,7 +34,6 @@ import { toast } from "sonner";
 import { AlertModal } from "../alert-modal/alert-modal";
 import { RoundedButton } from "../button/rounded-button";
 import { DateRangeNavigator } from "../date-range-navigator/date-range-navigator";
-import { SegmentedControl } from "../segmented-control/segmented-control";
 import { TaskEditor } from "../task-editor/task-editor";
 import { TaskType } from "../task-editor/task-type-dropdown";
 import { BaseTask } from "../task/base-task";
@@ -70,11 +69,6 @@ export function CalendarMonthPlanning() {
         bigTaskId?: number;
         type?: string;
     }>({ open: false, id: null, tasks: [] });
-
-    const [weekPopoverState, setWeekPopoverState] = useState<{
-        open: boolean;
-        id: string | null;
-    }>({ open: false, id: null });
 
     const [editorPosition, setEditorPosition] = useState({ x: 0, y: 0 });
     const [editingItem, setEditingItem] = useState<
@@ -571,39 +565,6 @@ export function CalendarMonthPlanning() {
                                 })}
                             </TableRow>
                         ))}
-
-                        {/* For showing big tasks, routines, events */}
-                        {/* <Popover
-                            open={weekPopoverState.open && weekPopoverState.id === week}
-                            onOpenChange={(isOpen) => {
-                                setWeekPopoverState({
-                                    open: isOpen,
-                                    id: isOpen ? week : null,
-                                });
-                            }}
-                        >
-                            <PopoverTrigger asChild onClick={(e) => {
-                                e.stopPropagation();
-                            }}>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0 z-[999]" side="bottom" align="start">
-                                <DayTasksPopover
-                                    tasks={tasksForCell.slice(
-                                        MAX_VISIBLE_TASKS,
-                                        tasksForCell.length
-                                    )}
-                                    currentTaskType={currentType}
-                                    type="month-planning"
-                                    setOpenRoutineEditor={setOpenRoutineEditor}
-                                    handleBigTaskClick={handleBigTaskClick}
-                                    selectedTaskId={selectedItemId}
-                                    setSelectedTaskId={setSelectedItemId}
-                                    setEditingMonthPlanItem={setEditingItem}
-                                    setEditorPosition={setEditorPosition}
-                                    editorOffset={{ x: 120, y: 0 }}
-                                />
-                            </PopoverContent>
-                        </Popover> */}
                         {alertMessage && (
                             <AlertModal
                                 alertMessage={alertMessage}

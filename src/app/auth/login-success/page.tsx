@@ -1,6 +1,6 @@
 "use client"
 
-import { HOME_BASE_ROUTE } from "@/const/routes-const";
+import { HOME_BASE_ROUTE, ROOT_ROUTE } from "@/const/routes-const";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -13,7 +13,7 @@ export default function AuthSuccess() {
         const token = params.get("token");
         if (token) {
             localStorage.setItem("accessToken", token);
-            setTimeout(() => router.push(HOME_BASE_ROUTE), 1200);
+            setTimeout(() => router.push(ROOT_ROUTE), 1200);
         }
     }, [router]);
 

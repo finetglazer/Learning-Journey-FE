@@ -10,5 +10,6 @@ export const FORGOT_PASSWORD_RESET_PASSWORD_ROUTE = join(FORGOT_PASSWORD_BASE_RO
 export const GOOGLE_OAUTH2_ROUTE = "http://localhost:8080/oauth2/authorization/google";
 
 // Home page routes
+export const ROOT_ROUTE = "/";
 export const HOME_BASE_ROUTE = "/home";
 export const SETTING_BASE_ROUTE = join(HOME_BASE_ROUTE, "/setting");

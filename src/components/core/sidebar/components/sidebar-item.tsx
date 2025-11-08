@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 export interface SidebarItemProps {
     id: string;
     icon: React.ReactNode;
-    label: string;
+    label: string | React.ReactNode;
     onClick?: () => void;
     actionIcon?: React.ReactNode;
     isActive?: boolean;
