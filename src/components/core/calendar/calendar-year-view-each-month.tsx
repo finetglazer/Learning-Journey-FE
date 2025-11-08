@@ -1,7 +1,6 @@
 "use client";
 
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn, getTasksForDay } from "@/lib/utils";
+import { getTasksForDay, getTasksForDayInYearView } from "@/lib/utils";
 import { Task } from "@/model/task";
 import {
     eachDayOfInterval,
@@ -9,20 +8,18 @@ import {
     endOfWeek,
     format,
     isSameDay,
-    isSameMonth,
-    isToday,
     startOfMonth,
-    startOfWeek,
+    startOfWeek
 } from "date-fns";
 import { Dispatch, SetStateAction, useState } from "react";
-import { DayTasksPopover } from "./day-tasks-popover";
+import { DayCell } from "./calendar-year-view-each-day-in-month";
 
-interface MonthProps {
+export interface MonthProps {
     year: number;
     monthIndex: number; // 0 for January, 1 for February, etc.
     selectedDay: Date;
     onDayClick: (day: Date) => void;
-    dayTasks: Task[];
+    allItems: Task[]; // Use allItems instead of dayTasks
     setEditingTask: Dispatch<SetStateAction<Task | Partial<Task> | null>>;
     selectedTaskId: number | string | null;
     setEditorPosition: Dispatch<SetStateAction<{
@@ -37,7 +34,7 @@ export function Month({
     monthIndex,
     selectedDay,
     onDayClick,
-    dayTasks,
+    allItems,
     selectedTaskId,
     setEditingTask,
     setSelectedTaskId,
@@ -69,82 +66,30 @@ export function Month({
 
                 {/* --- Day numbers --- */}
                 {days.map((day) => {
+                    const tasksForThisDay = getTasksForDayInYearView(allItems, day);
+                    const isOpen = popoverState.open && isSameDay(day, popoverState.day!);
+
                     return (
-                        // 2. Each day is wrapped in its own Popover
-                        <Popover
+                        <DayCell
                             key={day.toISOString()}
-                            open={popoverState.open && isSameDay(day, popoverState.day!)}
-                            onOpenChange={(isOpen) => {
-                                if (isOpen) {
-                                    setPopoverState({ open: true, day, tasks: dayTasks });
+                            day={day}
+                            monthDate={monthDate}
+                            selectedDay={selectedDay}
+                            tasks={tasksForThisDay}
+                            isOpen={isOpen}
+                            onDayClick={onDayClick}
+                            onOpenChange={(openState) => {
+                                if (openState) {
+                                    setPopoverState({ open: true, day, tasks: tasksForThisDay });
                                 } else {
                                     setPopoverState({ open: false, day: null, tasks: [] });
                                 }
                             }}
-                        >
-                            {/* 4. The day cell is the trigger */}
-                            <PopoverTrigger asChild>
-                                <div
-                                    onClick={() => onDayClick(day)}
-                                    className={cn(
-                                        "flex items-center justify-center h-8 w-8 rounded-full cursor-pointer relative", // Added 'relative'
-                                        {
-                                            // Default hover for in-month, non-special days
-                                            "hover:bg-gray-100":
-                                                isSameMonth(day, monthDate) &&
-                                                !isToday(day) &&
-                                                !isSameDay(day, selectedDay),
-
-                                            // Selected day (but not today)
-                                            "bg-gray-800 text-white":
-                                                isSameMonth(day, monthDate) &&
-                                                isSameDay(day, selectedDay) &&
-                                                !isToday(day),
-
-                                            // Today
-                                            "bg-blue-600 text-white":
-                                                isSameMonth(day, monthDate) && isToday(day),
-
-                                            // Ring for Today + Selected
-                                            "ring-2 ring-gray-800":
-                                                isSameMonth(day, monthDate) &&
-                                                isToday(day) &&
-                                                isSameDay(day, selectedDay),
-
-                                            // --- Rule for OUT-OF-MONTH days ---
-                                            "text-gray-400": !isSameMonth(day, monthDate)
-                                        }
-                                    )}
-                                >
-                                    {format(day, "d")}
-
-                                    {/* 5. Add a visual dot indicator for tasks
-                                    {hasTasks && (
-                                        <div
-                                            className={cn(
-                                                "absolute bottom-0.5 w-1.25 h-1.25 rounded-full",
-                                                // Change dot color to be visible on dark/blue backgrounds
-                                                isSameDay(day, selectedDay) || isToday(day)
-                                                    ? "bg-white"
-                                                    : "bg-orange-600"
-                                            )}
-                                        ></div>
-                                    )} */}
-                                </div>
-                            </PopoverTrigger>
-
-                            <PopoverContent className="w-auto p-0" side="bottom" align="start">
-                                <DayTasksPopover
-                                    day={day}
-                                    tasks={dayTasks}
-                                    selectedTaskId={selectedTaskId}
-                                    setEditingTask={setEditingTask}
-                                    setSelectedTaskId={setSelectedTaskId}
-                                    setEditorPosition={setEditorPosition}
-                                    editorOffset={{ x: 120, y: 0 }}
-                                />
-                            </PopoverContent>
-                        </Popover>
+                            selectedTaskId={selectedTaskId}
+                            setEditingTask={setEditingTask}
+                            setSelectedTaskId={setSelectedTaskId}
+                            setEditorPosition={setEditorPosition}
+                        />
                     );
                 })}
             </div>

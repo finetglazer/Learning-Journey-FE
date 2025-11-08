@@ -47,7 +47,6 @@ import { RoutineEditor } from "./routine-editor";
 
 export function CalendarMonthPlanning() {
     const {
-        currentView,
         setCurrentView,
         generateDateRangeLabel,
         onNextDateRangeNavigatorClick,
@@ -189,8 +188,31 @@ export function CalendarMonthPlanning() {
                     localStorage.setItem("monthPlanId", monthPlanId);
                     loadMonthPlanningItems(monthPlanId);
                 } else {
-                    toast.error(res?.msg || res?.message);
+                    // toast.error(res?.msg || res?.message);
                     localStorage.removeItem("monthPlanId");
+                    // If monthPlanId not found, create new monthPlanId
+                    calendarRepository.createMonthPlan({
+                        year: currentDate.get("year"),
+                        month: currentDate.get("month") + 1,
+                    }).subscribe({
+                        next: res => {
+                            if (res.status) {
+                                localStorage.setItem("monthPlanId", res?.data?.monthPlanId);
+                            }
+                            else {
+                                toast.error(res?.message || res?.msg);
+                            }
+                        },
+                        error: err => {
+                            const errors = err?.response?.data?.data;
+                            const message = err?.response?.data?.msg || err?.response?.data?.message;
+                            setAlertMessage({
+                                type: "warning",
+                                title: message,
+                                description: errors,
+                            });
+                        }
+                    });
                 }
             },
             error: () => {
@@ -383,6 +405,7 @@ export function CalendarMonthPlanning() {
 
     useEffect(() => {
         getMonthPlanId();
+        setCurrentView('month-planning');
     }, [currentDate]);
 
     useEffect(() => {
@@ -419,8 +442,6 @@ export function CalendarMonthPlanning() {
                         onNextClick={onNextDateRangeNavigatorClick}
                         onPreviousClick={onPreviousDateRangeNavigatorClick}
                     />
-                    <SegmentedControl value={currentView} onValueChange={setCurrentView} />
-                    <RoundedButton label="UTC" id="calendar-utc-btn" />
                 </div>
             </CardHeader>
 
@@ -428,7 +449,7 @@ export function CalendarMonthPlanning() {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="w-[150px] font-medium text-gray-500">Mon–Sun</TableHead>
+                            <TableHead className="w-[150px] font-medium text-gray-500">Mon-Sun</TableHead>
                             {weeks.map((week) => (
                                 <TableHead key={week} className="text-center font-medium text-gray-500">
                                     {week}
@@ -588,7 +609,7 @@ export function CalendarMonthPlanning() {
                         )}
                         {/* For showing unscheduled tasks of a big task */}
                         <Popover
-                            open={popoverState.open }
+                            open={popoverState.open}
                             onOpenChange={() => {}}
                         >
                             <PopoverTrigger asChild onClick={(e) => {e.stopPropagation()}}>
@@ -612,7 +633,7 @@ export function CalendarMonthPlanning() {
                                     setEditingMonthPlanItem={setEditingItem}
                                     setEditorPosition={setEditorPosition}
                                     handleBigTaskClick={handleBigTaskClick}
-                                    editorOffset={{ x: 120, y: 0 }}
+                                    editorOffset={{ x: -360, y: 0 }}
                                     onAddTaskClick={() => {
                                         setEditingItem({
                                             ...new UnscheduledTask,
@@ -621,6 +642,13 @@ export function CalendarMonthPlanning() {
                                             startTime: dayJsToISOString(toDayJs()),
                                             endTime: dayJsToISOString(toDayJs()),
                                             parentBigTaskId: popoverState?.bigTaskId,
+                                        });
+                                    }}
+                                    onTaskClick={() => {
+                                        setPopoverState({
+                                            open: false,
+                                            id: null,
+                                            tasks: [],
                                         });
                                     }}
                                 />

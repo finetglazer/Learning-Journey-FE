@@ -1,27 +1,23 @@
-"use client"
-
+import { AppContext, AppContextProps } from "@/hooks/app-context";
+import { CalendarContext, CalendarContextInterface } from "./calendar-context";
+import { useContext, useRef } from "react";
+import { dayJsToISOString, timeToFractionalHours } from "@/lib/utils";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
-import { dayJsToISOString } from "@/lib/utils";
-import { Task, UnscheduledRoutine, UnscheduledTask } from "@/model/task";
+import { DateRangeNavigator } from "../date-range-navigator/date-range-navigator";
+import { RoundedButton } from "../button/rounded-button";
+import { SegmentedControl } from "../segmented-control/segmented-control";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
+import { CalendarDayViewDroppableCell } from "./calendar-day-view-droppable-cell";
+import { Task, UnscheduledRoutine, UnscheduledTask } from "@/model/task";
+import { DraggableTask } from "./draggable-task";
+import { CollapsibleUnscheduledPanel } from "./collapsible-unscheduled-items-panel";
 import { isNil } from "lodash";
 import { ClipboardList } from "lucide-react";
-import { useContext, useRef } from "react";
-import { AlertModal } from "../alert-modal/alert-modal";
-import { RoundedButton } from "../button/rounded-button";
-import { DateRangeNavigator } from "../date-range-navigator/date-range-navigator";
-import { SegmentedControl } from "../segmented-control/segmented-control";
-import { TaskEditor } from "../task-editor/task-editor";
-import { CalendarContext, CalendarContextInterface } from "./calendar-context";
-import { CalendarDayViewDroppableCell } from "./calendar-day-view-droppable-cell";
-import { CollapsibleUnscheduledPanel } from "./collapsible-unscheduled-items-panel";
-import { DraggableTask } from "./draggable-task";
-import { UnscheduledRoutineItem } from "./unscheduled-routine-item";
 import { UnscheduledTaskItem } from "./unscheduled-task-item";
-
-export interface CalendarDayViewProps { };
-
+import { UnscheduledRoutineItem } from "./unscheduled-routine-item";
+import { TaskEditor } from "../task-editor/task-editor";
+import { AlertModal } from "../alert-modal/alert-modal";
 export const CalendarDayView = () => {
     const {
         tasksStyle,
@@ -32,11 +28,8 @@ export const CalendarDayView = () => {
         panelPosition,
         unscheduledMonthData,
         setUnscheduledMonthData,
-        CELL_HEIGHT,
         hours,
         topPosition,
-        startPositionInHours,
-        endPositionInHours,
         sensors,
         handleRemoveUnscheduledBigTask,
         handleRemoveUnscheduledSubTask,
@@ -66,6 +59,7 @@ export const CalendarDayView = () => {
         onDeleteCalendarItem,
         onDragStart,
         onDragEnd,
+        getSleepBlocks,
         handleCellClick,
     } = useContext<CalendarContextInterface>(CalendarContext);
 
@@ -89,31 +83,25 @@ export const CalendarDayView = () => {
                         value={currentView}
                         onValueChange={setCurrentView}
                     />
-                    <RoundedButton label="UTC" id="calendar-utc-btn" />
                 </div>
             </CardHeader>
-
             {/* ====== Calendar Table ====== */}
             <CardContent className="p-0 h-full">
                 {/* Scroll container */}
                 <div ref={scrollContainerRef} className="relative h-[85vh] overflow-y-scroll overflow-x-hidden">
-                    {/* --- Sleep Time Rectangles --- */}
-                    {/* Morning Block (from midnight to wake-up time) */}
-                    <div
-                        className="absolute left-0 right-0 bg-slate-300 z-0"
-                        style={{
-                            top: 0,
-                            height: `${endPositionInHours * CELL_HEIGHT}rem`,
-                        }}
-                    />
-                    {/* Night Block (from bedtime to midnight) */}
-                    <div
-                        className="absolute left-0 right-0 bg-slate-300 z-0"
-                        style={{
-                            top: `${startPositionInHours * CELL_HEIGHT}rem`,
-                            height: `${(24 - startPositionInHours) * CELL_HEIGHT}rem`,
-                        }}
-                    />
+                    {/* --- START: New Dynamic Sleep Time Rectangles --- */}
+                    {getSleepBlocks().map((block, index) => (
+                        <div
+                            key={`sleep-block-${index}`}
+                            className="absolute left-0 right-0 bg-slate-300 z-0"
+                            style={{
+                                top: block.top,
+                                height: block.height,
+                            }}
+                        />
+                    ))}
+                    {/* --- END: New Dynamic Sleep Time Rectangles --- */}
+
                     <DndContext onDragStart={onDragStart} onDragEnd={onDragEnd} sensors={sensors}>
                         <Table className="w-full table-fixed">
                             <TableBody>
@@ -130,10 +118,10 @@ export const CalendarDayView = () => {
                                                 className="w-14/15 cursor-pointer"
                                             >
                                                 <CalendarDayViewDroppableCell key={id} id={id} bordered={false}>
-                                                    {(calendarMap[id] || []).map((task: Task) => {
+                                                    {(calendarMap[id] || []).map((task: Task, index: number) => {
                                                         return (
                                                             <DraggableTask
-                                                                key={id}
+                                                                key={task.id?.toString() || "draggable-task-".concat(index.toString())} // Use task.id for a stable key
                                                                 handleTaskDoubleClick={handleTaskDoubleClick}
                                                                 task={{ ...task, type: (task?.type || "").toLowerCase() }}
                                                                 draggable={!((task?.type || "").toLowerCase() === "routine")}

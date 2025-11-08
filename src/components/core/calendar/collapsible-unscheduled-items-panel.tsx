@@ -93,6 +93,7 @@ export function CollapsibleUnscheduledPanel({
                         unscheduledRoutines: (monthGroup?.unscheduledRoutines || []).map((unscheduledRoutine: UnscheduledRoutine) => ({
                             ...unscheduledRoutine,
                             type: 'unscheduled-routine',
+                            id: uuid4(),
                         })),
                         unscheduledTasks: undefined,    // Replaced by unscheduledBigTasks
                     }));

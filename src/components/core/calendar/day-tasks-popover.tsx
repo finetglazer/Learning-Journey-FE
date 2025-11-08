@@ -22,6 +22,7 @@ interface DayTasksPopoverProps {
     setEditingMonthPlanItem?: Dispatch<SetStateAction<MonthPlanningBigTask | MonthPlanningEvent | UnscheduledTask | string | null>>;
     editorOffset?: { x: number, y: number };
     onAddTaskClick?: (event: React.MouseEvent<HTMLDivElement>) => void;
+    onTaskClick?: () => void;
 };
 
 export function DayTasksPopover({
@@ -38,6 +39,7 @@ export function DayTasksPopover({
     setEditorPosition,
     setEditingMonthPlanItem,
     editorOffset,
+    onTaskClick,
     onAddTaskClick,
 }: DayTasksPopoverProps) {
     const [bigTaskMenuOpen, setBigTaskMenuOpen] = useState<number | string | null>(null);
@@ -81,7 +83,6 @@ export function DayTasksPopover({
                                 )}
                                 onClick={(e) => {
                                     e.stopPropagation();
-
                                     if (isBigTask(task)) {
                                         // It's a big task, toggle its menu
                                         setBigTaskMenuOpen(isMenuOpen ? null : taskId);
@@ -90,6 +91,7 @@ export function DayTasksPopover({
                                     } else {
                                         // It's not a big task, close any open menu
                                         setBigTaskMenuOpen(null);
+                                        onTaskClick?.();
 
                                         // --- Standard click logic for other items ---
                                         const editorPosition = getEditorAdjustedPosition(e.clientX, e.clientY, editorOffset?.x, editorOffset?.y)
@@ -97,6 +99,15 @@ export function DayTasksPopover({
                                         setEditorPosition?.(editorPosition);
 
                                         if (typeof task === "string" || isEvent(task)) {
+                                            // With event, add startTime & endTime for TaskEditor
+                                            if (isEvent(task)) {
+                                                setEditingMonthPlanItem?.({
+                                                    ...task,
+                                                    startTime: `${task?.specificDate}T${task?.startTime}.000Z`,
+                                                    endTime: `${task?.specificDate}T${task?.endTime}.000Z`,
+                                                });
+                                                return;
+                                            }
                                             setEditingMonthPlanItem?.(task);
                                             if (typeof task === "string") {
                                                 setOpenRoutineEditor?.(true);
@@ -141,6 +152,7 @@ export function DayTasksPopover({
                                             className="w-full cursor-pointer text-left p-1.5 rounded hover:bg-gray-200 text-sm font-medium"
                                             onClick={(e) => {
                                                 e.stopPropagation(); // Prevent parent onClick
+                                                onTaskClick?.();
                                                 // 1. "Edit big task"
                                                 setEditingMonthPlanItem?.({
                                                     ...task,

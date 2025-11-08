@@ -2,11 +2,11 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { toDayJs } from "@/lib/utils";
+import { cn, toDayJs } from "@/lib/utils";
 import { UnscheduledBigTask, UnscheduledTask } from "@/model/task";
 import { useDraggable } from "@dnd-kit/core";
 import { GripVertical, MinusCircle } from "lucide-react";
-import React, { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 interface UnscheduledTaskItemProps {
     task?: UnscheduledTask;
@@ -47,7 +47,7 @@ export function UnscheduledTaskItem({ task, bigTask, onRemove, onTitleChange, dr
         }
     };
 
-    const style = { opacity: isDragging ? 0.5 : 1 };
+    const style = { opacity: isDragging ? 1 : 1 };
     const bigTaskStartDate = bigTask?.estimatedStartDate ? toDayJs(bigTask?.estimatedStartDate).get("date").toString().padStart(2, "0") : null;
     const bigTaskEndDate = bigTask?.estimatedEndDate ? toDayJs(bigTask?.estimatedEndDate).get("date").toString().padStart(2, "0") : null;
 
@@ -72,14 +72,22 @@ export function UnscheduledTaskItem({ task, bigTask, onRemove, onTitleChange, dr
                 ) : (
                     <span
                         onDoubleClick={() => setIsEditing(true)}
-                        className="text-sm text-gray-600 ml-2 flex-grow"
+                        className="text-sm text-black ml-2 flex-grow"
                     >
-                        {task?.name || bigTask?.name}
+                        {task?.name || bigTask?.bigTaskName}
                     </span>
                 )}
 
                 {bigTaskStartDate && bigTaskEndDate && (
-                    <span className="italic text-gray-600 text-[0.95rem]">({bigTaskStartDate}-{bigTaskEndDate})</span>
+                    <>
+                        <div className={cn("flex h-7 w-7 items-center justify-center rounded-lg bg-[#E62E7B] text-white text-sm sm:text-base font-bold")}>
+                            {toDayJs(bigTask?.estimatedStartDate).get("date").toString().padStart(2)}
+                        </div>
+                        <span>-</span>
+                        <div className={cn("flex h-7 w-7 items-center justify-center rounded-lg bg-[#E62E7B] text-white text-sm sm:text-base font-bold")}>
+                            {toDayJs(bigTask?.estimatedEndDate).get("date").toString().padStart(2)}
+                        </div>
+                    </>
                 )}
             </div>
 
@@ -89,7 +97,9 @@ export function UnscheduledTaskItem({ task, bigTask, onRemove, onTitleChange, dr
                 onClick={() => onRemove?.(task.id)}
                 className="h-6 w-6 text-gray-400 hover:text-red-500 cursor-pointer shrink-0"
             >
-                <MinusCircle size={18} />
+                {task && (
+                    <MinusCircle size={18} />
+                )}
             </Button>
         </div>
     );

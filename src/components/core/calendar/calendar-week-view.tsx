@@ -77,6 +77,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
         onDragStart,
         onDragEnd,
         handleCellClick,
+        getSleepBlocks,
     } = useContext<CalendarContextInterface>(CalendarContext);
 
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -100,7 +101,6 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                             value={currentView}
                             onValueChange={setCurrentView}
                         />
-                        <RoundedButton label="UTC" id="calendar-utc-btn" />
                     </div>
                 </CardHeader>
 
@@ -136,16 +136,18 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                             onDragEnd={onDragEnd}
                             sensors={sensors}
                         >
-                            {/* --- Sleep Time Rectangles --- */}
-                            {/* Morning Block (from midnight to wake-up time) */}
-                            <div
-                                className="absolute left-0 right-0 bg-slate-300 z-0"
-                                style={{
-                                    top: 0,
-                                    height: `${endPositionInHours * CELL_HEIGHT}rem`,
-                                }}
-                            />
-                            {/* Night Block (from bedtime to midnight) */}
+                            {/* --- START: New Dynamic Sleep Time Rectangles --- */}
+                            {getSleepBlocks().map((block, index) => (
+                                <div
+                                    key={`sleep-block-${index}`}
+                                    className="absolute left-0 right-0 bg-slate-300 z-0"
+                                    style={{
+                                        top: block.top,
+                                        height: block.height,
+                                    }}
+                                />
+                            ))}
+                            {/* --- END: New Dynamic Sleep Time Rectangles --- */}
                             <div
                                 className="absolute left-0 right-0 bg-slate-300 z-0"
                                 style={{

@@ -80,7 +80,6 @@ export function CalendarMonthView() {
                         value={currentView}
                         onValueChange={setCurrentView}
                     />
-                    <RoundedButton label="UTC" id="calendar-utc-btn" />
                 </div>
             </CardHeader>
 
@@ -150,6 +149,13 @@ export function CalendarMonthView() {
                                             setEditingTask={setEditingTask}
                                             setSelectedTaskId={setSelectedTaskId}
                                             setEditorPosition={setEditorPosition}
+                                            onTaskClick={() => {
+                                                setPopoverState({
+                                                    open: false,
+                                                    day: null,
+                                                    tasks: [],
+                                                });
+                                            }}
                                             editorOffset={{ x: 120, y: 0 }}
                                         />
                                     </PopoverContent>

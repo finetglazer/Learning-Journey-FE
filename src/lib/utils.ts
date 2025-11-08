@@ -3,7 +3,7 @@ import { PASSWORD_GOOD_LENGTH, PASSWORD_MINIMUM_LENGTH, PASSWORD_REGEX, TIME_STR
 import { FieldError } from "@/model/field-error";
 import { Task, UnscheduledMonthData } from "@/model/task";
 import { clsx, type ClassValue } from "clsx"
-import { addWeeks, endOfMonth, endOfWeek, format, isBefore, roundToNearestHours, startOfMonth, startOfWeek } from "date-fns";
+import { addWeeks, endOfMonth, endOfWeek, format, isBefore, isSameDay, roundToNearestHours, startOfMonth, startOfWeek } from "date-fns";
 import dayjs, { Dayjs } from "dayjs";
 import { isNil } from "lodash";
 import { twMerge } from "tailwind-merge"
@@ -427,9 +427,12 @@ export const getRoutineById = (monthData: UnscheduledMonthData[], routineId?: st
   if (!(updatedTasks || []).length) {
     let foundRoutine: any = undefined;
     for (const monthDataItem of monthData) {
-      foundRoutine = (monthDataItem?.unscheduledRoutines || []).find(
+      const t = (monthDataItem?.unscheduledRoutines || []).find(
         unscheduledRoutine => unscheduledRoutine?.id === routineId
       );
+      if (t && !foundRoutine) {
+        foundRoutine = t;
+      }
     }
     if (foundRoutine) {
       return foundRoutine;
@@ -530,3 +533,34 @@ export const findTimezone = (utc: string) => {
   }));
   return res;
 };
+
+/**
+ * Helper function to convert "HH:mm" string to fractional hours.
+ * e.g., "06:15" -> 6.25
+ */
+export const timeToFractionalHours = (time: string): number => {
+  if (!time || !time.includes(':')) {
+    return 0; // Default to midnight if format is invalid
+  }
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours + (minutes / 60);
+};
+
+export const isTaskOnDay = (taskStartTime: string, day: Date) => {
+  if (!taskStartTime) {
+    return false;
+  }
+  // dayjs() can parse both the ISO string and the Date object
+  return dayjs(taskStartTime).isSame(dayjs(day), 'day');
+};
+
+export const getTasksForDayInYearView = (tasks: Task[], day: Date): Task[] => {
+    if (!tasks || tasks.length === 0) {
+      return [];
+    }
+    return tasks.filter(task => {
+      if (!task.startTime) return false;
+      // Compare the task's start date with the day
+      return isSameDay(new Date(task.startTime), day);
+    });
+  };

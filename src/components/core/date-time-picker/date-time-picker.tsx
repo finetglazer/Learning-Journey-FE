@@ -116,7 +116,7 @@ export const DateTimePicker = (props: DateTimePickerProps) => {
             <PopoverContent
                 className={cn("w-auto p-0 mt-2 z-[99999]", wrapperClassName)}
                 // Prevent popover from closing when clicking inside
-                onInteractOutside={(e) => e.preventDefault()}
+                // onInteractOutside={(e) => e.preventDefault()}
             >
                 <div className="sm:flex">
                     {/* Show Calendar if type is 'date-only' or 'date-time' */}
@@ -157,7 +157,7 @@ export const DateTimePicker = (props: DateTimePickerProps) => {
                             <ScrollArea className="w-64 sm:w-auto">
                                 <div className="flex sm:flex-col p-2">
                                     {/* Updated to be 5 minute intervals for better usability */}
-                                    {Array.from({ length: 12 }, (_, i) => i * 5).map((minute) => (
+                                    {Array.from({ length: 4 }, (_, i) => i * 15).map((minute) => (
                                         <Button
                                             key={minute}
                                             size="icon"

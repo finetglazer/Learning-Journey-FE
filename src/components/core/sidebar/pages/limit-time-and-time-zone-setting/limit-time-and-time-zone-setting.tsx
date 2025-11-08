@@ -5,22 +5,29 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { findTimezone } from "@/lib/utils";
 import { CheckedState } from "@radix-ui/react-checkbox";
 import { Plus, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { settingsRepository } from "../../settings-repository";
 import { TimezonePicker } from "./components/time-zone-picker";
 import { TimePicker } from "./components/time-picker";
+import { AlertMessage, AlertModal } from "@/components/core/alert-modal/alert-modal";
+import { AppContext, AppContextProps } from "@/hooks/app-context";
 
 export const LimitTimeAndTimeZone = () => {
-    const [sleepHours, setSleepHours] = useState<{ startTime: string, endTime: string }[]>([]);
     const [timeLimitOn, setTimeLimitOn] = useState<CheckedState>(false);
-    const [taskLimit, setTaskLimit] = useState<number | string>(8);
-    const [routineLimit, setRoutineLimit] = useState<number | string>(15);
+    const [taskLimit, setTaskLimit] = useState<number>(8);
+    const [routineLimit, setRoutineLimit] = useState<number>(15);
     const [timezone, setTimezone] = useState({ label: "(UTC+00:00) London, Dublin, Lisbon", value: "Europe/London", utc: "UTC+00:00" });
+    const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
+
+    const {
+        sleepHours,
+        setSleepHours,
+    } = useContext<AppContextProps>(AppContext);
 
     useEffect(() => {
-        setTaskLimit(Number(localStorage.getItem("taskLimitHours")) || "undefined");
-        setRoutineLimit(Number(localStorage.getItem("routineLimitHours")) || "undefined");
+        setTaskLimit(Number(localStorage.getItem("taskLimitHours")) || 8);
+        setRoutineLimit(Number(localStorage.getItem("routineLimitHours")) || 15);
         setTimeLimitOn(localStorage.getItem("dailyLimitsEnabled") === "1" ? true : false);
     }, [
         localStorage.getItem("taskLimitHours"),
@@ -91,16 +98,26 @@ export const LimitTimeAndTimeZone = () => {
      * Saves the current sleep hours state to the backend.
      */
     const handleSaveSleepHours = () => {
-        // Here you would call your repository update function
-        settingsRepository.updateSleepHours(sleepHours).subscribe({
+        settingsRepository.updateSleepHours({
+            sleepHours: [...sleepHours],
+        }).subscribe({
             next: res => {
                 if (res.status) {
-                    toast.success(res.message);
+                    toast.success(res.message || res.msg);
+                    getUserConstraintsAndTimeZoneSettings();
                 } else {
-                    toast.error(res.message);
+                    toast.error(res.message || res.msg);
                 }
             },
-            error: err => toast.error("Failed to save sleep hours.")
+            error: err => {
+                const errors = err?.response?.data?.data;
+                const message = err?.response?.data?.msg || err?.response?.data?.message;
+                setAlertMessage({
+                    type: "warning",
+                    title: message,
+                    description: errors,
+                });
+            }
         });
     };
 
@@ -110,35 +127,56 @@ export const LimitTimeAndTimeZone = () => {
     const handleSaveTimeLimits = () => {
         settingsRepository.updateDailyLimits({
             enabled: timeLimitOn,
-            taskLimit: parseInt(taskLimit),
-            routineLimit: parseInt(routineLimit)
+            limits: {
+                TASK: {
+                    hours: taskLimit,
+                },
+                ROUTINE: {
+                    hours: routineLimit,
+                }
+            },
         }).subscribe({
             next: res => {
                 if (res.status) {
-                    toast.success(res.message);
+                    toast.success(res.message || res.msg);
+                    getUserConstraintsAndTimeZoneSettings();
                 } else {
-                    toast.error(res.message);
+                    toast.error(res.message || res.msg);
                 }
             },
-            error: err => toast.error("Failed to save time limits.")
+            error: err => {
+                const errors = err?.response?.data?.data;
+                const message = err?.response?.data?.msg || err?.response?.data?.message;
+                setAlertMessage({
+                    type: "warning",
+                    title: message,
+                    description: errors,
+                });
+            }
         });
     };
 
     /**
-     * Saves the timezone.
+     * Saves the timezone
      */
     const handleSaveTimezone = () => {
-        const timezoneString = `${timezone.utc} ${timezone.value}`;
-        settingsRepository.updateTimeZone(timezoneString).subscribe({
+        settingsRepository.updateTimeZone({ timezone: timezone.value }).subscribe({
             next: res => {
                 if (res.status) {
-                    toast.success(res.message);
-                    localStorage.setItem("timezone", timezoneString);
+                    toast.success(res.message || res.msg);
                 } else {
-                    toast.error(res.message);
+                    toast.error(res.message || res.msg);
                 }
             },
-            error: err => toast.error("Failed to save timezone.")
+            error: err => {
+                const errors = err?.response?.data?.data;
+                const message = err?.response?.data?.msg || err?.response?.data?.message;
+                setAlertMessage({
+                    type: "warning",
+                    title: message,
+                    description: errors,
+                });
+            }
         });
     };
 
@@ -212,7 +250,7 @@ export const LimitTimeAndTimeZone = () => {
                     type="number"
                     disabled={!timeLimitOn}
                     value={taskLimit}
-                    onChange={(e) => setTaskLimit(e.target.value)}
+                    onChange={(e) => setTaskLimit(Number(e.target.value))}
                     className="w-28 px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-sm"
                 />
             </div>
@@ -222,7 +260,7 @@ export const LimitTimeAndTimeZone = () => {
                     type="number"
                     disabled={!timeLimitOn}
                     value={routineLimit}
-                    onChange={(e) => setRoutineLimit(e.target.value)}
+                    onChange={(e) => setRoutineLimit(Number(e.target.value))}
                     className="w-28 px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-sm"
                 />
             </div>
@@ -230,7 +268,10 @@ export const LimitTimeAndTimeZone = () => {
                 You should put the integer numbers
             </p>
 
-            <Button className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-md shadow hover:bg-blue-900 cursor-pointer">
+            <Button
+                className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-md shadow hover:bg-blue-900 cursor-pointer"
+                onClick={handleSaveTimeLimits}
+            >
                 Save
             </Button>
 
@@ -241,9 +282,18 @@ export const LimitTimeAndTimeZone = () => {
                 <TimezonePicker initTimeZone={timezone} onChange={setTimezone} />
             </div>
 
-            <Button className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-md shadow hover:bg-blue-900 cursor-pointer">
+            <Button
+                className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-md shadow hover:bg-blue-900 cursor-pointer"
+                onClick={handleSaveTimezone}
+            >
                 Save
             </Button>
+            {alertMessage && (
+                <AlertModal
+                    alertMessage={alertMessage}
+                    onClose={() => setAlertMessage(null)}
+                />
+            )}
         </div>
     );
 };

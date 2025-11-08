@@ -1,4 +1,4 @@
-import { cn, uuid4 } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { IntegratedButton } from "../button/integrated-button";
 

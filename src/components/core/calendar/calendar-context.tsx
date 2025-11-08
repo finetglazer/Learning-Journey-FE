@@ -1,13 +1,14 @@
-import { dayJsToISOString, getBigTask, getDetails, getEditorAdjustedPosition, getMondayOfThisWeek, getMonthName, getPercentageHeight, getRoutineById, getTaskById, initCalendarMap, reId, toDayJs } from "@/lib/utils";
+import { dayJsToISOString, getBigTask, getDetails, getEditorAdjustedPosition, getMondayOfThisWeek, getMonthName, getPercentageHeight, getRoutineById, getTaskById, initCalendarMap, reId, timeToFractionalHours, toDayJs, uuid4 } from "@/lib/utils";
 import { Task, UnscheduledBigTask, UnscheduledMonthData, UnscheduledRoutine, UnscheduledTask } from "@/model/task";
 import { calendarRepository } from "@/repository/calendar-repository";
 import { DragEndEvent, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import dayjs, { Dayjs } from "dayjs";
 import { isNil } from "lodash";
-import React, { createContext, Dispatch, SetStateAction, useEffect, useState } from "react";
+import React, { createContext, Dispatch, SetStateAction, useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AlertMessage } from "../alert-modal/alert-modal";
 import { DraggableTask } from "./draggable-task";
+import { AppContext, AppContextProps } from "@/hooks/app-context";
 
 export interface CalendarContextProps {
     initTasks?: Task[];
@@ -58,7 +59,10 @@ export interface CalendarContextInterface {
         x: number;
         y: number;
     }>>;
-
+    getSleepBlocks: () => {
+        top: string;
+        height: string;
+    }[];
     handleReload: () => void;
     // For EDITING unscheduled and scheduled task
     selectedTaskId: string | number | null;
@@ -179,6 +183,7 @@ export const CalendarContext = createContext<CalendarContextInterface>({
     handleRemoveUnscheduledTask: () => { },
     handleRemoveUnscheduledRoutine: () => { },
     updateBigTask: () => { },
+    getSleepBlocks: () => [],
 });
 
 export const useCalendarHooks = ({
@@ -206,15 +211,6 @@ export const useCalendarHooks = ({
         i.toString().padStart(2, "0")
     ); // 00 to 23
 
-    const sleepStartTime = "22:15";
-    const sleepEndTime = "06:15";
-    const sleepStartHour = Number(sleepStartTime.substring(0, 2));
-    const sleepStartMinute = Number(sleepStartTime.substring(3, 5));
-    const sleepEndHour = Number(sleepEndTime.substring(0, 2));
-    const sleepEndMinute = Number(sleepEndTime.substring(3, 5));
-    const startPositionInHours = sleepStartHour + (sleepStartMinute / 60);
-    const endPositionInHours = sleepEndHour + (sleepEndMinute / 60);
-
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
@@ -229,8 +225,8 @@ export const useCalendarHooks = ({
                 return currentDate.format('DD/MM/YYYY');
 
             case 'week':
-                const weekStart = currentDate.startOf('week');
-                const weekEnd = currentDate.endOf('week');
+                const weekStart = currentDate.startOf('week').add(1, 'day');
+                const weekEnd = currentDate.endOf('week').add(1, 'day');
                 // Format: <Month> <start date>-<end date>, <year>
                 return `${weekStart.format('MMMM D')} - ${weekEnd.format('D, YYYY')}`;
 
@@ -258,7 +254,12 @@ export const useCalendarHooks = ({
                 break;
             case 'month-view':
             case 'month-planning':
-                setCurrentDate(currentDate.add(1, 'month'));
+                const nextMonth = currentDate.add(1, 'month');
+                // Max for 6 months
+                if (nextMonth.diff(toDayJs(), "month") >= 6) {
+                    break;
+                }
+                setCurrentDate(nextMonth);
                 break;
             case 'year':
                 setCurrentDate(currentDate.add(1, 'year'));
@@ -276,6 +277,12 @@ export const useCalendarHooks = ({
                 break;
             case 'month-view':
             case 'month-planning':
+                // Disable when navigating to previous month comparing to current month
+                if (currentView === 'month-planning') {
+                    if (currentDate.subtract(1, "month").diff(toDayJs(), "month") < 0) {
+                        break;
+                    }
+                }
                 setCurrentDate(currentDate.subtract(1, 'month'));
                 break;
             case 'year':
@@ -403,6 +410,9 @@ export const useCalendarHooks = ({
     const [isPanelDragging, setIsPanelDragging] = useState<boolean>(false);
     // For editing CREATED task and NEW task 
     const [editingTask, setEditingTask] = useState<Task | Partial<Task> | null>(null);
+    const {
+        sleepHours, // Using the new sleepHours array: {startTime: "HH:mm", endTime: "HH:mm"}[]
+    } = useContext<AppContextProps>(AppContext);
 
     const handleReload = () => {
         calendarRepository.getScheduledItems({
@@ -428,6 +438,42 @@ export const useCalendarHooks = ({
                 console.log("Error occurs while fetching scheduled items", err);
             }
         });
+    };
+
+    /**
+     * Generates an array of sleep block style objects (top, height)
+     * from the sleepHours array. Handles overnight periods.
+     */
+    const getSleepBlocks = () => {
+        const blocks: { top: string, height: string }[] = [];
+        if (!sleepHours) return blocks;
+
+        sleepHours.forEach((period, index) => {
+            const start = timeToFractionalHours(period.startTime);
+            const end = timeToFractionalHours(period.endTime);
+
+            if (start > end) {
+                // Overnight sleep
+                // Block 1: From start time to midnight
+                blocks.push({
+                    top: `${start * CELL_HEIGHT}rem`,
+                    height: `${(24 - start) * CELL_HEIGHT}rem`,
+                });
+                // Block 2: From midnight to end time
+                blocks.push({
+                    top: `0rem`,
+                    height: `${end * CELL_HEIGHT}rem`,
+                });
+            } else {
+                // Daytime sleep/nap
+                blocks.push({
+                    top: `${start * CELL_HEIGHT}rem`,
+                    height: `${(end - start) * CELL_HEIGHT}rem`,
+                });
+            }
+        });
+
+        return blocks;
     };
 
     const handleTaskDoubleClick = (event: React.MouseEvent<HTMLDivElement>, taskId: number) => {
@@ -670,7 +716,35 @@ export const useCalendarHooks = ({
         setEditingTask(newTask);
     };
 
+    const getUnscheduledItems = () => {
+        calendarRepository.getUnscheduledItems()
+            .subscribe({
+                next: res => {
+                    const updatedUnscheduledMonthData: UnscheduledMonthData[] = (res?.data?.data?.monthGroups || []).map((monthGroup: any) => ({
+                        ...monthGroup,
+                        unscheduledBigTasks: (monthGroup?.unscheduledTasks || []).map((unscheduledTask: UnscheduledBigTask) => ({
+                            ...unscheduledTask,
+                            suggestedSubtasks: (unscheduledTask?.suggestedSubtasks || []).map((subtask: UnscheduledTask) => ({
+                                ...subtask,
+                                type: 'unscheduled-task',
+                                parentBigTaskId: unscheduledTask.bigTaskId,
+                            }))
+                        })),
+                        unscheduledRoutines: (monthGroup?.unscheduledRoutines || []).map((unscheduledRoutine: UnscheduledRoutine) => ({
+                            ...unscheduledRoutine,
+                            type: 'unscheduled-routine',
+                            id: uuid4(),
+                        })),
+                        unscheduledTasks: undefined,    // Replaced by unscheduledBigTasks
+                    }));
 
+                    setUnscheduledMonthData?.(updatedUnscheduledMonthData);
+                },
+                error: err => {
+                    console.log("Error occurs while fetching unscheduled items", err);
+                }
+            });
+    }
 
     const onDragEnd = (event: DragEndEvent) => {
         const droppedCellId = String(event.over?.id || null);
@@ -702,13 +776,13 @@ export const useCalendarHooks = ({
                 completionPercentage: 0,
             };
 
-            calendarRepository.updateCalendarItem(
-                newTask.id as number,
+            calendarRepository.createCalendarItem(
                 {
                     ...newTask,
                     type: (newTask?.type as string).toUpperCase(),
                     name: newTask?.name,
                     calendarId: 2,
+                    monthPlanId: Number(localStorage.getItem("monthPlanId")),
                     timeSlot: {
                         startTime: newTask?.startTime,
                         endTime: newTask?.endTime,
@@ -719,10 +793,11 @@ export const useCalendarHooks = ({
                     },
                 }).subscribe({
                     next: res => {
-                        const itemId = res?.data;
+                        const itemId = res?.data?.itemId;
                         const success = res?.status;
                         if (success) {
                             getNewCalendarItem(itemId, true);
+                            getUnscheduledItems();
                         }
                         else {
                             setAlertMessage({
@@ -760,13 +835,13 @@ export const useCalendarHooks = ({
                 exceptions: [],
             };
 
-            calendarRepository.updateCalendarItem(
-                newRoutine.id as number,
+            calendarRepository.createCalendarItem(
                 {
                     ...newRoutine,
                     type: (newRoutine?.type as string).toUpperCase(),
                     name: newRoutine?.name,
                     calendarId: 2,
+                    monthPlanId: Number(localStorage.getItem("monthPlanId")),
                     timeSlot: {
                         startTime: newRoutine?.startTime,
                         endTime: newRoutine?.endTime,
@@ -776,15 +851,16 @@ export const useCalendarHooks = ({
                     },
                 }).subscribe({
                     next: res => {
-                        const itemId = res?.data;
+                        const itemId = res?.data?.itemId;
                         const success = res?.status;
                         if (success) {
                             getNewCalendarItem(itemId, true);
+                            getUnscheduledItems();
                         }
                         else {
                             setAlertMessage({
                                 type: "warning",
-                                title: res?.msg,
+                                title: res?.msg || res?.message,
                                 description: res?.data,
                             });
                             setDraggingUnscheduledRoutineId(null);
@@ -859,11 +935,6 @@ export const useCalendarHooks = ({
         setUnscheduledMonthData,
         CELL_HEIGHT,
         hours,
-        sleepStartTime,
-        sleepEndTime,
-        topPosition,
-        startPositionInHours,
-        endPositionInHours,
         sensors,
         onRemoveDraggableTask,
         currentMondayTime,
@@ -874,7 +945,7 @@ export const useCalendarHooks = ({
         alertMessage,
         setAlertMessage,
         setPanelPosition,
-
+        getSleepBlocks,
         handleReload,
         handleTaskDoubleClick,
         selectedTaskId,

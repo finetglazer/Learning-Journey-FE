@@ -18,8 +18,6 @@ export const SegmentedControl = (props: SegmentedControlProps) => {
                 return "Week";
             case "month-view":
                 return "Month view";
-            case "month-planning":
-                return "Month planning";
             case "year":
                 return "Year";
             default:
