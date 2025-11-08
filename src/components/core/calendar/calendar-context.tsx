@@ -766,7 +766,7 @@ export const useCalendarHooks = ({
             const cellId = String(event.over?.id);
             const newTask: Task = {
                 ...unscheduledTask,
-                id: unscheduledTask?.id as number,
+                id: draggingUnscheduledTaskId,
                 startTime: cellId,
                 endTime: dayJsToISOString(toDayJs(cellId).add(15, "minute")),
                 name: unscheduledTask?.name || "",
@@ -776,7 +776,8 @@ export const useCalendarHooks = ({
                 completionPercentage: 0,
             };
 
-            calendarRepository.createCalendarItem(
+            calendarRepository.updateCalendarItem(
+                draggingUnscheduledTaskId as number,
                 {
                     ...newTask,
                     type: (newTask?.type as string).toUpperCase(),
@@ -793,7 +794,7 @@ export const useCalendarHooks = ({
                     },
                 }).subscribe({
                     next: res => {
-                        const itemId = res?.data?.itemId;
+                        const itemId = res?.data;
                         const success = res?.status;
                         if (success) {
                             getNewCalendarItem(itemId, true);
