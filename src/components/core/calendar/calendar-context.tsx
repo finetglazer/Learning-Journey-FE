@@ -432,7 +432,7 @@ export const useCalendarHooks = ({
                         timeSlot: undefined,
                     };
                 });
-                setUpdatedTasks(newUpdatedTasks);
+                setUpdatedTasks([...newUpdatedTasks]);
             },
             error: err => {
                 console.log("Error occurs while fetching scheduled items", err);
@@ -922,6 +922,7 @@ export const useCalendarHooks = ({
         setCurrentDate,
         tasksStyle,
         calendarMap,
+        topPosition,
         currentView,
         setCurrentView,
         generateDateRangeLabel,

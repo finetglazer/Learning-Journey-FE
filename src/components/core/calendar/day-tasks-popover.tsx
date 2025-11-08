@@ -108,6 +108,7 @@ export function DayTasksPopover({
                                                 });
                                                 return;
                                             }
+
                                             setEditingMonthPlanItem?.(task);
                                             if (typeof task === "string") {
                                                 setOpenRoutineEditor?.(true);
@@ -187,7 +188,7 @@ export function DayTasksPopover({
                     })}
                 </div>
             </ScrollArea>
-            {type === 'month-planning' && currentTaskType === 'big-task' && (
+            {(type === 'month-planning' && currentTaskType === 'unscheduled-task') && (
                 <div
                     className="flex items-center gap-2 p-2 mt-1 border-t border-gray-100 text-sm text-gray-500 cursor-pointer rounded-md hover:bg-gray-100"
                     onClick={onAddTaskClick}

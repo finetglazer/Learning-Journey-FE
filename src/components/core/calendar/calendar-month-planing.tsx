@@ -68,6 +68,7 @@ export function CalendarMonthPlanning() {
         id: string | null;
         tasks: (MonthPlanningBigTask | MonthPlanningEvent | string)[];
         bigTaskId?: number;
+        type?: string;
     }>({ open: false, id: null, tasks: [] });
 
     const [weekPopoverState, setWeekPopoverState] = useState<{
@@ -147,6 +148,7 @@ export function CalendarMonthPlanning() {
                                 bigTaskId: bigTask?.id,
                             })),
                             bigTaskId: bigTask?.id,
+                            type: "unscheduled-task",
                         });
 
                     } else {
@@ -543,7 +545,8 @@ export function CalendarMonthPlanning() {
                                                             setPopoverState({
                                                                 open: isOpen,
                                                                 id: isOpen ? week : null,
-                                                                tasks: isOpen ? tasksForCell.slice(MAX_VISIBLE_TASKS, tasksForCell.length) : [],  
+                                                                tasks: isOpen ? tasksForCell.slice(MAX_VISIBLE_TASKS, tasksForCell.length) : [], 
+                                                                type: getType(category),
                                                             });
                                                         }}
                                                         className={cn(
@@ -626,9 +629,10 @@ export function CalendarMonthPlanning() {
                             <PopoverContent className="w-auto p-0 z-[999]" side="bottom" align="start">
                                 <DayTasksPopover
                                     tasks={popoverState.tasks}
-                                    currentTaskType="big-task"
+                                    currentTaskType={popoverState.type}
                                     type="month-planning"
                                     selectedTaskId={selectedItemId}
+                                    setOpenRoutineEditor={setOpenRoutineEditor}
                                     setSelectedTaskId={setSelectedItemId}
                                     setEditingMonthPlanItem={setEditingItem}
                                     setEditorPosition={setEditorPosition}
@@ -649,6 +653,7 @@ export function CalendarMonthPlanning() {
                                             open: false,
                                             id: null,
                                             tasks: [],
+                                            type: "",
                                         });
                                     }}
                                 />
