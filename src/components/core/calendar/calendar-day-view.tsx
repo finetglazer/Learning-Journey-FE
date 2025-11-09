@@ -1,23 +1,22 @@
-import { AppContext, AppContextProps } from "@/hooks/app-context";
-import { CalendarContext, CalendarContextInterface } from "./calendar-context";
-import { useContext, useRef } from "react";
-import { dayJsToISOString, timeToFractionalHours } from "@/lib/utils";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { DateRangeNavigator } from "../date-range-navigator/date-range-navigator";
-import { RoundedButton } from "../button/rounded-button";
-import { SegmentedControl } from "../segmented-control/segmented-control";
-import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
-import { CalendarDayViewDroppableCell } from "./calendar-day-view-droppable-cell";
+import { dayJsToISOString } from "@/lib/utils";
 import { Task, UnscheduledRoutine, UnscheduledTask } from "@/model/task";
-import { DraggableTask } from "./draggable-task";
-import { CollapsibleUnscheduledPanel } from "./collapsible-unscheduled-items-panel";
+import { DndContext, DragOverlay, useDndContext, useDraggable } from "@dnd-kit/core";
 import { isNil } from "lodash";
 import { ClipboardList } from "lucide-react";
-import { UnscheduledTaskItem } from "./unscheduled-task-item";
-import { UnscheduledRoutineItem } from "./unscheduled-routine-item";
-import { TaskEditor } from "../task-editor/task-editor";
+import { useContext, useRef } from "react";
 import { AlertModal } from "../alert-modal/alert-modal";
+import { RoundedButton } from "../button/rounded-button";
+import { DateRangeNavigator } from "../date-range-navigator/date-range-navigator";
+import { SegmentedControl } from "../segmented-control/segmented-control";
+import { TaskEditor } from "../task-editor/task-editor";
+import { CalendarContext, CalendarContextInterface } from "./calendar-context";
+import { CalendarDayViewDroppableCell } from "./calendar-day-view-droppable-cell";
+import { CollapsibleUnscheduledPanel } from "./collapsible-unscheduled-items-panel";
+import { DraggableTask } from "./draggable-task";
+import { UnscheduledRoutineItem } from "./unscheduled-routine-item";
+import { UnscheduledTaskItem } from "./unscheduled-task-item";
 export const CalendarDayView = () => {
     const {
         tasksStyle,
@@ -68,17 +67,21 @@ export const CalendarDayView = () => {
     return (
         <Card className="w-full h-[100%] mx-auto rounded-xl shadow-lg bg-slate-50/50 p-0">
             {/* ====== Header (Same as before) ====== */}
-            <CardHeader className="grid grid-cols-[auto_1fr] items-center p-4 border-b border-gray-200 bg-slate-100/60 rounded-t-xl">
+            <CardHeader className="grid grid-cols-[auto_1fr_auto] items-center p-4 border-b border-gray-200 bg-slate-100/60 rounded-t-xl">
                 <div className="text-sm font-semibold text-slate-600 whitespace-nowrap">
                     Private calendar / <span className="text-slate-800">Day View</span>
                 </div>
-                <div className="flex items-center justify-end gap-4">
+                {/* Centered Controls */}
+                <div className="flex items-center justify-center gap-4">
                     <RoundedButton label="Today" id="calendar-today-btn" onClick={handleGoToToday} />
                     <DateRangeNavigator
                         dateRangeLabel={generateDateRangeLabel()}
                         onNextClick={onNextDateRangeNavigatorClick}
                         onPreviousClick={onPreviousDateRangeNavigatorClick}
                     />
+                </div>
+                {/* Right-aligned Controls */}
+                <div className="flex items-center justify-end">
                     <SegmentedControl
                         value={currentView}
                         onValueChange={setCurrentView}
@@ -114,7 +117,7 @@ export const CalendarDayView = () => {
                                                 {hour}
                                             </TableCell>
                                             <TableCell
-                                                onClick={(e) => handleCellClick(e, id)}
+                                                onClick={(e) => handleCellClick(e, id, scrollContainerRef)}
                                                 className="w-14/15 cursor-pointer"
                                             >
                                                 <CalendarDayViewDroppableCell key={id} id={id} bordered={false}>
@@ -134,6 +137,7 @@ export const CalendarDayView = () => {
                                                                     width: `${tasksStyle[task.id as number].width}%`,
                                                                 }}
                                                                 badgeWrapperClassName="-mt-2.5"
+                                                                scrollContainerRef={scrollContainerRef}
                                                             />
                                                         );
                                                     })}
@@ -162,11 +166,7 @@ export const CalendarDayView = () => {
                                 getDraggableTaskOverlay()
                             ) : null}
                             {isPanelDragging && (
-                                <div className="h-16 w-16 rounded-full bg-gray-700 border-4 border-white p-0 shadow-lg">
-                                    <div className="flex h-full w-full items-center justify-center rounded-full bg-sky-300">
-                                        <ClipboardList className="h-8 w-8 text-black" />
-                                    </div>
-                                </div>
+                                <PanelDragOverlay />
                             )}
                             {!isNil(draggingUnscheduledTaskId) && (
                                 <UnscheduledTaskItem
@@ -216,5 +216,33 @@ export const CalendarDayView = () => {
                 )}
             </CardContent>
         </Card>
+    );
+};
+
+export function PanelDragOverlay() {
+    // 1. Root styles: ONLY opacity. No transform or transition.
+    const rootStyle: React.CSSProperties = {
+        opacity: 0.9,
+    };
+
+    // 2. Inner styles: Your scale and transition.
+    const innerStyle: React.CSSProperties = {
+        transform: "scale(1.05)",
+        transition: "transform 0.1s ease",
+    };
+
+    return (
+        // Root element: dnd-kit will apply its 'translate' here
+        <div style={rootStyle}>
+            {/* Inner element: Applies your custom scale/transition */}
+            <div
+                style={innerStyle}
+                className="h-16 w-16 rounded-full bg-gray-700 border-4 border-white p-0 shadow-lg cursor-grabbing"
+            >
+                <div className="flex h-full w-full items-center justify-center rounded-full bg-sky-300">
+                    <ClipboardList className="h-8 w-8 text-black" />
+                </div>
+            </div>
+        </div>
     );
 };

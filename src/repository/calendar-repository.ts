@@ -20,6 +20,7 @@ const API_CREATE_UNSCHEDULED_TASK = "/planning/months";
 const API_DELETE_BIG_TASK = "/planning/months";
 const API_CREATE_MONTH_PLANNING_EVENT = "/planning/months";
 const API_CREATE_MONTH_PLAN = "/planning/months";
+const API_CREATE_CALENDAR = "/";
 
 export class CalendarRepository extends BaseRepository {
     constructor() {
@@ -46,12 +47,8 @@ export class CalendarRepository extends BaseRepository {
             .pipe(map(res => res?.data));
     };
 
-    public createCalendar = (itemId: number, body: any): Observable<any> => {
-        return this.http.put(API_UPDATE_CALENDAR_ITEM + `/${itemId}`, {
-            ...body,
-            type: (body?.type || "").toUpperCase(),
-            status: (body?.status || "").toUpperCase(),
-        })
+    public createCalendar = (userId: number): Observable<any> => {
+        return this.http.post(`/${userId}/default-calendar`)
             .pipe(map(res => res?.data));
     };
 

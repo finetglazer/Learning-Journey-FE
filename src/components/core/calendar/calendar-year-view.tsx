@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Task } from "@/model/task";
 import { calendarRepository } from "@/repository/calendar-repository";
 import dayjs from "dayjs";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { AlertModal } from "../alert-modal/alert-modal";
 import { RoundedButton } from "../button/rounded-button";
 import { DateRangeNavigator } from "../date-range-navigator/date-range-navigator";
@@ -40,6 +40,8 @@ export function CalendarYearView() {
     const [selectedDay, setSelectedDay] = useState<Date>(currentDate.toDate());
     const [dayTasks, setDayTasks] = useState<Task[]>([]);
     const [allItems, setAllItems] = useState<any[]>([]);
+
+    const scrollContainerRef = useRef(null);
 
     // Fetch all scheduled tasks, events, routines in a year
     useEffect(() => {
@@ -91,17 +93,21 @@ export function CalendarYearView() {
     return (
         <Card className="w-full h-full mx-auto rounded-xl shadow-lg bg-white p-0">
             {/* ====== Header Controls ====== */}
-            <CardHeader className="grid grid-cols-[auto_1fr] items-center p-4 border-b border-gray-200 bg-slate-100/60 rounded-t-xl">
+            <CardHeader className="grid grid-cols-[auto_1fr_auto] items-center p-4 border-b border-gray-200 bg-slate-100/60 rounded-t-xl">
                 <div className="text-sm font-semibold text-slate-600 whitespace-nowrap">
-                    Private Calendar / <span className="text-slate-800">Year view</span>
+                    Private calendar / <span className="text-slate-800">Day View</span>
                 </div>
-                <div className="flex items-center justify-end gap-4">
+                {/* Centered Controls */}
+                <div className="flex items-center justify-center gap-4">
                     <RoundedButton label="Today" id="calendar-today-btn" onClick={handleGoToToday} />
-                    <DateRangeNavigator
+                    <DateRangeNavigator 
                         dateRangeLabel={generateDateRangeLabel()}
                         onNextClick={onNextDateRangeNavigatorClick}
                         onPreviousClick={onPreviousDateRangeNavigatorClick}
                     />
+                </div>
+                {/* Right-aligned Controls */}
+                <div className="flex items-center justify-end">
                     <SegmentedControl
                         value={currentView}
                         onValueChange={setCurrentView}
@@ -110,13 +116,14 @@ export function CalendarYearView() {
             </CardHeader>
             {/* ====== 12-Month Grid ====== */}
             <CardContent className="p-8">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-12">
+                <div ref={scrollContainerRef} className="relative grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-12">
                     {Array.from({ length: 12 }).map((_, index) => (
                         <Month
                             key={index}
                             allItems={allItems}
                             year={currentDate.get("year")}
                             monthIndex={index}
+                            scrollContainerRef={scrollContainerRef}
                             onDayClick={setSelectedDay}
                             selectedDay={selectedDay}
                             setEditorPosition={setEditorPosition}

@@ -45,7 +45,6 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
         hours,
         topPosition,
         startPositionInHours,
-        endPositionInHours,
         sensors,
         handleRemoveUnscheduledBigTask,
         handleRemoveUnscheduledSubTask,
@@ -86,17 +85,21 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
         <>
             <Card className="w-full h-full mx-auto rounded-xl shadow-lg bg-slate-50/50 p-0">
                 {/* ====== Header (Same as before) ====== */}
-                <CardHeader className="grid grid-cols-[auto_1fr] items-center p-4 border-b border-gray-200 bg-slate-100/60 rounded-t-xl">
+                <CardHeader className="grid grid-cols-[auto_1fr_auto] items-center p-4 border-b border-gray-200 bg-slate-100/60 rounded-t-xl">
                     <div className="text-sm font-semibold text-slate-600 whitespace-nowrap">
-                        Private calendar / <span className="text-slate-800">Week View</span>
+                        Private calendar / <span className="text-slate-800">Day View</span>
                     </div>
-                    <div className="flex items-center justify-end gap-4">
+                    {/* Centered Controls */}
+                    <div className="flex items-center justify-center gap-4">
                         <RoundedButton label="Today" id="calendar-today-btn" onClick={handleGoToToday} />
                         <DateRangeNavigator
                             dateRangeLabel={generateDateRangeLabel()}
                             onNextClick={onNextDateRangeNavigatorClick}
                             onPreviousClick={onPreviousDateRangeNavigatorClick}
                         />
+                    </div>
+                    {/* Right-aligned Controls */}
+                    <div className="flex items-center justify-end">
                         <SegmentedControl
                             value={currentView}
                             onValueChange={setCurrentView}
@@ -107,7 +110,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                 {/* ====== Calendar Table ====== */}
                 <CardContent className="p-0 h-full">
                     {/* Scroll container */}
-                    <div ref={scrollContainerRef} className="relative flex pr-4">
+                    <div className="relative flex pr-4">
                         <Table>
                             <TableHeader className="sticky top-0 bg-white z-10">
                                 <TableRow>
@@ -130,7 +133,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                         </Table>
                         {/* <div className="w-12" /> */}
                     </div>
-                    <div className="relative h-[85vh] overflow-y-scroll overflow-x-hidden">
+                    <div className="relative h-[85vh] overflow-y-scroll overflow-x-hidden" ref={scrollContainerRef}>
                         <DndContext
                             onDragStart={onDragStart}
                             onDragEnd={onDragEnd}
@@ -172,7 +175,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                                         key={id}
                                                         id={id}
                                                         wrapperClassName="w-16.5 h-[4.6rem]"
-                                                        onClick={(e) => handleCellClick(e, id)}
+                                                        onClick={(e) => handleCellClick(e, id, scrollContainerRef)}
                                                     >
                                                         {(calendarMap[id] || []).map((task: Task) => {
                                                             return (
@@ -189,6 +192,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                                                         height: `${tasksStyle[task.id as number].height}rem`,
                                                                         width: `${tasksStyle[task.id as number].width}%`,
                                                                     }}
+                                                                    scrollContainerRef={scrollContainerRef}
                                                                     badgeWrapperClassName="-mt-2.5"
                                                                 />
                                                             );

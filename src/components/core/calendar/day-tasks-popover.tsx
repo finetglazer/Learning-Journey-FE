@@ -1,10 +1,11 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn, dayJsToISOString, getEditorAdjustedPosition, toDayJs } from "@/lib/utils";
 import { MonthPlanningBigTask, MonthPlanningEvent, Task, UnscheduledTask } from "@/model/task";
 import { format } from "date-fns";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, X } from "lucide-react";
 import { Dispatch, SetStateAction, useState } from "react";
 
 interface DayTasksPopoverProps {
@@ -23,6 +24,8 @@ interface DayTasksPopoverProps {
     editorOffset?: { x: number, y: number };
     onAddTaskClick?: (event: React.MouseEvent<HTMLDivElement>) => void;
     onTaskClick?: () => void;
+    setPopoverState?: (prev: any) => void;
+    scrollContainerRef?: any;
 };
 
 export function DayTasksPopover({
@@ -38,31 +41,47 @@ export function DayTasksPopover({
     setEditingTask,
     setEditorPosition,
     setEditingMonthPlanItem,
-    editorOffset,
+    scrollContainerRef,
     onTaskClick,
     onAddTaskClick,
+    setPopoverState,
 }: DayTasksPopoverProps) {
     const [bigTaskMenuOpen, setBigTaskMenuOpen] = useState<number | string | null>(null);
 
-    /**
-     * Checks if the task is a MonthPlanningBigTask by checking for a unique property.
-     */
+    /** Check if task is a MonthPlanningBigTask */
     const isBigTask = (task: any): task is MonthPlanningBigTask => {
         return typeof task === "object" && task !== null && (task as MonthPlanningBigTask).estimatedStartDate !== undefined;
     }
 
-    /**
-     * Checks if the task is a MonthPlanningEvent by checking for a unique property.
-     */
+    /** Check if task is a MonthPlanningEvent */
     const isEvent = (task: any): task is MonthPlanningEvent => {
         return typeof task === "object" && task !== null && (task as MonthPlanningEvent).specificDate !== undefined;
     }
 
     return (
         <div className="w-64 rounded-lg border bg-white p-2 shadow-lg font-sans">
-            {/* Header with Day and Date */}
-            <div className="mb-2 border-b pb-2 text-center text-sm font-bold text-gray-700">
-                {(type === 'month-view' || !type) && day ? format(day, "EEE d").toUpperCase() : (week || "")}
+            <div className="mb-2 flex items-center justify-between border-b pb-2 text-sm font-bold text-gray-700">
+                <span className="flex-1 text-center">
+                    {(type === 'month-view' || !type) && day ? format(day, "EEE d").toUpperCase() : (week || "")}
+                </span>
+                {setPopoverState && (
+                    <Button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setPopoverState((prev: any) => ({
+                                ...prev,
+                                open: false,
+                                id: null,
+                                tasks: [],
+                                bigTaskId: null,
+                                type: null,
+                            }));
+                        }}
+                        className="ml-2 text-gray-400 hover:text-gray-700 hover:bg-transparent bg-transparent transition-colors cursor-pointer"
+                    >
+                        <X className="h-4 w-4" />
+                    </Button>
+                )}
             </div>
 
             {/* Scrollable List of Tasks */}
@@ -78,28 +97,24 @@ export function DayTasksPopover({
                                 key={"day-tasks-popover-".concat(index.toString())}
                                 className={cn(
                                     "rounded p-2 text-sm text-gray-800 cursor-pointer hover:bg-gray-100",
-                                    { "bg-blue-200": isSelected && !isMenuOpen }, // Only highlight if menu isn't open
-                                    isMenuOpen ? "flex flex-col" : "flex items-center gap-3" // Adjust layout for menu
+                                    { "bg-blue-200": isSelected && !isMenuOpen },
+                                    isMenuOpen ? "flex flex-col" : "flex items-center gap-3"
                                 )}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     if (isBigTask(task)) {
-                                        // It's a big task, toggle its menu
+                                        // Toggle big task menu
                                         setBigTaskMenuOpen(isMenuOpen ? null : taskId);
-                                        // Also set it as selected
                                         setSelectedTaskId?.(taskId);
                                     } else {
-                                        // It's not a big task, close any open menu
                                         setBigTaskMenuOpen(null);
                                         onTaskClick?.();
 
-                                        // --- Standard click logic for other items ---
-                                        const editorPosition = getEditorAdjustedPosition(e.clientX, e.clientY, editorOffset?.x, editorOffset?.y)
+                                        const editorPosition = getEditorAdjustedPosition(e.clientX, e.clientY, scrollContainerRef);
                                         setSelectedTaskId?.(taskId);
                                         setEditorPosition?.(editorPosition);
 
                                         if (typeof task === "string" || isEvent(task)) {
-                                            // With event, add startTime & endTime for TaskEditor
                                             if (isEvent(task)) {
                                                 setEditingMonthPlanItem?.({
                                                     ...task,
@@ -110,9 +125,7 @@ export function DayTasksPopover({
                                             }
 
                                             setEditingMonthPlanItem?.(task);
-                                            if (typeof task === "string") {
-                                                setOpenRoutineEditor?.(true);
-                                            }
+                                            if (typeof task === "string") setOpenRoutineEditor?.(true);
                                             setEditingTask?.(null);
                                         }
                                         else if (type === 'month-planning') {
@@ -123,7 +136,6 @@ export function DayTasksPopover({
                                             setEditingTask?.(task as Task);
                                             setEditingMonthPlanItem?.(null);
                                         }
-                                        // --- End standard click logic ---
                                     }
                                 }}
                             >
@@ -131,7 +143,7 @@ export function DayTasksPopover({
                                 {(!isBigTask(task) || !isMenuOpen) && (
                                     <>
                                         <div
-                                            className={cn("h-4 w-1.5 rounded-full bg-[#E62E7B] shrink-0", {
+                                            className={cn("h-4 w-1.5 rounded-full shrink-0", {
                                                 "bg-blue-400": isEvent(task),
                                                 "bg-[#68DE79]": typeof task === "string" || ((task as any)?.type || "").toLowerCase() === "routine",
                                                 "bg-[#E62E7B]": isBigTask(task) || ((task as any)?.type || "").toLowerCase() === "task",
@@ -141,29 +153,26 @@ export function DayTasksPopover({
                                     </>
                                 )}
 
+                                {/* Big Task Menu */}
                                 {isBigTask(task) && isMenuOpen && (
                                     <div className="flex flex-col w-full gap-0.5 pt-1">
-                                        {/* Original Title (non-clickable) */}
                                         <div className="flex items-center gap-3 mb-1">
                                             <div className="h-4 w-1.5 rounded-full bg-[#E62E7B] shrink-0" />
                                             <span className="truncate font-semibold">{task?.name}</span>
                                         </div>
-                                        {/* Menu Options */}
                                         <div
                                             className="w-full cursor-pointer text-left p-1.5 rounded hover:bg-gray-200 text-sm font-medium"
                                             onClick={(e) => {
-                                                e.stopPropagation(); // Prevent parent onClick
+                                                e.stopPropagation();
                                                 onTaskClick?.();
-                                                // 1. "Edit big task"
                                                 setEditingMonthPlanItem?.({
                                                     ...task,
-                                                    // Add startTime & endTime for Task editor
                                                     startTime: dayJsToISOString(toDayJs(task?.estimatedStartDate)),
                                                     endTime: dayJsToISOString(toDayJs(task?.estimatedEndDate)),
                                                 });
                                                 setEditingTask?.(null);
-                                                setBigTaskMenuOpen(null); // Close menu
-                                                const editorPosition = getEditorAdjustedPosition(e.clientX, e.clientY, editorOffset?.x, editorOffset?.y)
+                                                setBigTaskMenuOpen(null);
+                                                const editorPosition = getEditorAdjustedPosition(e.clientX, e.clientY, scrollContainerRef);
                                                 setEditorPosition?.(editorPosition);
                                             }}
                                         >
@@ -172,11 +181,10 @@ export function DayTasksPopover({
                                         <div
                                             className="w-full cursor-pointer text-left p-1.5 rounded hover:bg-gray-200 text-sm font-medium"
                                             onClick={(e) => {
-                                                e.stopPropagation(); // Prevent parent onClick
-                                                // 2. "Show unscheduled tasks"
+                                                e.stopPropagation();
                                                 handleBigTaskClick?.(e, task as MonthPlanningBigTask);
                                                 setEditingTask?.(null);
-                                                setBigTaskMenuOpen(null); // Close menu
+                                                setBigTaskMenuOpen(null);
                                             }}
                                         >
                                             Show unscheduled tasks
@@ -188,6 +196,8 @@ export function DayTasksPopover({
                     })}
                 </div>
             </ScrollArea>
+
+            {/* Add new task button (month-planning + unscheduled-task type) */}
             {(type === 'month-planning' && currentTaskType === 'unscheduled-task') && (
                 <div
                     className="flex items-center gap-2 p-2 mt-1 border-t border-gray-100 text-sm text-gray-500 cursor-pointer rounded-md hover:bg-gray-100"
@@ -197,7 +207,6 @@ export function DayTasksPopover({
                     <span>Add new task</span>
                 </div>
             )}
-        </div >
+        </div>
     );
 }
-

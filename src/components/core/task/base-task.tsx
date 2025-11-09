@@ -10,11 +10,13 @@ export interface BaseTaskProps {
     handleDoubleClick?: (
         event?: React.MouseEvent<HTMLDivElement>,
         taskId?: number | string,
-        task?: MonthPlanningBigTask | MonthPlanningEvent | string
+        task?: MonthPlanningBigTask | MonthPlanningEvent | string,
+        scrollContainerRef?: any,
     ) => void;
     handleCellClick?: (
         event?: React.MouseEvent<HTMLDivElement>,
         task?: MonthPlanningBigTask,
+        scrollContainerRef?: any,
     ) => void;
     updateRoutineList?: (oldName?: string, newName?: string) => void;
     setOpenRoutineEditor?: Dispatch<SetStateAction<boolean>>;
@@ -29,6 +31,7 @@ export interface BaseTaskProps {
     descriptionClassName?: string;
     badgeWrapperClassName?: string;
     badgeClassName?: string;
+    scrollContainerRef?: any;
 };
 
 export const BaseTask: React.FC<BaseTaskProps> = ({
@@ -48,6 +51,7 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
     descriptionClassName,
     badgeWrapperClassName,
     badgeClassName,
+    scrollContainerRef,
 }) => {
     const type = taskType || (task as Task)?.type || 'task';
     // Get the ID, whether it's a string or number
@@ -86,7 +90,7 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                         wrapperClassName,
                     )}
                     style={{ ...wrapperStyle }}
-                    onDoubleClick={(e) => handleDoubleClick?.(e, taskId as number)}
+                    onDoubleClick={(e) => handleDoubleClick?.(e, taskId as number, undefined, scrollContainerRef)}
                 >
                     <span className={cn("font-semibold text-slate-700 text-lg text-left truncate", titleClassName)}>
                         {(task as Task)?.name}
@@ -150,9 +154,9 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                     style={{ ...wrapperStyle }}
                     onDoubleClick={(e) => {
                         setOpenRoutineEditor?.(false);
-                        handleDoubleClick?.(e, typeof task === "string" ? "" : task?.id as number, task as any);
+                        handleDoubleClick?.(e, typeof task === "string" ? "" : task?.id as number, task as any, scrollContainerRef);
                     }}
-                    onClick={(e) => handleCellClick?.(e, task as MonthPlanningBigTask)}
+                    onClick={(e) => handleCellClick?.(e, task as MonthPlanningBigTask, scrollContainerRef)}
                 >
                     {typeof task !== "string" && (
                         <span className={cn("font-bold text-slate-700 text-[0.9rem]! text-base text-center sm:text-left truncate w-[110%]", titleClassName)}>
@@ -194,7 +198,7 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                     wrapperClassName,
                 )}
                 style={{ ...wrapperStyle }}
-                onDoubleClick={(e) => handleDoubleClick?.(e, taskId as number)}
+                onDoubleClick={(e) => handleDoubleClick?.(e, taskId as number, undefined, scrollContainerRef)}
             >
                 <div className={cn("flex items-center gap-2", badgeWrapperClassName)}>
                     <div className={cn("rounded bg-sky-400 px-2 py-1 text-xs font-bold text-white",

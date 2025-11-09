@@ -27,6 +27,7 @@ export interface MonthProps {
         y: number;
     }>>;
     setSelectedTaskId: Dispatch<SetStateAction<number | string | null>>;
+    scrollContainerRef?: any;
 }
 
 export function Month({
@@ -39,6 +40,7 @@ export function Month({
     setEditingTask,
     setSelectedTaskId,
     setEditorPosition,
+    scrollContainerRef,
 }: MonthProps) {
     const monthDate = new Date(year, monthIndex);
 
@@ -73,6 +75,7 @@ export function Month({
                         <DayCell
                             key={day.toISOString()}
                             day={day}
+                            scrollContainerRef={scrollContainerRef}
                             monthDate={monthDate}
                             selectedDay={selectedDay}
                             tasks={tasksForThisDay}
@@ -89,6 +92,7 @@ export function Month({
                             setEditingTask={setEditingTask}
                             setSelectedTaskId={setSelectedTaskId}
                             setEditorPosition={setEditorPosition}
+                            
                         />
                     );
                 })}

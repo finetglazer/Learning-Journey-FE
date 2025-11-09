@@ -39,7 +39,7 @@ export interface CalendarContextInterface {
     sleepEndTime: string;
     topPosition: string;
     sensors: ReturnType<typeof useSensors>;
-    handleTaskDoubleClick: (event: React.MouseEvent<HTMLDivElement>, taskId: number) => void;
+    handleTaskDoubleClick: (event: React.MouseEvent<HTMLDivElement>, taskId: number, _task?: any, scrollContainerRef?: any) => void;
     handleRemoveUnscheduledBigTask: (unscheduledBigTask: UnscheduledBigTask) => void;
     handleRemoveUnscheduledSubTask: (unscheduledSubtask: UnscheduledTask) => void;
     onRemoveDraggableTask: (task: Task) => void;
@@ -99,7 +99,7 @@ export interface CalendarContextInterface {
 
     onDragStart: (event: DragStartEvent) => void;
     onDragEnd: (event: DragEndEvent) => void;
-    handleCellClick: (event: React.MouseEvent<HTMLTableCellElement>, cellId: string) => void;
+    handleCellClick: (event: React.MouseEvent<HTMLTableCellElement>, cellId: string, scrollContainerRef?: any) => void;
     getNewCalendarItem: (itemId: number, isNew?: boolean) => void;
     handleRemoveUnscheduledTask: (unscheduledTaskId: number | string | null, bigTaskId: number) => void;
     handleRemoveUnscheduledRoutine: (unscheduledRoutineId: number | string | null) => void;
@@ -279,7 +279,7 @@ export const useCalendarHooks = ({
             case 'month-planning':
                 // Disable when navigating to previous month comparing to current month
                 if (currentView === 'month-planning') {
-                    if (currentDate.subtract(1, "month").diff(toDayJs(), "month") < 0) {
+                    if (currentDate.subtract(1, "month").diff(toDayJs(), "month") <= 0) {
                         break;
                     }
                 }
@@ -476,8 +476,8 @@ export const useCalendarHooks = ({
         return blocks;
     };
 
-    const handleTaskDoubleClick = (event: React.MouseEvent<HTMLDivElement>, taskId: number) => {
-        const adjustedPosition = getEditorAdjustedPosition(event.clientX, event.clientY);
+    const handleTaskDoubleClick = (event: React.MouseEvent<HTMLDivElement>, taskId: number, _task?: any, scrollContainerRef?: any) => {
+        const adjustedPosition = getEditorAdjustedPosition(event.clientX, event.clientY, scrollContainerRef?.current);
         setEditorPosition(adjustedPosition);
 
         // Call get calendar item detail API
@@ -695,12 +695,11 @@ export const useCalendarHooks = ({
             });
     };
 
-    const handleCellClick = (event: React.MouseEvent<HTMLTableCellElement>, cellId: string) => {
+    const handleCellClick = (event: React.MouseEvent<HTMLTableCellElement>, cellId: string, scrollContainerRef?: any) => {
         if ((event.target as HTMLElement).closest('.cursor-grab')) {
             return;
         }
-
-        const adjustedPosition = getEditorAdjustedPosition(event.clientX, event.clientY);
+        const adjustedPosition = getEditorAdjustedPosition(event.clientX, event.clientY, scrollContainerRef?.current);
 
         setEditorPosition(adjustedPosition);
         // New task would NOT have Id and would not be pushed to updatedTasks

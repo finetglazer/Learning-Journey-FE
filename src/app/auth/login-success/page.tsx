@@ -11,8 +11,16 @@ export default function AuthSuccess() {
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const token = params.get("token");
+        const refreshToken = params.get("refreshToken");
+        const userId = params.get("userId");
+        const displayName = params.get("displayName");
+        const email = params.get("email");
         if (token) {
             localStorage.setItem("accessToken", token);
+            localStorage.setItem("refreshToken", refreshToken as string);
+            localStorage.setItem("userId", userId as string);
+            localStorage.setItem("displayName", displayName as string);
+            localStorage.setItem("email", email as string);
             setTimeout(() => router.push(ROOT_ROUTE), 1200);
         }
     }, [router]);

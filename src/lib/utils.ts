@@ -355,25 +355,51 @@ export const getDaysInMonth = (month: number) => {
 };
 
 export const getEditorAdjustedPosition = (
-  x: number,
-  y: number,
-  offsetX: number = 0,
-  offsetY: number = 0
+  clickX: number, // This is e.clientX
+  clickY: number, // This is e.clientY
+  scrollContainer?: HTMLDivElement | null
 ) => {
+  // These constants were in your original stub.
   const EDITOR_WIDTH = 380;
   const EDITOR_HEIGHT = 550;
-  const SCREEN_PADDING = 0;
+  const VIEWPORT_PADDING = 16; // Use a simple 16px padding
 
-  const initialX = x + offsetX;
-  const initialY = y + offsetY;
+  // Fallback if the ref isn't ready
+  if (!scrollContainer) {
+    return { x: clickX, y: clickY };
+  }
 
-  const maxX = window.innerWidth - EDITOR_WIDTH - SCREEN_PADDING;
-  const maxY = window.innerHeight - EDITOR_HEIGHT - SCREEN_PADDING;
+  // 1. Get the parent container's position on the screen
+  const parentRect = scrollContainer.getBoundingClientRect();
+  // 2. Get how much the parent container has been scrolled
+  const parentScrollTop = scrollContainer.scrollTop;
+  const parentScrollLeft = scrollContainer.scrollLeft;
 
-  const finalX = Math.max(SCREEN_PADDING, Math.min(initialX, maxX));
-  const finalY = Math.max(SCREEN_PADDING, Math.min(initialY, maxY));
+  // 3. Calculate the click position relative to the parent's scrolled content
+  // (Click on screen) - (Parent's position on screen) + (Parent's scroll)
+  let relativeX = clickX - parentRect.left + parentScrollLeft;
+  let relativeY = clickY - parentRect.top + parentScrollTop;
 
-  return { x: finalX, y: finalY };
+  // 4. (Optional but recommended) Adjust position to prevent editor
+  //    from appearing off-screen (based on viewport, not parent)
+
+  // If it overflows the right side of the *viewport*
+  if (clickX + EDITOR_WIDTH > window.innerWidth - VIEWPORT_PADDING) {
+    // Reposition it to the left of the cursor
+    relativeX = (clickX - EDITOR_WIDTH) - parentRect.left + parentScrollLeft;
+  }
+
+  // If it overflows the bottom of the *viewport*
+  if (clickY + EDITOR_HEIGHT > window.innerHeight - VIEWPORT_PADDING) {
+    // Reposition it above the cursor
+    relativeY = (clickY - EDITOR_HEIGHT) - parentRect.top + parentScrollTop;
+  }
+
+  // 5. Ensure it never goes outside the parent's boundaries
+  relativeX = Math.max(parentScrollLeft, relativeX);
+  relativeY = Math.max(parentScrollTop, relativeY);
+
+  return { x: relativeX, y: relativeY };
 };
 
 export const getWeeksInMonth = (month: number, year?: number) => {

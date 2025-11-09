@@ -41,14 +41,10 @@ export function CollapsibleUnscheduledPanel({
     selectedRoutineId,
 }: CollapsibleUnscheduledPanelProps) {
     const [isCollapsed, setIsCollapsed] = useState(false);
-    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
         id: 'draggable-panel',
     });
 
-    const dragStyle = transform ? {
-        transform: CSS.Transform.toString(transform),
-    } : undefined;
-    
     // --- 2. Memoize the expensive list rendering ---
     // This content will now only be recalculated if the data or handlers change,
     // not when the panel is being dragged (i.e., when `transform` changes).
@@ -142,10 +138,8 @@ export function CollapsibleUnscheduledPanel({
             <AnimatePresence>
                 {isCollapsed ? (
                     <motion.div
-                        ref={setNodeRef}
-                        style={dragStyle}
                         key={"icon"}
-                        initial={{ opacity: 0, scale: 0.5 }}
+                        initial={{ opacity: 0, scale: 0.5, zIndex: 99999 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.5 }}
                         transition={{ duration: 0.2 }}
@@ -153,6 +147,7 @@ export function CollapsibleUnscheduledPanel({
                         <Button
                             {...listeners}
                             {...attributes}
+                            ref={setNodeRef}
                             onClick={() => setIsCollapsed(false)}
                             className={cn("h-16 w-16 cursor-grab rounded-full bg-gray-700 border-4 border-none p-0 shadow-lg hover:bg-gray-600",
                                 { "opacity-[0.4]": isDragging }
@@ -167,10 +162,8 @@ export function CollapsibleUnscheduledPanel({
                     // 4. The Expanded View (Full Panel)
                     <motion.div
                         // --- 4. Apply draggable props to the expanded panel as well ---
-                        ref={setNodeRef}
-                        style={dragStyle}
                         key={"panel"}
-                        initial={{ opacity: 0, scale: 0.8 }}
+                        initial={{ opacity: 0, scale: 0.8, zIndex: 99999 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
                         transition={{ duration: 0.2 }}
@@ -178,8 +171,6 @@ export function CollapsibleUnscheduledPanel({
                         className="w-[350px] bg-white shadow-lg rounded-lg font-sans flex flex-col"
                     >
                         <div
-                            {...listeners}
-                            {...attributes}
                             className="flex justify-between items-center p-4 border-b cursor-grab" // Added padding here
                         >
                             <h3 className="font-semibold text-lg">Unscheduled Tasks</h3>

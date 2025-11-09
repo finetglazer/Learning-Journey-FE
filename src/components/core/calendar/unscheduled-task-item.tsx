@@ -47,7 +47,7 @@ export function UnscheduledTaskItem({ task, bigTask, onRemove, onTitleChange, dr
         }
     };
 
-    const style = { opacity: isDragging ? 1 : 1 };
+    const style = { opacity: isDragging ? 0.7 : 1 };
     const bigTaskStartDate = bigTask?.estimatedStartDate ? toDayJs(bigTask?.estimatedStartDate).get("date").toString().padStart(2, "0") : null;
     const bigTaskEndDate = bigTask?.estimatedEndDate ? toDayJs(bigTask?.estimatedEndDate).get("date").toString().padStart(2, "0") : null;
 

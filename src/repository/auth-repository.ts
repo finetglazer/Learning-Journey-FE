@@ -23,6 +23,8 @@ export class AuthRepository extends BaseRepository {
                     localStorage.setItem("accessToken", data.accessToken);
                     localStorage.setItem("refreshToken", data.refreshToken);
                     localStorage.setItem("userId", data?.user?.id);
+                    localStorage.setItem("displayName", data?.user?.displayName);
+                    localStorage.setItem("email", data?.user?.email);
                 }
                 return res?.data;
             }));

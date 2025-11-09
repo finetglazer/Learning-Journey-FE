@@ -45,8 +45,9 @@ export default function RootPage() {
   const router = useRouter();
   const [currentView, setCurrentView] = useState<"home" | "settings">("home");
   const [activeItem, setActiveItem] = useState("private-calendar");
+  const [isSidebarCollapse, setIsSidebarCollapse] = useState(false);
 
-  const { setSleepHours } = useContext<AppContextProps>(AppContext);
+  const { setSleepHours, setLoadingPage } = useContext<AppContextProps>(AppContext);
   const calendarContextValues = useCalendarHooks({ initTasks: [] });
 
   const {
@@ -57,6 +58,7 @@ export default function RootPage() {
   const handleLogOut = () => {
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("accessToken");
+    setLoadingPage(true);
     router.push(SIGN_IN_ROUTE);
   };
 
@@ -175,7 +177,7 @@ export default function RootPage() {
       },
       error: () => { },
     });
-
+    // Get monthPlanId
     calendarRepository.getMonthPlanIdByDate({ year: currentDate.get("year"), month: currentDate.get("month") + 1 }).subscribe({
       next: (res) => {
         const success = res?.status;
@@ -214,18 +216,38 @@ export default function RootPage() {
         localStorage.removeItem("monthPlanId");
       },
     });
-
+    // Get calendarId
     calendarRepository.getCalendars().subscribe({
       next: res => {
         if (res?.status) {
-          localStorage.setItem("calendarId", (res?.data?.calendars || [])[0]?.id);
+          const calendars = res?.data?.calendars || [];
+          if (!calendars.length) {
+            // If there are no calendars, create 1
+            const userId = Number(localStorage.getItem("userId"));
+            calendarRepository.createCalendar(userId).subscribe({
+              next: res => {
+                if (res?.status) {
+                  if (res?.data) {
+                    localStorage.setItem("calendarId", res?.data);
+                  }
+                }
+                else {
+                  toast.error(res?.msg || res?.message);
+                }
+              },
+              error: err => { }
+            });
+          }
+          else {
+            localStorage.setItem("calendarId", calendars[0]?.id);
+          }
         }
         else {
           localStorage.removeItem("calendarId");
           toast.error(res?.msg || res?.message);
         }
       },
-      error: err => { 
+      error: err => {
         localStorage.removeItem("calendarId");
       },
     })
@@ -241,7 +263,10 @@ export default function RootPage() {
     <CalendarContext.Provider value={calendarContextValues}>
       <div className="flex">
         {/* --- Sidebar --- */}
-        <div className="w-[250px] h-full bg-gray-50 border-r border-gray-200 shadow-md">
+        <div
+          className={`transition-all duration-300 ease-in-out ${isSidebarCollapse ? "w-[80px]" : "w-[250px]"
+            } h-full bg-gray-50 border-r border-gray-200 shadow-md`}
+        >
           <div className="flex overflow-hidden h-full">
             <div
               className="flex w-[500px] h-full transition-transform duration-300 ease-in-out"
@@ -250,16 +275,23 @@ export default function RootPage() {
               }}
             >
               {/* Home Panel */}
-              <div className="h-full w-[250px]">
-                <HomePanel sections={homeSections} activeItem={activeItem} />
+              <div className={`h-full ${isSidebarCollapse ? "w-[80px]" : "w-[250px]"}`}>
+                <HomePanel
+                  sections={homeSections}
+                  activeItem={activeItem}
+                  isCollapsed={isSidebarCollapse}
+                  onToggleCollapse={() => {setIsSidebarCollapse(!isSidebarCollapse)}}
+                />
               </div>
 
               {/* Settings Panel */}
-              <div className="h-full w-[250px] border-l border-gray-200">
+              <div className={`h-full ${isSidebarCollapse ? "w-[80px]" : "w-[250px]"} border-l border-gray-200`}>
                 <SettingsPanel
                   sections={settingsSections}
                   onShowHome={() => setCurrentView("home")}
                   activeItem={activeItem}
+                  isCollapsed={isSidebarCollapse}
+                  onToggleCollapse={() => { setIsSidebarCollapse(!isSidebarCollapse) }}
                 />
               </div>
             </div>

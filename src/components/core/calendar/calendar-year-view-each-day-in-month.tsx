@@ -25,6 +25,7 @@ export interface DayCellProps {
     selectedTaskId: number | string | null;
     setEditorPosition: Dispatch<SetStateAction<{ x: number; y: number; }>>;
     setSelectedTaskId: Dispatch<SetStateAction<number | string | null>>;
+    scrollContainerRef?: any;
 };
 
 export const DayCell = ({
@@ -35,6 +36,7 @@ export const DayCell = ({
     isOpen,
     onDayClick,
     onOpenChange,
+    scrollContainerRef,
     ...popoverProps // Passes down setEditingTask, selectedTaskId, etc.
 }: DayCellProps) => {
 
@@ -95,10 +97,11 @@ export const DayCell = ({
                 <PopoverContent className="w-auto p-0" side="bottom" align="start">
                     <DayTasksPopover
                         day={day}
+                        scrollContainerRef={scrollContainerRef}
                         tasks={tasks} // Pass the tasks for this day
                         onTaskClick={() => onOpenChange(false)} // Close popover on task click
                         {...popoverProps} // Pass down selectedTaskId, setEditingTask, etc.
-                        editorOffset={{ x: 120, y: 0 }}
+                        editorOffset={{ x: 0, y: 0 }}
                     />
                 </PopoverContent>
             </Popover>
