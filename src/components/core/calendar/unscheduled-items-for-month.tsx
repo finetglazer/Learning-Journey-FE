@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { UnscheduledBigTask, UnscheduledMonthData, UnscheduledTask } from "@/model/task";
+import { UnscheduledBigTask, UnscheduledMonthData, UnscheduledRoutine, UnscheduledTask } from "@/model/task";
 import { ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { UnscheduledRoutineItem } from "./unscheduled-routine-item";
@@ -14,15 +14,15 @@ import { isNil } from "lodash";
 
 export interface UnscheduledItemsForMonthProps {
     monthData: UnscheduledMonthData;
-    handleRemoveUnscheduledSubTask?: (unscheduledSubtask: UnscheduledTask) => void;
-    handleRemoveUnscheduledBigTask?: (unscheduledBigTask: UnscheduledBigTask) => void;
+    handleRemoveUnscheduledSubTask?: (unscheduledSubtaskId: string | number, bigTaskId: number) => void;
+    handleRemoveUnscheduledRoutine?: (unscheduleRoutineId: string | number) => void;
     onUnscheduledTaskTitleChange?: (taskId: string, newTitle: string) => void;
 }
 
 export const UnscheduledItemsForMonth = ({
     monthData,
     onUnscheduledTaskTitleChange,
-    handleRemoveUnscheduledBigTask,
+    handleRemoveUnscheduledRoutine,
     handleRemoveUnscheduledSubTask,
 }: UnscheduledItemsForMonthProps) => {
     const unscheduledRoutines = monthData?.unscheduledRoutines;
@@ -85,6 +85,7 @@ export const UnscheduledItemsForMonth = ({
                                         <UnscheduledRoutineItem
                                             key={UNSCHEDULED_ROUTINE_PREFIX + index}
                                             routine={routine}
+                                            onRemove={handleRemoveUnscheduledRoutine}
                                         />
                                     ))}
                                 </div>
@@ -111,7 +112,6 @@ export const UnscheduledItemsForMonth = ({
                                                     bigTask={bigTask}
                                                     onTitleChange={onUnscheduledTaskTitleChange}
                                                     draggable={false}
-                                                    onRemove={() => handleRemoveUnscheduledBigTask?.(bigTask)}
                                                 />
                                                 <CollapsibleTrigger asChild>
                                                     <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -124,7 +124,7 @@ export const UnscheduledItemsForMonth = ({
                                                     <UnscheduledTaskItem
                                                         key={UNSCHEDULED_SUBTASK_PREFIX + index}
                                                         task={subtask}
-                                                        onRemove={() => handleRemoveUnscheduledSubTask?.(subtask)}
+                                                        onRemove={() => handleRemoveUnscheduledSubTask?.(subtask?.id as number, bigTask?.bigTaskId)}
                                                         onTitleChange={onUnscheduledTaskTitleChange}
                                                     />
                                                 ))}

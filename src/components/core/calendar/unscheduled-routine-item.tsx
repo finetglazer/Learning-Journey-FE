@@ -9,7 +9,7 @@ import React, { useEffect, useRef, useState } from "react";
 
 interface UnscheduledRoutineItemProps {
     routine: UnscheduledRoutine;
-    onRemove?: (routineId: string) => void;
+    onRemove?: (unscheduledRoutineId: string | number) => void;
     onTitleChange?: (routineId: string, newTitle: string) => void;
     draggable?: boolean;
 }
@@ -78,7 +78,7 @@ export function UnscheduledRoutineItem({ routine, onRemove, onTitleChange, dragg
             <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => onRemove?.(routine.id)}
+                onClick={() => onRemove?.(routine?.id as string | number)}
                 className="h-6 w-6 text-gray-400 hover:text-red-500 cursor-pointer shrink-0"
             >
                 <MinusCircle size={18} />

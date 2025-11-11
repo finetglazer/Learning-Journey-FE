@@ -30,8 +30,8 @@ export const CalendarDayView = () => {
         hours,
         topPosition,
         sensors,
-        handleRemoveUnscheduledBigTask,
-        handleRemoveUnscheduledSubTask,
+        handleDeleteUnscheduledTask,
+        handleDeleteUnscheduledRoutine,
         generateDateRangeLabel,
         onNextDateRangeNavigatorClick,
         onPreviousDateRangeNavigatorClick,
@@ -151,8 +151,8 @@ export const CalendarDayView = () => {
                         <CollapsibleUnscheduledPanel
                             unscheduledMonthData={unscheduledMonthData}
                             position={panelPosition}
-                            handleRemoveUnscheduledBigTask={handleRemoveUnscheduledBigTask}
-                            handleRemoveUnscheduledSubTask={handleRemoveUnscheduledSubTask}
+                            handleRemoveUnscheduledRoutine={handleDeleteUnscheduledRoutine}
+                            handleRemoveUnscheduledSubTask={handleDeleteUnscheduledTask}
                             onUnscheduledTaskTitleChange={onChangeUnscheduledTaskTitle}
                             setUnscheduledMonthData={setUnscheduledMonthData}
                             draggingUnscheduledTaskId={draggingUnscheduledTaskId}

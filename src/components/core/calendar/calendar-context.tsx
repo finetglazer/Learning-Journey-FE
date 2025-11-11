@@ -42,6 +42,8 @@ export interface CalendarContextInterface {
     handleTaskDoubleClick: (event: React.MouseEvent<HTMLDivElement>, taskId: number, _task?: any, scrollContainerRef?: any) => void;
     handleRemoveUnscheduledBigTask: (unscheduledBigTask: UnscheduledBigTask) => void;
     handleRemoveUnscheduledSubTask: (unscheduledSubtask: UnscheduledTask) => void;
+    handleDeleteUnscheduledTask: (unscheduledTaskId: string | number | null, bigTaskId: number) => void;
+    handleDeleteUnscheduledRoutine: (unscheduledRoutineId: string | number | null) => void;
     onRemoveDraggableTask: (task: Task) => void;
     currentMondayTime: Dayjs;
     setCurrentMondayTime: Dispatch<SetStateAction<Dayjs>>;
@@ -134,6 +136,8 @@ export const CalendarContext = createContext<CalendarContextInterface>({
     handleTaskDoubleClick: () => { },
     handleRemoveUnscheduledBigTask: () => { },
     handleRemoveUnscheduledSubTask: () => { },
+    handleDeleteUnscheduledTask: () => { },
+    handleDeleteUnscheduledRoutine: () => { },
     onRemoveDraggableTask: () => { },
     currentMondayTime: dayjs(),
     setCurrentMondayTime: () => { },
@@ -535,7 +539,7 @@ export const useCalendarHooks = ({
         return getRoutineById(unscheduledMonthData, draggingUnscheduledRoutineId, []);
     };
 
-    const onDeleteCalendarItem = (itemId?: number | string | null) => {
+    const onDeleteCalendarItem = (itemId?: number | string | null, wouldGetUnscheduledItems?: boolean) => {
         // itemId could only be number
         calendarRepository.deleteCalendarItem(itemId as number)
             .subscribe({
@@ -547,6 +551,9 @@ export const useCalendarHooks = ({
                         setSelectedRoutineId(null);
                         setEditingTask(null);
                         handleReload();
+                        if (wouldGetUnscheduledItems) {
+                            getUnscheduledItems();
+                        }
                     }
                     else {
                         setAlertMessage({
@@ -554,9 +561,16 @@ export const useCalendarHooks = ({
                             title: res?.msg || res?.message,
                             description: res?.data,
                         });
+                        if (wouldGetUnscheduledItems) {
+                            getUnscheduledItems();
+                        }
                     }
                 },
-                error: err => { },
+                error: err => {
+                    if (wouldGetUnscheduledItems) {
+                        getUnscheduledItems();
+                    }
+                },
             });
     };
 
@@ -579,7 +593,7 @@ export const useCalendarHooks = ({
             setDraggingScheduledTaskId(null);
             setIsPanelDragging(true);
         }
-        else if ((event.active?.data?.current?.type || "").toLowerCase() === "task") {
+        else if (["task", "event"].includes((event.active?.data?.current?.type || "").toLowerCase())) {
             setDraggingUnscheduledTaskId(null);
             setDraggingUnscheduledRoutineId(null);
             setDraggingScheduledTaskId(event.active.id);
@@ -612,6 +626,49 @@ export const useCalendarHooks = ({
         updateBigTask(unscheduledMonthData, bigTaskParams);
     };
 
+    const updateRoutineList = (monthPlanId: number, newRoutineList: string[], wouldGetUnscheduledItems?: boolean) => {
+        calendarRepository.updateRoutineList({
+            monthPlanId,
+        }, {
+            approvedRoutineNames: newRoutineList,
+        }).subscribe({
+            next: res => {
+                const success = res?.status;
+                if (success) {
+                    toast.success(res?.msg || res?.message);
+                    handleReload();
+                    if (wouldGetUnscheduledItems) {
+                        getUnscheduledItems();
+                    }
+                }
+                else {
+                    setAlertMessage({
+                        type: "warning",
+                        title: res?.message || res?.msg,
+                        description: res?.data,
+                    });
+                    handleReload();
+                    if (wouldGetUnscheduledItems) {
+                        getUnscheduledItems();
+                    }
+                }
+            },
+            error: err => {
+                const errors = err?.response?.data?.data;
+                const message = err?.response?.data?.msg || err?.response?.data?.message;
+                setAlertMessage({
+                    type: "warning",
+                    title: message,
+                    description: errors,
+                });
+                handleReload();
+                if (wouldGetUnscheduledItems) {
+                    getUnscheduledItems();
+                }
+            },
+        });
+    };
+
     const handleRemoveUnscheduledRoutine = (unscheduledRoutineId: number | string | null) => {
         let updatedMonthDataItem: any = undefined;
         unscheduledMonthData.forEach(monthDataItem => {
@@ -620,22 +677,37 @@ export const useCalendarHooks = ({
             }
         });
         if (!updatedMonthDataItem) {
-            return;
+            return undefined;
         }
         let unscheduledRoutineIndex = (updatedMonthDataItem?.unscheduledRoutines || []).findIndex((routine: any) => routine?.id === unscheduledRoutineId);
         if (unscheduledRoutineIndex === -1) {
-            return;
+            return undefined;
         }
-        const updatedUnscheduledRoutines = (updatedMonthDataItem?.unscheduledRoutines || []).splice(unscheduledRoutineIndex, 1);
-        updatedMonthDataItem = {
-            ...updatedMonthDataItem,
-            unscheduledRoutines: updatedUnscheduledRoutines,
-        };
+        (updatedMonthDataItem?.unscheduledRoutines || []).splice(unscheduledRoutineIndex, 1);
         const updatedMonthDataItemIndex = unscheduledMonthData.findIndex(monthDataItem => monthDataItem?.month === updatedMonthDataItem?.month);
         if (updatedMonthDataItemIndex === -1) {
-            return;
+            return undefined;
         }
         setUnscheduledMonthData([...unscheduledMonthData].splice(updatedMonthDataItemIndex, 1, updatedMonthDataItem));
+        // Return monthPlanId, new routine list for using by other functions
+        return { 
+            monthPlanId: unscheduledMonthData[updatedMonthDataItemIndex]?.monthPlanId,
+            newRoutineList: (updatedMonthDataItem?.unscheduledRoutines || []).map((routine: any) => routine?.name)
+        };
+    };
+
+    const handleDeleteUnscheduledTask = (unscheduledTaskId: string | number | null, bigTaskId: number) => {
+        handleRemoveUnscheduledTask(unscheduledTaskId, bigTaskId);
+        onDeleteCalendarItem(unscheduledTaskId, true);
+    };
+
+    const handleDeleteUnscheduledRoutine = (unscheduledRoutineId: number | string | null) => {
+        const res = handleRemoveUnscheduledRoutine(unscheduledRoutineId);
+        if (!res) {
+            return;
+        }
+        const {monthPlanId, newRoutineList} = res;
+        updateRoutineList(monthPlanId as number, newRoutineList, true);
     };
 
     const getNewCalendarItem = (itemId: number, isNew?: boolean) => {
@@ -681,7 +753,8 @@ export const useCalendarHooks = ({
                         }
                     }
                     else {
-                        toast.error(res?.msg);
+                        toast.error(res?.msg || res?.message);
+                        handleReload();
                     }
                     setDraggingUnscheduledTaskId(null);
                     setDraggingUnscheduledRoutineId(null);
@@ -691,6 +764,8 @@ export const useCalendarHooks = ({
                     setDraggingUnscheduledTaskId(null);
                     setDraggingUnscheduledRoutineId(null);
                     setDraggingScheduledTaskId(null);
+
+                    handleReload();
                 }
             });
     };
@@ -732,7 +807,7 @@ export const useCalendarHooks = ({
                         unscheduledRoutines: (monthGroup?.unscheduledRoutines || []).map((unscheduledRoutine: UnscheduledRoutine) => ({
                             ...unscheduledRoutine,
                             type: 'unscheduled-routine',
-                            id: uuid4(),
+                            id: unscheduledRoutine?.id || uuid4(),
                         })),
                         unscheduledTasks: undefined,    // Replaced by unscheduledBigTasks
                     }));
@@ -774,6 +849,10 @@ export const useCalendarHooks = ({
                 status: 'incomplete',
                 completionPercentage: 0,
             };
+            // Temporarily update updatedTasks
+            setUpdatedTasks([...updatedTasks, newTask]);
+            // Temporarily remove unscheduled task
+            handleRemoveUnscheduledTask(draggingUnscheduledTaskId, unscheduledTask?.parentBigTaskId as number);
 
             calendarRepository.updateCalendarItem(
                 draggingUnscheduledTaskId as number,
@@ -806,10 +885,14 @@ export const useCalendarHooks = ({
                                 description: res?.data,
                             });
                             setDraggingUnscheduledTaskId(null);
+                            handleReload();
+                            getUnscheduledItems();
                         }
                     },
                     error: err => {
                         setDraggingUnscheduledTaskId(null);
+                        handleReload();
+                        getUnscheduledItems();
                     },
                 });
             return;
@@ -834,6 +917,11 @@ export const useCalendarHooks = ({
                 },
                 exceptions: [],
             };
+
+            // Temporarily update updatedTasks
+            setUpdatedTasks([...updatedTasks, newRoutine]);
+            // Temporarily remove unscheduled task
+            handleRemoveUnscheduledRoutine(draggingUnscheduledRoutineId);
 
             calendarRepository.createCalendarItem(
                 {
@@ -864,10 +952,14 @@ export const useCalendarHooks = ({
                                 description: res?.data,
                             });
                             setDraggingUnscheduledRoutineId(null);
+                            handleReload();
+                            getUnscheduledItems();
                         }
                     },
                     error: err => {
                         setDraggingUnscheduledRoutineId(null);
+                        handleReload();
+                        getUnscheduledItems();
                     },
                 });
             return;
@@ -882,6 +974,17 @@ export const useCalendarHooks = ({
         // For scheduled items
         const scheduledItem = updatedTasks.find(task => task.id === draggingScheduledTaskId);
         const newEndTime = toDayJs(droppedCellId).add(toDayJs(scheduledItem?.endTime).diff(toDayJs(scheduledItem?.startTime)));
+        // Temporarily update updatedTasks
+        const newUpdatedTasks = [...updatedTasks];
+        const removeIndex = updatedTasks.findIndex(task => task.id === (scheduledItem as Task).id);
+        if (removeIndex !== -1) {
+            newUpdatedTasks.splice(removeIndex, 1);
+        }
+        setUpdatedTasks([...newUpdatedTasks, {
+            ...scheduledItem,
+            startTime: droppedCellId,
+            endTime: dayJsToISOString(newEndTime),
+        } as Task]);
         calendarRepository.updateCalendarItem(
             scheduledItem?.id as number,
             {
@@ -908,10 +1011,12 @@ export const useCalendarHooks = ({
                             description: res?.data,
                         });
                         setDraggingScheduledTaskId(null);
+                        handleReload();
                     }
                 },
                 error: err => {
                     setDraggingScheduledTaskId(null);
+                    handleReload();
                 },
             });
     };
@@ -973,6 +1078,8 @@ export const useCalendarHooks = ({
         getNewCalendarItem,
         handleRemoveUnscheduledTask,
         handleRemoveUnscheduledRoutine,
+        handleDeleteUnscheduledTask,
+        handleDeleteUnscheduledRoutine,
         updateBigTask,
     };
 };

@@ -100,7 +100,7 @@ export function CalendarMonthPlanning() {
         }
     };
 
-    const handleCellClick = (type: TaskType, e: React.MouseEvent<HTMLTableDataCellElement>) => {
+    const handleCellClick = (type: TaskType, e: React.MouseEvent<HTMLTableDataCellElement>, scrollContainerRef?: any) => {
         let newItem =
             type === "event"
                 ? {
@@ -118,13 +118,13 @@ export function CalendarMonthPlanning() {
                         endTime: dayJsToISOString(toDayJs()),
                     };
         setEditingItem(newItem);
-        setEditorPosition(getEditorAdjustedPosition(e.clientX, e.clientY - 400));
+        setEditorPosition(getEditorAdjustedPosition(e.clientX, e.clientY, scrollContainerRef.current));
         if (type === "routine") {
             setOpenRoutineEditor(true);
         }
     };
 
-    const handleBigTaskClick = (e: React.MouseEvent<HTMLDivElement>, bigTask: MonthPlanningBigTask) => {
+    const handleBigTaskClick = (e: React.MouseEvent<HTMLDivElement>, bigTask: MonthPlanningBigTask, scrollContainerRef?: any) => {
         // This function only works if it is big task
         if (!bigTask?.estimatedStartDate) {
             return;
@@ -134,7 +134,7 @@ export function CalendarMonthPlanning() {
             setEditingItem(null);
             setEditingTask(null);
         }
-        const adjustedPosition = getEditorAdjustedPosition(e.clientX - 50, e.clientY - 50);
+        const adjustedPosition = getEditorAdjustedPosition(e.clientX, e.clientY, scrollContainerRef.current);
         setEditorPosition(adjustedPosition);
         calendarRepository
             .getBigTask({
@@ -296,9 +296,10 @@ export function CalendarMonthPlanning() {
     const handleDoubleClick = (
         event: React.MouseEvent<HTMLDivElement>,
         taskId?: number | string,
-        task?: MonthPlanningBigTask | MonthPlanningEvent | string
+        task?: MonthPlanningBigTask | MonthPlanningEvent | string,
+        scrollContainerRef?: any,
     ) => {
-        const adjustedPosition = getEditorAdjustedPosition(event.clientX, event.clientY - 400);
+        const adjustedPosition = getEditorAdjustedPosition(event.clientX, event.clientY + 200, scrollContainerRef.current);
         setEditorPosition(adjustedPosition);
 
         if (typeof task === "object" && task !== null) {
@@ -438,24 +439,23 @@ export function CalendarMonthPlanning() {
 
     return (
         <Card className="w-full h-[100vh] mx-auto rounded-xl shadow-lg bg-white p-0">
-            <CardHeader className="grid grid-cols-[auto_1fr] items-center p-4 border-b border-gray-200 bg-slate-100/60 rounded-t-xl">
+            <CardHeader className="grid grid-cols-[auto_1fr_auto] items-center p-4 border-b border-gray-200 bg-slate-100/60 rounded-t-xl">
                 <div className="text-sm font-semibold text-slate-600 whitespace-nowrap">
-                    Calendar / <span className="text-slate-800">Month Planning</span>
+                    Private calendar / <span className="text-slate-800">Month planning</span>
                 </div>
-                <div className="flex items-center justify-end gap-4">
+                {/* Centered Controls */}
+                <div className="flex items-center justify-center gap-4">
                     <RoundedButton label="Today" id="calendar-today-btn" onClick={handleGoToToday} />
                     <DateRangeNavigator
                         dateRangeLabel={generateDateRangeLabel()}
                         onNextClick={onNextDateRangeNavigatorClick}
                         onPreviousClick={onPreviousDateRangeNavigatorClick}
-                        isPreviousDisabled={currentDate.subtract(1, "month").diff(toDayJs(), "month") <= 0}
-                        isNextDisabled={currentDate.diff(toDayJs(), "month") >= 6}
                     />
                 </div>
             </CardHeader>
 
             <CardContent className="p-0 h-full">
-                <div ref={scrollContainerRef} className="relative h-[85vh] overflow-y-scroll overflow-x-hidden">
+                <div ref={scrollContainerRef} className="relative overflow-x-hidden">
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -500,7 +500,7 @@ export function CalendarMonthPlanning() {
                                             <TableCell
                                                 key={`${category}-${week}`}
                                                 className="relative align-top p-2 border-r-2 w-55"
-                                                onClick={(e) => { handleCellClick(getType(category), e)}}
+                                                onClick={(e) => { handleCellClick(getType(category), e, scrollContainerRef) }}
                                             >
                                                 <div className="flex-1 overflow-y-auto space-y-1">
                                                     {tasksForCell.slice(0, MAX_VISIBLE_TASKS).map((task, i) => (
@@ -585,6 +585,7 @@ export function CalendarMonthPlanning() {
                                                                         MAX_VISIBLE_TASKS,
                                                                         tasksForCell.length
                                                                     )}
+                                                                    scrollContainerRef={scrollContainerRef}
                                                                     setPopoverState={(weekPopoverState) => setWeekPopoverState(weekPopoverState)}
                                                                     currentTaskType={currentType}
                                                                     type="month-planning"
@@ -629,7 +630,7 @@ export function CalendarMonthPlanning() {
                                     <div
                                         className="absolute"
                                         style={{
-                                            top: editorPosition.y - 230,
+                                            top: editorPosition.y,
                                             left: editorPosition.x,
                                             width: 1,
                                             height: 1,
@@ -641,6 +642,7 @@ export function CalendarMonthPlanning() {
                                         tasks={popoverState.tasks}
                                         currentTaskType={popoverState.type}
                                         type="month-planning"
+                                        scrollContainerRef={scrollContainerRef}
                                         setPopoverState={(popoverState) => setPopoverState(popoverState)}
                                         selectedTaskId={selectedItemId}
                                         setOpenRoutineEditor={setOpenRoutineEditor}
@@ -648,7 +650,7 @@ export function CalendarMonthPlanning() {
                                         setEditingMonthPlanItem={setEditingItem}
                                         setEditorPosition={setEditorPosition}
                                         handleBigTaskClick={handleBigTaskClick as any} // Pass through
-                                        editorOffset={{ x: 120, y: 0 }} // Offset from the invisible trigger
+                                        editorOffset={{ x: 0, y: 0 }} // Offset from the invisible trigger
                                         onAddTaskClick={() => {
                                             setEditingItem({
                                                 ...new UnscheduledTask(),
@@ -660,7 +662,6 @@ export function CalendarMonthPlanning() {
                                             // Close this popover when opening editor
                                             setPopoverState({ open: false, id: null, tasks: [] });
                                             // Also set editor position for the new task
-                                            setEditorPosition(prev => ({ ...prev, y: prev.y - 230 })); // Adjust as needed
                                         }}
                                         onTaskClick={() => {
                                             // Close this popover when a task inside is clicked

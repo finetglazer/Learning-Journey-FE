@@ -14,7 +14,7 @@ interface DayTasksPopoverProps {
     week?: string;
     currentTaskType?: string;
     type?: 'month-planning' | 'month-view';
-    handleBigTaskClick?: (e: React.MouseEvent<HTMLDivElement>, bigTask: MonthPlanningBigTask) => void;
+    handleBigTaskClick?: (e: React.MouseEvent<HTMLDivElement>, bigTask: MonthPlanningBigTask, scrollContainerRef?: any) => void;
     selectedTaskId?: number | string | null;
     setOpenRoutineEditor?: Dispatch<SetStateAction<boolean>>;
     setSelectedTaskId?: Dispatch<SetStateAction<number | string | null>>;
@@ -110,7 +110,7 @@ export function DayTasksPopover({
                                         setBigTaskMenuOpen(null);
                                         onTaskClick?.();
 
-                                        const editorPosition = getEditorAdjustedPosition(e.clientX, e.clientY, scrollContainerRef);
+                                        const editorPosition = getEditorAdjustedPosition(e.clientX, e.clientY, scrollContainerRef.current);
                                         setSelectedTaskId?.(taskId);
                                         setEditorPosition?.(editorPosition);
 
@@ -172,7 +172,7 @@ export function DayTasksPopover({
                                                 });
                                                 setEditingTask?.(null);
                                                 setBigTaskMenuOpen(null);
-                                                const editorPosition = getEditorAdjustedPosition(e.clientX, e.clientY, scrollContainerRef);
+                                                const editorPosition = getEditorAdjustedPosition(e.clientX, e.clientY, scrollContainerRef.current);
                                                 setEditorPosition?.(editorPosition);
                                             }}
                                         >
@@ -182,7 +182,7 @@ export function DayTasksPopover({
                                             className="w-full cursor-pointer text-left p-1.5 rounded hover:bg-gray-200 text-sm font-medium"
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                handleBigTaskClick?.(e, task as MonthPlanningBigTask);
+                                                handleBigTaskClick?.(e, task as MonthPlanningBigTask, scrollContainerRef);
                                                 setEditingTask?.(null);
                                                 setBigTaskMenuOpen(null);
                                             }}

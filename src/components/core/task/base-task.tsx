@@ -90,7 +90,7 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                         wrapperClassName,
                     )}
                     style={{ ...wrapperStyle }}
-                    onDoubleClick={(e) => handleDoubleClick?.(e, taskId as number, undefined, scrollContainerRef)}
+                    onDoubleClick={(e) => {handleDoubleClick?.(e, taskId as number, undefined, scrollContainerRef)}}
                 >
                     <span className={cn("font-semibold text-slate-700 text-lg text-left truncate", titleClassName)}>
                         {(task as Task)?.name}

@@ -82,7 +82,6 @@ export const DayCell = ({
             )}
         </div>
     );
-
     // Only wrap in Popover if the day has tasks and is in the current month
     if (hasTasks && isSameMonth(day, monthDate)) {
         return (

@@ -6,7 +6,6 @@ import { cn, uuid4 } from "@/lib/utils";
 import { UnscheduledBigTask, UnscheduledMonthData, UnscheduledRoutine, UnscheduledTask } from "@/model/task";
 import { calendarRepository } from "@/repository/calendar-repository";
 import { useDraggable } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
 import { AnimatePresence, motion } from "framer-motion";
 import {
     ClipboardList,
@@ -18,8 +17,8 @@ import { UnscheduledItemsForMonth } from "./unscheduled-items-for-month";
 export interface CollapsibleUnscheduledPanelProps {
     position: { x: number, y: number };
     unscheduledMonthData?: UnscheduledMonthData[];
-    handleRemoveUnscheduledBigTask?: (unscheduledBigTask: UnscheduledBigTask) => void;
-    handleRemoveUnscheduledSubTask?: (unscheduledSubtask: UnscheduledTask) => void;
+    handleRemoveUnscheduledRoutine?: (unscheduledRoutineId: string | number) => void;
+    handleRemoveUnscheduledSubTask?: (unscheduledSubtaskId: string | number, bigTaskId: number) => void;
     onUnscheduledTaskTitleChange?: (taskId: string, newTitle: string) => void;
     setUnscheduledMonthData?: Dispatch<SetStateAction<UnscheduledMonthData[]>>;
     draggingUnscheduledTaskId?: number | string | null;
@@ -33,7 +32,7 @@ export function CollapsibleUnscheduledPanel({
     position,
     onUnscheduledTaskTitleChange,
     handleRemoveUnscheduledSubTask,
-    handleRemoveUnscheduledBigTask,
+    handleRemoveUnscheduledRoutine,
     setUnscheduledMonthData,
     draggingUnscheduledTaskId,
     draggingUnscheduledRoutineId,
@@ -60,13 +59,13 @@ export function CollapsibleUnscheduledPanel({
                 key={monthData.month}
                 monthData={monthData}
                 handleRemoveUnscheduledSubTask={handleRemoveUnscheduledSubTask}
-                handleRemoveUnscheduledBigTask={handleRemoveUnscheduledBigTask}
+                handleRemoveUnscheduledRoutine={handleRemoveUnscheduledRoutine}
                 onUnscheduledTaskTitleChange={onUnscheduledTaskTitleChange}
             />
         ));
     }, [
         unscheduledMonthData,
-        handleRemoveUnscheduledBigTask,
+        handleRemoveUnscheduledRoutine,
         handleRemoveUnscheduledSubTask,
         onUnscheduledTaskTitleChange,
     ]);

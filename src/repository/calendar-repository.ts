@@ -5,7 +5,7 @@ const BASE_API_URL = process.env.NEXT_PUBLIC_API_URL + "/calendar";
 
 const API_GET_UNSCHEDULED_ITEMS = "/planning/unscheduled-items";
 const API_GET_SCHEDULED_ITEMS = "/items";
-const API_UPDATE_CALENDAR_ITEM = "/items/";
+const API_UPDATE_CALENDAR_ITEM = "/items";
 const API_GET_CALENDAR_ITEM = "/items";
 const API_DELETE_CALENDAR_ITEM = "/items";
 const API_CREATE_CALENDAR_ITEM = "/items/create";
