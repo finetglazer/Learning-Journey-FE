@@ -450,6 +450,8 @@ export function CalendarMonthPlanning() {
                         dateRangeLabel={generateDateRangeLabel()}
                         onNextClick={onNextDateRangeNavigatorClick}
                         onPreviousClick={onPreviousDateRangeNavigatorClick}
+                        isNextDisabled={currentDate.add(1, 'month').diff(toDayJs(), "month") >= 6}
+                        isPreviousDisabled={currentDate.subtract(1, "month").diff(toDayJs(), "month") < 0}
                     />
                 </div>
             </CardHeader>

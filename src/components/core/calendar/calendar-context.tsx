@@ -283,7 +283,8 @@ export const useCalendarHooks = ({
             case 'month-planning':
                 // Disable when navigating to previous month comparing to current month
                 if (currentView === 'month-planning') {
-                    if (currentDate.subtract(1, "month").diff(toDayJs(), "month") <= 0) {
+                    const previousMonth = currentDate.subtract(1, "month");
+                    if (previousMonth.diff(toDayJs(), "month") < 0) {
                         break;
                     }
                 }

@@ -114,7 +114,7 @@ export const DateTimePicker = (props: DateTimePickerProps) => {
         <Popover open={isOpen} onOpenChange={setIsOpen}>
             <PopoverTrigger />
             <PopoverContent
-                className={cn("w-auto p-0 mt-2 z-[99999]", wrapperClassName)}
+                className={cn("w-auto p-0 mt-2 z-[99999999]", wrapperClassName)}
                 // Prevent popover from closing when clicking inside
                 // onInteractOutside={(e) => e.preventDefault()}
             >
