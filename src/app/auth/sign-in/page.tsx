@@ -4,7 +4,7 @@ import { IntegratedButton, IntegratedButtonProps } from "@/components/core/butto
 import { Icon } from "@/components/core/icon/icon";
 import { IntegratedInputProps } from "@/components/core/input/integrated-input";
 import { LinkWithLoading } from "@/components/core/link/link";
-import { FORGOT_PASSWORD_EMAIL_INPUT_ROUTE, GOOGLE_OAUTH2_ROUTE, HOME_BASE_ROUTE, ROOT_ROUTE, SIGN_UP_BASE_ROUTE } from "@/const/routes-const";
+import { FORGOT_PASSWORD_EMAIL_INPUT_ROUTE, GOOGLE_OAUTH2_ROUTE, ROOT_ROUTE, SIGN_UP_BASE_ROUTE } from "@/const/routes-const";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
 import AuthFormLayout from "@/layout/auth-form-layout";
 import { SignInModel } from "@/model/sign-in-model";

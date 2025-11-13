@@ -28,7 +28,7 @@ import {
   User,
   Users,
 } from "lucide-react";
-import { useContext, useEffect, useState } from "react";
+import { DragEventHandler, useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { CalendarContext, useCalendarHooks } from "@/components/core/calendar/calendar-context";
@@ -40,6 +40,12 @@ import { CalendarYearView } from "@/components/core/calendar/calendar-year-view"
 import { calendarRepository } from "@/repository/calendar-repository";
 import { useRouter } from "next/navigation";
 import { SIGN_IN_ROUTE } from "@/const/routes-const";
+import { PM_Deliverable, TaskPriority, TaskStatus } from "@/model/project-management";
+import { toDayJs } from "@/lib/utils";
+import { closestCenter, DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { PM_DraggableItemData } from "@/components/core/project-management/type";
+import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { PM_DeliverableItem } from "@/components/core/project-management/pm-deliverable";
 
 export default function RootPage() {
   const router = useRouter();
@@ -259,6 +265,250 @@ export default function RootPage() {
     }
   }, [activeItem, currentView]);
 
+  const today = toDayJs().format('YYYY-MM-DD');
+  const INITIAL_DATA: PM_Deliverable[] = [
+    {
+      // --- Deliverable 1 ---
+      deliverableId: 'del-1',
+      projectId: 1, // Added required field
+      name: 'Improve Navigation & Menu Organization', // 'title' -> 'name'
+      key: 'DEL-01', // Added required field
+      order: 0, // Added required field
+      startDate: '2025-11-13', // Added
+      endDate: '2025-12-20',   // Added
+      phases: [
+        {
+          // --- Phase 1.1 ---
+          phaseId: 'phase-1',
+          deliverableId: 'del-1', // Added required field (matches parent)
+          name: 'Enhance Search Functionality', // 'title' -> 'name'
+          key: 'PH-01', // Added required field
+          order: 0, // Added required field
+          startDate: '2025-11-13', // Added
+          endDate: '2025-11-30',   // Added
+          tasks: [
+            {
+              // --- Task 1.1.1 ---
+              taskId: 'task-22',
+              phaseId: 'phase-1', // Added required field (matches parent)
+              name: 'Dark Mode Implementation', // 'title' -> 'name'
+              key: 'TSK-22', // Added required field
+              status: TaskStatus.IN_REVIEW, // Used enum
+              priority: TaskPriority.MINOR, // Used enum
+              order: 0, // Added required field
+              dateAdded: today, // Added required field
+              assignees: [], // Added required field
+              startDate: '2025-11-16', // Added
+              endDate: '2025-11-30',   // Added
+            },
+            {
+              // --- Task 1.1.2 ---
+              taskId: 'task-23',
+              phaseId: 'phase-1', // Added required field (matches parent)
+              name: 'Implement search algorithms',
+              key: 'TSK-23',
+              status: TaskStatus.TO_DO,
+              priority: TaskPriority.MAJOR,
+              order: 1,
+              dateAdded: today,
+              assignees: [],
+              startDate: '2025-11-16', // Added
+              endDate: '2025-11-30',   // Added
+            },
+          ],
+        },
+        {
+          // --- Phase 1.2 ---
+          phaseId: 'phase-2',
+          deliverableId: 'del-1', // Added required field (matches parent)
+          name: 'Optimize Mobile Responsiveness',
+          key: 'PH-02',
+          order: 1,
+          startDate: '2025-11-15', // Added
+          endDate: '2025-11-25',   // Added
+          tasks: [
+            {
+              // --- Task 1.2.1 ---
+              taskId: 'task-24',
+              phaseId: 'phase-2', // Added required field (matches parent)
+              name: 'Test on iOS',
+              key: 'TSK-24',
+              status: TaskStatus.TO_DO,
+              priority: TaskPriority.MINOR,
+              order: 0,
+              dateAdded: today,
+              assignees: [],
+              startDate: '2025-11-15', // Added
+              endDate: '2025-11-25',   // Added
+            },
+          ],
+        },
+      ],
+    },
+    {
+      // --- Deliverable 2 ---
+      deliverableId: 'del-2',
+      projectId: 1, // Added required field
+      name: 'Speed Optimization for Home Page',
+      key: 'DEL-02',
+      endDate: '2025-11-25',   // Added
+      startDate: '2025-11-15', // Added
+      order: 1,
+      phases: [
+        {
+          // --- Phase 2.1 ---
+          phaseId: 'phase-3',
+          deliverableId: 'del-2', // Added required field (matches parent)
+          name: 'Image Compression',
+          key: 'PH-03',
+          order: 0,
+          endDate: '2025-11-25',   // Added
+          startDate: '2025-11-15', // Added
+          tasks: [
+            {
+              // --- Task 2.1.1 ---
+              taskId: 'task-25',
+              phaseId: 'phase-3', // Added required field (matches parent)
+              name: 'Setup WebP conversion',
+              key: 'TSK-25',
+              status: TaskStatus.TO_DO,
+              priority: TaskPriority.CRITICAL,
+              order: 0,
+              dateAdded: today,
+              assignees: [],
+              startDate: '2025-11-15', // Added
+              endDate: '2025-11-25',   // Added
+            },
+          ],
+        },
+      ],
+    },
+  ];
+
+  const [deliverables, setDeliverables] = useState<PM_Deliverable[]>(INITIAL_DATA);
+  // (Using string IDs, as dnd-kit uses strings)
+  const [expandedDeliverables, setExpandedDeliverables] = useState<Set<string>>(
+    new Set([]) // Default expanded deliverables
+  );
+  const [expandedPhases, setExpandedPhases] = useState<Set<string>>(
+    new Set([]) // Default expanded phases
+  );
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      // Require the pointer to move by 5px before activating a drag
+      // This prevents a simple click from being treated as a drag
+      activationConstraint: {
+        distance: 5,
+      },
+    })
+  );
+
+  // --- 2. HELPER FUNCTION to create toggle handlers (DRY pattern) ---
+  const createToggleHandler = (
+    setter: React.Dispatch<React.SetStateAction<Set<string>>>
+  ) => {
+    return (id: string) => {
+      setter(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(id)) {
+          newSet.delete(id);
+        } else {
+          newSet.add(id);
+        }
+        return newSet;
+      });
+    };
+  };
+
+  // --- 3. SEPARATE HANDLERS for each level ---
+  const handleToggleDeliverable = createToggleHandler(setExpandedDeliverables);
+  const handleTogglePhase = createToggleHandler(setExpandedPhases);
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const activeData = active.data.current as PM_DraggableItemData;
+    const overData = over.data.current as PM_DraggableItemData;
+
+    // --- Case 1: Reordering Deliverables ---
+    if (activeData.type === 'Deliverable' && overData.type === 'Deliverable') {
+      setDeliverables(items => {
+        const activeIndex = items.findIndex(
+          item => item.deliverableId === active.id
+        );
+        const overIndex = items.findIndex(
+          item => item.deliverableId === over.id
+        );
+        return arrayMove(items, activeIndex, overIndex);
+      });
+      return;
+    }
+
+    // --- Case 2: Reordering Phases ---
+    if (
+      activeData.type === 'Phase' &&
+      overData.type === 'Phase' &&
+      activeData.parentId === overData.parentId
+    ) {
+      const deliverableId = activeData.parentId;
+      setDeliverables(items =>
+        items.map(del => {
+          if (del.deliverableId === deliverableId) {
+            const activeIndex = del.phases.findIndex(
+              p => p.phaseId === active.id
+            );
+            const overIndex = del.phases.findIndex(
+              p => p.phaseId === over.id
+            );
+            return {
+              ...del,
+              phases: arrayMove(del.phases, activeIndex, overIndex),
+            };
+          }
+          return del;
+        })
+      );
+      return;
+    }
+
+    // --- Case 3: Reordering Tasks ---
+    if (
+      activeData.type === 'Task' &&
+      overData.type === 'Task' &&
+      activeData.parentId === overData.parentId
+    ) {
+      const phaseId = activeData.parentId;
+      setDeliverables(items =>
+        items.map(del => ({
+          ...del,
+          phases: del.phases.map(phase => {
+            if (phase.phaseId === phaseId) {
+              const activeIndex = phase.tasks.findIndex(
+                t => t.taskId === active.id
+              );
+              const overIndex = phase.tasks.findIndex(
+                t => t.taskId === over.id
+              );
+              return {
+                ...phase,
+                tasks: arrayMove(phase.tasks, activeIndex, overIndex),
+              };
+            }
+            return phase;
+          }),
+        }))
+      );
+      return;
+    }
+
+    console.warn("Unhandled drag case:", { activeData, overData });
+  };
+
   return (
     <CalendarContext.Provider value={calendarContextValues}>
       <div className="flex">
@@ -280,7 +530,7 @@ export default function RootPage() {
                   sections={homeSections}
                   activeItem={activeItem}
                   isCollapsed={isSidebarCollapse}
-                  onToggleCollapse={() => {setIsSidebarCollapse(!isSidebarCollapse)}}
+                  onToggleCollapse={() => { setIsSidebarCollapse(!isSidebarCollapse) }}
                 />
               </div>
 
@@ -299,7 +549,7 @@ export default function RootPage() {
         </div>
 
         {/* --- Main Content --- */}
-        <div className="flex-1">
+        {/* <div className="flex-1">
           {currentView === "home" && activeItem === "private-calendar" && (
             <>
               {calendarContextValues.currentView === "day" && <CalendarDayView />}
@@ -313,8 +563,31 @@ export default function RootPage() {
 
           {currentView === "settings" && activeItem === "timezone" && <LimitTimeAndTimeZone />}
           {currentView === "settings" && activeItem === "password" && <ChangePasswordPage />}
-        </div>
+        </div> */}
+
+        {/* --- DND Context Area --- */}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={deliverables.map(d => d.deliverableId)}
+            strategy={verticalListSortingStrategy}
+          >
+            {deliverables.map(del => (
+              <PM_DeliverableItem
+                key={del.deliverableId}
+                deliverable={del}
+                isExpanded={expandedDeliverables.has(del.deliverableId)}
+                onToggle={handleToggleDeliverable}
+                expandedPhaseIds={expandedPhases}
+                onTogglePhase={handleTogglePhase}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
       </div>
     </CalendarContext.Provider>
   );
-}
+};
