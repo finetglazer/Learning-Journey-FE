@@ -20,7 +20,8 @@ const API_CREATE_UNSCHEDULED_TASK = "/planning/months";
 const API_DELETE_BIG_TASK = "/planning/months";
 const API_CREATE_MONTH_PLANNING_EVENT = "/planning/months";
 const API_CREATE_MONTH_PLAN = "/planning/months";
-const API_CREATE_CALENDAR = "/";
+const API_GET_MEMORABLE_EVENTS = "/memorable-events";
+const API_UPDATE_MEMORABLE_EVENTS = "/memorable-events";
 
 export class CalendarRepository extends BaseRepository {
     constructor() {
@@ -143,6 +144,16 @@ export class CalendarRepository extends BaseRepository {
 
     public createMonthPlan = (body: any): Observable<any> => {
         return this.http.post(API_CREATE_MONTH_PLAN, body)
+            .pipe(map(res => res?.data));
+    };
+
+    public getMemorableEvents = (): Observable<any> => {
+        return this.http.get(API_GET_MEMORABLE_EVENTS)
+            .pipe(map(res => res?.data));
+    };
+
+    public updateMemorableEvents = (body: any): Observable<any> => {
+        return this.http.put(API_UPDATE_MEMORABLE_EVENTS, body)
             .pipe(map(res => res?.data));
     };
 };

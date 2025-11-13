@@ -12,6 +12,7 @@ import {
   CalendarDays,
   Clock,
   Github,
+  CalendarHeart,
   Heart,
   Image,
   KeyRound,
@@ -46,11 +47,14 @@ import { closestCenter, DndContext, DragEndEvent, PointerSensor, useSensor, useS
 import { PM_DraggableItemData } from "@/components/core/project-management/type";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { PM_DeliverableItem } from "@/components/core/project-management/pm-deliverable";
+import { MemorableEvents } from "@/components/core/sidebar/pages/memorable-event/memorable-event";
+import { PublicProfile } from "@/components/core/sidebar/pages/public-profile/public-profile";
+import { HeaderBar } from "@/components/core/header-bar/header-bar";
 
 export default function RootPage() {
   const router = useRouter();
-  const [currentView, setCurrentView] = useState<"home" | "settings">("home");
-  const [activeItem, setActiveItem] = useState("private-calendar");
+  const [currentView, setCurrentView] = useState<"home" | "settings">("settings");
+  const [activeItem, setActiveItem] = useState("profile");
   const [isSidebarCollapse, setIsSidebarCollapse] = useState(false);
 
   const { setSleepHours, setLoadingPage } = useContext<AppContextProps>(AppContext);
@@ -135,6 +139,7 @@ export default function RootPage() {
       title: "Calendar",
       items: [
         { id: "timezone", label: "Limit time and time zone", icon: <Clock size={16} />, onClick: () => setActiveItem("timezone") },
+        { id: "memorable-events", label: "Memorable events", icon: <CalendarHeart size={16} />, onClick: () => setActiveItem("memorable-events") },
       ],
     },
     {
@@ -511,62 +516,68 @@ export default function RootPage() {
 
   return (
     <CalendarContext.Provider value={calendarContextValues}>
-      <div className="flex">
-        {/* --- Sidebar --- */}
-        <div
-          className={`transition-all duration-300 ease-in-out ${isSidebarCollapse ? "w-[80px]" : "w-[250px]"
-            } h-full bg-gray-50 border-r border-gray-200 shadow-md`}
-        >
-          <div className="flex overflow-hidden h-full">
-            <div
-              className="flex w-[500px] h-full transition-transform duration-300 ease-in-out"
-              style={{
-                transform: currentView === "home" ? "translateX(0%)" : "translateX(-50%)",
-              }}
-            >
-              {/* Home Panel */}
-              <div className={`h-full ${isSidebarCollapse ? "w-[80px]" : "w-[250px]"}`}>
-                <HomePanel
-                  sections={homeSections}
-                  activeItem={activeItem}
-                  isCollapsed={isSidebarCollapse}
-                  onToggleCollapse={() => { setIsSidebarCollapse(!isSidebarCollapse) }}
-                />
-              </div>
+      <div className="">
+        {/* --- Headerbar --- */}
+        <HeaderBar />
+        
+        <div className="flex">
+          {/* --- Sidebar --- */}
+          <div
+            className={`transition-all duration-300 ease-in-out ${isSidebarCollapse ? "w-[80px]" : "w-[250px]"
+              } h-full bg-gray-50 border-r border-gray-200 shadow-md`}
+          >
+            <div className="flex overflow-hidden h-full">
+              <div
+                className="flex w-[500px] h-full transition-transform duration-300 ease-in-out"
+                style={{
+                  transform: currentView === "home" ? "translateX(0%)" : "translateX(-50%)",
+                }}
+              >
+                {/* Home Panel */}
+                <div className={`h-full ${isSidebarCollapse ? "w-[80px]" : "w-[250px]"}`}>
+                  <HomePanel
+                    sections={homeSections}
+                    activeItem={activeItem}
+                    isCollapsed={isSidebarCollapse}
+                    onToggleCollapse={() => { setIsSidebarCollapse(!isSidebarCollapse) }}
+                  />
+                </div>
 
-              {/* Settings Panel */}
-              <div className={`h-full ${isSidebarCollapse ? "w-[80px]" : "w-[250px]"} border-l border-gray-200`}>
-                <SettingsPanel
-                  sections={settingsSections}
-                  onShowHome={() => setCurrentView("home")}
-                  activeItem={activeItem}
-                  isCollapsed={isSidebarCollapse}
-                  onToggleCollapse={() => { setIsSidebarCollapse(!isSidebarCollapse) }}
-                />
+                {/* Settings Panel */}
+                <div className={`h-full ${isSidebarCollapse ? "w-[80px]" : "w-[250px]"} border-l border-gray-200`}>
+                  <SettingsPanel
+                    sections={settingsSections}
+                    onShowHome={() => setCurrentView("home")}
+                    activeItem={activeItem}
+                    isCollapsed={isSidebarCollapse}
+                    onToggleCollapse={() => { setIsSidebarCollapse(!isSidebarCollapse) }}
+                  />
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* --- Main Content --- */}
-        {/* <div className="flex-1">
-          {currentView === "home" && activeItem === "private-calendar" && (
-            <>
-              {calendarContextValues.currentView === "day" && <CalendarDayView />}
-              {calendarContextValues.currentView === "week" && <CalendarWeekView />}
-              {calendarContextValues.currentView === "month-view" && <CalendarMonthView />}
-              {calendarContextValues.currentView === "year" && <CalendarYearView />}
-            </>
-          )}
+          {/* --- Main Content --- */}
+          <div className="flex-1">
+            {currentView === "home" && activeItem === "private-calendar" && (
+              <>
+                {calendarContextValues.currentView === "day" && <CalendarDayView />}
+                {calendarContextValues.currentView === "week" && <CalendarWeekView />}
+                {calendarContextValues.currentView === "month-view" && <CalendarMonthView />}
+                {calendarContextValues.currentView === "year" && <CalendarYearView />}
+              </>
+            )}
 
-          {currentView === "home" && activeItem === "month-planning" && <CalendarMonthPlanning />}
+            {currentView === "home" && activeItem === "month-planning" && <CalendarMonthPlanning />}
 
-          {currentView === "settings" && activeItem === "timezone" && <LimitTimeAndTimeZone />}
-          {currentView === "settings" && activeItem === "password" && <ChangePasswordPage />}
-        </div> */}
+            {currentView === "settings" && activeItem === "timezone" && <LimitTimeAndTimeZone />}
+            {currentView === "settings" && activeItem === "password" && <ChangePasswordPage />}
+            {currentView === "settings" && activeItem === "memorable-events" && <MemorableEvents />}
+            {currentView === "settings" && activeItem === "profile" && <PublicProfile />}
+          </div>
 
-        {/* --- DND Context Area --- */}
-        <DndContext
+          {/* --- DND Context Area --- */}
+          {/* <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
@@ -586,7 +597,8 @@ export default function RootPage() {
               />
             ))}
           </SortableContext>
-        </DndContext>
+        </DndContext> */}
+        </div>
       </div>
     </CalendarContext.Provider>
   );
