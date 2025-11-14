@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, Feather, Search, Bell, Settings } from 'lucide-react';
+import { Bell, Menu, Search, Settings } from 'lucide-react';
 import React from 'react';
 
 export interface HeaderBarProps {
@@ -31,7 +31,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
                 <button className="h-8 w-8 cursor-pointer overflow-hidden" aria-label="View profile">
                     <img
                         // Uses the avatarUrl prop, or a placeholder if not provided
-                        src={avatarUrl || `iconpng.png`}
+                        src={`iconpng.png`}
                         alt="Home Icon"
                         className="h-full w-full object-cover"
                     />

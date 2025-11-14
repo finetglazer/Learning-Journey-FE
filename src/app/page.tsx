@@ -4,7 +4,7 @@ import { HomePanel, SidebarSectionConfig } from "@/components/core/sidebar/home-
 import ChangePasswordPage from "@/components/core/sidebar/pages/change-password/change-password";
 import { LimitTimeAndTimeZone } from "@/components/core/sidebar/pages/limit-time-and-time-zone-setting/limit-time-and-time-zone-setting";
 import { SettingsPanel } from "@/components/core/sidebar/settings-panel";
-import { settingsRepository } from "@/components/core/sidebar/settings-repository";
+import { settingsRepository } from "@/repository/settings-repository";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
 import {
   AppWindow,
@@ -53,8 +53,8 @@ import { HeaderBar } from "@/components/core/header-bar/header-bar";
 
 export default function RootPage() {
   const router = useRouter();
-  const [currentView, setCurrentView] = useState<"home" | "settings">("settings");
-  const [activeItem, setActiveItem] = useState("profile");
+  const [currentView, setCurrentView] = useState<"home" | "settings">("home");
+  const [activeItem, setActiveItem] = useState("private-calendar");
   const [isSidebarCollapse, setIsSidebarCollapse] = useState(false);
 
   const { setSleepHours, setLoadingPage } = useContext<AppContextProps>(AppContext);
@@ -518,8 +518,10 @@ export default function RootPage() {
     <CalendarContext.Provider value={calendarContextValues}>
       <div className="">
         {/* --- Headerbar --- */}
-        <HeaderBar />
-        
+        <HeaderBar 
+          avatarUrl={localStorage.getItem("avatarUrl") || ""}
+        />
+
         <div className="flex">
           {/* --- Sidebar --- */}
           <div
@@ -578,26 +580,26 @@ export default function RootPage() {
 
           {/* --- DND Context Area --- */}
           {/* <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={deliverables.map(d => d.deliverableId)}
-            strategy={verticalListSortingStrategy}
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
           >
-            {deliverables.map(del => (
-              <PM_DeliverableItem
-                key={del.deliverableId}
-                deliverable={del}
-                isExpanded={expandedDeliverables.has(del.deliverableId)}
-                onToggle={handleToggleDeliverable}
-                expandedPhaseIds={expandedPhases}
-                onTogglePhase={handleTogglePhase}
-              />
-            ))}
-          </SortableContext>
-        </DndContext> */}
+            <SortableContext
+              items={deliverables.map(d => d.deliverableId)}
+              strategy={verticalListSortingStrategy}
+            >
+              {deliverables.map(del => (
+                <PM_DeliverableItem
+                  key={del.deliverableId}
+                  deliverable={del}
+                  isExpanded={expandedDeliverables.has(del.deliverableId)}
+                  onToggle={handleToggleDeliverable}
+                  expandedPhaseIds={expandedPhases}
+                  onTogglePhase={handleTogglePhase}
+                />
+              ))}
+            </SortableContext>
+          </DndContext> */}
         </div>
       </div>
     </CalendarContext.Provider>

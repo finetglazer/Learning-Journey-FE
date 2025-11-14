@@ -90,6 +90,23 @@ export const CalendarDayView = () => {
             </CardHeader>
             {/* ====== Calendar Table ====== */}
             <CardContent className="p-0 h-full">
+                <div className="-mt-6">
+                    {Object.keys(calendarMap).map((id: string) => {
+                        return (calendarMap[id] || []).map((task: Task, index: number) => {
+                            if (task?.type !== "memorable_event") {
+                                return <></>
+                            }
+                            return (
+                                <DraggableTask
+                                    key={task.id?.toString() || "draggable-task-".concat(index.toString())} // Use task.id for a stable key
+                                    task={{ ...task, type: (task?.type || "").toLowerCase() }}
+                                    draggable={false}
+                                    wrapperClassName="truncate rounded-lg pl-2 mt-1 mb-1"
+                                />
+                            );
+                        })
+                    })}
+                </div>
                 {/* Scroll container */}
                 <div ref={scrollContainerRef} className="relative h-[85vh] overflow-y-scroll overflow-x-hidden">
                     {/* --- START: New Dynamic Sleep Time Rectangles --- */}
@@ -122,6 +139,9 @@ export const CalendarDayView = () => {
                                             >
                                                 <CalendarDayViewDroppableCell key={id} id={id} bordered={false}>
                                                     {(calendarMap[id] || []).map((task: Task, index: number) => {
+                                                        if (task?.type === "memorable_event") {
+                                                            return <></>
+                                                        }
                                                         return (
                                                             <DraggableTask
                                                                 key={task.id?.toString() || "draggable-task-".concat(index.toString())} // Use task.id for a stable key

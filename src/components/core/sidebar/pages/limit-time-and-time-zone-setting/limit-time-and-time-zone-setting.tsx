@@ -7,7 +7,7 @@ import { CheckedState } from "@radix-ui/react-checkbox";
 import { Plus, X } from "lucide-react";
 import { useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { settingsRepository } from "../../settings-repository";
+import { settingsRepository } from "@/repository/settings-repository";
 import { TimezonePicker } from "./components/time-zone-picker";
 import { TimePicker } from "./components/time-picker";
 import { AlertMessage, AlertModal } from "@/components/core/alert-modal/alert-modal";

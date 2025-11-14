@@ -10,7 +10,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { DAYS_OF_WEEK } from "@/const/consts";
-import { dayJsToISOString } from "@/lib/utils";
+import { dayJsToISOString, toDayJs } from "@/lib/utils";
 import { Task, UnscheduledRoutine, UnscheduledTask } from "@/model/task";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { isNil } from "lodash";
@@ -27,6 +27,7 @@ import { CollapsibleUnscheduledPanel } from "./collapsible-unscheduled-items-pan
 import { DraggableTask } from "./draggable-task";
 import { UnscheduledRoutineItem } from "./unscheduled-routine-item";
 import { UnscheduledTaskItem } from "./unscheduled-task-item";
+import React from "react";
 
 export interface WeekViewCalendarProps {
     tasks?: Task[];
@@ -114,18 +115,56 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                         <Table>
                             <TableHeader className="sticky top-0 bg-white z-10">
                                 <TableRow>
-                                    <TableHead className="min-w-6 max-w-6 text-left">
+                                    <TableHead className="min-w-6 max-w-6 text-left border-b border-gray-200"> {/* Added border */}
                                         <Clock className="w-4 h-4 mx-auto text-slate-400" />
                                     </TableHead>
                                     {DAYS_OF_WEEK.map((day, index) => {
-                                        const content = day.concat(" ").concat(currentMondayTime.add(index, "day").get("date").toString().padStart(2, "0"));
+                                        const currentRenderDay = currentMondayTime.add(index, "day").get("day");
+                                        const content = day.concat(" ").concat(currentRenderDay.toString().padStart(2, "0"));
                                         return (
                                             <TableHead
                                                 key={content}
-                                                className="text-center font-medium text-slate-600 max-w-16.5 min-w-16.5 p-0"
+                                                className="text-center font-medium text-slate-600 max-w-16.5 min-w-16.5 p-2 border-b border-gray-200"
                                             >
-                                                {content}
+                                                <span>{content}</span>
                                             </TableHead>
+                                        )
+                                    })}
+                                </TableRow>
+                                <TableRow>
+                                    <TableHead className="min-w-6 max-w-6 text-left align-top pt-1">
+                                    </TableHead>
+                                    {DAYS_OF_WEEK.map((day, index) => {
+                                        const currentRenderDay = currentMondayTime.add(index, "day").get("day");
+                                        const currentRenderMonth = currentMondayTime.add(index, "day").get("month");
+
+                                        return (
+                                            <TableCell
+                                                key={`all-day-${index}`}
+                                                className="text-left max-w-16.5 min-w-16.5 p-1 align-top border-b border-gray-200" 
+                                                style={{ minHeight: "2.5rem" }} 
+                                            >
+                                                <div>
+                                                    {Object.keys(calendarMap).map((id: string) => {
+                                                        return (calendarMap[id] || []).map((task: Task, index: number) => {
+                                                            const currentCalendarMapDay = toDayJs(id, 0).get("day");
+                                                            const currentCalendarMapMonth = toDayJs(id, 0).get("month");
+
+                                                            if (task?.type !== "memorable_event" || (currentRenderDay !== currentCalendarMapDay || currentRenderMonth !== currentCalendarMapMonth)) {
+                                                                return <React.Fragment key={`${id}-${index}`}></React.Fragment> 
+                                                            }
+                                                            return (
+                                                                <DraggableTask
+                                                                    key={task.id?.toString() || "draggable-task-".concat(index.toString())}
+                                                                    task={{ ...task, type: (task?.type || "").toLowerCase() }}
+                                                                    draggable={false}
+                                                                    wrapperClassName="truncate rounded-lg pl-2 mt-1 mb-1"
+                                                                />
+                                                            );
+                                                        })
+                                                    })}
+                                                </div>
+                                            </TableCell>
                                         )
                                     })}
                                 </TableRow>
@@ -178,6 +217,9 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                                         onClick={(e) => handleCellClick(e, id, scrollContainerRef)}
                                                     >
                                                         {(calendarMap[id] || []).map((task: Task) => {
+                                                            if (task?.type === "memorable_event") {
+                                                                return <></>
+                                                            }
                                                             return (
                                                                 <DraggableTask
                                                                     key={id}

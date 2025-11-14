@@ -193,7 +193,7 @@ export const CalendarContext = createContext<CalendarContextInterface>({
 export const useCalendarHooks = ({
     initTasks,
 }: CalendarContextProps) => {
-    const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs().date(8).month(10));
+    const [currentDate, setCurrentDate] = useState<Dayjs>(toDayJs());
     const [tasksStyle, setTasksStyle] = useState<Record<string, any>>({});
     const [calendarMap, setCalendarMap] = useState<Record<string, any[]>>({});
     const [currentMondayTime, setCurrentMondayTime] = useState<Dayjs>(getMondayOfThisWeek());

@@ -7,6 +7,7 @@ import {
 import { PM_Deliverable } from '@/model/project-management';
 import { PM_DraggableItemData } from './type';
 import { PM_PhaseItem } from './pm-phase-item';
+import { MoreHorizontal, Plus } from 'lucide-react';
 
 type DeliverableItemProps = {
     deliverable: PM_Deliverable;
@@ -38,7 +39,6 @@ export function PM_DeliverableItem({
         } as PM_DraggableItemData,
     });
 
-    // 4. Keep dynamic styles for dnd-kit
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
@@ -46,60 +46,75 @@ export function PM_DeliverableItem({
     };
 
     return (
-        // 5. setNodeRef and style go on the main container
-        <div ref={setNodeRef} style={style} className="my-3">
-            {/* 6. The draggable header part */}
+        <div
+            ref={setNodeRef}
+            style={style}
+            className="my-3 bg-white rounded-lg shadow border border-gray-200 overflow-hidden"
+        >
+            {/* The draggable header part */}
             <div
                 className={`
-          flex items-center w-full
-          py-3.5 px-5
-          bg-gray-100 border-2 border-gray-300 rounded-lg shadow
-          cursor-grab active:cursor-grabbing
-          ${isDragging ? 'shadow-xl' : ''}
-        `}
+                    flex items-center w-full
+                    py-3 px-5
+                    bg-gray-50
+                    cursor-grab active:cursor-grabbing
+                    ${isExpanded ? 'border-b border-gray-200' : ''}
+                `}
                 {...attributes}
                 {...listeners}
             >
                 {/* Toggle Button */}
                 <button
                     type="button"
-                    // 7. Stop drag from starting when clicking the button
                     onClick={(e) => {
                         e.stopPropagation();
-                        console.log(111)
                         onToggle(deliverable.deliverableId);
                     }}
-                    className="p-1 mr-3 rounded-full hover:bg-gray-300"
+                    className="p-1 mr-2 rounded-full hover:bg-gray-200"
                 >
-                    {/* A simple, styled text icon */}
-                    <span className="w-5 h-5 flex items-center justify-center text-gray-600">
+                    <span className="w-5 h-5 flex items-center justify-center text-gray-500">
                         {isExpanded ? '▼' : '►'}
                     </span>
                 </button>
 
                 {/* Content */}
                 <span className="text-sm font-medium text-gray-500">{deliverable.key}</span>
-                <span className="ml-3 text-base font-semibold text-gray-900">
+                <span className="ml-3 text-sm font-semibold text-gray-900">
                     {deliverable.name}
                 </span>
+                <span className="flex-1"></span>
+                {/* More button from image */}
+                <button
+                    onClick={(e) => e.stopPropagation()}
+                    className="p-1 rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-700"
+                >
+                    <MoreHorizontal size={16} />
+                </button>
             </div>
 
-            {/* 8. The collapsible container for Phases */}
+            {/* The collapsible container for Phases */}
             {isExpanded && (
-                <SortableContext
-                    // 9. Use the correct phase IDs for the context
-                    items={deliverable.phases.map((p) => p.phaseId)}
-                    strategy={verticalListSortingStrategy}
-                >
-                    {deliverable.phases.map((phase) => (
-                        <PM_PhaseItem
-                            key={phase.phaseId}
-                            phase={phase}
-                            isExpanded={expandedPhaseIds.has(phase.phaseId)}
-                            onToggle={onTogglePhase}
-                        />
-                    ))}
-                </SortableContext>
+                <>
+                    <SortableContext
+                        items={deliverable.phases.map((p) => p.phaseId)}
+                        strategy={verticalListSortingStrategy}
+                    >
+                        {deliverable.phases.map((phase) => (
+                            <PM_PhaseItem
+                                key={phase.phaseId}
+                                phase={phase}
+                                isExpanded={expandedPhaseIds.has(phase.phaseId)}
+                                onToggle={onTogglePhase}
+                            />
+                        ))}
+                    </SortableContext>
+
+                    {/* "Create phase" button from image */}
+                    <button className="flex items-center w-full text-left py-2.5 px-5 ml-5 text-sm text-gray-500 hover:bg-gray-50">
+                        <Plus size={16} className="mr-2" />
+                        Create phase
+                    </button>
+                </>
             )}
         </div>
     );

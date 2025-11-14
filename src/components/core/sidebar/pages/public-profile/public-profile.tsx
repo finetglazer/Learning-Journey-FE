@@ -1,7 +1,11 @@
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { User, Pencil } from 'lucide-react';
+import { userRepository } from '@/repository/user-repository';
+import { toast } from 'sonner';
+import { AlertMessage, AlertModal } from '@/components/core/alert-modal/alert-modal';
+import { toDayJs } from '@/lib/utils';
 
 const Button = ({ children, className, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
     <button
@@ -28,20 +32,15 @@ const Label = ({ children, ...props }: React.LabelHTMLAttributes<HTMLLabelElemen
     </label>
 );
 
-
 export const PublicProfile = () => {
     const [name, setName] = useState("Trần Mạnh Hùng");
     const [dob, setDob] = useState("");
     const [profilePic, setProfilePic] = useState<string | null>(null);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
 
     // Ref for the hidden file input
     const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const handleSave = () => {
-        // Handle saving the profile data
-        console.log("Saving:", { name, dob, profilePic });
-        // Add your toast.success('Profile saved!') here
-    };
 
     const handleEditClick = () => {
         // Trigger the hidden file input
@@ -52,6 +51,7 @@ export const PublicProfile = () => {
         const file = event.target.files?.[0];
         if (file) {
             // Create a preview URL for the selected image
+            setSelectedFile(file);
             const reader = new FileReader();
             reader.onloadend = () => {
                 setProfilePic(reader.result as string);
@@ -59,6 +59,63 @@ export const PublicProfile = () => {
             reader.readAsDataURL(file);
         }
     };
+
+    const getProfile = () => {
+        userRepository.getProfile().subscribe({
+            next: res => {
+                if (res?.status) {
+                    const name = res?.data?.name;
+                    const dateOfBirth = res?.data?.dateOfBirth;
+                    const avatarUrl = res?.data?.avatarUrl;
+                    localStorage.setItem("displayName", name);
+                    localStorage.setItem("avatarUrl", avatarUrl);
+
+                    setName(name);
+                    setDob(toDayJs(dateOfBirth, 0).format("DD/MM/YYYY"));
+                    setProfilePic(avatarUrl);
+                }
+                else {
+                    toast.error(res?.message || res?.msg);
+                }
+            },
+            error: err => { },
+        });
+    };
+
+    const updateProfile = () => {
+        const formData = new FormData;
+        formData.append('name', name);
+        formData.append('dateOfBirth', dob);
+        formData.append('avatar', selectedFile as File);
+        userRepository.updateProfile(formData).subscribe({
+            next: res => {
+                if (res?.status) {
+                    toast.success(res?.message || res?.msg);
+                    getProfile();
+                }
+                else {
+                    setAlertMessage({
+                        type: "warning",
+                        title: res?.message || res?.msg,
+                        description: res?.data,
+                    });
+                }
+            },
+            error: err => {
+                const errors = err?.response?.data?.data;
+                const message = err?.response?.data?.msg || err?.response?.data?.message;
+                setAlertMessage({
+                    type: "warning",
+                    title: message,
+                    description: errors,
+                });
+            }
+        });
+    };
+
+    useEffect(() => {
+        getProfile();
+    }, []);
 
     return (
         <div className="p-10 max-w-4xl mx-auto h-full overflow-y-auto ml-0 bg-white">
@@ -99,7 +156,7 @@ export const PublicProfile = () => {
                     {/* Save Button */}
                     <div className="pt-2">
                         <Button
-                            onClick={handleSave}
+                            onClick={updateProfile}
                             // Matching the teal/green color from your image
                             className="bg-teal-400 text-white hover:bg-teal-600 cursor-pointer"
                         >
@@ -124,7 +181,7 @@ export const PublicProfile = () => {
                         {/* Edit Button */}
                         <Button
                             onClick={handleEditClick}
-                            className="absolute bottom-2 gap-1.5 right-0 bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 !px-3 !py-1.5 flex items-center justify-center"
+                            className="absolute cursor-pointer bottom-2 gap-1.5 right-0 bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 !px-3 !py-1.5 flex items-center justify-center"
                             aria-label="Edit profile picture"
                         >
                             <Pencil size={16} className="mr-0" />
@@ -142,6 +199,12 @@ export const PublicProfile = () => {
                     />
                 </div>
             </div>
+            {alertMessage && (
+                <AlertModal
+                    alertMessage={alertMessage}
+                    onClose={() => setAlertMessage(null)}
+                />
+            )}
         </div>
     );
 };

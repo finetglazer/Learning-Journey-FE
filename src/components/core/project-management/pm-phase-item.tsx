@@ -7,6 +7,7 @@ import {
 import { PM_Phase } from '@/model/project-management';
 import { PM_DraggableItemData } from './type';
 import { PM_TaskItem } from './pm-task-item';
+import { MoreHorizontal, Plus } from 'lucide-react';
 
 type PhaseItemProps = {
     phase: PM_Phase;
@@ -30,7 +31,6 @@ export function PM_PhaseItem({ phase, isExpanded, onToggle }: PhaseItemProps) {
         } as PM_DraggableItemData,
     });
 
-    // 3. Keep dynamic styles for dnd-kit
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
@@ -38,56 +38,64 @@ export function PM_PhaseItem({ phase, isExpanded, onToggle }: PhaseItemProps) {
     };
 
     return (
-        // 4. setNodeRef and style go on the main container
-        <div ref={setNodeRef} style={style} className="ml-5 my-2"> {/* Indentation */}
-            {/* 5. The draggable header part */}
+        <div ref={setNodeRef} style={style} className="ml-5 border-t border-gray-200">
+            {/* The draggable header part */}
             <div
                 className={`
-          flex items-center w-full
-          py-2.5 px-4
-          bg-gray-50 border border-gray-200 rounded-lg shadow-sm
-          cursor-grab active:cursor-grabbing
-          ${isDragging ? 'shadow-lg' : ''}
-        `}
-                {...attributes} 
-                {...listeners}  
+                    flex items-center w-full
+                    py-2.5 px-4
+                    cursor-grab active:cursor-grabbing
+                `}
+                {...attributes}
+                {...listeners}
             >
                 {/* Toggle Button */}
                 <button
                     type="button"
-                    // 6. Stop drag from starting when clicking the button
                     onClick={(e) => {
                         e.stopPropagation();
                         onToggle(phase.phaseId);
                     }}
-                    className="p-1 mr-2 rounded-full hover:bg-gray-200"
+                    className="p-1 mr-2 rounded-full hover:bg-gray-100"
                 >
-                    {/* A simple, styled text icon */}
                     <span className="w-5 h-5 flex items-center justify-center text-gray-500">
                         {isExpanded ? '▼' : '►'}
                     </span>
                 </button>
 
                 {/* Content */}
-                <span className="text-sm font-medium text-gray-600">{phase.key}</span>
+                <span className="text-sm font-medium text-gray-500">{phase.key}</span>
                 <span className="ml-3 text-sm font-semibold text-gray-900">
                     {phase.name}
                 </span>
+                <span className="flex-1"></span>
+                {/* More button from image */}
+                <button
+                    onClick={(e) => e.stopPropagation()}
+                    className="p-1 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                >
+                    <MoreHorizontal size={16} />
+                </button>
             </div>
 
-            {/* 7. The collapsible container for Tasks */}
+            {/* The collapsible container for Tasks */}
             {isExpanded && (
-                <SortableContext
-                    // 8. Use the correct task IDs for the context
-                    items={phase.tasks.map((t) => t.taskId)}
-                    strategy={verticalListSortingStrategy}
-                >
-                    {phase.tasks.map((task) => (
-                        // 9. Pass the full task object.
-                        // TaskItem now gets its parentId from the task prop itself.
-                        <PM_TaskItem key={task.taskId} task={task} />
-                    ))}
-                </SortableContext>
+                <>
+                    <SortableContext
+                        items={phase.tasks.map((t) => t.taskId)}
+                        strategy={verticalListSortingStrategy}
+                    >
+                        {phase.tasks.map((task) => (
+                            <PM_TaskItem key={task.taskId} task={task} />
+                        ))}
+                    </SortableContext>
+
+                    {/* "Create task" button from image */}
+                    <button className="flex items-center w-full text-left py-2.5 px-4 ml-10 text-sm text-gray-500 hover:bg-gray-50">
+                        <Plus size={16} className="mr-2" />
+                        Create task
+                    </button>
+                </>
             )}
         </div>
     );

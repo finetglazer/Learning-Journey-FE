@@ -87,10 +87,11 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                     className={cn("grid grid-cols-2 cursor-pointer items-center gap-4 rounded-lg border-3 border-[#E62E7B] bg-stone-50 p-4 w-full",
                         { "border-sky-300": type === "event" },
                         { "border-[#68DE79]": type === "routine" },
+                        { "border-[#91EEFF]": type === "memorable_event" },
                         wrapperClassName,
                     )}
                     style={{ ...wrapperStyle }}
-                    onDoubleClick={(e) => {handleDoubleClick?.(e, taskId as number, undefined, scrollContainerRef)}}
+                    onDoubleClick={(e) => { handleDoubleClick?.(e, taskId as number, undefined, scrollContainerRef) }}
                 >
                     <span className={cn("font-semibold text-slate-700 text-lg text-left truncate", titleClassName)}>
                         {(task as Task)?.name}
@@ -149,6 +150,7 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                     type === "big-task" ? "sm:grid-cols-2" : "sm:grid-cols-2",
                     { "border-sky-300": type === "event" },
                     { "border-[#68DE79]": type === "routine" },
+                    { "border-[#91EEFF]": type === "memorable_event" },
                     wrapperClassName,
                 )}
                     style={{ ...wrapperStyle }}
@@ -195,28 +197,31 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                 className={cn("border-3 border-sky-300 bg-stone-50 cursor-pointer rounded-lg p-4 w-full",
                     { "border-[#E62E7B]": type === "task" || type === "big-task" },
                     { "border-[#68DE79]": type === "routine" },
+                    { "border-[#91EEFF] !h-[50px]": type === "memorable_event" },
                     wrapperClassName,
                 )}
                 style={{ ...wrapperStyle }}
                 onDoubleClick={(e) => handleDoubleClick?.(e, taskId as number, undefined, scrollContainerRef)}
             >
-                <div className={cn("flex items-center gap-2", badgeWrapperClassName)}>
-                    <div className={cn("rounded bg-sky-400 px-2 py-1 text-xs font-bold text-white",
-                        { "bg-[#68DE79]": type === "routine" },
-                        { "bg-[#E62E7B]": type === "task" || type === "big-task" },
-                        badgeClassName,
-                    )}>
-                        {isoToHHMM((task as Task).startTime)}
+                {type !== "memorable_event" && (
+                    <div className={cn("flex items-center gap-2", badgeWrapperClassName)}>
+                        <div className={cn("rounded bg-sky-400 px-2 py-1 text-xs font-bold text-white",
+                            { "bg-[#68DE79]": type === "routine" },
+                            { "bg-[#E62E7B]": type === "task" || type === "big-task" },
+                            badgeClassName,
+                        )}>
+                            {isoToHHMM((task as Task).startTime)}
+                        </div>
+                        <div className={cn("rounded bg-sky-400 px-2 py-1 text-xs font-bold text-white",
+                            { "bg-[#68DE79]": type === "routine" },
+                            { "bg-[#E62E7B]": type === "task" || type === "big-task" },
+                            badgeClassName,
+                        )}>
+                            {isoToHHMM((task as Task).endTime)}
+                        </div>
                     </div>
-                    <div className={cn("rounded bg-sky-400 px-2 py-1 text-xs font-bold text-white",
-                        { "bg-[#68DE79]": type === "routine" },
-                        { "bg-[#E62E7B]": type === "task" || type === "big-task" },
-                        badgeClassName,
-                    )}>
-                        {isoToHHMM((task as Task).endTime)}
-                    </div>
-                </div>
-                <div className={cn("mt-3 pb-2 text-slate-600 font-bold", titleClassName)}>
+                )}
+                <div className={cn("mt-3 pb-2 text-slate-600 font-bold", {"text-center text-xl -mt-2": type === "memorable_event"}, titleClassName)}>
                     <span>{(task as Task)?.name}</span>
                 </div>
                 <div className={cn("mt-2 text-slate-600", descriptionClassName)}>
