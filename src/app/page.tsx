@@ -50,12 +50,16 @@ import { PM_DeliverableItem } from "@/components/core/project-management/pm-deli
 import { MemorableEvents } from "@/components/core/sidebar/pages/memorable-event/memorable-event";
 import { PublicProfile } from "@/components/core/sidebar/pages/public-profile/public-profile";
 import { HeaderBar } from "@/components/core/header-bar/header-bar";
+import CreateProjectModal from "@/components/core/project-management/create-project-modal";
+import InviteMembersModal from "@/components/core/project-management/invite-members-modal";
+import TeamMembersViewModal from "@/components/core/project-management/team-members-view-modal";
 
 export default function RootPage() {
   const router = useRouter();
   const [currentView, setCurrentView] = useState<"home" | "settings">("home");
   const [activeItem, setActiveItem] = useState("private-calendar");
   const [isSidebarCollapse, setIsSidebarCollapse] = useState(false);
+  const [openCreateProjectModal, setOpenCreateProjectModal] = useState(false);
 
   const { setSleepHours, setLoadingPage } = useContext<AppContextProps>(AppContext);
   const calendarContextValues = useCalendarHooks({ initTasks: [] });
@@ -70,6 +74,10 @@ export default function RootPage() {
     localStorage.removeItem("accessToken");
     setLoadingPage(true);
     router.push(SIGN_IN_ROUTE);
+  };
+
+  const addProject = () => {
+    setOpenCreateProjectModal(true);
   };
 
   // --- Sidebar sections ---
@@ -516,7 +524,7 @@ export default function RootPage() {
 
   return (
     <CalendarContext.Provider value={calendarContextValues}>
-      <div className="">
+      <div className="relative">
         {/* --- Headerbar --- */}
         <HeaderBar 
           avatarUrl={localStorage.getItem("avatarUrl") || ""}
@@ -600,6 +608,15 @@ export default function RootPage() {
               ))}
             </SortableContext>
           </DndContext> */}
+
+          {/* Create Project Modal */}
+          {/* <CreateProjectModal /> */}
+
+          {/* Invite Members Modal */}
+          {/* <InviteMembersModal /> */}
+
+          {/* Team Members View Modal */}
+          {/* <TeamMembersViewModal /> */}
         </div>
       </div>
     </CalendarContext.Provider>
