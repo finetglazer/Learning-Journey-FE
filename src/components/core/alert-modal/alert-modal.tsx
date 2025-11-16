@@ -70,7 +70,7 @@ export function AlertModal({
         }
         if (typeof alertMessage?.description === "string") {
             return (
-                <p className={descriptionClassName}>{alertMessage?.description}</p>
+                <div className={descriptionClassName}>{alertMessage?.description}</div>
             )
         }
         if (!(alertMessage?.description || []).length) {
@@ -123,7 +123,10 @@ export function AlertModal({
                     </Button>
                     {proceedAnyway && (
                         <Button
-                            onClick={onClose}
+                            onClick={() => {
+                                proceedAnyway();
+                                onClose?.();
+                            }}
                             className={cn("font-semibold cursor-pointer", (config as any)?.primaryButtonColor || (config as any)?.buttonColor)}
                         >
                             Proceed anyway

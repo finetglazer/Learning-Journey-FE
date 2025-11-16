@@ -1,61 +1,85 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import React, { useState } from 'react';
+import { projectRepository } from '@/repository/project-repository';
+import { X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { AlertMessage, AlertModal } from '../alert-modal/alert-modal';
+import { toast } from 'sonner';
 
-// const Input = (props) => (
-//     <input
-//         {...props}
-//         className="w-full px-4 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-//     />
-// );
+type CreateProjectModalProps = {
+    onClose: () => void;
+    handleReload: () => void;
+};
 
-// const Label = ({ children, ...props }) => (
-//     <label
-//         {...props}
-//         className="block text-sm font-medium text-gray-800 mb-1.5"
-//     >
-//         {children}
-//     </label>
-// );
-
-// --- Button Component ---
-// A reusable Button component styled like the image
-// const Button = ({ children, className, ...props }) => (
-//     <button
-//         {...props}
-//         className={`w-full px-6 py-3 text-base font-bold text-gray-800 bg-cyan-400 rounded-lg shadow-lg transition-all
-//             ${className}
-//             hover:bg-cyan-500
-//             focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2
-//             active:bg-cyan-600
-//             shadow-cyan-400/50
-//         `}
-//     >
-//         {children}
-//     </button>
-// );
-
-export const CreateProjectModal = () => {
-    // State to manage the project name input
+export const CreateProjectModal = ({ onClose, handleReload }: CreateProjectModalProps) => {
     const [projectName, setProjectName] = useState('');
-
-    const mockUser = {
-        name: 'Trần Mạnh Hùng',
-        email: 'tranhung10122003@gmail.com',
-        avatarUrl: 'https://placehold.co/40x40/E0E0E0/707070?text=TM',
+    const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
+    const [ownerInfo, setOwnerInfo] = useState({
+        name: '...',
+        email: '...',
+        avatarUrl: 'https://placehold.co/40x40/E0E0E0/707070?text=..',
         role: 'Owner',
+    });
+
+    const createProject = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        projectRepository.createProject({
+            name: projectName,
+        }).subscribe({
+            next: res => {
+                if (res?.status) {
+                    toast.success(res?.message || res?.msg);
+                    onClose();
+                    handleReload();
+                }
+                else {
+                    setAlertMessage({
+                        type: "warning",
+                        title: res?.message || res?.msg,
+                        description: res?.data,
+                    });
+                }
+            },
+            error: err => {
+                const errors = err?.response?.data?.data;
+                const message = err?.response?.data?.msg || err?.response?.data?.message;
+                setAlertMessage({
+                    type: "warning",
+                    title: message,
+                    description: errors,
+                });
+            }
+        });
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        console.log('Creating project:', projectName);
-        // Add your project creation logic here
-    };
+    useEffect(() => {
+        const name = localStorage.getItem('displayName');
+        const email = localStorage.getItem('email');
+        const avatarUrl = localStorage.getItem('avatarUrl');
+        setOwnerInfo({
+            name: name || '...',
+            email: email || '...',
+            avatarUrl: avatarUrl || 'https://placehold.co/40x40/E0E0E0/707070?text=..',
+            role: 'Owner',
+        });
+    }, []);
 
     return (
-        <div className="w-full absolute top-[25%] left-[40%] max-w-lg p-8 bg-white rounded-2xl shadow-2xl items-center" >
-            <form onSubmit={handleSubmit}>
+        <div className="w-full absolute top-[25%] left-[40%] max-w-lg p-8 bg-white rounded-2xl shadow-2xl items-center">
+
+            <Button
+                type="button" // Prevents submitting the form
+                variant="ghost"
+                size="icon"
+                className="absolute top-4 cursor-pointer right-4 text-gray-500 hover:text-gray-900"
+                onClick={onClose}
+            >
+                <X className="h-5 w-5" />
+                <span className="sr-only">Close</span>
+            </Button>
+
+            <form onSubmit={createProject}>
 
                 {/* --- Header --- */}
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">
@@ -86,27 +110,27 @@ export const CreateProjectModal = () => {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
                             <img
-                                src={mockUser.avatarUrl}
-                                alt={mockUser.name}
+                                src={ownerInfo.avatarUrl}
+                                alt={ownerInfo.name}
                                 className="w-10 h-10 rounded-full object-cover"
                                 // Handle image loading error
-                                onError={(e) => {
-                                    e.target.onerror = null;
-                                    e.target.src = 'https://placehold.co/40x40/E0E0E0/707070?text=TM';
+                                onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+                                    e.currentTarget.onerror = null;
+                                    e.currentTarget.src = 'https://placehold.co/40x40/E0E0E0/707070?text=..';
                                 }}
                             />
                             <div>
                                 <div className="font-semibold text-sm text-gray-900">
-                                    {mockUser.name}
+                                    {ownerInfo.name}
                                 </div>
                                 <div className="text-xs text-gray-500">
-                                    {mockUser.email}
+                                    {ownerInfo.email}
                                 </div>
                             </div>
                         </div>
 
                         <span className="text-sm font-medium text-gray-500">
-                            {mockUser.role}
+                            {ownerInfo.role}
                         </span>
                     </div>
                 </div>
@@ -124,8 +148,13 @@ export const CreateProjectModal = () => {
                         Create
                     </Button>
                 </div>
-
             </form>
+            {alertMessage && (
+                <AlertModal
+                    alertMessage={alertMessage}
+                    onClose={() => setAlertMessage(null)}
+                />
+            )}
         </div >
     );
 };

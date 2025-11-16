@@ -17,6 +17,12 @@ export type PM_TaskAssigneeId = {
     userId: number;
 };
 
+export interface Project {
+    id: number;
+    name: string;
+    color: string;
+};
+
 export interface PM_TaskAssignee {
     id: PM_TaskAssigneeId;
 };

@@ -14,6 +14,7 @@ export interface HomePanelProps {
     isCollapsed: boolean;
     onToggleCollapse: () => void;
 };
+
 export const HomePanel = ({ sections, activeItem, isCollapsed, onToggleCollapse }: HomePanelProps) => {
     return (
         <div className="w-full h-full flex-shrink-0 flex flex-col">
@@ -32,6 +33,7 @@ export const HomePanel = ({ sections, activeItem, isCollapsed, onToggleCollapse 
                                 actionIcon={item.actionIcon}
                                 isActive={activeItem === item.id}
                                 isCollapsed={isCollapsed}
+                                menu={item.menu}
                             />
                         ))}
                     </React.Fragment>

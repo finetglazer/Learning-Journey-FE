@@ -4,15 +4,15 @@ import { HomePanel, SidebarSectionConfig } from "@/components/core/sidebar/home-
 import ChangePasswordPage from "@/components/core/sidebar/pages/change-password/change-password";
 import { LimitTimeAndTimeZone } from "@/components/core/sidebar/pages/limit-time-and-time-zone-setting/limit-time-and-time-zone-setting";
 import { SettingsPanel } from "@/components/core/sidebar/settings-panel";
-import { settingsRepository } from "@/repository/settings-repository";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
+import { settingsRepository } from "@/repository/settings-repository";
 import {
   AppWindow,
   Bell,
   CalendarDays,
+  CalendarHeart,
   Clock,
   Github,
-  CalendarHeart,
   Heart,
   Image,
   KeyRound,
@@ -29,7 +29,7 @@ import {
   User,
   Users,
 } from "lucide-react";
-import { DragEventHandler, useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { CalendarContext, useCalendarHooks } from "@/components/core/calendar/calendar-context";
@@ -38,28 +38,34 @@ import { CalendarMonthPlanning } from "@/components/core/calendar/calendar-month
 import { CalendarMonthView } from "@/components/core/calendar/calendar-month-view";
 import { CalendarWeekView } from "@/components/core/calendar/calendar-week-view";
 import { CalendarYearView } from "@/components/core/calendar/calendar-year-view";
-import { calendarRepository } from "@/repository/calendar-repository";
-import { useRouter } from "next/navigation";
-import { SIGN_IN_ROUTE } from "@/const/routes-const";
-import { PM_Deliverable, TaskPriority, TaskStatus } from "@/model/project-management";
-import { toDayJs } from "@/lib/utils";
-import { closestCenter, DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { HeaderBar } from "@/components/core/header-bar/header-bar";
 import { PM_DraggableItemData } from "@/components/core/project-management/type";
-import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { PM_DeliverableItem } from "@/components/core/project-management/pm-deliverable";
 import { MemorableEvents } from "@/components/core/sidebar/pages/memorable-event/memorable-event";
 import { PublicProfile } from "@/components/core/sidebar/pages/public-profile/public-profile";
-import { HeaderBar } from "@/components/core/header-bar/header-bar";
-import CreateProjectModal from "@/components/core/project-management/create-project-modal";
-import InviteMembersModal from "@/components/core/project-management/invite-members-modal";
-import TeamMembersViewModal from "@/components/core/project-management/team-members-view-modal";
+import { SIGN_IN_ROUTE } from "@/const/routes-const";
+import { toDayJs } from "@/lib/utils";
+import { PM_Deliverable, Project, TaskPriority, TaskStatus } from "@/model/project-management";
+import { calendarRepository } from "@/repository/calendar-repository";
+import { projectRepository } from "@/repository/project-repository";
+import { DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { arrayMove } from "@dnd-kit/sortable";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { TeamProjectSection } from "@/components/core/sidebar/sections/team-project-section";
+import { TeamProjectPage } from "@/components/core/sidebar/pages/project/team-project";
 
 export default function RootPage() {
   const router = useRouter();
   const [currentView, setCurrentView] = useState<"home" | "settings">("home");
   const [activeItem, setActiveItem] = useState("private-calendar");
+  const [currentSelectedProject, setCurrentSelectedProject] = useState<Project | null>(null);
   const [isSidebarCollapse, setIsSidebarCollapse] = useState(false);
-  const [openCreateProjectModal, setOpenCreateProjectModal] = useState(false);
+  // [0]: Create Project Modal
+  // [1]: Invite Members Modal
+  // [2]: Team Members View Modal
+  // [3]: Conifrm Delete Project Modal
+  const [modalStates, setModalStates] = useState([false, false, false, false]);
+  const [teamProjects, setTeamProjects] = useState<Project[]>([]);
 
   const { setSleepHours, setLoadingPage } = useContext<AppContextProps>(AppContext);
   const calendarContextValues = useCalendarHooks({ initTasks: [] });
@@ -69,6 +75,12 @@ export default function RootPage() {
     setAlertMessage,
   } = calendarContextValues;
 
+  const updateModalStates = (index: number, isOpen: boolean) => {
+    const updatedModalStates = [...modalStates];
+    updatedModalStates[index] = isOpen;
+    setModalStates(updatedModalStates);
+  };
+
   const handleLogOut = () => {
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("accessToken");
@@ -77,7 +89,23 @@ export default function RootPage() {
   };
 
   const addProject = () => {
-    setOpenCreateProjectModal(true);
+    updateModalStates(0, true);
+  };
+
+  const deleteProject = (projectId: number) => {
+    projectRepository.deleteProject({projectId}).subscribe({
+      next: res => {
+        if (res?.status) {
+          toast.success(res?.message || res?.msg);
+          setCurrentSelectedProject(null);
+          getProjects();
+        }
+        else {
+          toast.error(res?.message || res?.msg);
+        }
+      },
+      error: err => { },
+    });
   };
 
   // --- Sidebar sections ---
@@ -92,11 +120,43 @@ export default function RootPage() {
     },
     {
       title: "Team project",
-      action: <Plus size={16} />,
-      items: [
-        { id: "project-1", label: "<Project title 1>", icon: <span className="w-4 h-4 bg-red-400 rounded-full border-2 border-white" />, actionIcon: <MoreHorizontal size={16} />, onClick: () => setActiveItem("project-1") },
-        { id: "project-2", label: "<Project title 2>", icon: <span className="w-4 h-4 bg-green-400 rounded-full border-2 border-white" />, actionIcon: <MoreHorizontal size={16} />, onClick: () => setActiveItem("project-2") },
-      ],
+      action: (
+        <Button className="cursor-pointer bg-transparent text-black hover:bg-gray-300" onClick={(e) => {
+          e.stopPropagation();
+          addProject();
+        }}>
+          <Plus size={16} />
+        </Button>
+      ),
+      items: (teamProjects || []).map((project: Project) => {
+        return {
+          id: `project-${project?.id}`,
+          label: project?.name,
+          icon: <span className={`h-4 w-4 rounded-full border-2 border-white`} style={{ backgroundColor: `${project?.color}` }} />,
+          actionIcon: <MoreHorizontal size={16} />,
+          onClick: () => {
+            setActiveItem(`project-${project?.id}`);
+            setCurrentSelectedProject(project);
+          },
+          menu: [
+            {
+              icon: (
+                <div
+                  className="cursor-pointer text-red-500"
+                >
+                  Delete
+                </div>
+              ),
+              onClick: (e: any) => {
+                updateModalStates(3, true);
+                setActiveItem(`project-${project?.id}`);
+                setCurrentSelectedProject(project);
+                e.stopPropagation();
+              }
+            }
+          ],
+        }
+      })
     },
     {
       title: "Community",
@@ -165,119 +225,6 @@ export default function RootPage() {
       ],
     },
   ];
-
-  // --- Fetch user settings ---
-  useEffect(() => {
-    settingsRepository.getDailyLimits().subscribe({
-      next: (res) => {
-        if (res?.status) {
-          const limits = res?.data?.limits;
-          if (res?.data?.enabled) {
-            localStorage.setItem("dailyLimitsEnabled", "1");
-            localStorage.setItem("taskLimitHours", limits?.TASK?.hours);
-            localStorage.setItem("routineLimitHours", limits?.ROUTINE?.hours);
-          } else {
-            localStorage.setItem("dailyLimitsEnabled", "0");
-          }
-        } else {
-          toast.error(res?.message || res?.msg);
-        }
-      },
-      error: () => { },
-    });
-
-    settingsRepository.getSleepHours().subscribe({
-      next: (res) => {
-        if (!res?.status) {
-          toast.error(res?.message || res?.msg);
-        } else {
-          setSleepHours(res?.data?.sleepHours);
-        }
-      },
-      error: () => { },
-    });
-    // Get monthPlanId
-    calendarRepository.getMonthPlanIdByDate({ year: currentDate.get("year"), month: currentDate.get("month") + 1 }).subscribe({
-      next: (res) => {
-        const success = res?.status;
-        const monthPlanId = res?.data;
-        if (success && monthPlanId) {
-          localStorage.setItem("monthPlanId", monthPlanId);
-        } else {
-          // toast.error(res?.msg || res?.message);
-          localStorage.removeItem("monthPlanId");
-          // If monthPlanId not found, create new monthPlanId
-          calendarRepository.createMonthPlan({
-            year: currentDate.get("year"),
-            month: currentDate.get("month") + 1,
-          }).subscribe({
-            next: res => {
-              if (res.status) {
-                localStorage.setItem("monthPlanId", res?.data?.monthPlanId);
-              }
-              else {
-                toast.error(res?.message || res?.msg);
-              }
-            },
-            error: err => {
-              const errors = err?.response?.data?.data;
-              const message = err?.response?.data?.msg || err?.response?.data?.message;
-              setAlertMessage({
-                type: "warning",
-                title: message,
-                description: errors,
-              });
-            }
-          });
-        }
-      },
-      error: () => {
-        localStorage.removeItem("monthPlanId");
-      },
-    });
-    // Get calendarId
-    calendarRepository.getCalendars().subscribe({
-      next: res => {
-        if (res?.status) {
-          const calendars = res?.data?.calendars || [];
-          if (!calendars.length) {
-            // If there are no calendars, create 1
-            const userId = Number(localStorage.getItem("userId"));
-            calendarRepository.createCalendar(userId).subscribe({
-              next: res => {
-                if (res?.status) {
-                  if (res?.data) {
-                    localStorage.setItem("calendarId", res?.data);
-                  }
-                }
-                else {
-                  toast.error(res?.msg || res?.message);
-                }
-              },
-              error: err => { }
-            });
-          }
-          else {
-            localStorage.setItem("calendarId", calendars[0]?.id);
-          }
-        }
-        else {
-          localStorage.removeItem("calendarId");
-          toast.error(res?.msg || res?.message);
-        }
-      },
-      error: err => {
-        localStorage.removeItem("calendarId");
-      },
-    })
-  }, [setSleepHours]);
-
-  useEffect(() => {
-    if (currentView === 'home' && activeItem === 'private-calendar') {
-      calendarContextValues.setCurrentView('day');
-    }
-  }, [activeItem, currentView]);
-
   const today = toDayJs().format('YYYY-MM-DD');
   const INITIAL_DATA: PM_Deliverable[] = [
     {
@@ -522,11 +469,141 @@ export default function RootPage() {
     console.warn("Unhandled drag case:", { activeData, overData });
   };
 
+  const getProjects = () => {
+    projectRepository.getProjects().subscribe({
+      next: res => {
+        if (res?.status) {
+          const projects = res?.data?.projects;
+          setTeamProjects(projects);
+        }
+        else {
+          toast.error(res?.message || res?.msg);
+        }
+      },
+      error: err => { },
+    });
+  };
+
+  // --- Fetch user settings ---
+  useEffect(() => {
+    settingsRepository.getDailyLimits().subscribe({
+      next: (res) => {
+        if (res?.status) {
+          const limits = res?.data?.limits;
+          if (res?.data?.enabled) {
+            localStorage.setItem("dailyLimitsEnabled", "1");
+            localStorage.setItem("taskLimitHours", limits?.TASK?.hours);
+            localStorage.setItem("routineLimitHours", limits?.ROUTINE?.hours);
+          } else {
+            localStorage.setItem("dailyLimitsEnabled", "0");
+          }
+        } else {
+          toast.error(res?.message || res?.msg);
+        }
+      },
+      error: () => { },
+    });
+
+    settingsRepository.getSleepHours().subscribe({
+      next: (res) => {
+        if (!res?.status) {
+          toast.error(res?.message || res?.msg);
+        } else {
+          setSleepHours(res?.data?.sleepHours);
+        }
+      },
+      error: () => { },
+    });
+    // Get monthPlanId
+    calendarRepository.getMonthPlanIdByDate({ year: currentDate.get("year"), month: currentDate.get("month") + 1 }).subscribe({
+      next: (res) => {
+        const success = res?.status;
+        const monthPlanId = res?.data;
+        if (success && monthPlanId) {
+          localStorage.setItem("monthPlanId", monthPlanId);
+        } else {
+          // toast.error(res?.msg || res?.message);
+          localStorage.removeItem("monthPlanId");
+          // If monthPlanId not found, create new monthPlanId
+          calendarRepository.createMonthPlan({
+            year: currentDate.get("year"),
+            month: currentDate.get("month") + 1,
+          }).subscribe({
+            next: res => {
+              if (res.status) {
+                localStorage.setItem("monthPlanId", res?.data?.monthPlanId);
+              }
+              else {
+                toast.error(res?.message || res?.msg);
+              }
+            },
+            error: err => {
+              const errors = err?.response?.data?.data;
+              const message = err?.response?.data?.msg || err?.response?.data?.message;
+              setAlertMessage({
+                type: "warning",
+                title: message,
+                description: errors,
+              });
+            }
+          });
+        }
+      },
+      error: () => {
+        localStorage.removeItem("monthPlanId");
+      },
+    });
+    // Get calendarId
+    calendarRepository.getCalendars().subscribe({
+      next: res => {
+        if (res?.status) {
+          const calendars = res?.data?.calendars || [];
+          if (!calendars.length) {
+            // If there are no calendars, create 1
+            const userId = Number(localStorage.getItem("userId"));
+            calendarRepository.createCalendar(userId).subscribe({
+              next: res => {
+                if (res?.status) {
+                  if (res?.data) {
+                    localStorage.setItem("calendarId", res?.data);
+                  }
+                }
+                else {
+                  toast.error(res?.msg || res?.message);
+                }
+              },
+              error: err => { }
+            });
+          }
+          else {
+            localStorage.setItem("calendarId", calendars[0]?.id);
+          }
+        }
+        else {
+          localStorage.removeItem("calendarId");
+          toast.error(res?.msg || res?.message);
+        }
+      },
+      error: err => {
+        localStorage.removeItem("calendarId");
+      },
+    });
+
+    // Get team projects
+    getProjects();
+  }, []);
+
+  useEffect(() => {
+    if (currentView === 'home' && activeItem === 'private-calendar') {
+      calendarContextValues.setCurrentView('day');
+    }
+  }, [activeItem, currentView]);
+
   return (
     <CalendarContext.Provider value={calendarContextValues}>
       <div className="relative">
         {/* --- Headerbar --- */}
-        <HeaderBar 
+        <HeaderBar
           avatarUrl={localStorage.getItem("avatarUrl") || ""}
         />
 
@@ -535,6 +612,9 @@ export default function RootPage() {
           <div
             className={`transition-all duration-300 ease-in-out ${isSidebarCollapse ? "w-[80px]" : "w-[250px]"
               } h-full bg-gray-50 border-r border-gray-200 shadow-md`}
+            onClick={() => {
+              setModalStates([false, false, false, false]);
+            }}
           >
             <div className="flex overflow-hidden h-full">
               <div
@@ -609,14 +689,24 @@ export default function RootPage() {
             </SortableContext>
           </DndContext> */}
 
-          {/* Create Project Modal */}
-          {/* <CreateProjectModal /> */}
+          {/* Team Project Modals */}
+          <TeamProjectSection
+            teamProjects={teamProjects}
+            setTeamProjects={setTeamProjects}
+            getTeamProjects={getProjects}
+            modalStates={modalStates}
+            updateModalStates={updateModalStates}
+            currentSelectedProject={currentSelectedProject}
+            deleteProject={deleteProject}
+          />
 
-          {/* Invite Members Modal */}
-          {/* <InviteMembersModal /> */}
+          {/* Team Project Page */}
+          {currentSelectedProject && (
+            <TeamProjectPage 
+              currentSelectedProject={currentSelectedProject}
+            />
+          )}
 
-          {/* Team Members View Modal */}
-          {/* <TeamMembersViewModal /> */}
         </div>
       </div>
     </CalendarContext.Provider>
