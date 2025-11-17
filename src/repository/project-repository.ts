@@ -22,6 +22,27 @@ export class ProjectRepository extends BaseRepository {
         return this.http.delete(`/${params.projectId}`)
             .pipe(map(res => res?.data));
     };
+
+    public getTeamMembers = (params: any): Observable<any> => {
+        return this.http.get(`/${params.projectId}/members`)
+            .pipe(map(res => res?.data));
+    };
+
+
+    public findUsersByEmail = (params: any): Observable<any> => {
+        return this.http.get(`/${params.projectId}/members/find-users-by-email/${params.email}`)
+            .pipe(map(res => res?.data));
+    };
+
+    public addMemberToProject = (params: any, body: any): Observable<any> => {
+        return this.http.post(`/${params.projectId}/members`, body)
+            .pipe(map(res => res?.data));
+    };
+
+    public removeMemberFromProject = (params: any): Observable<any> => {
+        return this.http.delete(`/${params.projectId}/members/${params.targetUserId}`)
+            .pipe(map(res => res?.data));
+    };
 };
 
 export const projectRepository = new ProjectRepository();

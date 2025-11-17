@@ -12,6 +12,28 @@ export enum TaskPriority {
     CRITICAL = 'CRITICAL',
 };
 
+export enum ProjectMembershipRole {
+    OWNER = 'OWNER',
+    MEMBER = 'MEMBER',
+    INVITED = 'INVITED',
+};
+
+export type TeamMember = {
+    userId: number;
+    name: string;
+    avatarUrl: string;
+    email: string;
+    role: ProjectMembershipRole;
+    customRoleName: string;
+};
+
+export type FetchedUser = {
+    userId: number;
+    name: string;
+    avatarUrl: string;
+    email: string;
+};
+
 export type PM_TaskAssigneeId = {
     taskId: number;
     userId: number;

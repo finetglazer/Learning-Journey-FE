@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, Dispatch, SetStateAction, useState } from "react";
+import { createContext, Dispatch, SetStateAction, useEffect, useState } from "react";
 
 export interface SleepHour {
     startTime: string;  // HH:mm
@@ -12,6 +12,8 @@ export interface AppContextProps {
     setLoadingPage: Dispatch<SetStateAction<boolean>>;
     sleepHours: SleepHour[];
     setSleepHours: Dispatch<SetStateAction<SleepHour[]>>;
+    email: string;
+    setEmail: Dispatch<SetStateAction<string>>;
 };
 
 export const AppContext = createContext<AppContextProps>({
@@ -19,15 +21,25 @@ export const AppContext = createContext<AppContextProps>({
     setLoadingPage: () => {},
     sleepHours: [],
     setSleepHours: () => {},
+    email: "",
+    setEmail: () => {},
 });
 
 export const useAppHooks = (): AppContextProps => {
     const [loadingPage, setLoadingPage] = useState<boolean>(false);
     const [sleepHours, setSleepHours] = useState<SleepHour[]>([]);
+    const [email, setEmail] = useState<string>("");
+
+    useEffect(() => {
+        setEmail(localStorage.getItem("email") || "");
+    }, []);
+
     return {
         loadingPage,
         setLoadingPage,
         sleepHours,
         setSleepHours,
+        email,
+        setEmail,
     };
 };

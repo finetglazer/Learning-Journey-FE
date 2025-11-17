@@ -40,16 +40,6 @@ export const TeamProjectSection = ({
                 />
             )}
 
-            {/* Invite Members Modal */}
-            {modalStates[1] && (
-                <InviteMembersModal />
-            )}
-
-            {/* Team Members View Modal */}
-            {modalStates[2] && (
-                <TeamMembersViewModal />
-            )}
-
             {/* Confirm Delete Project Modal */}
             {modalStates[3] && (
                 <AlertModal

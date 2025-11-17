@@ -1,7 +1,8 @@
 import React from 'react';
+import { X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 // --- Mock Data ---
-// Using data from your image and adding more for scrolling
 const mockMembers = [
     {
         id: 1,
@@ -53,9 +54,30 @@ const mockMembers = [
     },
 ];
 
-export const TeamMembersViewModal = () => {
+export interface TeamMembersViewModalProps {
+    onClose: () => void,
+};
+
+// 3. Add onClose prop
+export const TeamMembersViewModal = ({
+    onClose,
+}: TeamMembersViewModalProps) => {
     return (
+        // 4. Add relative class
         <div className="w-full absolute top-[25%] left-[40%] max-w-lg p-8 bg-white rounded-2xl shadow-2xl">
+
+            {/* --- 5. Add the 'X' Close Button --- */}
+            <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-900"
+                onClick={onClose}
+            >
+                <X className="h-5 w-5" />
+                <span className="sr-only">Close</span>
+            </Button>
+
             {/* --- Header --- */}
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
                 Team members
@@ -67,11 +89,8 @@ export const TeamMembersViewModal = () => {
             </h3>
 
             {/* --- Member List Container --- */}
-            {/* Added max-h-80 and overflow-y-auto to make it scrollable.
-                    The scrollbar- classes are for styling the scrollbar (optional).
-                */}
             <div className="relative max-h-80 overflow-y-auto rounded-lg bg-slate-50 p-4 space-y-4
-                                scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 scrollbar-thumb-rounded-full">
+                            scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 scrollbar-thumb-rounded-full">
 
                 {mockMembers.map((member) => (
                     <div key={member.id} className="flex items-center justify-between">

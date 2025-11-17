@@ -1,12 +1,17 @@
 "use client"
 
-import { HOME_BASE_ROUTE, ROOT_ROUTE } from "@/const/routes-const";
+import { ROOT_ROUTE } from "@/const/routes-const";
+import { AppContext, AppContextProps } from "@/hooks/app-context";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useContext, useEffect } from "react";
 
 export default function AuthSuccess() {
     const router = useRouter();
+
+    const {
+        setEmail,
+    } = useContext<AppContextProps>(AppContext);
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -21,6 +26,8 @@ export default function AuthSuccess() {
             localStorage.setItem("userId", userId as string);
             localStorage.setItem("displayName", displayName as string);
             localStorage.setItem("email", email as string);
+            
+            setEmail(email as string);
             setTimeout(() => router.push(ROOT_ROUTE), 1200);
         }
     }, [router]);

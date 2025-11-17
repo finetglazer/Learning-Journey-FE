@@ -77,7 +77,9 @@ export default function RootPage() {
 
   const updateModalStates = (index: number, isOpen: boolean) => {
     const updatedModalStates = [...modalStates];
-    updatedModalStates[index] = isOpen;
+    for (let i = 0; i < updatedModalStates.length - 1; ++i) {
+      updatedModalStates[i] = i === index ? isOpen : false;
+    }
     setModalStates(updatedModalStates);
   };
 
@@ -134,7 +136,8 @@ export default function RootPage() {
           label: project?.name,
           icon: <span className={`h-4 w-4 rounded-full border-2 border-white`} style={{ backgroundColor: `${project?.color}` }} />,
           actionIcon: <MoreHorizontal size={16} />,
-          onClick: () => {
+          onClick: (e: any) => {
+            e.stopPropagation();
             setActiveItem(`project-${project?.id}`);
             setCurrentSelectedProject(project);
           },
@@ -614,6 +617,7 @@ export default function RootPage() {
               } h-full bg-gray-50 border-r border-gray-200 shadow-md`}
             onClick={() => {
               setModalStates([false, false, false, false]);
+              setCurrentSelectedProject(null);
             }}
           >
             <div className="flex overflow-hidden h-full">
@@ -702,8 +706,11 @@ export default function RootPage() {
 
           {/* Team Project Page */}
           {currentSelectedProject && (
-            <TeamProjectPage 
+            <TeamProjectPage
+              modalStates={modalStates}
+              updateModalStates={updateModalStates}
               currentSelectedProject={currentSelectedProject}
+              deleteProject={deleteProject}
             />
           )}
 

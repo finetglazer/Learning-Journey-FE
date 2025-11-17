@@ -13,7 +13,7 @@ export interface SidebarItemProps {
     id: string;
     icon: React.ReactNode;
     label: string | React.ReactNode;
-    onClick?: () => void;
+    onClick?: (e: any) => void;
     actionIcon?: React.ReactNode;
     isActive?: boolean;
     isCollapsed?: boolean;
@@ -25,7 +25,7 @@ export const SidebarItem = React.forwardRef<HTMLDivElement, SidebarItemProps>(
         return (
             <div
                 ref={ref}
-                onClick={onClick}
+                onClick={(e) => onClick?.(e)}
                 className={cn(
                     "flex items-center py-2 mx-2 rounded-md cursor-pointer",
                     isActive

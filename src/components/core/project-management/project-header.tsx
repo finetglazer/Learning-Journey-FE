@@ -7,6 +7,7 @@ import {
     MoreHorizontal,
     ShieldAlert,
 } from "lucide-react";
+import { useState } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -23,33 +24,29 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { ProjectMembershipRole, TeamMember } from "@/model/project-management";
+import { getFallbackName } from "@/lib/utils";
 
-type Member = {
-    id: number;
-    name: string;
-    avatarUrl: string | null;
-    initials: string;
+export interface ProjectHeaderProps {
+    role?: ProjectMembershipRole;
+    members: TeamMember[];
+    modalStates: boolean[];
+    updateModalStates: (index: number, isOpen: boolean) => void;
 };
 
-const mockMembers: Member[] = [
-    { id: 1, name: 'Trần Mạnh Hùng', avatarUrl: 'https://placehold.co/40x40/E0E0E0/707070?text=TH', initials: 'TH' },
-    { id: 2, name: 'Lê Văn An', avatarUrl: 'https://placehold.co/40x40/C0C0C0/505050?text=LA', initials: 'LA' },
-    { id: 3, name: 'Nguyễn Thị Bình', avatarUrl: null, initials: 'NB' }, // No avatar, will use fallback
-    { id: 4, name: 'Phạm Đức Chung', avatarUrl: 'https://placehold.co/40x40/A0A0A0/303030?text=PC', initials: 'PC' },
-    { id: 5, name: 'Võ Minh Dũng', avatarUrl: 'https://placehold.co/40x40/808080/101010?text=VD', initials: 'VD' },
-    { id: 6, name: 'Hoàng Thị Em', avatarUrl: 'https://placehold.co/40x40/606060/000000?text=HE', initials: 'HE' },
-    { id: 7, name: 'Đặng Văn Phúc', avatarUrl: null, initials: 'DP' },
-    { id: 8, name: 'Trịnh Thị Gấm', avatarUrl: null, initials: 'TG' },
-];
-
-export const ProjectHeader = () => {
-    // This value would come from your component's state
-    const currentTab = "task-board";
+export const ProjectHeader = ({
+    role,
+    members,
+    modalStates,
+    updateModalStates,
+}: ProjectHeaderProps) => {
+    // 2. Use state to manage the current tab
+    const [currentTab, setCurrentTab] = useState("task-board");
 
     // Avatar list logic
     const MAX_AVATARS = 6;
-    const membersToShow = mockMembers.slice(0, MAX_AVATARS);
-    const remainingMembers = mockMembers.slice(MAX_AVATARS);
+    const membersToShow = members.slice(0, MAX_AVATARS);
+    const remainingMembers = members.slice(MAX_AVATARS);
     const remainingCount = remainingMembers.length;
 
     return (
@@ -66,11 +63,11 @@ export const ProjectHeader = () => {
                         <div className="flex -space-x-2">
                             {/* First 6 Avatars */}
                             {membersToShow.map(member => (
-                                <Tooltip key={member.id}>
+                                <Tooltip key={member.userId}>
                                     <TooltipTrigger asChild>
                                         <Avatar className="w-8 h-8 border-2 border-white rounded-full">
                                             <AvatarImage src={member.avatarUrl || ''} alt={member.name} />
-                                            <AvatarFallback>{member.initials}</AvatarFallback>
+                                            <AvatarFallback>{getFallbackName(member.name)}</AvatarFallback>
                                         </Avatar>
                                     </TooltipTrigger>
                                     <TooltipContent>
@@ -91,7 +88,7 @@ export const ProjectHeader = () => {
                                         <p className="font-medium">More members:</p>
                                         <ul className="list-disc list-inside">
                                             {remainingMembers.map(member => (
-                                                <li key={member.id}>{member.name}</li>
+                                                <li key={member.userId}>{member.name}</li>
                                             ))}
                                         </ul>
                                     </TooltipContent>
@@ -107,9 +104,24 @@ export const ProjectHeader = () => {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
-                                <DropdownMenuItem>Edit details</DropdownMenuItem>
-                                <DropdownMenuItem>Settings</DropdownMenuItem>
-                                <DropdownMenuItem className="text-red-600">
+                                {role === ProjectMembershipRole.OWNER && (
+                                    <DropdownMenuItem
+                                        className="cursor-pointer"
+                                        onClick={() => updateModalStates(1, true)}
+                                    >
+                                        Invite members
+                                    </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem
+                                    className="cursor-pointer"
+                                    onClick={() => updateModalStates(2, true)}
+                                >
+                                    View team members
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    className="text-red-600 cursor-pointer"
+                                    onClick={() => updateModalStates(3, true)}
+                                >
                                     Delete project
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -118,12 +130,13 @@ export const ProjectHeader = () => {
                 </div>
 
                 {/* --- Navigation Tabs --- */}
-                <Tabs defaultValue={currentTab}>
-                    <TabsList className="bg-transparent p-0 h-auto">
+                {/* 3. Control the Tabs component with state */}
+                <Tabs value={currentTab} onValueChange={setCurrentTab}>
+                    <TabsList className="bg-transparent p-0 h-auto gap-2.5">
                         {/* Summary */}
                         <TabsTrigger
                             value="summary"
-                            className="pb-3 rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600"
+                            className="py-2.5 px-3 cursor-pointer rounded-md text-gray-500 data-[state=active]:text-blue-600 data-[state=active]:font-medium data-[state=active]:bg-blue-50"
                         >
                             <Globe2 className="h-4 w-4 mr-2" />
                             Summary
@@ -132,7 +145,7 @@ export const ProjectHeader = () => {
                         {/* List */}
                         <TabsTrigger
                             value="list"
-                            className="pb-3 rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600"
+                            className="py-2.5 px-3 cursor-pointer rounded-md text-gray-500 data-[state=active]:text-blue-600 data-[state=active]:font-medium data-[state=active]:bg-blue-50"
                         >
                             <List className="h-4 w-4 mr-2" />
                             List
@@ -141,17 +154,19 @@ export const ProjectHeader = () => {
                         {/* Task board (Active) */}
                         <TabsTrigger
                             value="task-board"
-                            className="pb-3 rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600"
+                            className="py-2.5 px-3 cursor-pointer rounded-md text-gray-500 data-[state=active]:text-blue-600 data-[state=active]:font-medium data-[state=active]:bg-blue-50"
                         >
                             <KanbanSquare className="h-4 w-4 mr-2" />
                             Task board
-                            <span className="text-gray-400 ml-1.5">(View only)</span>
+                            {role !== ProjectMembershipRole.OWNER && (
+                                <span className="text-gray-400 ml-1.5" style={{ color: currentTab === 'task-board' ? 'blue' : "" }}>(View only)</span>
+                            )}
                         </TabsTrigger>
 
                         {/* Timeline */}
                         <TabsTrigger
                             value="timeline"
-                            className="pb-3 rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600"
+                            className="py-2.5 px-3 cursor-pointer rounded-md text-gray-500 data-[state=active]:text-blue-600 data-[state=active]:font-medium data-[state=active]:bg-blue-50"
                         >
                             <GanttChartSquare className="h-4 w-4 mr-2" />
                             Timeline
@@ -160,7 +175,7 @@ export const ProjectHeader = () => {
                         {/* Shared file */}
                         <TabsTrigger
                             value="shared-file"
-                            className="pb-3 rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600"
+                            className="py-2.5 px-3 cursor-pointer rounded-md text-gray-500 data-[state=active]:text-blue-600 data-[state=active]:font-medium data-[state=active]:bg-blue-50"
                         >
                             <Files className="h-4 w-4 mr-2" />
                             Shared file
@@ -169,7 +184,7 @@ export const ProjectHeader = () => {
                         {/* Risk register */}
                         <TabsTrigger
                             value="risk-register"
-                            className="pb-3 rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600"
+                            className="py-2.5 px-3 cursor-pointer rounded-md text-gray-500 data-[state=active]:text-blue-600 data-[state=active]:font-medium data-[state=active]:bg-blue-50"
                         >
                             <ShieldAlert className="h-4 w-4 mr-2" />
                             Risk register

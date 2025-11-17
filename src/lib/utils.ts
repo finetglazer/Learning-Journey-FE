@@ -590,3 +590,32 @@ export const getTasksForDayInYearView = (tasks: Task[], day: Date): Task[] => {
       return isSameDay(new Date(task.startTime), day);
     });
   };
+
+/**
+ * Generates fallback initials from a name.
+ * @param {string} [name] - The full name string.
+ * @returns {string} The initials (e.g., "JD", "JO", "A") or "Anonymous".
+ */
+export const getFallbackName = (name?: string) => {
+  // 1. Use optional chaining to trim. 
+  // This handles null/undefined safely.
+  const trimmedName = name?.trim();
+
+  // 2. If the trimmed name is falsy (null, undefined, "", " "), return "Anonymous".
+  if (!trimmedName) {
+    return "Anonymous";
+  }
+
+  // 3. Uppercase and split on WHITESPACE (the fixed regex)
+  const parts = trimmedName.toUpperCase().split(/\s+/);
+
+  // 4. Handle a single word (e.g., "John" -> "JO", "J" -> "J")
+  if (parts.length === 1) {
+    // substring(0, 2) is simpler and handles 1-letter names automatically
+    return parts[0].substring(0, 2);
+  }
+
+  // 5. Handle multiple words (e.g., "John Doe" -> "JD")
+  // Use + for simple concatenation.
+  return parts[0][0] + parts[1][0];
+};

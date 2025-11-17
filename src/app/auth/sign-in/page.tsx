@@ -18,6 +18,7 @@ export default function SignInPage() {
 
     const {
         setLoadingPage,
+        setEmail,
     } = useContext<AppContextProps>(AppContext);
 
     const {
@@ -30,6 +31,7 @@ export default function SignInPage() {
         authRepository.signIn,
         () => {
             router.push(ROOT_ROUTE);
+            setEmail(model.email as string);
             setLoadingPage(true);
         }
     );
