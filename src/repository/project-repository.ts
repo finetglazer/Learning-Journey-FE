@@ -28,7 +28,6 @@ export class ProjectRepository extends BaseRepository {
             .pipe(map(res => res?.data));
     };
 
-
     public findUsersByEmail = (params: any): Observable<any> => {
         return this.http.get(`/${params.projectId}/members/find-users-by-email/${params.email}`)
             .pipe(map(res => res?.data));
@@ -41,6 +40,16 @@ export class ProjectRepository extends BaseRepository {
 
     public removeMemberFromProject = (params: any): Observable<any> => {
         return this.http.delete(`/${params.projectId}/members/${params.targetUserId}`)
+            .pipe(map(res => res?.data));
+    };
+
+    public acceptInvitation = (params: any, body: any): Observable<any> => {
+        return this.http.post(`/${params.projectId}/members/accept`, body)
+            .pipe(map(res => res?.data));
+    };
+
+    public declineInvitation = (params: any, body: any): Observable<any> => {
+        return this.http.post(`/${params.projectId}/members/decline`, body)
             .pipe(map(res => res?.data));
     };
 };

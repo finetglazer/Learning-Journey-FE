@@ -41,7 +41,7 @@ export const ProjectHeader = ({
     updateModalStates,
 }: ProjectHeaderProps) => {
     // 2. Use state to manage the current tab
-    const [currentTab, setCurrentTab] = useState("task-board");
+    const [currentTab, setCurrentTab] = useState("summary");
 
     // Avatar list logic
     const MAX_AVATARS = 6;

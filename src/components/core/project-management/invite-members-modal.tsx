@@ -193,7 +193,7 @@ export const InviteMembersModal = ({
     return (
         <>
             {/* --- Modal Card --- */}
-            <div className="w-full absolute top-[25%] left-[40%] max-w-lg p-8 bg-white rounded-2xl shadow-2xl">
+            <div className="w-full max-w-[600px] absolute top-[25%] left-[40%] p-8 bg-white rounded-2xl shadow-2xl">
 
                 {/* --- Close Button --- */}
                 <Button
@@ -277,9 +277,9 @@ export const InviteMembersModal = ({
                         {teamMembers.map((member) => (
                             <div key={member.userId} className="flex items-center justify-between">
                                 {/* Left part: Avatar and Info */}
-                                <div className="flex items-center space-x-3">
+                                <div className="flex items-center space-x-3 flex-1 min-w-0">
                                     <img
-                                        src={member.avatarUrl || ''}
+                                        src={member.avatarUrl || `https://placehold.co/40x40/E0E0E0/707070?text=${member.name[0] || 'A'}`}
                                         alt={member.name}
                                         className="w-10 h-10 rounded-full object-cover"
                                         onError={(e: any) => {
@@ -298,7 +298,7 @@ export const InviteMembersModal = ({
                                 </div>
 
                                 {/* Right part: Role and Actions */}
-                                <div className="flex items-center space-x-4">
+                                <div className="flex items-center space-x-4 flex-shrink-0">
                                     <button className="text-sm text-blue-600 hover:text-blue-800">
                                         {member.customRoleName || '<Custome name role>'}
                                     </button>

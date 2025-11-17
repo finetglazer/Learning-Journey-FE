@@ -39,7 +39,8 @@ export const TeamProjectPage = ({
                     );
 
                     setMembers(sortedMembers);
-                    setCurrentMember(sortedMembers.find((member: TeamMember) => member.email === email));                }
+                    setCurrentMember(sortedMembers.find((member: TeamMember) => member.email === email));
+                }
                 else {
                     toast.error(res?.message || res?.msg);
                 }
@@ -75,6 +76,7 @@ export const TeamProjectPage = ({
             {/* Team Members View Modal */}
             {modalStates[2] && (
                 <TeamMembersViewModal
+                    members={members}
                     onClose={() => {
                         updateModalStates(2, false);
                     }}
