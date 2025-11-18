@@ -53,6 +53,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { TeamProjectSection } from "@/components/core/sidebar/sections/team-project-section";
 import { TeamProjectPage } from "@/components/core/sidebar/pages/project/team-project";
+import { TeamProjectContext, useTeamProjectHooks } from "@/components/core/sidebar/pages/project/team-project-context";
 
 export default function RootPage() {
   const router = useRouter();
@@ -95,7 +96,7 @@ export default function RootPage() {
   };
 
   const deleteProject = (projectId: number) => {
-    projectRepository.deleteProject({projectId}).subscribe({
+    projectRepository.deleteProject({ projectId }).subscribe({
       next: res => {
         if (res?.status) {
           toast.success(res?.message || res?.msg);
@@ -225,125 +226,6 @@ export default function RootPage() {
       items: [
         { id: "security", label: "Security log", icon: <Shield size={16} />, onClick: () => setActiveItem("security") },
         { id: "sponsorship", label: "Sponsorship log", icon: <Heart size={16} />, onClick: () => setActiveItem("sponsorship") },
-      ],
-    },
-  ];
-  const today = toDayJs().format('YYYY-MM-DD');
-  const INITIAL_DATA: PM_Deliverable[] = [
-    {
-      // --- Deliverable 1 ---
-      deliverableId: 'del-1',
-      projectId: 1, // Added required field
-      name: 'Improve Navigation & Menu Organization', // 'title' -> 'name'
-      key: 'DEL-01', // Added required field
-      order: 0, // Added required field
-      startDate: '2025-11-13', // Added
-      endDate: '2025-12-20',   // Added
-      phases: [
-        {
-          // --- Phase 1.1 ---
-          phaseId: 'phase-1',
-          deliverableId: 'del-1', // Added required field (matches parent)
-          name: 'Enhance Search Functionality', // 'title' -> 'name'
-          key: 'PH-01', // Added required field
-          order: 0, // Added required field
-          startDate: '2025-11-13', // Added
-          endDate: '2025-11-30',   // Added
-          tasks: [
-            {
-              // --- Task 1.1.1 ---
-              taskId: 'task-22',
-              phaseId: 'phase-1', // Added required field (matches parent)
-              name: 'Dark Mode Implementation', // 'title' -> 'name'
-              key: 'TSK-22', // Added required field
-              status: TaskStatus.IN_REVIEW, // Used enum
-              priority: TaskPriority.MINOR, // Used enum
-              order: 0, // Added required field
-              dateAdded: today, // Added required field
-              assignees: [], // Added required field
-              startDate: '2025-11-16', // Added
-              endDate: '2025-11-30',   // Added
-            },
-            {
-              // --- Task 1.1.2 ---
-              taskId: 'task-23',
-              phaseId: 'phase-1', // Added required field (matches parent)
-              name: 'Implement search algorithms',
-              key: 'TSK-23',
-              status: TaskStatus.TO_DO,
-              priority: TaskPriority.MAJOR,
-              order: 1,
-              dateAdded: today,
-              assignees: [],
-              startDate: '2025-11-16', // Added
-              endDate: '2025-11-30',   // Added
-            },
-          ],
-        },
-        {
-          // --- Phase 1.2 ---
-          phaseId: 'phase-2',
-          deliverableId: 'del-1', // Added required field (matches parent)
-          name: 'Optimize Mobile Responsiveness',
-          key: 'PH-02',
-          order: 1,
-          startDate: '2025-11-15', // Added
-          endDate: '2025-11-25',   // Added
-          tasks: [
-            {
-              // --- Task 1.2.1 ---
-              taskId: 'task-24',
-              phaseId: 'phase-2', // Added required field (matches parent)
-              name: 'Test on iOS',
-              key: 'TSK-24',
-              status: TaskStatus.TO_DO,
-              priority: TaskPriority.MINOR,
-              order: 0,
-              dateAdded: today,
-              assignees: [],
-              startDate: '2025-11-15', // Added
-              endDate: '2025-11-25',   // Added
-            },
-          ],
-        },
-      ],
-    },
-    {
-      // --- Deliverable 2 ---
-      deliverableId: 'del-2',
-      projectId: 1, // Added required field
-      name: 'Speed Optimization for Home Page',
-      key: 'DEL-02',
-      endDate: '2025-11-25',   // Added
-      startDate: '2025-11-15', // Added
-      order: 1,
-      phases: [
-        {
-          // --- Phase 2.1 ---
-          phaseId: 'phase-3',
-          deliverableId: 'del-2', // Added required field (matches parent)
-          name: 'Image Compression',
-          key: 'PH-03',
-          order: 0,
-          endDate: '2025-11-25',   // Added
-          startDate: '2025-11-15', // Added
-          tasks: [
-            {
-              // --- Task 2.1.1 ---
-              taskId: 'task-25',
-              phaseId: 'phase-3', // Added required field (matches parent)
-              name: 'Setup WebP conversion',
-              key: 'TSK-25',
-              status: TaskStatus.TO_DO,
-              priority: TaskPriority.CRITICAL,
-              order: 0,
-              dateAdded: today,
-              assignees: [],
-              startDate: '2025-11-15', // Added
-              endDate: '2025-11-25',   // Added
-            },
-          ],
-        },
       ],
     },
   ];
@@ -480,98 +362,96 @@ export default function RootPage() {
 
   return (
     <CalendarContext.Provider value={calendarContextValues}>
-      <div className="relative">
-        {/* --- Headerbar --- */}
-        <HeaderBar
-          avatarUrl={localStorage.getItem("avatarUrl") || ""}
-        />
+      <TeamProjectContext.Provider value={useTeamProjectHooks()}>
+        <div className="relative">
+          {/* --- Headerbar --- */}
+          <HeaderBar
+            avatarUrl={localStorage.getItem("avatarUrl") || ""}
+          />
 
-        <div className="flex">
-          {/* --- Sidebar --- */}
-          <div
-            className={`transition-all duration-300 ease-in-out ${isSidebarCollapse ? "w-[80px]" : "w-[250px]"
-              } h-full bg-gray-50 border-r border-gray-200 shadow-md`}
-            onClick={() => {
-              setModalStates([false, false, false, false]);
-              setCurrentSelectedProject(null);
-            }}
-          >
-            <div className="flex overflow-hidden h-full">
-              <div
-                className="flex w-[500px] h-full transition-transform duration-300 ease-in-out"
-                style={{
-                  transform: currentView === "home" ? "translateX(0%)" : "translateX(-50%)",
-                }}
-              >
-                {/* Home Panel */}
-                <div className={`h-full ${isSidebarCollapse ? "w-[80px]" : "w-[250px]"}`}>
-                  <HomePanel
-                    sections={homeSections}
-                    activeItem={activeItem}
-                    isCollapsed={isSidebarCollapse}
-                    onToggleCollapse={() => { setIsSidebarCollapse(!isSidebarCollapse) }}
-                  />
-                </div>
+          <div className="flex">
+            {/* --- Sidebar --- */}
+            <div
+              className={`transition-all duration-300 ease-in-out ${isSidebarCollapse ? "w-[80px]" : "w-[250px]"
+                } h-full bg-gray-50 border-r border-gray-200 shadow-md`}
+              onClick={() => {
+                setModalStates([false, false, false, false]);
+                setCurrentSelectedProject(null);
+              }}
+            >
+              <div className="flex overflow-hidden h-full">
+                <div
+                  className="flex w-[500px] h-full transition-transform duration-300 ease-in-out"
+                  style={{
+                    transform: currentView === "home" ? "translateX(0%)" : "translateX(-50%)",
+                  }}
+                >
+                  {/* Home Panel */}
+                  <div className={`h-full ${isSidebarCollapse ? "w-[80px]" : "w-[250px]"}`}>
+                    <HomePanel
+                      sections={homeSections}
+                      activeItem={activeItem}
+                      isCollapsed={isSidebarCollapse}
+                      onToggleCollapse={() => { setIsSidebarCollapse(!isSidebarCollapse) }}
+                    />
+                  </div>
 
-                {/* Settings Panel */}
-                <div className={`h-full ${isSidebarCollapse ? "w-[80px]" : "w-[250px]"} border-l border-gray-200`}>
-                  <SettingsPanel
-                    sections={settingsSections}
-                    onShowHome={() => setCurrentView("home")}
-                    activeItem={activeItem}
-                    isCollapsed={isSidebarCollapse}
-                    onToggleCollapse={() => { setIsSidebarCollapse(!isSidebarCollapse) }}
-                  />
+                  {/* Settings Panel */}
+                  <div className={`h-full ${isSidebarCollapse ? "w-[80px]" : "w-[250px]"} border-l border-gray-200`}>
+                    <SettingsPanel
+                      sections={settingsSections}
+                      onShowHome={() => setCurrentView("home")}
+                      activeItem={activeItem}
+                      isCollapsed={isSidebarCollapse}
+                      onToggleCollapse={() => { setIsSidebarCollapse(!isSidebarCollapse) }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* --- Main Content --- */}
-          <div className="flex-1">
-            {currentView === "home" && activeItem === "private-calendar" && (
-              <>
-                {calendarContextValues.currentView === "day" && <CalendarDayView />}
-                {calendarContextValues.currentView === "week" && <CalendarWeekView />}
-                {calendarContextValues.currentView === "month-view" && <CalendarMonthView />}
-                {calendarContextValues.currentView === "year" && <CalendarYearView />}
-              </>
-            )}
+            {/* --- Main Content --- */}
+            <div className="flex-1">
+              {currentView === "home" && activeItem === "private-calendar" && (
+                <>
+                  {calendarContextValues.currentView === "day" && <CalendarDayView />}
+                  {calendarContextValues.currentView === "week" && <CalendarWeekView />}
+                  {calendarContextValues.currentView === "month-view" && <CalendarMonthView />}
+                  {calendarContextValues.currentView === "year" && <CalendarYearView />}
+                </>
+              )}
 
-            {currentView === "home" && activeItem === "month-planning" && <CalendarMonthPlanning />}
+              {currentView === "home" && activeItem === "month-planning" && <CalendarMonthPlanning />}
 
-            {currentView === "settings" && activeItem === "timezone" && <LimitTimeAndTimeZone />}
-            {currentView === "settings" && activeItem === "password" && <ChangePasswordPage />}
-            {currentView === "settings" && activeItem === "memorable-events" && <MemorableEvents />}
-            {currentView === "settings" && activeItem === "profile" && <PublicProfile />}
-          </div>
+              {currentView === "settings" && activeItem === "timezone" && <LimitTimeAndTimeZone />}
+              {currentView === "settings" && activeItem === "password" && <ChangePasswordPage />}
+              {currentView === "settings" && activeItem === "memorable-events" && <MemorableEvents />}
+              {currentView === "settings" && activeItem === "profile" && <PublicProfile />}
+            </div>
 
-          {/* --- List page --- */}
-          
-
-          {/* Team Project Modals */}
-          <TeamProjectSection
-            teamProjects={teamProjects}
-            setTeamProjects={setTeamProjects}
-            getTeamProjects={getProjects}
-            modalStates={modalStates}
-            updateModalStates={updateModalStates}
-            currentSelectedProject={currentSelectedProject}
-            deleteProject={deleteProject}
-          />
-
-          {/* Team Project Page */}
-          {currentSelectedProject && (
-            <TeamProjectPage
+            {/* Team Project Sidebar Section */}
+            <TeamProjectSection
+              teamProjects={teamProjects}
+              setTeamProjects={setTeamProjects}
+              getTeamProjects={getProjects}
               modalStates={modalStates}
               updateModalStates={updateModalStates}
               currentSelectedProject={currentSelectedProject}
               deleteProject={deleteProject}
             />
-          )}
 
+            {/* Team Project Page */}
+            {currentSelectedProject && (
+              <TeamProjectPage
+                modalStates={modalStates}
+                updateModalStates={updateModalStates}
+                currentSelectedProject={currentSelectedProject}
+                deleteProject={deleteProject}
+              />
+            )}
+          </div>
         </div>
-      </div>
+      </TeamProjectContext.Provider>
     </CalendarContext.Provider>
   );
 };

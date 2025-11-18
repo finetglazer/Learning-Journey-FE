@@ -7,6 +7,8 @@ import { Project, ProjectMembershipRole, TeamMember } from "@/model/project-mana
 import { projectRepository } from "@/repository/project-repository";
 import { useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { ListTabView } from "./tabs/list-tab/list-tab-view";
+import { TeamProjectContext, TeamProjectContextProps } from "./team-project-context";
 
 export interface TeamProjectPageProps {
     currentSelectedProject: Project | null;
@@ -26,6 +28,12 @@ export const TeamProjectPage = ({
     const {
         email,
     } = useContext<AppContextProps>(AppContext);
+    const {
+        tab,
+        setTab,
+        selectedProject,
+        setSelectedProject,
+    } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
     const getTeamMembers = () => {
         projectRepository.getTeamMembers({
@@ -51,16 +59,24 @@ export const TeamProjectPage = ({
 
     useEffect(() => {
         getTeamMembers();
+        setSelectedProject(currentSelectedProject);
     }, [currentSelectedProject]);
 
     return (
-        <>
+        <div className="relative w-full pl-2">
             <ProjectHeader
                 role={currentMember?.role}
                 members={members}
                 modalStates={modalStates}
                 updateModalStates={updateModalStates}
+                currentSelectedProject={currentSelectedProject}
             />
+
+            {/* List tab */}
+            {tab === 'list' && (
+                <ListTabView />
+            )}
+
             {/* Invite Members Modal */}
             {modalStates[1] && (
                 <InviteMembersModal
@@ -101,6 +117,6 @@ export const TeamProjectPage = ({
                     }}
                 />
             )}
-        </>
+        </div>
     )
 }

@@ -48,10 +48,10 @@ export function PM_TaskItem({ task }: { task: PM_Task }) {
         transition,
         isDragging,
     } = useSortable({
-        id: task.taskId,
+        id: task.taskIdStr,
         data: {
             type: 'Task',
-            parentId: task.phaseId,
+            parentId: task.phaseIdStr,
         } as PM_DraggableItemData,
     });
 
@@ -72,25 +72,28 @@ export function PM_TaskItem({ task }: { task: PM_Task }) {
             {...attributes}
             {...listeners}
             className={`
-                flex items-center justify-between
+                grid grid-cols-[1fr_2fr] items-center
                 py-2.5 px-4 ml-10 border-t border-gray-100
                 cursor-grab active:cursor-grabbing
                 group
+                gap-4 
             `}
         >
-            {/* Left Side: Task Info */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
                 <button className="text-gray-400 hover:text-gray-600">
                     <Circle size={18} />
                 </button>
                 <span className="text-sm font-medium text-gray-500">{task.key}</span>
-                <span className="text-sm text-gray-900">{task.name}</span>
+                {/* 3. Task Name: ADD flex-1, min-w-0, and truncate */}
+                <span className="text-sm text-gray-900 flex-1 min-w-0 truncate">
+                    {task.name}
+                </span>
+
                 <button className="p-1 rounded-full text-gray-400 opacity-0 group-hover:opacity-100 hover:bg-gray-100 hover:text-gray-700">
                     <MoreHorizontal size={16} />
                 </button>
             </div>
 
-            {/* Right Side: Metadata from image */}
             <div className="flex items-center gap-4">
                 {/* Status Badge */}
                 <button className={`flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold ${taskStatus.bg} ${taskStatus.text}`}>
@@ -106,7 +109,6 @@ export function PM_TaskItem({ task }: { task: PM_Task }) {
 
                 {/* Avatars from image */}
                 <div className="flex items-center -space-x-2">
-                    {/* Placeholder Avatars */}
                     <img className="inline-block h-6 w-6 rounded-full ring-2 ring-white" src="https://placehold.co/24x24/E2E8F0/64748B?text=A" alt="Assignee 1" />
                     <img className="inline-block h-6 w-6 rounded-full ring-2 ring-white" src="https://placehold.co/24x24/E0E7FF/4338CA?text=B" alt="Assignee 2" />
                 </div>

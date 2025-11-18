@@ -7,7 +7,7 @@ import {
     MoreHorizontal,
     ShieldAlert,
 } from "lucide-react";
-import { useState } from "react";
+import { useContext, useState } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -24,14 +24,16 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ProjectMembershipRole, TeamMember } from "@/model/project-management";
+import { Project, ProjectMembershipRole, TeamMember } from "@/model/project-management";
 import { getFallbackName } from "@/lib/utils";
+import { TeamProjectContext, TeamProjectContextProps, TeamProjectTab } from "../sidebar/pages/project/team-project-context";
 
 export interface ProjectHeaderProps {
     role?: ProjectMembershipRole;
     members: TeamMember[];
     modalStates: boolean[];
     updateModalStates: (index: number, isOpen: boolean) => void;
+    currentSelectedProject: Project | null;
 };
 
 export const ProjectHeader = ({
@@ -39,9 +41,12 @@ export const ProjectHeader = ({
     members,
     modalStates,
     updateModalStates,
+    currentSelectedProject,
 }: ProjectHeaderProps) => {
-    // 2. Use state to manage the current tab
-    const [currentTab, setCurrentTab] = useState("summary");
+    const {
+        tab,
+        setTab,
+    } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
     // Avatar list logic
     const MAX_AVATARS = 6;
@@ -51,13 +56,12 @@ export const ProjectHeader = ({
 
     return (
         <TooltipProvider delayDuration={200}>
-            <div className="w-full border-b border-gray-200 p-4">
+            <div className="w-full border-b border-gray-200 p-4 pl-2">
                 {/* --- Title Row --- */}
                 <div className="flex justify-between items-center mb-2">
                     <div className="flex items-center space-x-3">
-
                         {/* Project Title */}
-                        <h1 className="text-2xl font-bold">Project 1</h1>
+                        <h1 className="text-2xl font-bold">{currentSelectedProject?.name || "..."}</h1>
 
                         {/* --- Member Avatars --- */}
                         <div className="flex -space-x-2">
@@ -130,9 +134,8 @@ export const ProjectHeader = ({
                 </div>
 
                 {/* --- Navigation Tabs --- */}
-                {/* 3. Control the Tabs component with state */}
-                <Tabs value={currentTab} onValueChange={setCurrentTab}>
-                    <TabsList className="bg-transparent p-0 h-auto gap-2.5">
+                <Tabs value={tab} onValueChange={setTab}>
+                    <TabsList className="bg-transparen p-0 h-auto gap-2.5">
                         {/* Summary */}
                         <TabsTrigger
                             value="summary"
@@ -153,13 +156,13 @@ export const ProjectHeader = ({
 
                         {/* Task board (Active) */}
                         <TabsTrigger
-                            value="task-board"
+                            value="task_board"
                             className="py-2.5 px-3 cursor-pointer rounded-md text-gray-500 data-[state=active]:text-blue-600 data-[state=active]:font-medium data-[state=active]:bg-blue-50"
                         >
                             <KanbanSquare className="h-4 w-4 mr-2" />
                             Task board
                             {role !== ProjectMembershipRole.OWNER && (
-                                <span className="text-gray-400 ml-1.5" style={{ color: currentTab === 'task-board' ? 'blue' : "" }}>(View only)</span>
+                                <span className="text-gray-400 ml-1.5" style={{ color: tab === 'task-board' ? 'blue' : "" }}>(View only)</span>
                             )}
                         </TabsTrigger>
 
@@ -174,7 +177,7 @@ export const ProjectHeader = ({
 
                         {/* Shared file */}
                         <TabsTrigger
-                            value="shared-file"
+                            value="shared_file"
                             className="py-2.5 px-3 cursor-pointer rounded-md text-gray-500 data-[state=active]:text-blue-600 data-[state=active]:font-medium data-[state=active]:bg-blue-50"
                         >
                             <Files className="h-4 w-4 mr-2" />
@@ -183,7 +186,7 @@ export const ProjectHeader = ({
 
                         {/* Risk register */}
                         <TabsTrigger
-                            value="risk-register"
+                            value="risk_register"
                             className="py-2.5 px-3 cursor-pointer rounded-md text-gray-500 data-[state=active]:text-blue-600 data-[state=active]:font-medium data-[state=active]:bg-blue-50"
                         >
                             <ShieldAlert className="h-4 w-4 mr-2" />

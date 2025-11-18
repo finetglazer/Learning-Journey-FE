@@ -7,7 +7,8 @@ import {
 import { PM_Phase } from '@/model/project-management';
 import { PM_DraggableItemData } from './type';
 import { PM_TaskItem } from './pm-task-item';
-import { MoreHorizontal, Plus } from 'lucide-react';
+import { ChevronDown, MoreHorizontal, Plus } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 type PhaseItemProps = {
     phase: PM_Phase;
@@ -24,10 +25,10 @@ export function PM_PhaseItem({ phase, isExpanded, onToggle }: PhaseItemProps) {
         transition,
         isDragging,
     } = useSortable({
-        id: phase.phaseId,
+        id: phase.phaseIdStr,
         data: {
             type: 'Phase',
-            parentId: phase.deliverableId,
+            parentId: phase.deliverableIdStr,
         } as PM_DraggableItemData,
     });
 
@@ -54,13 +55,16 @@ export function PM_PhaseItem({ phase, isExpanded, onToggle }: PhaseItemProps) {
                     type="button"
                     onClick={(e) => {
                         e.stopPropagation();
-                        onToggle(phase.phaseId);
+                        onToggle(phase.phaseIdStr);
                     }}
                     className="p-1 mr-2 rounded-full hover:bg-gray-100"
                 >
-                    <span className="w-5 h-5 flex items-center justify-center text-gray-500">
-                        {isExpanded ? '▼' : '►'}
-                    </span>
+                    <ChevronDown
+                        className={cn(
+                            "h-4 w-4 transition-transform duration-200",
+                            isExpanded ? "rotate-0" : "-rotate-90"
+                        )}
+                    />
                 </button>
 
                 {/* Content */}
@@ -68,35 +72,40 @@ export function PM_PhaseItem({ phase, isExpanded, onToggle }: PhaseItemProps) {
                 <span className="ml-3 text-sm font-semibold text-gray-900">
                     {phase.name}
                 </span>
-                <span className="flex-1"></span>
+                <span className="w-2"></span>
                 {/* More button from image */}
                 <button
                     onClick={(e) => e.stopPropagation()}
-                    className="p-1 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                    className="p-1 rounded-full opacity-0 hover:opacity-100 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
                 >
                     <MoreHorizontal size={16} />
                 </button>
             </div>
 
             {/* The collapsible container for Tasks */}
-            {isExpanded && (
-                <>
+            <div
+                className={cn(
+                    "grid transition-[grid-template-rows] duration-300 ease-in-out",
+                    isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                )}
+            >
+                <div className="overflow-hidden">
                     <SortableContext
-                        items={phase.tasks.map((t) => t.taskId)}
+                        items={phase.tasks.map((t) => t.taskIdStr)}
                         strategy={verticalListSortingStrategy}
                     >
                         {phase.tasks.map((task) => (
-                            <PM_TaskItem key={task.taskId} task={task} />
+                            <PM_TaskItem key={task.taskIdStr} task={task} />
                         ))}
                     </SortableContext>
 
-                    {/* "Create task" button from image */}
-                    <button className="flex items-center w-full text-left py-2.5 px-4 ml-10 text-sm text-gray-500 hover:bg-gray-50">
+                    {/* "Create task" button */}
+                    <button className="flex items-center w-full text-left py-2.5 px-4 ml-10 text-sm text-gray-500 hover:bg-gray-50 transition-colors">
                         <Plus size={16} className="mr-2" />
                         Create task
                     </button>
-                </>
-            )}
+                </div>
+            </div>
         </div>
     );
 };

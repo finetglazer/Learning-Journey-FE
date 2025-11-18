@@ -34,11 +34,6 @@ export type FetchedUser = {
     email: string;
 };
 
-export type PM_TaskAssigneeId = {
-    taskId: number;
-    userId: number;
-};
-
 export interface Project {
     id: number;
     name: string;
@@ -46,12 +41,15 @@ export interface Project {
 };
 
 export interface PM_TaskAssignee {
-    id: PM_TaskAssigneeId;
+    id: number;
+    avatarUrl: string;
 };
 
 export interface PM_Task {
-    taskId: string;
-    phaseId: string;
+    taskId: number;
+    taskIdStr: string;
+    phaseId: number;
+    phaseIdStr: string;
     name: string;
     key: string;
     status: TaskStatus;
@@ -64,8 +62,10 @@ export interface PM_Task {
 };
 
 export interface PM_Phase {
-    phaseId: string;
-    deliverableId: string;
+    phaseId: number;
+    phaseIdStr: string;
+    deliverableId: number;
+    deliverableIdStr: string;
     name: string;
     key: string;
     order: number;
@@ -75,7 +75,8 @@ export interface PM_Phase {
 };
 
 export interface PM_Deliverable {
-    deliverableId: string;
+    deliverableId: number;
+    deliverableIdStr: string;
     projectId: number;
     name: string;
     key: string;

@@ -23,6 +23,8 @@ export class ProjectRepository extends BaseRepository {
             .pipe(map(res => res?.data));
     };
 
+    // MEMBER FUNCTIONS
+
     public getTeamMembers = (params: any): Observable<any> => {
         return this.http.get(`/${params.projectId}/members`)
             .pipe(map(res => res?.data));
@@ -50,6 +52,12 @@ export class ProjectRepository extends BaseRepository {
 
     public declineInvitation = (params: any, body: any): Observable<any> => {
         return this.http.post(`/${params.projectId}/members/decline`, body)
+            .pipe(map(res => res?.data));
+    };
+
+    // DELIVERABLE FUNCTIONS
+    public getProjectStructure = (params: any): Observable<any> => {
+        return this.http.get(`/${params.projectId}/deliverables/structure`)
             .pipe(map(res => res?.data));
     };
 };
