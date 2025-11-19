@@ -41,7 +41,7 @@ export interface Project {
 };
 
 export interface PM_TaskAssignee {
-    id: number;
+    userId: number;
     avatarUrl: string;
 };
 

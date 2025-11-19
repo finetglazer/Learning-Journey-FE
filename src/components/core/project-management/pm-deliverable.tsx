@@ -3,14 +3,19 @@
 import { cn } from '@/lib/utils';
 import { PM_Deliverable } from '@/model/project-management';
 import {
+    defaultAnimateLayoutChanges,
     SortableContext,
     useSortable,
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ChevronDown, MoreHorizontal, Plus } from 'lucide-react';
+import { Check, ChevronDown, MoreHorizontal, Plus, X } from 'lucide-react';
 import { PM_PhaseItem } from './pm-phase-item';
 import { PM_DraggableItemData } from './type';
+import { memo, useCallback, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'; // Assuming these imports are available
 
 type DeliverableItemProps = {
     deliverable: PM_Deliverable;
@@ -18,15 +23,43 @@ type DeliverableItemProps = {
     expandedPhaseIds: Set<string>;
     onToggle: (id: string) => void;
     onTogglePhase: (id: string) => void;
+    onAddPhase: (deliverableId: number, name: string) => void;
+    onAddTask: (phaseId: number, name: string) => void;
+    onUpdateDeliverableName: (deliverableId: number, newName: string) => void;
+    onDeleteDeliverable: (deliverableId: number) => void;
+    onUpdatePhaseName: (phaseId: number, newName: string) => void;
+    onDeletePhase: (phaseId: number) => void;
+    onUpdateTask: (taskId: number, updateTask: any) => void;
+    onDeleteTask: (taskId: number) => void;
 };
 
-export function PM_DeliverableItem({
+function PM_DeliverableItemBase({
     deliverable,
     isExpanded,
     expandedPhaseIds,
     onToggle,
     onTogglePhase,
+    onAddPhase,
+    onAddTask,
+    onUpdateDeliverableName,
+    onDeleteDeliverable,
+    onUpdatePhaseName,
+    onDeletePhase,
+    onUpdateTask,
+    onDeleteTask,
 }: DeliverableItemProps) {
+    const [isAddingPhase, setIsAddingPhase] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [draftName, setDraftName] = useState(deliverable.name);
+
+    const animateLayoutChanges = (args: any) => {
+        const { isSorting, wasDragging } = args;
+        if (isSorting || wasDragging) {
+            return defaultAnimateLayoutChanges(args);
+        }
+        return true;
+    };
+
     const {
         attributes,
         listeners,
@@ -38,8 +71,10 @@ export function PM_DeliverableItem({
         id: deliverable.deliverableIdStr,
         data: {
             type: 'Deliverable',
+            deliverable: deliverable,
             parentId: undefined,
         } as PM_DraggableItemData,
+        animateLayoutChanges,
     });
 
     const style = {
@@ -48,13 +83,82 @@ export function PM_DeliverableItem({
         opacity: isDragging ? 0.5 : 1,
     };
 
+    const handleToggle = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        onToggle(deliverable.deliverableIdStr);
+    }, [deliverable.deliverableIdStr, onToggle]);
+
+    const handleSaveNewPhase = useCallback((name: string) => {
+        onAddPhase(deliverable.deliverableId, name);
+        setIsAddingPhase(false);
+    }, [deliverable.deliverableId, onAddPhase]);
+
+    const handleCancelAddPhase = useCallback(() => {
+        setIsAddingPhase(false);
+    }, []);
+
+    // Editing Handlers
+    const handleStartEdit = useCallback(() => {
+        setIsEditing(true);
+        setDraftName(deliverable.name);
+    }, [deliverable.name]);
+
+    const handleSaveEdit = useCallback(() => {
+        if (draftName.trim() && draftName !== deliverable.name) {
+            onUpdateDeliverableName(deliverable.deliverableId, draftName.trim());
+        }
+        setIsEditing(false);
+    }, [draftName, deliverable.name, deliverable.deliverableId, onUpdateDeliverableName]);
+
+    const handleCancelEdit = useCallback(() => {
+        setDraftName(deliverable.name);
+        setIsEditing(false);
+    }, [deliverable.name]);
+
+    const handleDelete = useCallback(() => {
+        onDeleteDeliverable(deliverable.deliverableId);
+    }, [deliverable.deliverableId, onDeleteDeliverable]);
+
+    const DeliverableTitle = isEditing ? (
+        <div className="flex items-center gap-2 flex-grow min-w-0">
+            {/* Input field */}
+            <Input
+                value={draftName}
+                onChange={(e) => setDraftName(e.target.value)}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveEdit();
+                    if (e.key === 'Escape') handleCancelEdit();
+                }}
+                className="h-8 py-0 px-2 text-sm font-semibold flex-grow min-w-0"
+                autoFocus
+            />
+            {/* Save/Cancel Buttons */}
+            <Button size="icon" variant="ghost" className="h-7 w-7 p-0 text-green-600 hover:bg-green-50" onClick={handleSaveEdit} disabled={!draftName.trim()}>
+                <Check size={16} />
+            </Button>
+            <Button size="icon" variant="ghost" className="h-7 w-7 p-0 text-red-500 hover:bg-red-50" onClick={handleCancelEdit}>
+                <X size={16} />
+            </Button>
+        </div>
+    ) : (
+        <div
+            className="flex items-center flex-grow min-w-0"
+            onDoubleClick={handleStartEdit} // 🆕 Double-click to edit
+        >
+            <span className="text-sm font-medium text-gray-500">{deliverable.key}</span>
+            <span className="ml-3 text-sm font-semibold text-gray-900 truncate">
+                {deliverable.name}
+            </span>
+        </div>
+    );
+
     return (
         <div
             ref={setNodeRef}
             style={style}
             className="my-3 bg-white rounded-lg shadow border border-gray-200 overflow-hidden"
         >
-            {/* The draggable header part */}
+            {/* The draggable header part (Deliverable header) */}
             <div
                 className={`
                     flex items-center w-full
@@ -63,16 +167,14 @@ export function PM_DeliverableItem({
                     cursor-grab active:cursor-grabbing
                     ${isExpanded ? 'border-b border-gray-200' : ''}
                 `}
+                // Spread dnd-kit attributes and listeners here
                 {...attributes}
                 {...listeners}
             >
                 {/* Toggle Button */}
                 <button
                     type="button"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onToggle(deliverable.deliverableIdStr);
-                    }}
+                    onClick={handleToggle}
                     className="p-1 mr-2 rounded-full hover:bg-gray-200"
                 >
                     <ChevronDown
@@ -83,22 +185,43 @@ export function PM_DeliverableItem({
                     />
                 </button>
 
-                {/* Content */}
-                <span className="text-sm font-medium text-gray-500">{deliverable.key}</span>
-                <span className="ml-3 text-sm font-semibold text-gray-900">
-                    {deliverable.name}
-                </span>
+                {/* Deliverable Title / Input Field */}
+                {DeliverableTitle}
+
                 <span className="w-2"></span>
-                {/* More button from image */}
-                <button
-                    onClick={(e) => e.stopPropagation()}
-                    className="p-1 rounded-full opacity-0 hover:opacity-100 hover:bg-gray-200 hover:text-gray-700"
-                >
-                    <MoreHorizontal size={16} />
-                </button>
+
+                {/* More button with Dropdown Menu (only visible when not editing) */}
+                {!isEditing && (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button
+                                onClick={(e) => e.stopPropagation()}
+                                className="p-1 rounded-full opacity-0 hover:opacity-100 hover:bg-gray-200 hover:text-gray-700"
+                            >
+                                <MoreHorizontal size={16} />
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            {/* Option 1: Edit Name (Alternative to double-click) */}
+                            <DropdownMenuItem className="cursor-pointer" onClick={handleStartEdit}>
+                                <span>Edit Name</span>
+                            </DropdownMenuItem>
+
+                            <DropdownMenuSeparator />
+
+                            {/* Option 2: Delete (Red Text) */}
+                            <DropdownMenuItem
+                                className="text-red-600 focus:text-red-700 cursor-pointer focus:bg-red-50"
+                                onClick={handleDelete}
+                            >
+                                <span>Delete Deliverable</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )}
             </div>
 
-            {/* The collapsible container for Phases */}
+            {/* The collapsible container for Phases (rest of the code remains the same) */}
             <div
                 className={cn(
                     "grid transition-[grid-template-rows] duration-300 ease-in-out",
@@ -112,20 +235,86 @@ export function PM_DeliverableItem({
                     >
                         {deliverable.phases.map((phase) => (
                             <PM_PhaseItem
-                                key={phase.phaseId}
+                                key={phase.phaseIdStr}
                                 phase={phase}
                                 isExpanded={expandedPhaseIds.has(phase.phaseIdStr)}
+                                onAddTask={onAddTask}
                                 onToggle={onTogglePhase}
+                                onUpdatePhaseName={onUpdatePhaseName}
+                                onDeletePhase={onDeletePhase}
+                                onUpdateTask={onUpdateTask}
+                                onDeleteTask={onDeleteTask}
                             />
                         ))}
                     </SortableContext>
 
-                    <button className="flex items-center w-full text-left py-2.5 px-5 ml-5 text-sm text-gray-500 hover:bg-gray-50 transition-colors">
-                        <Plus size={16} className="mr-2" />
-                        Create phase
-                    </button>
+                    {/* New Phase Input UI */}
+                    {isAddingPhase && (
+                        <NewPhaseInputComponent
+                            onSave={handleSaveNewPhase}
+                            onCancel={handleCancelAddPhase}
+                        />
+                    )}
+
+                    {/* "Create phase" button to trigger input visibility */}
+                    {!isAddingPhase && (
+                        <button
+                            onClick={() => setIsAddingPhase(true)}
+                            className="flex items-center w-full text-left py-2.5 px-5 ml-5 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
+                        >
+                            <Plus size={16} className="mr-2" />
+                            Create phase
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
     );
 };
+
+const NewPhaseInputComponent = ({
+    onSave,
+    onCancel
+}: {
+    onSave: (name: string) => void;
+    onCancel: () => void;
+}) => {
+    const [name, setName] = useState("");
+
+    return (
+        <div className="py-2 px-5 ml-5 border-t border-gray-50 flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
+            <Input
+                autoFocus
+                placeholder="Enter phase name..."
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => {
+                    if (e.key === "Enter" && name.trim()) onSave(name);
+                    if (e.key === "Escape") onCancel();
+                }}
+                className="flex-1 h-8"
+            />
+            <div className="flex items-center gap-1">
+                <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 w-7 p-0 cursor-pointer text-green-600 hover:text-green-700 hover:bg-green-50"
+                    onClick={() => name.trim() && onSave(name)}
+                    disabled={!name.trim()}
+                >
+                    <Check size={16} />
+                </Button>
+                <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 w-7 p-0 cursor-pointer text-red-500 hover:text-red-600 hover:bg-red-50"
+                    onClick={onCancel}
+                >
+                    <X size={16} />
+                </Button>
+            </div>
+        </div>
+    );
+};
+
+export const PM_DeliverableItem = memo(PM_DeliverableItemBase);

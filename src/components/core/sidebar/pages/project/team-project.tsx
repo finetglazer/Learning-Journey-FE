@@ -7,7 +7,7 @@ import { Project, ProjectMembershipRole, TeamMember } from "@/model/project-mana
 import { projectRepository } from "@/repository/project-repository";
 import { useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { ListTabView } from "./tabs/list-tab/list-tab-view";
+import { ListTab } from "./tabs/list-tab/list-tab";
 import { TeamProjectContext, TeamProjectContextProps } from "./team-project-context";
 
 export interface TeamProjectPageProps {
@@ -23,47 +23,15 @@ export const TeamProjectPage = ({
     updateModalStates,
     deleteProject,
 }: TeamProjectPageProps) => {
-    const [members, setMembers] = useState<TeamMember[]>([]);
-    const [currentMember, setCurrentMember] = useState<TeamMember>();
-    const {
-        email,
-    } = useContext<AppContextProps>(AppContext);
     const {
         tab,
-        setTab,
-        selectedProject,
-        setSelectedProject,
+        getTeamMembers,
+        members,
+        currentMember,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
-    const getTeamMembers = () => {
-        projectRepository.getTeamMembers({
-            projectId: currentSelectedProject?.id
-        }).subscribe({
-            next: res => {
-                if (res?.status) {
-                    const membersList = res?.data?.members || [];
-                    const sortedMembers = membersList.sort((a: TeamMember, b: TeamMember) =>
-                        (b.role === ProjectMembershipRole.OWNER ? 1 : 0) - (a.role === ProjectMembershipRole.OWNER ? 1 : 0)
-                    );
-
-                    setMembers(sortedMembers);
-                    setCurrentMember(sortedMembers.find((member: TeamMember) => member.email === email));
-                }
-                else {
-                    toast.error(res?.message || res?.msg);
-                }
-            },
-            error: err => { },
-        });
-    };
-
-    useEffect(() => {
-        getTeamMembers();
-        setSelectedProject(currentSelectedProject);
-    }, [currentSelectedProject]);
-
     return (
-        <div className="relative w-full pl-2">
+        <div className="relative w-full pl-2 pr-2">
             <ProjectHeader
                 role={currentMember?.role}
                 members={members}
@@ -74,7 +42,7 @@ export const TeamProjectPage = ({
 
             {/* List tab */}
             {tab === 'list' && (
-                <ListTabView />
+                <ListTab />
             )}
 
             {/* Invite Members Modal */}

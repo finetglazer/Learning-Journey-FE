@@ -60,6 +60,58 @@ export class ProjectRepository extends BaseRepository {
         return this.http.get(`/${params.projectId}/deliverables/structure`)
             .pipe(map(res => res?.data));
     };
+
+    public createDeliverable = (params: any, body: any): Observable<any> => {
+        return this.http.post(`/${params.projectId}/deliverables`, body)
+            .pipe(map(res => res?.data));
+    };
+
+    public updateDeliverable = (params: any, body: any): Observable<any> => {
+        return this.http.put(`/${params.projectId}/deliverables/${params.deliverableId}`, body)
+            .pipe(map(res => res?.data));
+    };
+
+    public deleteDeliverable = (params: any): Observable<any> => {
+        return this.http.delete(`/${params.projectId}/deliverables/${params.deliverableId}`)
+            .pipe(map(res => res?.data));
+    };
+
+    // PHASE FUNCTIONS
+    public createPhase = (params: any, body: any): Observable<any> => {
+        return this.http.post(`/${params.projectId}/deliverables/${params.deliverableId}/phases`, body)
+            .pipe(map(res => res?.data));
+    };
+
+    public updatePhase = (params: any, body: any): Observable<any> => {
+        return this.http.put(`/${params.projectId}/phases/${params.phaseId}`, body)
+            .pipe(map(res => res?.data));
+    };
+
+    public deletePhase = (params: any): Observable<any> => {
+        return this.http.delete(`/${params.projectId}/phases/${params.phaseId}`)
+            .pipe(map(res => res?.data));
+    };
+
+    // TASK FUNCTIONS
+    public createTask = (params: any, body: any): Observable<any> => {
+        return this.http.post(`/${params.projectId}/phases/${params.phaseId}/tasks`, body)
+            .pipe(map(res => res?.data));
+    };
+
+    public updateTask = (params: any, body: any): Observable<any> => {
+        return this.http.put(`/${params.projectId}/tasks/${params.taskId}`, body)
+            .pipe(map(res => res?.data));
+    };
+
+    public deleteTask = (params: any): Observable<any> => {
+        return this.http.delete(`/${params.projectId}/tasks/${params.taskId}`)
+            .pipe(map(res => res?.data));
+    };
+
+    public updateTaskStatus = (params: any, body: any): Observable<any> => {
+        return this.http.put(`/${params.projectId}/tasks/${params.taskId}/status`, body)
+            .pipe(map(res => res?.data));
+    };
 };
 
 export const projectRepository = new ProjectRepository();

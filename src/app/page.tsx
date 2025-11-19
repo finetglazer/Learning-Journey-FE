@@ -362,7 +362,7 @@ export default function RootPage() {
 
   return (
     <CalendarContext.Provider value={calendarContextValues}>
-      <TeamProjectContext.Provider value={useTeamProjectHooks()}>
+      <TeamProjectContext.Provider value={useTeamProjectHooks(currentSelectedProject)}>
         <div className="relative">
           {/* --- Headerbar --- */}
           <HeaderBar
