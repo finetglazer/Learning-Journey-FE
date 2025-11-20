@@ -1,9 +1,10 @@
 "use client";
 
 import { AppContext, AppContextProps } from "@/hooks/app-context";
-import { Project, ProjectMembershipRole, TeamMember } from "@/model/project-management";
+import { PM_Deliverable, Project, ProjectMembershipRole, ReorderType, TeamMember } from "@/model/project-management"; // Added PM_Phase, PM_Task for type clarity
 import { projectRepository } from "@/repository/project-repository";
-import { createContext, Dispatch, SetStateAction, useContext, useEffect, useState } from "react";
+import { createContext, Dispatch, SetStateAction, useCallback, useContext, useEffect, useState } from "react";
+import { finalize } from "rxjs";
 import { toast } from "sonner";
 
 export enum TeamProjectTab {
@@ -18,18 +19,29 @@ export enum TeamProjectTab {
 export interface TeamProjectContextProps {
     tab: string;
     setTab: Dispatch<SetStateAction<string>>;
+    isReordering: boolean;
+    setIsReordering: Dispatch<SetStateAction<boolean>>;
     selectedProject: Project | null;
     setSelectedProject: Dispatch<SetStateAction<Project | null>>;
+
     getTeamMembers: () => void;
     members: TeamMember[];
     setMembers: Dispatch<SetStateAction<TeamMember[]>>;
     currentMember: TeamMember | null;
     setCurrentMember: Dispatch<SetStateAction<TeamMember | null>>;
+
+    deliverables: PM_Deliverable[];
+    setDeliverables: Dispatch<SetStateAction<PM_Deliverable[]>>;
+
+    getProjectStructure: () => () => void; // Function that returns a cleanup function
+    handleReorderList: (orderedIds: number[], parentId: number, type: ReorderType) => void;
 };
 
 export const TeamProjectContext = createContext<TeamProjectContextProps>({
     tab: TeamProjectTab.SUMMARY,
     setTab: () => { },
+    isReordering: false,
+    setIsReordering: () => { },
     selectedProject: null,
     setSelectedProject: () => { },
     getTeamMembers: () => { },
@@ -37,6 +49,10 @@ export const TeamProjectContext = createContext<TeamProjectContextProps>({
     setMembers: () => { },
     currentMember: null,
     setCurrentMember: () => { },
+    deliverables: [],
+    setDeliverables: () => { },
+    getProjectStructure: () => () => { },
+    handleReorderList: () => { },
 });
 
 export const useTeamProjectHooks = (currentSelectedProject: Project | null): TeamProjectContextProps => {
@@ -44,12 +60,54 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [members, setMembers] = useState<TeamMember[]>([]);
     const [currentMember, setCurrentMember] = useState<TeamMember | null>(null);
+    const [deliverables, setDeliverables] = useState<PM_Deliverable[]>([]);
+    const [isReordering, setIsReordering] = useState<boolean>(false);
+
     const {
         email,
     } = useContext<AppContextProps>(AppContext);
 
-    const getTeamMembers = () => {
-        projectRepository.getTeamMembers({
+    const getProjectStructure = useCallback(() => {
+        const subscription = projectRepository.getProjectStructure({
+            projectId: selectedProject?.id,
+        }).subscribe({
+            next: res => {
+                if (res?.status) {
+                    const projectDeliverables = res?.data?.data || [];
+                    const updatedProjectDeliverables = projectDeliverables.map((deliverable: any) => {
+                        const deliverableIdStr = `del-${deliverable.id}`;
+                        const phases = (deliverable.phases || []).map((phase: any) => {
+                            const phaseIdStr = `phase-${phase.id}`;
+                            const tasks = (phase.tasks || []).map((task: any) => {
+                                const taskIdStr = `task-${task.id}`;
+                                return {
+                                    ...task, taskId: task.id, taskIdStr, phaseId: phase.id, phaseIdStr,
+                                    status: task.status.toUpperCase().split(/\s+/).join("_"),
+                                    priority: task.priority.toUpperCase(),
+                                };
+                            });
+                            return {
+                                ...phase, tasks, phaseId: phase.id, phaseIdStr, deliverableId: deliverable.id, deliverableIdStr,
+                            };
+                        });
+                        return { ...deliverable, phases, deliverableId: deliverable.id, deliverableIdStr };
+                    });
+
+                    setDeliverables(updatedProjectDeliverables);
+                } else {
+                    toast.error(res?.message || res?.msg);
+                }
+            },
+            error: err => { },
+        });
+
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, [selectedProject, setIsReordering]);
+
+    const getTeamMembers = useCallback(() => {
+        const subscription = projectRepository.getTeamMembers({
             projectId: currentSelectedProject?.id
         }).subscribe({
             next: res => {
@@ -61,14 +119,48 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
 
                     setMembers(sortedMembers);
                     setCurrentMember(sortedMembers.find((member: TeamMember) => member.email === email));
-                }
-                else {
+                } else {
                     toast.error(res?.message || res?.msg);
                 }
             },
             error: err => { },
         });
-    };
+
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, [currentSelectedProject, setMembers, setCurrentMember, email]);
+
+    const handleReorderList = useCallback((orderedIds: number[], parentId: number, type: ReorderType) => {
+        setIsReordering(true);
+        const subscription = projectRepository.reorderList({
+            projectId: currentSelectedProject?.id,
+        }, {
+            type,
+            parentId,
+            orderedIds,
+        })
+        .pipe(finalize(() => setIsReordering(false)))
+        .subscribe({
+            next: res => {
+                if (res?.status) {
+                    toast.success(res?.message || res?.msg);
+                    getProjectStructure();
+                }
+                else {
+                    toast.error(res?.msg || res?.message)
+                    getProjectStructure();
+                }
+            },
+            error: err => {
+                getProjectStructure();
+             },
+        });
+
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, [selectedProject, setIsReordering]);
 
     useEffect(() => {
         getTeamMembers();
@@ -78,6 +170,8 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
     return {
         tab,
         setTab,
+        isReordering,
+        setIsReordering,
         selectedProject,
         setSelectedProject,
         getTeamMembers,
@@ -85,5 +179,9 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         setMembers,
         currentMember,
         setCurrentMember,
+        deliverables,
+        setDeliverables,
+        getProjectStructure,
+        handleReorderList,
     };
 };

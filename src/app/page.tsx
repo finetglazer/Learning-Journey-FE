@@ -29,7 +29,7 @@ import {
   User,
   Users,
 } from "lucide-react";
-import { useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { CalendarContext, useCalendarHooks } from "@/components/core/calendar/calendar-context";
@@ -230,7 +230,7 @@ export default function RootPage() {
     },
   ];
 
-  const getProjects = () => {
+  const getProjects = useCallback(() => {
     projectRepository.getProjects().subscribe({
       next: res => {
         if (res?.status) {
@@ -243,7 +243,7 @@ export default function RootPage() {
       },
       error: err => { },
     });
-  };
+  }, []);
 
   // --- Fetch user settings ---
   useEffect(() => {

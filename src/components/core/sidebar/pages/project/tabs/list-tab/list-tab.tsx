@@ -1,9 +1,11 @@
+"use client";
+
 import { AlertMessage, AlertModal } from "@/components/core/alert-modal/alert-modal";
 import { PM_DeliverableItem } from "@/components/core/project-management/pm-deliverable";
 import { PM_DraggableItemData } from "@/components/core/project-management/type";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PM_Deliverable } from "@/model/project-management";
+import { PM_Deliverable, PM_Phase, PM_Task, ReorderType } from "@/model/project-management";
 import { projectRepository } from "@/repository/project-repository";
 import { closestCenter, DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -19,8 +21,6 @@ export const LIST_GRID_LAYOUT = "grid grid-cols-[1fr_150px_150px_120px] gap-4 it
 export const ListTab = ({ }: ListTabProps) => {
     const [isAddingDeliverable, setIsAddingDeliverable] = useState(false);
     const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
-
-    const [deliverables, setDeliverables] = useState<PM_Deliverable[]>([]);
     const [expandedDeliverables, setExpandedDeliverables] = useState<Set<string>>(
         new Set([])
     );
@@ -30,6 +30,12 @@ export const ListTab = ({ }: ListTabProps) => {
 
     const {
         selectedProject,
+        getProjectStructure,
+        deliverables,
+        isReordering,
+        setIsReordering,
+        setDeliverables,
+        handleReorderList,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
     const sensors = useSensors(
@@ -42,68 +48,6 @@ export const ListTab = ({ }: ListTabProps) => {
         })
     );
 
-    const getProjectStructure = useCallback(() => {
-        const subscription = projectRepository.getProjectStructure({
-            projectId: selectedProject?.id,
-        }).subscribe({
-            next: res => {
-                if (res?.status) {
-                    const projectDeliverables = res?.data?.data || [];
-
-                    // --- Transformation Logic ---
-                    const updatedProjectDeliverables = projectDeliverables.map((deliverable: any) => {
-                        const deliverableIdStr = `del-${deliverable.id}`;
-
-                        const phases = (deliverable.phases || []).map((phase: any) => {
-                            const phaseIdStr = `phase-${phase.id}`;
-
-                            const tasks = (phase.tasks || []).map((task: any) => {
-                                const taskIdStr = `task-${task.id}`;
-
-                                return {
-                                    ...task,
-                                    taskId: task.id,
-                                    taskIdStr,
-                                    phaseId: phase.id,
-                                    phaseIdStr,
-                                    status: task.status.toUpperCase().split(/\s+/).join("_"),
-                                    priority: task.priority.toUpperCase(),
-                                };
-                            });
-
-                            return {
-                                ...phase,
-                                tasks,
-                                phaseId: phase.id,
-                                phaseIdStr,
-                                deliverableId: deliverable.id,
-                                deliverableIdStr,
-                            };
-                        });
-
-                        return {
-                            ...deliverable,
-                            phases,
-                            deliverableId: deliverable.id,
-                            deliverableIdStr,
-                        };
-                    });
-
-                    setDeliverables(updatedProjectDeliverables);
-                }
-                else {
-                    toast.error(res?.message || res?.msg);
-                }
-            },
-            error: err => { },
-        });
-
-        // 2. Return the cleanup function
-        return () => {
-            subscription.unsubscribe();
-        };
-    }, [selectedProject]);
-
     // Deliverable handlers
 
     const handleAddDeliverable = useCallback((name: string) => {
@@ -115,6 +59,7 @@ export const ListTab = ({ }: ListTabProps) => {
             next: res => {
                 if (res?.status) {
                     toast.success(res?.message || res?.msg);
+                    setIsAddingDeliverable(false);
                     getProjectStructure();
                 }
                 else {
@@ -391,78 +336,88 @@ export const ListTab = ({ }: ListTabProps) => {
         const activeData = active.data.current as PM_DraggableItemData;
         const overData = over.data.current as PM_DraggableItemData;
 
+        let newItemsSnapshot; // Will hold the final state array after arrayMove
+        let commitType;
+        let commitParentId: any;
+
         // --- Case 1: Reordering Deliverables ---
         if (activeData.type === 'Deliverable' && overData.type === 'Deliverable') {
-            setDeliverables(items => {
-                const activeIndex = items.findIndex(
-                    item => item.deliverableIdStr === active.id
-                );
-                const overIndex = items.findIndex(
-                    item => item.deliverableIdStr === over.id
-                );
-                return arrayMove(items, activeIndex, overIndex);
-            });
-            return;
+            const activeIndex = deliverables.findIndex(item => item.deliverableIdStr === active.id);
+            const overIndex = deliverables.findIndex(item => item.deliverableIdStr === over.id);
+
+            newItemsSnapshot = arrayMove(deliverables, activeIndex, overIndex);
+            commitType = ReorderType.DELIVERABLE;
+            // ParentId for top level is the Project ID
+            commitParentId = selectedProject?.id as number;
         }
 
         // --- Case 2: Reordering Phases ---
-        if (
-            activeData.type === 'Phase' &&
-            overData.type === 'Phase' &&
-            activeData.parentId === overData.parentId
-        ) {
-            const deliverableId = activeData.parentId;
-            setDeliverables(items =>
-                items.map(del => {
-                    if (del.deliverableIdStr === deliverableId) {
-                        const activeIndex = del.phases.findIndex(
-                            p => p.phaseIdStr === active.id
-                        );
-                        const overIndex = del.phases.findIndex(
-                            p => p.phaseIdStr === over.id
-                        );
-                        return {
-                            ...del,
-                            phases: arrayMove(del.phases, activeIndex, overIndex),
-                        };
-                    }
-                    return del;
-                })
-            );
-            return;
+        else if (activeData.type === 'Phase' && overData.type === 'Phase' && activeData.parentId === overData.parentId) {
+            const deliverableIdStr = activeData.parentId;
+            const phase: PM_Phase = (active.data.current as any).phase;
+
+            newItemsSnapshot = deliverables.map(del => {
+                if (del.deliverableIdStr === deliverableIdStr) {
+                    const activeIndex = del.phases.findIndex(p => p.phaseIdStr === active.id);
+                    const overIndex = del.phases.findIndex(p => p.phaseIdStr === over.id);
+                    return {
+                        ...del,
+                        phases: arrayMove(del.phases, activeIndex, overIndex),
+                    };
+                }
+                return del;
+            });
+            commitType = ReorderType.PHASE;
+            commitParentId = phase.deliverableId;
         }
 
         // --- Case 3: Reordering Tasks ---
-        if (
-            activeData.type === 'Task' &&
-            overData.type === 'Task' &&
-            activeData.parentId === overData.parentId
-        ) {
-            const phaseId = activeData.parentId;
-            setDeliverables(items =>
-                items.map(del => ({
-                    ...del,
-                    phases: del.phases.map(phase => {
-                        if (phase.phaseIdStr === phaseId) {
-                            const activeIndex = phase.tasks.findIndex(
-                                t => t.taskIdStr === active.id
-                            );
-                            const overIndex = phase.tasks.findIndex(
-                                t => t.taskIdStr === over.id
-                            );
-                            return {
-                                ...phase,
-                                tasks: arrayMove(phase.tasks, activeIndex, overIndex),
-                            };
-                        }
-                        return phase;
-                    }),
-                }))
-            );
-            return;
+        else if (activeData.type === 'Task' && overData.type === 'Task' && activeData.parentId === overData.parentId) {
+            const phaseIdStr = activeData.parentId;
+            const task: PM_Task = (active.data.current as any).task;
+
+            newItemsSnapshot = deliverables.map(del => ({
+                ...del,
+                phases: del.phases.map(phase => {
+                    if (phase.phaseIdStr === phaseIdStr) {
+                        const activeIndex = phase.tasks.findIndex(t => t.taskIdStr === active.id);
+                        const overIndex = phase.tasks.findIndex(t => t.taskIdStr === over.id);
+                        return {
+                            ...phase,
+                            tasks: arrayMove(phase.tasks, activeIndex, overIndex),
+                        };
+                    }
+                    return phase;
+                }),
+            }));
+            commitType = ReorderType.TASK;
+            commitParentId = task.phaseId;
         }
 
-        console.warn("Unhandled drag case:", { activeData, overData });
+        // --- 2. Execute Side Effects ONLY if a snapshot was created ---
+        if (newItemsSnapshot) {
+            setDeliverables(newItemsSnapshot);
+            let orderedIds = newItemsSnapshot.map(d => d.deliverableId);
+
+            if (commitType === ReorderType.PHASE) {
+                const modifiedDeliverable = newItemsSnapshot.find((d) => d.deliverableId === commitParentId);
+                if (modifiedDeliverable) {
+                    orderedIds = modifiedDeliverable.phases.map((p) => p.phaseId);
+                }
+            } 
+            else if (commitType === ReorderType.TASK) {
+                const modifiedDeliverable = newItemsSnapshot.find(d => d.phases.some(p => p.phaseId === commitParentId));
+                const modifiedPhase = modifiedDeliverable?.phases.find(p => p.phaseId === commitParentId);
+                if (modifiedPhase) {
+                    orderedIds = modifiedPhase.tasks.map((t) => t.taskId);
+                }
+            } 
+            else if (commitType === ReorderType.DELIVERABLE) {
+                // orderedIds is already set to newItemsSnapshot.map(d => d.deliverableId);
+            }
+
+            handleReorderList(orderedIds, commitParentId, commitType as ReorderType);
+        }
     };
 
     const handleAddDeliverableClick = () => {
@@ -487,15 +442,17 @@ export const ListTab = ({ }: ListTabProps) => {
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input placeholder="Search list" className="pl-8 h-9 bg-white" />
                 </div>
-
-                <Button
-                    onClick={handleAddDeliverableClick}
-                    className="cursor-pointer bg-indigo-600 hover:bg-indigo-700 mr-3 text-white flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                    disabled={isAddingDeliverable}
-                >
-                    <Plus size={16} />
-                    New deliverable
-                </Button>
+                {/* Reorder Buttons / Add Button */}
+                <div className="flex items-center gap-3">
+                    <Button
+                        onClick={handleAddDeliverableClick}
+                        className="cursor-pointer bg-indigo-600 hover:bg-indigo-700 mr-3 text-white flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                        disabled={isAddingDeliverable || isReordering}
+                    >
+                        <Plus size={16} />
+                        New deliverable
+                    </Button>
+                </div>
             </div>
 
             {/* --- TABLE HEADER ROW --- */}

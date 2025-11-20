@@ -23,6 +23,11 @@ export class ProjectRepository extends BaseRepository {
             .pipe(map(res => res?.data));
     };
 
+    public reorderList = (params: any, body: any): Observable<any> => {
+        return this.http.put(`/${params.projectId}/list/reorder`, body)
+            .pipe(map(res => res?.data));
+    };
+
     // MEMBER FUNCTIONS
 
     public getTeamMembers = (params: any): Observable<any> => {

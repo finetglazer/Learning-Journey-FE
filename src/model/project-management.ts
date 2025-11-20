@@ -18,6 +18,12 @@ export enum ProjectMembershipRole {
     INVITED = 'INVITED',
 };
 
+export enum ReorderType {
+    DELIVERABLE = 'DELIVERABLE',
+    PHASE = 'PHASE',
+    TASK = 'TASK',
+}
+
 export type TeamMember = {
     userId: number;
     name: string;
