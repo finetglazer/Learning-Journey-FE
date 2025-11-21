@@ -12,9 +12,9 @@ export const PRIORITY_CONFIG: Record<TaskPriority, { label: string, icon: any, c
     [TaskPriority.CRITICAL]: { label: "Critical", icon: Flame, color: "text-pink-600" },
 };
 
-function PrioritySelectorBase({ value, onChange }: { value: TaskPriority, onChange?: (val: TaskPriority) => void }) {
+function PrioritySelectorBase({ value, onChange, isDisabled, }: { value: TaskPriority, onChange?: (val: TaskPriority) => void, isDisabled?: boolean, }) {
     return (
-        <Select value={value} onValueChange={onChange}>
+        <Select value={value} onValueChange={onChange} disabled={isDisabled}>
             <SelectTrigger className="w-[140px] h-8 ml-10 border-none shadow-none bg-transparent hover:bg-slate-100 focus:ring-0">
                 <SelectValue />
             </SelectTrigger>

@@ -11,9 +11,9 @@ export const STATUS_CONFIG: Record<TaskStatus, { label: string, icon: any, color
     [TaskStatus.DONE]: { label: "Completed", icon: CheckCircle2, color: "text-green-500" },
 };
 
-function StatusSelectorBase({ value, onChange }: { value: string, onChange?: (val: TaskStatus) => void }) {
+function StatusSelectorBase({ value, onChange, isDisabled, }: { value: string, onChange?: (val: TaskStatus) => void, isDisabled?: boolean, }) {
     return (
-        <Select value={value} onValueChange={onChange}>
+        <Select value={value} onValueChange={onChange} disabled={isDisabled}>
             <SelectTrigger className="w-[140px] h-8 ml-10 border-none shadow-none bg-transparent hover:bg-slate-100 focus:ring-0">
                 <SelectValue />
             </SelectTrigger>

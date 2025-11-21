@@ -113,7 +113,7 @@ export class ProjectRepository extends BaseRepository {
             .pipe(map(res => res?.data));
     };
 
-    public updateTaskStatus = (params: any, body: any): Observable<any> => {
+    public updateTaskStatusOnly = (params: any, body: any): Observable<any> => {
         return this.http.put(`/${params.projectId}/tasks/${params.taskId}/status`, body)
             .pipe(map(res => res?.data));
     };

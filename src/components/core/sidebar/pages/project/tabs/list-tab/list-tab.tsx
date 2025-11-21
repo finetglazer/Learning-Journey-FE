@@ -5,7 +5,7 @@ import { PM_DeliverableItem } from "@/components/core/project-management/pm-deli
 import { PM_DraggableItemData } from "@/components/core/project-management/type";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PM_Deliverable, PM_Phase, PM_Task, ReorderType } from "@/model/project-management";
+import { PM_Deliverable, PM_Phase, PM_Task, ProjectMembershipRole, ReorderType } from "@/model/project-management";
 import { projectRepository } from "@/repository/project-repository";
 import { closestCenter, DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -33,10 +33,13 @@ export const ListTab = ({ }: ListTabProps) => {
         getProjectStructure,
         deliverables,
         isReordering,
-        setIsReordering,
         setDeliverables,
         handleReorderList,
+        currentMember,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
+
+    // 🆕 RBAC Check
+    const canEditStructure = currentMember?.role === ProjectMembershipRole.OWNER;
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -404,14 +407,14 @@ export const ListTab = ({ }: ListTabProps) => {
                 if (modifiedDeliverable) {
                     orderedIds = modifiedDeliverable.phases.map((p) => p.phaseId);
                 }
-            } 
+            }
             else if (commitType === ReorderType.TASK) {
                 const modifiedDeliverable = newItemsSnapshot.find(d => d.phases.some(p => p.phaseId === commitParentId));
                 const modifiedPhase = modifiedDeliverable?.phases.find(p => p.phaseId === commitParentId);
                 if (modifiedPhase) {
                     orderedIds = modifiedPhase.tasks.map((t) => t.taskId);
                 }
-            } 
+            }
             else if (commitType === ReorderType.DELIVERABLE) {
                 // orderedIds is already set to newItemsSnapshot.map(d => d.deliverableId);
             }
@@ -444,14 +447,16 @@ export const ListTab = ({ }: ListTabProps) => {
                 </div>
                 {/* Reorder Buttons / Add Button */}
                 <div className="flex items-center gap-3">
-                    <Button
-                        onClick={handleAddDeliverableClick}
-                        className="cursor-pointer bg-indigo-600 hover:bg-indigo-700 mr-3 text-white flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                        disabled={isAddingDeliverable || isReordering}
-                    >
-                        <Plus size={16} />
-                        New deliverable
-                    </Button>
+                    {canEditStructure && (
+                        <Button
+                            onClick={handleAddDeliverableClick}
+                            className="cursor-pointer bg-indigo-600 hover:bg-indigo-700 mr-3 text-white flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                            disabled={isAddingDeliverable || isReordering}
+                        >
+                            <Plus size={16} />
+                            New deliverable
+                        </Button>
+                    )}
                 </div>
             </div>
 

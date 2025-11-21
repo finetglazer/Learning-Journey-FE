@@ -1,21 +1,22 @@
 "use client";
 
-import { CSS } from '@dnd-kit/utilities';
+import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
+import { PM_Phase, ProjectMembershipRole } from '@/model/project-management'; // Imported ProjectMembershipRole
 import {
     defaultAnimateLayoutChanges,
     SortableContext,
     useSortable,
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { PM_Phase } from '@/model/project-management';
-import { PM_DraggableItemData } from './type';
+import { CSS } from '@dnd-kit/utilities';
+import { Check, ChevronDown, MoreHorizontal, Plus, Trash2, X } from 'lucide-react'; // Added Trash2
+import { memo, useCallback, useContext, useState } from 'react'; // Added useContext
+import { TeamProjectContext, TeamProjectContextProps } from '../sidebar/pages/project/team-project-context'; // Assuming this context is in scope
 import { PM_TaskItem } from './pm-task-item';
-import { Check, ChevronDown, MoreHorizontal, Plus, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { memo, useCallback, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'; // Assuming these imports are available
+import { PM_DraggableItemData } from './type';
 
 type PhaseItemProps = {
     phase: PM_Phase;
@@ -41,6 +42,12 @@ function PM_PhaseItemBase({
     const [isAddingTask, setIsAddingTask] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [draftName, setDraftName] = useState(phase.name);
+
+    const { currentMember } = useContext<TeamProjectContextProps>(TeamProjectContext);
+
+    // 🆕 RBAC Check
+    const canEditStructure = currentMember?.role === ProjectMembershipRole.OWNER;
+    const canView = true; // All users can view
 
     const animateLayoutChanges = (args: any) => {
         const { isSorting, wasDragging } = args;
@@ -79,25 +86,28 @@ function PM_PhaseItemBase({
     }, [phase.phaseIdStr, onToggle]);
 
     const handleSaveNewTask = useCallback((name: string) => {
+        if (!canEditStructure) return; // Safety check
         onAddTask(phase.phaseId, name);
         setIsAddingTask(false);
-    }, [phase.phaseId, onAddTask]);
+    }, [phase.phaseId, onAddTask, canEditStructure]);
 
     const handleCancelAddTask = useCallback(() => {
         setIsAddingTask(false);
     }, []);
 
     const handleStartEdit = useCallback(() => {
+        if (!canEditStructure) return;
         setIsEditing(true);
         setDraftName(phase.name);
-    }, [phase.name]);
+    }, [phase.name, canEditStructure]);
 
     const handleSaveEdit = useCallback(() => {
+        if (!canEditStructure) return;
         if (draftName.trim() && draftName !== phase.name) {
             onUpdatePhaseName(phase.phaseId, draftName.trim());
         }
         setIsEditing(false);
-    }, [draftName, phase.name, phase.phaseId, onUpdatePhaseName]);
+    }, [draftName, phase.name, phase.phaseId, onUpdatePhaseName, canEditStructure]);
 
     const handleCancelEdit = useCallback(() => {
         setDraftName(phase.name);
@@ -105,8 +115,9 @@ function PM_PhaseItemBase({
     }, [phase.name]);
 
     const handleDelete = useCallback(() => {
+        if (!canEditStructure) return;
         onDeletePhase(phase.phaseId);
-    }, [phase.phaseId, onDeletePhase]);
+    }, [phase.phaseId, onDeletePhase, canEditStructure]);
 
 
     const PhaseTitle = isEditing ? (
@@ -133,7 +144,7 @@ function PM_PhaseItemBase({
     ) : (
         <div
             className="flex items-center flex-grow min-w-0"
-            onDoubleClick={handleStartEdit} // 🆕 Double-click to edit
+            onDoubleClick={canEditStructure ? handleStartEdit : undefined} // 🆕 Disable double-click if not owner
         >
             <span className="text-sm font-medium text-gray-500">{phase.key}</span>
             <span className="ml-3 text-sm font-semibold text-gray-900 truncate">
@@ -143,16 +154,23 @@ function PM_PhaseItemBase({
     );
 
     return (
-        <div ref={setNodeRef} style={style} className="ml-5 border-t border-gray-200">
+        <div
+            ref={setNodeRef}
+            style={style}
+            className={cn(
+                "ml-5 border-t border-gray-200",
+                canEditStructure ? 'cursor-grab' : 'cursor-default' // 🆕 Set cursor based on permission
+            )}
+        >
             {/* The draggable header part */}
             <div
-                className={`
-                    flex items-center w-full
-                    py-2.5 px-4
-                    cursor-grab active:cursor-grabbing
-                `}
-                {...attributes}
-                {...listeners}
+                className={cn(
+                    `flex items-center w-full py-2.5 px-4`,
+                    canEditStructure ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'
+                )}
+                // 🆕 Only spread drag listeners/attributes if user can edit structure
+                {...(canEditStructure ? attributes : {})}
+                {...(canEditStructure ? listeners : {})}
             >
                 {/* Toggle Button (only visible when not editing) */}
                 {!isEditing && (
@@ -169,6 +187,7 @@ function PM_PhaseItemBase({
                         />
                     </button>
                 )}
+
                 {/* Phase Title / Input Field */}
                 {PhaseTitle}
 
@@ -180,26 +199,31 @@ function PM_PhaseItemBase({
                         <DropdownMenuTrigger asChild>
                             <button
                                 onClick={(e) => e.stopPropagation()}
-                                className="p-1 rounded-full opacity-0 hover:opacity-100 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                                className="p-1 rounded-full opacity-0 hover:opacity-100 hover:bg-gray-200 hover:text-gray-700"
                             >
                                 <MoreHorizontal size={16} />
                             </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            {/* Option 1: Edit Name */}
-                            <DropdownMenuItem className="cursor-pointer" onClick={handleStartEdit}>
-                                <span>Edit Name</span>
-                            </DropdownMenuItem>
+                            {/* Option 1: Edit Name (Only visible inside dropdown if canEditStructure is true) */}
+                            {canEditStructure && (
+                                <DropdownMenuItem className="cursor-pointer" onClick={handleStartEdit}>
+                                    <span>Edit Name</span>
+                                </DropdownMenuItem>
+                            )}
 
-                            <DropdownMenuSeparator />
+                            {canEditStructure && <DropdownMenuSeparator />}
 
                             {/* Option 2: Delete (Red Text) */}
-                            <DropdownMenuItem
-                                className="text-red-600 focus:text-red-700 cursor-pointer focus:bg-red-50"
-                                onClick={handleDelete}
-                            >
-                                <span>Delete Phase</span>
-                            </DropdownMenuItem>
+                            {canEditStructure && (
+                                <DropdownMenuItem
+                                    className="text-red-600 focus:text-red-700 cursor-pointer focus:bg-red-50"
+                                    onClick={handleDelete}
+                                >
+                                    <Trash2 size={16} className="mr-2" />
+                                    <span>Delete Phase</span>
+                                </DropdownMenuItem>
+                            )}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 )}
@@ -213,22 +237,37 @@ function PM_PhaseItemBase({
                 )}
             >
                 <div className="overflow-hidden">
-                    <SortableContext
-                        items={phase.tasks.map((t) => t.taskIdStr)}
-                        strategy={verticalListSortingStrategy}
-                    >
-                        {phase.tasks.map((task) => (
-                            <PM_TaskItem
-                                key={task.taskIdStr}
-                                task={task}
-                                onUpdateTask={onUpdateTask}
-                                onDeleteTask={onDeleteTask}
-                            />
-                        ))}
-                    </SortableContext>
+                    {/* 🆕 Conditionally render SortableContext based on permission */}
+                    {canEditStructure ? (
+                        <SortableContext
+                            items={phase.tasks.map((t) => t.taskIdStr)}
+                            strategy={verticalListSortingStrategy}
+                        >
+                            {phase.tasks.map((task) => (
+                                <PM_TaskItem
+                                    key={task.taskIdStr}
+                                    task={task}
+                                    onUpdateTask={onUpdateTask}
+                                    onDeleteTask={onDeleteTask}
+                                />
+                            ))}
+                        </SortableContext>
+                    ) : (
+                        <>
+                            {phase.tasks.map((task) => (
+                                <PM_TaskItem
+                                    key={task.taskIdStr}
+                                    task={task}
+                                    onUpdateTask={onUpdateTask}
+                                    onDeleteTask={onDeleteTask}
+                                />
+                            ))}
+                        </>
+                    )}
+
 
                     {/* New Task Input */}
-                    {isAddingTask && (
+                    {isAddingTask && canEditStructure && (
                         <NewTaskInput
                             onSave={handleSaveNewTask}
                             onCancel={handleCancelAddTask}
@@ -236,13 +275,15 @@ function PM_PhaseItemBase({
                     )}
 
                     {/* "Create task" button */}
-                    <button
-                        onClick={() => setIsAddingTask(true)} // Toggle input visibility
-                        className="flex items-center w-full text-left py-2.5 px-4 ml-10 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
-                    >
-                        <Plus size={16} className="mr-2" />
-                        Create task
-                    </button>
+                    {!isAddingTask && canEditStructure && (
+                        <button
+                            onClick={() => setIsAddingTask(true)}
+                            className="flex items-center w-full text-left py-2.5 px-4 ml-10 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
+                        >
+                            <Plus size={16} className="mr-2" />
+                            Create task
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

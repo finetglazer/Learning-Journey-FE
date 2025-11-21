@@ -1,7 +1,10 @@
 "use client";
 
+import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'; // Assuming these imports are available
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { PM_Deliverable } from '@/model/project-management';
+import { PM_Deliverable, ProjectMembershipRole } from '@/model/project-management';
 import {
     defaultAnimateLayoutChanges,
     SortableContext,
@@ -10,12 +13,10 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Check, ChevronDown, MoreHorizontal, Plus, X } from 'lucide-react';
+import { memo, useCallback, useContext, useState } from 'react';
+import { TeamProjectContext, TeamProjectContextProps } from '../sidebar/pages/project/team-project-context';
 import { PM_PhaseItem } from './pm-phase-item';
 import { PM_DraggableItemData } from './type';
-import { memo, useCallback, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'; // Assuming these imports are available
 
 type DeliverableItemProps = {
     deliverable: PM_Deliverable;
@@ -59,6 +60,13 @@ function PM_DeliverableItemBase({
         }
         return true;
     };
+
+    const {
+        currentMember,
+    } = useContext<TeamProjectContextProps>(TeamProjectContext);
+
+    // 🆕 RBAC Check
+    const canEditStructure = currentMember?.role === ProjectMembershipRole.OWNER;
 
     const {
         attributes,
@@ -143,7 +151,7 @@ function PM_DeliverableItemBase({
     ) : (
         <div
             className="flex items-center flex-grow min-w-0"
-            onDoubleClick={handleStartEdit} // 🆕 Double-click to edit
+            onDoubleClick={canEditStructure ? handleStartEdit : undefined} // 🆕 Double-click to edit
         >
             <span className="text-sm font-medium text-gray-500">{deliverable.key}</span>
             <span className="ml-3 text-sm font-semibold text-gray-900 truncate">
@@ -160,16 +168,13 @@ function PM_DeliverableItemBase({
         >
             {/* The draggable header part (Deliverable header) */}
             <div
-                className={`
-                    flex items-center w-full
-                    py-3 px-5
-                    bg-gray-50
-                    cursor-grab active:cursor-grabbing
-                    ${isExpanded ? 'border-b border-gray-200' : ''}
-                `}
+                className={cn(`flex items-center w-full py-3 px-5 bg-gray-50`,
+                    isExpanded ? 'border-b border-gray-200' : '',
+                    canEditStructure ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'
+                )}
                 // Spread dnd-kit attributes and listeners here
-                {...attributes}
-                {...listeners}
+                {...(canEditStructure ? attributes : {})}
+                {...(canEditStructure ? listeners : {})}
             >
                 {/* Toggle Button */}
                 <button
@@ -203,19 +208,23 @@ function PM_DeliverableItemBase({
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             {/* Option 1: Edit Name (Alternative to double-click) */}
-                            <DropdownMenuItem className="cursor-pointer" onClick={handleStartEdit}>
-                                <span>Edit Name</span>
-                            </DropdownMenuItem>
+                            {canEditStructure && (
+                                <DropdownMenuItem className="cursor-pointer" onClick={handleStartEdit}>
+                                    <span>Edit Name</span>
+                                </DropdownMenuItem>
+                            )}
 
                             <DropdownMenuSeparator />
 
                             {/* Option 2: Delete (Red Text) */}
-                            <DropdownMenuItem
-                                className="text-red-600 focus:text-red-700 cursor-pointer focus:bg-red-50"
-                                onClick={handleDelete}
-                            >
-                                <span>Delete Deliverable</span>
-                            </DropdownMenuItem>
+                            {canEditStructure && (
+                                <DropdownMenuItem
+                                    className="text-red-600 focus:text-red-700 cursor-pointer focus:bg-red-50"
+                                    onClick={handleDelete}
+                                >
+                                    <span>Delete Deliverable</span>
+                                </DropdownMenuItem>
+                            )}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 )}
@@ -229,27 +238,45 @@ function PM_DeliverableItemBase({
                 )}
             >
                 <div className="overflow-hidden">
-                    <SortableContext
-                        items={deliverable.phases.map((p) => p.phaseIdStr)}
-                        strategy={verticalListSortingStrategy}
-                    >
-                        {deliverable.phases.map((phase) => (
-                            <PM_PhaseItem
-                                key={phase.phaseIdStr}
-                                phase={phase}
-                                isExpanded={expandedPhaseIds.has(phase.phaseIdStr)}
-                                onAddTask={onAddTask}
-                                onToggle={onTogglePhase}
-                                onUpdatePhaseName={onUpdatePhaseName}
-                                onDeletePhase={onDeletePhase}
-                                onUpdateTask={onUpdateTask}
-                                onDeleteTask={onDeleteTask}
-                            />
-                        ))}
-                    </SortableContext>
+                    {canEditStructure ? (
+                        <SortableContext
+                            items={deliverable.phases.map((p) => p.phaseIdStr)}
+                            strategy={verticalListSortingStrategy}
+                        >
+                            {deliverable.phases.map((phase) => (
+                                <PM_PhaseItem
+                                    key={phase.phaseIdStr}
+                                    phase={phase}
+                                    isExpanded={expandedPhaseIds.has(phase.phaseIdStr)}
+                                    onAddTask={onAddTask}
+                                    onToggle={onTogglePhase}
+                                    onUpdatePhaseName={onUpdatePhaseName}
+                                    onDeletePhase={onDeletePhase}
+                                    onUpdateTask={onUpdateTask}
+                                    onDeleteTask={onDeleteTask}
+                                />
+                            ))}
+                        </SortableContext>
+                    ) : (
+                        <>
+                            {deliverable.phases.map((phase) => (
+                                <PM_PhaseItem
+                                    key={phase.phaseIdStr}
+                                    phase={phase}
+                                    isExpanded={expandedPhaseIds.has(phase.phaseIdStr)}
+                                    onAddTask={onAddTask}
+                                    onToggle={onTogglePhase}
+                                    onUpdatePhaseName={onUpdatePhaseName}
+                                    onDeletePhase={onDeletePhase}
+                                    onUpdateTask={onUpdateTask}
+                                    onDeleteTask={onDeleteTask}
+                                />
+                            ))}
+                        </>
+                    )}
 
                     {/* New Phase Input UI */}
-                    {isAddingPhase && (
+                    {isAddingPhase && canEditStructure && (
                         <NewPhaseInputComponent
                             onSave={handleSaveNewPhase}
                             onCancel={handleCancelAddPhase}
@@ -257,7 +284,7 @@ function PM_DeliverableItemBase({
                     )}
 
                     {/* "Create phase" button to trigger input visibility */}
-                    {!isAddingPhase && (
+                    {!isAddingPhase && canEditStructure && (
                         <button
                             onClick={() => setIsAddingPhase(true)}
                             className="flex items-center w-full text-left py-2.5 px-5 ml-5 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
