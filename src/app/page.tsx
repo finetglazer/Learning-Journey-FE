@@ -29,7 +29,7 @@ import {
   User,
   Users,
 } from "lucide-react";
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { CalendarContext, useCalendarHooks } from "@/components/core/calendar/calendar-context";
@@ -112,7 +112,7 @@ export default function RootPage() {
   };
 
   // --- Sidebar sections ---
-  const homeSections: SidebarSectionConfig[] = [
+  const homeSections: SidebarSectionConfig[] = useMemo(() => [
     {
       title: "Calendar",
       items: [
@@ -123,14 +123,14 @@ export default function RootPage() {
     },
     {
       title: "Team project",
-      action: (
+      action: !isSidebarCollapse ? (
         <Button className="cursor-pointer bg-transparent text-black hover:bg-gray-300" onClick={(e) => {
           e.stopPropagation();
           addProject();
         }}>
           <Plus size={16} />
         </Button>
-      ),
+      ) : <></>,
       items: (teamProjects || []).map((project: Project) => {
         return {
           id: `project-${project?.id}`,
@@ -180,7 +180,7 @@ export default function RootPage() {
         }
       ]
     }
-  ];
+  ], [isSidebarCollapse, teamProjects]);
 
   const settingsSections: SidebarSectionConfig[] = [
     {
@@ -282,7 +282,8 @@ export default function RootPage() {
         const monthPlanId = res?.data;
         if (success && monthPlanId) {
           localStorage.setItem("monthPlanId", monthPlanId);
-        } else {
+        } 
+        else if (!success || !monthPlanId) {
           // toast.error(res?.msg || res?.message);
           localStorage.removeItem("monthPlanId");
           // If monthPlanId not found, create new monthPlanId

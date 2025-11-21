@@ -163,7 +163,9 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
     }, [selectedProject, setIsReordering]);
 
     useEffect(() => {
-        getTeamMembers();
+        if (currentSelectedProject) {
+            getTeamMembers();
+        }
         setSelectedProject(currentSelectedProject);
     }, [currentSelectedProject]);
 
