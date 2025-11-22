@@ -78,6 +78,7 @@ export interface PM_Phase {
     startDate: string; // Corresponds to LocalDate, e.g., "2025-10-25"
     endDate: string; // Corresponds to LocalDate, e.g., "2025-10-25"
     tasks: PM_Task[];
+    hasChildContainKeyword?: boolean;
 };
 
 export interface PM_Deliverable {
@@ -90,4 +91,5 @@ export interface PM_Deliverable {
     startDate: string; // Corresponds to LocalDate, e.g., "2025-10-25"
     endDate: string; // Corresponds to LocalDate, e.g., "2025-10-25"
     phases: PM_Phase[];  // Corresponds to List<PM_Phase>
+    hasChildContainKeyword?: boolean;
 };

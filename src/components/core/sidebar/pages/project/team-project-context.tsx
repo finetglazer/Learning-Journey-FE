@@ -3,7 +3,8 @@
 import { AppContext, AppContextProps } from "@/hooks/app-context";
 import { PM_Deliverable, Project, ProjectMembershipRole, ReorderType, TeamMember } from "@/model/project-management"; // Added PM_Phase, PM_Task for type clarity
 import { projectRepository } from "@/repository/project-repository";
-import { createContext, Dispatch, SetStateAction, useCallback, useContext, useEffect, useState } from "react";
+import { debounce } from "lodash";
+import { createContext, Dispatch, SetStateAction, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { finalize } from "rxjs";
 import { toast } from "sonner";
 
@@ -35,6 +36,13 @@ export interface TeamProjectContextProps {
 
     getProjectStructure: () => () => void; // Function that returns a cleanup function
     handleReorderList: (orderedIds: number[], parentId: number, type: ReorderType) => void;
+
+    expandedDeliverables: Set<string>;
+    search: string;
+    setExpandedDeliverables: Dispatch<SetStateAction<Set<string>>>;
+    expandedPhases: Set<string>;
+    setExpandedPhases: Dispatch<SetStateAction<Set<string>>>;
+    setSearch: Dispatch<SetStateAction<string>>;
 };
 
 export const TeamProjectContext = createContext<TeamProjectContextProps>({
@@ -53,6 +61,12 @@ export const TeamProjectContext = createContext<TeamProjectContextProps>({
     setDeliverables: () => { },
     getProjectStructure: () => () => { },
     handleReorderList: () => { },
+    expandedDeliverables: new Set(),
+    expandedPhases: new Set(),
+    setExpandedDeliverables: () => { },
+    setExpandedPhases: () => { },
+    search: "",
+    setSearch: () => { },
 });
 
 export const useTeamProjectHooks = (currentSelectedProject: Project | null): TeamProjectContextProps => {
@@ -62,7 +76,13 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
     const [currentMember, setCurrentMember] = useState<TeamMember | null>(null);
     const [deliverables, setDeliverables] = useState<PM_Deliverable[]>([]);
     const [isReordering, setIsReordering] = useState<boolean>(false);
-
+    const [search, setSearch] = useState<string>("");
+    const [expandedDeliverables, setExpandedDeliverables] = useState<Set<string>>(
+        new Set([])
+    );
+    const [expandedPhases, setExpandedPhases] = useState<Set<string>>(
+        new Set([])
+    );
     const {
         email,
     } = useContext<AppContextProps>(AppContext);
@@ -70,14 +90,37 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
     const getProjectStructure = useCallback(() => {
         const subscription = projectRepository.getProjectStructure({
             projectId: selectedProject?.id,
+            search: search || "",
         }).subscribe({
             next: res => {
                 if (res?.status) {
                     const projectDeliverables = res?.data?.data || [];
+                    // --- AUTO-EXPANSION LOGIC START ---
+                    const isSearching = search && search.trim() !== "";
+                    const newExpandedDeliverables = new Set<string>();
+                    const newExpandedPhases = new Set<string>();
+                    // --- AUTO-EXPANSION LOGIC END ---
+
                     const updatedProjectDeliverables = projectDeliverables.map((deliverable: any) => {
                         const deliverableIdStr = `del-${deliverable.id}`;
+
+                        // --- AUTO-EXPANSION LOGIC START ---
+                        // 1. Check if the DELIVERABLE itself contains a keyword match (deep or shallow)
+                        if (isSearching && deliverable.hasChildContainKeyword) {
+                            newExpandedDeliverables.add(deliverableIdStr);
+                        }
+                        // --- AUTO-EXPANSION LOGIC END ---
+
                         const phases = (deliverable.phases || []).map((phase: any) => {
                             const phaseIdStr = `phase-${phase.id}`;
+
+                            // --- AUTO-EXPANSION LOGIC START ---
+                            // 2. Check if the PHASE itself contains a keyword match (deep or shallow)
+                            if (isSearching && phase.hasChildContainKeyword) {
+                                newExpandedPhases.add(phaseIdStr);
+                            }
+                            // --- AUTO-EXPANSION LOGIC END ---
+
                             const tasks = (phase.tasks || []).map((task: any) => {
                                 const taskIdStr = `task-${task.id}`;
                                 return {
@@ -94,6 +137,17 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
                     });
 
                     setDeliverables(updatedProjectDeliverables);
+
+                    // --- AUTO-EXPANSION LOGIC START ---
+                    // 3. Update the state ONLY if a search was active
+                    if (isSearching) {
+                        setExpandedDeliverables(newExpandedDeliverables);
+                        setExpandedPhases(newExpandedPhases);
+                    } else {
+                        setExpandedDeliverables(new Set()); 
+                        setExpandedPhases(new Set());
+                    }
+                    // --- AUTO-EXPANSION LOGIC END ---
                 } else {
                     toast.error(res?.message || res?.msg);
                 }
@@ -104,7 +158,7 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         return () => {
             subscription.unsubscribe();
         };
-    }, [selectedProject, setIsReordering]);
+    }, [selectedProject, setIsReordering, search]);
 
     const getTeamMembers = useCallback(() => {
         const subscription = projectRepository.getTeamMembers({
@@ -162,16 +216,33 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         };
     }, [selectedProject, setIsReordering]);
 
+    const debouncedGetProjectStructure = useMemo(
+        () => debounce(getProjectStructure, 300),
+        [getProjectStructure]
+    );
+
     useEffect(() => {
-        if (currentSelectedProject) {
-            getTeamMembers();
-        }
         setSelectedProject(currentSelectedProject);
     }, [currentSelectedProject]);
+
+    // 3. Trigger debounced fetch when 'search' changes OR when 'selectedProject' is set/changed
+    useEffect(() => {
+        // Only run the fetch if a project is selected
+        if (selectedProject?.id) {
+            debouncedGetProjectStructure();
+        }
+
+        // Cleanup: Important! This cleans up any pending debounced call when the hook unmounts or search/project changes
+        return () => {
+            debouncedGetProjectStructure.cancel();
+        };
+    }, [search, selectedProject, debouncedGetProjectStructure]);
 
     return {
         tab,
         setTab,
+        search,
+        setSearch,
         isReordering,
         setIsReordering,
         selectedProject,
@@ -185,5 +256,9 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         setDeliverables,
         getProjectStructure,
         handleReorderList,
+        expandedDeliverables,
+        expandedPhases,
+        setExpandedDeliverables,
+        setExpandedPhases,
     };
 };

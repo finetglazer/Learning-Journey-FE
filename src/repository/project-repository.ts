@@ -62,7 +62,7 @@ export class ProjectRepository extends BaseRepository {
 
     // DELIVERABLE FUNCTIONS
     public getProjectStructure = (params: any): Observable<any> => {
-        return this.http.get(`/${params.projectId}/deliverables/structure`)
+        return this.http.get(`/${params.projectId}/deliverables/structure?search=${params.search || ''}`)
             .pipe(map(res => res?.data));
     };
 

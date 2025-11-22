@@ -21,12 +21,6 @@ export const LIST_GRID_LAYOUT = "grid grid-cols-[1fr_150px_150px_120px] gap-4 it
 export const ListTab = ({ }: ListTabProps) => {
     const [isAddingDeliverable, setIsAddingDeliverable] = useState(false);
     const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
-    const [expandedDeliverables, setExpandedDeliverables] = useState<Set<string>>(
-        new Set([])
-    );
-    const [expandedPhases, setExpandedPhases] = useState<Set<string>>(
-        new Set([])
-    );
 
     const {
         selectedProject,
@@ -36,6 +30,12 @@ export const ListTab = ({ }: ListTabProps) => {
         setDeliverables,
         handleReorderList,
         currentMember,
+        expandedDeliverables,
+        expandedPhases,
+        setExpandedDeliverables,
+        setExpandedPhases,
+        search,
+        setSearch,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
     // 🆕 RBAC Check
@@ -443,7 +443,7 @@ export const ListTab = ({ }: ListTabProps) => {
                 {/* Search Bar (from image) */}
                 <div className="relative w-64">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Search list" className="pl-8 h-9 bg-white" />
+                    <Input placeholder="Search list" className="pl-8 h-9 bg-white" value={search} onChange={(e) => setSearch(e.target.value)} />
                 </div>
                 {/* Reorder Buttons / Add Button */}
                 <div className="flex items-center gap-3">
