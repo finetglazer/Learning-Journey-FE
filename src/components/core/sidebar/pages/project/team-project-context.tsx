@@ -11,15 +11,17 @@ import { toast } from "sonner";
 export enum TeamProjectTab {
     SUMMARY = "summary",
     LIST = "list",
-    TASK_BOARD = "task-board",
+    TASK_BOARD = "task_board",
     TIMELINE = "timeline",
-    SHARED_FILE = "shared-file",
-    RISK_REGISTER = "risk-register",
+    SHARED_FILE = "shared_file",
+    RISK_REGISTER = "risk_register",
 };
 
 export interface TeamProjectContextProps {
     tab: string;
     setTab: Dispatch<SetStateAction<string>>;
+    isNavigatingFromTaskBoard: boolean,
+    setIsNavigatingFromTaskBoard: Dispatch<SetStateAction<boolean>>,
     isReordering: boolean;
     setIsReordering: Dispatch<SetStateAction<boolean>>;
     selectedProject: Project | null;
@@ -43,11 +45,15 @@ export interface TeamProjectContextProps {
     expandedPhases: Set<string>;
     setExpandedPhases: Dispatch<SetStateAction<Set<string>>>;
     setSearch: Dispatch<SetStateAction<string>>;
+    scrollToItem: string;
+    setScrollToItem: Dispatch<SetStateAction<string>>;
 };
 
 export const TeamProjectContext = createContext<TeamProjectContextProps>({
     tab: TeamProjectTab.SUMMARY,
     setTab: () => { },
+    isNavigatingFromTaskBoard: false,
+    setIsNavigatingFromTaskBoard: () => { },
     isReordering: false,
     setIsReordering: () => { },
     selectedProject: null,
@@ -67,16 +73,20 @@ export const TeamProjectContext = createContext<TeamProjectContextProps>({
     setExpandedPhases: () => { },
     search: "",
     setSearch: () => { },
+    scrollToItem: "",
+    setScrollToItem: () => { },
 });
 
 export const useTeamProjectHooks = (currentSelectedProject: Project | null): TeamProjectContextProps => {
     const [tab, setTab] = useState<string>(TeamProjectTab.SUMMARY);
+    const [isNavigatingFromTaskBoard, setIsNavigatingFromTaskBoard] = useState<boolean>(false);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [members, setMembers] = useState<TeamMember[]>([]);
     const [currentMember, setCurrentMember] = useState<TeamMember | null>(null);
     const [deliverables, setDeliverables] = useState<PM_Deliverable[]>([]);
     const [isReordering, setIsReordering] = useState<boolean>(false);
     const [search, setSearch] = useState<string>("");
+    const [scrollToItem, setScrollToItem] = useState<string>("");
     const [expandedDeliverables, setExpandedDeliverables] = useState<Set<string>>(
         new Set([])
     );
@@ -100,7 +110,6 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
                     const newExpandedDeliverables = new Set<string>();
                     const newExpandedPhases = new Set<string>();
                     // --- AUTO-EXPANSION LOGIC END ---
-
                     const updatedProjectDeliverables = projectDeliverables.map((deliverable: any) => {
                         const deliverableIdStr = `del-${deliverable.id}`;
 
@@ -111,7 +120,7 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
                         }
                         // --- AUTO-EXPANSION LOGIC END ---
 
-                        const phases = (deliverable.phases || []).map((phase: any) => {
+                        const updatedProjectPhases = (deliverable.phases || []).map((phase: any) => {
                             const phaseIdStr = `phase-${phase.id}`;
 
                             // --- AUTO-EXPANSION LOGIC START ---
@@ -133,20 +142,24 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
                                 ...phase, tasks, phaseId: phase.id, phaseIdStr, deliverableId: deliverable.id, deliverableIdStr,
                             };
                         });
-                        return { ...deliverable, phases, deliverableId: deliverable.id, deliverableIdStr };
+                        return { ...deliverable, phases: updatedProjectPhases, deliverableId: deliverable.id, deliverableIdStr };
                     });
 
+                    setExpandedDeliverables(prevExpanded => {
+                        if (isSearching) {
+                            return newExpandedDeliverables;
+                        }
+                        return prevExpanded;
+                    });
+
+                    setExpandedPhases(prevExpanded => {
+                        if (isSearching) {
+                            return newExpandedPhases;
+                        }
+                        return prevExpanded;
+                    });
                     setDeliverables(updatedProjectDeliverables);
 
-                    // --- AUTO-EXPANSION LOGIC START ---
-                    // 3. Update the state ONLY if a search was active
-                    if (isSearching) {
-                        setExpandedDeliverables(newExpandedDeliverables);
-                        setExpandedPhases(newExpandedPhases);
-                    } else {
-                        setExpandedDeliverables(new Set()); 
-                        setExpandedPhases(new Set());
-                    }
                     // --- AUTO-EXPANSION LOGIC END ---
                 } else {
                     toast.error(res?.message || res?.msg);
@@ -158,7 +171,7 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         return () => {
             subscription.unsubscribe();
         };
-    }, [selectedProject, setIsReordering, search]);
+    }, [selectedProject, setIsReordering, search, setExpandedDeliverables, setExpandedPhases]);
 
     const getTeamMembers = useCallback(() => {
         const subscription = projectRepository.getTeamMembers({
@@ -194,22 +207,22 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
             parentId,
             orderedIds,
         })
-        .pipe(finalize(() => setIsReordering(false)))
-        .subscribe({
-            next: res => {
-                if (res?.status) {
-                    toast.success(res?.message || res?.msg);
+            .pipe(finalize(() => setIsReordering(false)))
+            .subscribe({
+                next: res => {
+                    if (res?.status) {
+                        toast.success(res?.message || res?.msg);
+                        getProjectStructure();
+                    }
+                    else {
+                        toast.error(res?.msg || res?.message)
+                        getProjectStructure();
+                    }
+                },
+                error: err => {
                     getProjectStructure();
-                }
-                else {
-                    toast.error(res?.msg || res?.message)
-                    getProjectStructure();
-                }
-            },
-            error: err => {
-                getProjectStructure();
-             },
-        });
+                },
+            });
 
         return () => {
             subscription.unsubscribe();
@@ -217,12 +230,38 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
     }, [selectedProject, setIsReordering]);
 
     const debouncedGetProjectStructure = useMemo(
-        () => debounce(getProjectStructure, 300),
+        () => debounce(getProjectStructure, 150),
         [getProjectStructure]
     );
 
+    // --- State Reset and Data Fetch on Project Change ---
     useEffect(() => {
+        // 1. Set the newly selected project
         setSelectedProject(currentSelectedProject);
+        setMembers([]);
+        if (currentSelectedProject) {
+            // 2. Fetch team members for the new project
+            getTeamMembers();
+        }
+
+        // 3. 🎯 Reset ALL states related to the previous project structure
+        // This ensures a clean slate when switching projects or initializing.
+        setDeliverables([]);
+        setSearch("");
+        setScrollToItem("");
+        setExpandedDeliverables(new Set());
+        setExpandedPhases(new Set());
+        setIsReordering(false);
+        // Note: The main project structure will be fetched by the dependency chain
+        // (useEffect watching `selectedProject` calls `debouncedGetProjectStructure`).
+
+    }, [currentSelectedProject]);
+
+    useEffect(() => {
+        if (!currentSelectedProject) {
+            return;
+        }
+        getTeamMembers();
     }, [currentSelectedProject]);
 
     // 3. Trigger debounced fetch when 'search' changes OR when 'selectedProject' is set/changed
@@ -244,6 +283,8 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         search,
         setSearch,
         isReordering,
+        isNavigatingFromTaskBoard,
+        setIsNavigatingFromTaskBoard,
         setIsReordering,
         selectedProject,
         setSelectedProject,
@@ -260,5 +301,7 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         expandedPhases,
         setExpandedDeliverables,
         setExpandedPhases,
+        scrollToItem,
+        setScrollToItem,
     };
 };

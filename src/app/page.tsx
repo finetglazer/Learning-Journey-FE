@@ -22,12 +22,11 @@ import {
   MoreHorizontal,
   PersonStanding,
   Plus,
-  Settings,
   Shield,
   Terminal,
   Timer,
   User,
-  Users,
+  Users
 } from "lucide-react";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -39,21 +38,17 @@ import { CalendarMonthView } from "@/components/core/calendar/calendar-month-vie
 import { CalendarWeekView } from "@/components/core/calendar/calendar-week-view";
 import { CalendarYearView } from "@/components/core/calendar/calendar-year-view";
 import { HeaderBar } from "@/components/core/header-bar/header-bar";
-import { PM_DraggableItemData } from "@/components/core/project-management/type";
 import { MemorableEvents } from "@/components/core/sidebar/pages/memorable-event/memorable-event";
-import { PublicProfile } from "@/components/core/sidebar/pages/public-profile/public-profile";
-import { SIGN_IN_ROUTE } from "@/const/routes-const";
-import { toDayJs } from "@/lib/utils";
-import { PM_Deliverable, Project, TaskPriority, TaskStatus } from "@/model/project-management";
-import { calendarRepository } from "@/repository/calendar-repository";
-import { projectRepository } from "@/repository/project-repository";
-import { DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { arrayMove } from "@dnd-kit/sortable";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { TeamProjectSection } from "@/components/core/sidebar/sections/team-project-section";
 import { TeamProjectPage } from "@/components/core/sidebar/pages/project/team-project";
 import { TeamProjectContext, useTeamProjectHooks } from "@/components/core/sidebar/pages/project/team-project-context";
+import { PublicProfile } from "@/components/core/sidebar/pages/public-profile/public-profile";
+import { TeamProjectSection } from "@/components/core/sidebar/sections/team-project-section";
+import { Button } from "@/components/ui/button";
+import { SIGN_IN_ROUTE } from "@/const/routes-const";
+import { Project } from "@/model/project-management";
+import { calendarRepository } from "@/repository/calendar-repository";
+import { projectRepository } from "@/repository/project-repository";
+import { useRouter } from "next/navigation";
 
 export default function RootPage() {
   const router = useRouter();
@@ -70,6 +65,9 @@ export default function RootPage() {
 
   const { setSleepHours, setLoadingPage } = useContext<AppContextProps>(AppContext);
   const calendarContextValues = useCalendarHooks({ initTasks: [] });
+  const isModalOpen = useMemo(() => {
+    return modalStates.some(state => state === true);
+  }, [modalStates]);
 
   const {
     currentDate,
@@ -118,7 +116,6 @@ export default function RootPage() {
       items: [
         { id: "private-calendar", label: "Private calendar", icon: <Lock size={16} />, onClick: () => setActiveItem("private-calendar") },
         { id: "month-planning", label: "Month planning", icon: <CalendarDays size={16} />, onClick: () => setActiveItem("month-planning") },
-        { id: "settings", label: "Settings", icon: <Settings size={16} />, onClick: () => setCurrentView("settings") },
       ],
     },
     {
@@ -143,21 +140,21 @@ export default function RootPage() {
             setCurrentSelectedProject(project);
           },
           menu: [
-            {
-              icon: (
-                <div
-                  className="cursor-pointer text-red-500"
-                >
-                  Delete
-                </div>
-              ),
-              onClick: (e: any) => {
-                e.stopPropagation();
-                updateModalStates(3, true);
-                setActiveItem(`project-${project?.id}`);
-                setCurrentSelectedProject(project);
-              }
-            }
+            // {
+            //   icon: (
+            //     <div
+            //       className="cursor-pointer text-red-500"
+            //     >
+            //       Delete
+            //     </div>
+            //   ),
+            //   onClick: (e: any) => {
+            //     e.stopPropagation();
+            //     updateModalStates(3, true);
+            //     setActiveItem(`project-${project?.id}`);
+            //     setCurrentSelectedProject(project);
+            //   }
+            // }
           ],
         }
       })
@@ -282,7 +279,7 @@ export default function RootPage() {
         const monthPlanId = res?.data;
         if (success && monthPlanId) {
           localStorage.setItem("monthPlanId", monthPlanId);
-        } 
+        }
         else if (!success || !monthPlanId) {
           // toast.error(res?.msg || res?.message);
           localStorage.removeItem("monthPlanId");
@@ -355,6 +352,11 @@ export default function RootPage() {
     getProjects();
   }, []);
 
+  // Close all modals when selecting other project
+  useEffect(() => {
+    setModalStates([false, false, false, false]);
+  }, [currentSelectedProject]);
+
   useEffect(() => {
     if (currentView === 'home' && activeItem === 'private-calendar') {
       calendarContextValues.setCurrentView('day');
@@ -365,9 +367,18 @@ export default function RootPage() {
     <CalendarContext.Provider value={calendarContextValues}>
       <TeamProjectContext.Provider value={useTeamProjectHooks(currentSelectedProject)}>
         <div className="relative">
+          {isModalOpen && (
+            <div
+              className="fixed inset-0 bg-black/50 z-[1000] transition-opacity duration-300"
+              // Close all modals when clicking the backdrop
+              onClick={() => setModalStates([false, false, false, false])} 
+            />
+          )}
+
           {/* --- Headerbar --- */}
           <HeaderBar
             avatarUrl={localStorage.getItem("avatarUrl") || ""}
+            onSettingsClick={() => setCurrentView("settings")}
           />
 
           <div className="flex">

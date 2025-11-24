@@ -30,7 +30,7 @@ export default function AuthSuccess() {
             setEmail(email as string);
             setTimeout(() => router.push(ROOT_ROUTE), 1200);
         }
-    }, [router]);
+    }, [router, window.location.search]);
 
     return (
         <div

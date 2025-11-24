@@ -66,7 +66,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
                 </button>
                 <button
                     onClick={onSettingsClick}
-                    className="p-2 rounded-full text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    className="p-2 rounded-full cursor-pointer text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                     aria-label="View settings"
                 >
                     <Settings size={20} />

@@ -45,6 +45,11 @@ export class ProjectRepository extends BaseRepository {
             .pipe(map(res => res?.data));
     };
 
+    public updateMemberProject = (params: any, body: any): Observable<any> => {
+        return this.http.put(`/${params.projectId}/members/${params.targetUserId}`, body)
+            .pipe(map(res => res?.data));
+    };
+
     public removeMemberFromProject = (params: any): Observable<any> => {
         return this.http.delete(`/${params.projectId}/members/${params.targetUserId}`)
             .pipe(map(res => res?.data));
@@ -98,6 +103,11 @@ export class ProjectRepository extends BaseRepository {
     };
 
     // TASK FUNCTIONS
+    public getTasks = (params: any, body: any): Observable<any> => {
+        return this.http.post(`/${params.projectId}/tasks`, body)
+            .pipe(map(res => res?.data));
+    };
+
     public createTask = (params: any, body: any): Observable<any> => {
         return this.http.post(`/${params.projectId}/phases/${params.phaseId}/tasks`, body)
             .pipe(map(res => res?.data));

@@ -12,6 +12,7 @@ import {
     Clock,
     Flame,
     HelpCircle,
+    Loader,
     Loader2,
     Paperclip,
     SignalHigh,
@@ -19,10 +20,11 @@ import {
     SignalMedium,
     User,
 } from 'lucide-react';
+import { Divider } from '../divider/divider';
 
 export const STATUS_CONFIG: Record<TaskStatus, { label: string, icon: any, color: string }> = {
     [TaskStatus.TO_DO]: { label: "To do", icon: HelpCircle, color: "text-slate-500" },
-    [TaskStatus.IN_PROGRESS]: { label: "In progress", icon: Loader2, color: "text-indigo-500" },
+    [TaskStatus.IN_PROGRESS]: { label: "In progress", icon: Loader, color: "text-indigo-500" },
     [TaskStatus.IN_REVIEW]: { label: "In review", icon: Clock, color: "text-blue-500" },
     [TaskStatus.DONE]: { label: "Completed", icon: CheckCircle2, color: "text-green-500" },
 };
@@ -47,7 +49,7 @@ const MOCK_DISCUSSIONS = [
 ];
 
 const PropertyItem = ({ prefixIcon: Icon, label, value, colorClass = 'text-gray-700' }) => (
-    <div className="flex items-center space-x-3 py-1.5 border-b border-gray-100 last:border-b-0">
+    <div className="flex items-center space-x-3 py-1.5 border-gray-100 last:border-b-0">
         <span className="w-32 text-sm text-gray-500 flex items-center space-x-2">
             {Icon && <Icon size={16} className={`text-gray-500`} />}
             <span>{label}</span>
@@ -58,7 +60,7 @@ const PropertyItem = ({ prefixIcon: Icon, label, value, colorClass = 'text-gray-
 );
 
 const AttachmentItem = ({ name, date, size, detail }) => (
-    <div className="flex items-center space-x-3 py-2 border-b border-gray-100 last:border-b-0 cursor-pointer hover:bg-gray-50">
+    <div className="flex items-center space-x-3 py-2 border-gray-100 last:border-b-0 cursor-pointer hover:bg-gray-50">
         <Paperclip size={20} className="text-gray-400" />
         <div className="flex-grow">
             <p className="text-sm font-medium truncate">{name}</p>
@@ -71,7 +73,7 @@ const AttachmentItem = ({ name, date, size, detail }) => (
 );
 
 const CommentItem = ({ user, comment }) => (
-    <div className="flex space-x-3 py-3 border-b border-gray-100 last:border-b-0">
+    <div className="flex space-x-3 py-3 border-gray-100 last:border-b-0">
         <Avatar className="h-8 w-8">
             <AvatarImage src={user.avatarUrl} alt={user.name} />
             <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
@@ -160,7 +162,7 @@ export function TaskDetailDrawer({ task, members }: { task: PM_Task, members: Te
                             const ValueIcon = prop.valuePrefixIcon;
 
                             return (
-                                <div key={index} className="flex items-center space-x-3 py-1.5 border-b border-gray-100 last:border-b-0">
+                                <div key={index} className="flex items-center space-x-3 py-1.5 border-gray-100 last:border-b-0">
                                     {/* 🛠️ Property Name (W-32): Icon + Label */}
                                     <span className="w-32 text-sm text-gray-500 flex items-center space-x-2">
                                         <PrefixIcon size={16} className={`text-gray-500`} />
@@ -182,6 +184,8 @@ export function TaskDetailDrawer({ task, members }: { task: PM_Task, members: Te
                         })}
                     </div>
 
+                    <Divider className={"w-[calc(100%-10px)] mt-5"} />
+
                     {/* --- 2. Attachments Section (MOCK) --- */}
                     <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mt-6 mb-3">
                         Attachments
@@ -191,6 +195,8 @@ export function TaskDetailDrawer({ task, members }: { task: PM_Task, members: Te
                             <AttachmentItem key={index} {...file} />
                         ))}
                     </div>
+
+                    <Divider className={"w-[calc(100%-10px)] mt-5"} />
 
                     {/* --- 3. Discussion Section (MOCK) --- */}
                     <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mt-6 mb-3">

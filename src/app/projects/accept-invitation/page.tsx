@@ -103,7 +103,7 @@ function InvitationAcceptContent() {
                 </CardContent>
                 <CardFooter className="px-8 pb-8">
                     <Button
-                        className="w-full cursor-pointer bg-blue-500 hover:bg-blue-700 text-white hover:text-white"
+                        className="bg-teal-400 text-white hover:bg-teal-600 cursor-pointer"
                         size="lg"
                         onClick={handleGoHome}
                     >
@@ -132,7 +132,7 @@ function InvitationAcceptContent() {
                 </CardContent>
                 <CardFooter className="px-8 pb-8">
                     <Button
-                        className="w-full cursor-pointer bg-blue-500 hover:bg-blue-700 text-white hover:text-white"
+                        className="bg-teal-400 text-white hover:bg-teal-600 cursor-pointer"
                         size="lg"
                         variant="outline"
                         onClick={() => router.push(ROOT_ROUTE)}

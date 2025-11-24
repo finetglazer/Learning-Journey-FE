@@ -221,7 +221,7 @@ export const LimitTimeAndTimeZone = () => {
             </Button>
 
             <div className="mt-6">
-                <Button onClick={handleSaveSleepHours} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-md shadow hover:bg-blue-700 cursor-pointer">
+                <Button onClick={handleSaveSleepHours} className="bg-teal-400 text-white hover:bg-teal-600 cursor-pointer">
                     Save
                 </Button>
             </div>
@@ -269,7 +269,7 @@ export const LimitTimeAndTimeZone = () => {
             </p>
 
             <Button
-                className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-md shadow hover:bg-blue-900 cursor-pointer"
+                className="bg-teal-400 text-white hover:bg-teal-600 cursor-pointer"
                 onClick={handleSaveTimeLimits}
             >
                 Save
@@ -283,7 +283,7 @@ export const LimitTimeAndTimeZone = () => {
             </div>
 
             <Button
-                className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-md shadow hover:bg-blue-900 cursor-pointer"
+                className="bg-teal-400 text-white hover:bg-teal-600 cursor-pointer"
                 onClick={handleSaveTimezone}
             >
                 Save

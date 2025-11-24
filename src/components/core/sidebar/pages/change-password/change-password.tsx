@@ -78,7 +78,7 @@ export default function ChangePasswordPage() {
                     label="Change password"
                     loading={loading}
                     wrapperClassName="pt-4"
-                    buttonClassName="h-12"
+                    buttonClassName="bg-teal-400 text-white hover:bg-teal-500 cursor-pointer hover:text-white h-12"
                     labelClassName="text-base"
                 />
             </form>

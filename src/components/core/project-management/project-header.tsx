@@ -7,7 +7,7 @@ import {
     MoreHorizontal,
     ShieldAlert,
 } from "lucide-react";
-import { useContext, useState } from "react";
+import { useContext } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -24,8 +24,8 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Project, ProjectMembershipRole, TeamMember } from "@/model/project-management";
 import { getFallbackName } from "@/lib/utils";
+import { Project, ProjectMembershipRole, TeamMember } from "@/model/project-management";
 import { TeamProjectContext, TeamProjectContextProps, TeamProjectTab } from "../sidebar/pages/project/team-project-context";
 
 export interface ProjectHeaderProps {
@@ -46,7 +46,11 @@ export const ProjectHeader = ({
     const {
         tab,
         setTab,
+        currentMember,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
+
+    // 🆕 RBAC Check
+    const canDelete = currentMember?.role === ProjectMembershipRole.OWNER;
 
     // Avatar list logic
     const MAX_AVATARS = 6;
@@ -122,12 +126,14 @@ export const ProjectHeader = ({
                                 >
                                     View team members
                                 </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    className="text-red-600 cursor-pointer"
-                                    onClick={() => updateModalStates(3, true)}
-                                >
-                                    Delete project
-                                </DropdownMenuItem>
+                                {canDelete && (
+                                    <DropdownMenuItem
+                                        className="text-red-600 cursor-pointer"
+                                        onClick={() => updateModalStates(3, true)}
+                                    >
+                                        Delete project
+                                    </DropdownMenuItem>
+                                )}
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
@@ -152,6 +158,9 @@ export const ProjectHeader = ({
                         >
                             <List className="h-4 w-4 mr-2" />
                             List
+                            {(role !== ProjectMembershipRole.OWNER && tab === TeamProjectTab.LIST) && (
+                                <span className="text-gray-400 ml-1.5" style={{ color: 'blue' }}>(Can edit status only)</span>
+                            )}
                         </TabsTrigger>
 
                         {/* Task board (Active) */}
@@ -161,8 +170,8 @@ export const ProjectHeader = ({
                         >
                             <KanbanSquare className="h-4 w-4 mr-2" />
                             Task board
-                            {role !== ProjectMembershipRole.OWNER && (
-                                <span className="text-gray-400 ml-1.5" style={{ color: tab === 'task-board' ? 'blue' : "" }}>(View only)</span>
+                            {(role !== ProjectMembershipRole.OWNER && tab === TeamProjectTab.TASK_BOARD) && (
+                                <span className="text-gray-400 ml-1.5" style={{ color: 'blue' }}>(View only)</span>
                             )}
                         </TabsTrigger>
 

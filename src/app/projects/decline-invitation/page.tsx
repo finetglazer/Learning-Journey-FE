@@ -12,7 +12,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState, useContext } from "react";
 import { projectRepository } from "@/repository/project-repository";
 import { ROOT_ROUTE } from "@/const/routes-const";
-import { AppContext, AppContextProps } from "@/hooks/app-context"; 
+import { AppContext, AppContextProps } from "@/hooks/app-context";
 
 /**
  * This component handles the logic after being wrapped in <Suspense>
@@ -104,7 +104,7 @@ function InvitationDeclineContent() {
                 </CardContent>
                 <CardFooter className="px-8 pb-8">
                     <Button
-                        className="w-full cursor-pointer bg-blue-500 hover:bg-blue-700 text-white hover:text-white"
+                        className="bg-teal-400 text-white hover:bg-teal-600 cursor-pointer"
                         size="lg"
                         variant="outline"
                         onClick={handleGoHome}
@@ -134,7 +134,7 @@ function InvitationDeclineContent() {
                 </CardContent>
                 <CardFooter className="px-8 pb-8">
                     <Button
-                        className="w-full cursor-pointer bg-blue-500 hover:bg-blue-700 text-white hover:text-white"
+                        className="bg-teal-400 text-white hover:bg-teal-600 cursor-pointer"
                         size="lg"
                         variant="outline"
                         onClick={handleGoHome}

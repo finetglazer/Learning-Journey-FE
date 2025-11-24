@@ -164,6 +164,7 @@ function PM_DeliverableItemBase({
         <div
             ref={setNodeRef}
             style={style}
+            id={deliverable.deliverableIdStr}
             className="my-3 bg-white rounded-lg shadow border border-gray-200 overflow-hidden"
         >
             {/* The draggable header part (Deliverable header) */}

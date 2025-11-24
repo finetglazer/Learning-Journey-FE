@@ -66,7 +66,10 @@ export const CreateProjectModal = ({ onClose, handleReload }: CreateProjectModal
     }, []);
 
     return (
-        <div className="w-full absolute top-[25%] left-[40%] max-w-lg p-8 bg-white rounded-2xl shadow-2xl items-center">
+        <div className="
+            w-full absolute top-[25%] left-[40%] max-w-lg p-8 bg-white rounded-2xl shadow-2xl items-center z-[9999]
+            animate-in fade-in slide-in-from-top-10 duration-500 ease-out
+        ">
 
             <Button
                 type="button" // Prevents submitting the form

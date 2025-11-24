@@ -1,12 +1,13 @@
+import InfoCircle from "@/components/core/icons/info-circle";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { TaskStatus } from "@/model/project-management";
-import { CheckCircle2, Clock, HelpCircle, Loader2 } from "lucide-react";
+import { CheckCircle2, Clock, Loader } from "lucide-react";
 import { memo } from "react";
 
 export const STATUS_CONFIG: Record<TaskStatus, { label: string, icon: any, color: string }> = {
-    [TaskStatus.TO_DO]: { label: "To do", icon: HelpCircle, color: "text-slate-500" },
-    [TaskStatus.IN_PROGRESS]: { label: "In progress", icon: Loader2, color: "text-indigo-500" },
+    [TaskStatus.TO_DO]: { label: "To do", icon: InfoCircle, color: "text-slate-500" },
+    [TaskStatus.IN_PROGRESS]: { label: "In progress", icon: Loader, color: "text-indigo-500" },
     [TaskStatus.IN_REVIEW]: { label: "In review", icon: Clock, color: "text-blue-500" },
     [TaskStatus.DONE]: { label: "Completed", icon: CheckCircle2, color: "text-green-500" },
 };

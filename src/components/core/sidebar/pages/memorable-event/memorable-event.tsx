@@ -151,8 +151,8 @@ export const MemorableEvents = () => {
 
             <div className="mt-6">
                 <Button
+                    className="bg-teal-400 text-white hover:bg-teal-600 cursor-pointer"
                     onClick={updateMemorableEvents}
-                    className="px-5 py-2 bg-blue-600 hover:bg-blue-800 text-white text-sm font-medium rounded-md shadow cursor-pointer"
                 >
                     Save
                 </Button>

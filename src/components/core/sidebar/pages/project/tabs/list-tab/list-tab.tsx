@@ -5,12 +5,12 @@ import { PM_DeliverableItem } from "@/components/core/project-management/pm-deli
 import { PM_DraggableItemData } from "@/components/core/project-management/type";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PM_Deliverable, PM_Phase, PM_Task, ProjectMembershipRole, ReorderType } from "@/model/project-management";
+import { PM_Phase, PM_Task, ProjectMembershipRole, ReorderType } from "@/model/project-management";
 import { projectRepository } from "@/repository/project-repository";
 import { closestCenter, DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Check, Plus, Search, X } from "lucide-react";
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { TeamProjectContext, TeamProjectContextProps } from "../../team-project-context";
 
@@ -21,7 +21,7 @@ export const LIST_GRID_LAYOUT = "grid grid-cols-[1fr_150px_150px_120px] gap-4 it
 export const ListTab = ({ }: ListTabProps) => {
     const [isAddingDeliverable, setIsAddingDeliverable] = useState(false);
     const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
-
+    const scrollContainerRef = useRef(null);
     const {
         selectedProject,
         getProjectStructure,
@@ -36,6 +36,10 @@ export const ListTab = ({ }: ListTabProps) => {
         setExpandedPhases,
         search,
         setSearch,
+        scrollToItem,
+        setScrollToItem,
+        isNavigatingFromTaskBoard,
+        setIsNavigatingFromTaskBoard,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
     // 🆕 RBAC Check
@@ -433,8 +437,75 @@ export const ListTab = ({ }: ListTabProps) => {
     };
 
     useEffect(() => {
-        getProjectStructure();
+        // When navigating process happens, it opens this tab and triggers getProjectStructure(),
+        // causing deliverables changes, leading to below useEffect used for "flash-task" effect
+        // does not work well
+        if (!isNavigatingFromTaskBoard) {
+            getProjectStructure();
+        }
     }, []);
+
+    /**
+     * 🎯 Scroll logic implementation
+     * Watches the scrollToItem context state. When set, finds the element and scrolls.
+     */
+    useEffect(() => {
+        // We only need to scroll if the item ID is set
+        if (scrollToItem) {
+            const element = document.getElementById(scrollToItem);
+
+            if (element) {
+                // Define all durations
+                const FLASH_TOTAL_DURATION_MS = 2000;
+                const FADE_DURATION_MS = 1000;
+                const HOLD_DURATION_MS = FLASH_TOTAL_DURATION_MS - FADE_DURATION_MS;
+
+                // 1. Scroll the element into view
+                element.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center',
+                });
+
+                // --- Apply styles and set up timers ---
+
+                // Set transition property immediately
+                element.style.transition = `none`;
+                // Apply the bright flash color immediately
+                element.style.backgroundColor = '#fff3cd'; // Light yellow flash
+
+                requestAnimationFrame(() => {
+                    element.style.transition = `background-color ${FADE_DURATION_MS}ms ease-out`;
+                });
+
+
+                // Timer 1: Remove the background color, initiating the smooth fade out.
+                const fadeStartTimer = setTimeout(() => {
+                    element.style.backgroundColor = '';
+                }, HOLD_DURATION_MS);
+
+                // Timer 2: Reset styles and state AFTER the entire visual effect is guaranteed to be complete.
+                const resetCleanupTimer = setTimeout(() => {
+                    // CRITICAL FIX: Reset both style properties to null to ensure the element returns
+                    // to its default, un-styled state, preventing render conflicts.
+                    element.style.transition = '';
+                    element.style.backgroundColor = '';
+
+                    // Reset the state to prevent re-execution
+                    setScrollToItem("");
+                    setIsNavigatingFromTaskBoard(false);
+                }, FLASH_TOTAL_DURATION_MS + 50); // Add a tiny buffer (50ms) to ensure transition finishes
+
+                // Cleanup function to clear both timeouts if dependencies change
+                return () => {
+                    clearTimeout(fadeStartTimer);
+                    clearTimeout(resetCleanupTimer);
+                };
+            } else {
+                // If element is not found, clear the state to prevent infinite attempts
+                setScrollToItem("");
+            }
+        }
+    }, [setScrollToItem, scrollToItem]);
 
     return (
         <div className="relative">
@@ -450,7 +521,7 @@ export const ListTab = ({ }: ListTabProps) => {
                     {canEditStructure && (
                         <Button
                             onClick={handleAddDeliverableClick}
-                            className="cursor-pointer bg-indigo-600 hover:bg-indigo-700 mr-3 text-white flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                            className="cursor-pointer bg-[#7B61FF] hover:bg-indigo-700 mr-3 text-white flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
                             disabled={isAddingDeliverable || isReordering}
                         >
                             <Plus size={16} />
@@ -467,43 +538,45 @@ export const ListTab = ({ }: ListTabProps) => {
                 <div>Priority</div>
                 <div>Assigned to</div>
             </div>
-            <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-            >
-                <SortableContext
-                    items={deliverables.map(d => d.deliverableIdStr)}
-                    strategy={verticalListSortingStrategy}
+            <div ref={scrollContainerRef} className="overflow-y-auto max-h-[calc(100vh-200px)]">
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
                 >
-                    <div className="flex flex-col pb-10">
-                        {deliverables.map(del => (
-                            <PM_DeliverableItem
-                                key={del.deliverableIdStr}
-                                deliverable={del}
-                                isExpanded={expandedDeliverables.has(del.deliverableIdStr)}
-                                expandedPhaseIds={expandedPhases}
-                                onToggle={handleToggleDeliverable}
-                                onTogglePhase={handleTogglePhase}
-                                onAddPhase={handleAddPhase}
-                                onAddTask={handleAddTask}
-                                onUpdateDeliverableName={handleUpdateDeliverable}
-                                onDeleteDeliverable={handleDeleteDeliverable}
-                                onUpdatePhaseName={handleUpdatePhase}
-                                onDeletePhase={handleDeletePhase}
-                                onUpdateTask={handleUpdateTask}
-                                onDeleteTask={handleDeleteTask}
-                            />
-                        ))}
-                        {isAddingDeliverable && (
-                            <NewDeliverableInput
-                                onSave={handleAddDeliverable}
-                                onCancel={handleCancelAddDeliverable}
-                            />
-                        )}
-                    </div>
-                </SortableContext>
-            </DndContext>
+                    <SortableContext
+                        items={deliverables.map(d => d.deliverableIdStr)}
+                        strategy={verticalListSortingStrategy}
+                    >
+                        <div className="flex flex-col pb-10">
+                            {deliverables.map(del => (
+                                <PM_DeliverableItem
+                                    key={del.deliverableIdStr}
+                                    deliverable={del}
+                                    isExpanded={expandedDeliverables.has(del.deliverableIdStr)}
+                                    expandedPhaseIds={expandedPhases}
+                                    onToggle={handleToggleDeliverable}
+                                    onTogglePhase={handleTogglePhase}
+                                    onAddPhase={handleAddPhase}
+                                    onAddTask={handleAddTask}
+                                    onUpdateDeliverableName={handleUpdateDeliverable}
+                                    onDeleteDeliverable={handleDeleteDeliverable}
+                                    onUpdatePhaseName={handleUpdatePhase}
+                                    onDeletePhase={handleDeletePhase}
+                                    onUpdateTask={handleUpdateTask}
+                                    onDeleteTask={handleDeleteTask}
+                                />
+                            ))}
+                            {isAddingDeliverable && (
+                                <NewDeliverableInput
+                                    onSave={handleAddDeliverable}
+                                    onCancel={handleCancelAddDeliverable}
+                                />
+                            )}
+                        </div>
+                    </SortableContext>
+                </DndContext>
+            </div>
             {alertMessage && (
                 <AlertModal
                     alertMessage={alertMessage}

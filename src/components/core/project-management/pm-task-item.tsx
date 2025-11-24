@@ -310,6 +310,7 @@ function PM_TaskItemBase({ task, onUpdateTask, onDeleteTask }: TaskItemProps) {
                 style={style}
                 {...attributes}
                 {...(canEditFull ? listeners : {})}
+                id={task.taskIdStr}
                 className={`${TASK_LIST_GRID_LAYOUT} py-2 border-t border-gray-50 hover:bg-gray-50 group ${canEditFull ? 'cursor-grab' : 'cursor-default'}`}
                 onClick={handleTaskClick}
             >

@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { PM_TaskAssignee, TeamMember } from "@/model/project-management";
 import { Check } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -64,43 +65,56 @@ const TaskAssigneeModal = ({ isOpen, onClose, onSave, currentAssignees, teamMemb
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="lg:max-w-[525px] h-[300px]">
+            <DialogContent className="lg:max-w-[595px] h-[320px]">
                 <DialogHeader>
                     <DialogTitle>Assign Task Members</DialogTitle>
                 </DialogHeader>
                 <div className="py-4 space-y-2 max-h-[300px] overflow-y-auto">
-                    <p className="text-xs text-yellow-600 border border-yellow-300 bg-yellow-50 p-2 rounded">
+                    {(modalDraftAssignees.length > 1) && (<p className="text-xs text-yellow-600 border border-yellow-300 bg-yellow-50 p-2 rounded">
                         Tip: For clear ownership, try to assign to only one person
-                    </p>
+                    </p>)}
                     {teamMembers.map((user) => {
                         const isAssigned = modalDraftAssignees.some(a => a.userId === user.userId);
-                        // Determine the user's role text (assuming TeamMember has customRoleName)
-                        const roleText = user.customRoleName || user.role;
 
                         return (
-                            <div key={user.userId} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
-                                <div className="flex items-center space-x-3">
-                                    <Avatar className="w-8 h-8">
+                            <div
+                                key={user.userId}
+                                className="grid grid-cols-[1fr_120px_20px] gap-4 items-center p-2 hover:bg-gray-50 rounded"
+                            >
+                                {/* Column 1: Avatar, Name, Email, and Custom Role (Main Content) */}
+                                <div className="flex items-center space-x-3 min-w-0">
+                                    <Avatar className="w-8 h-8 flex-shrink-0">
                                         <AvatarImage src={user.avatarUrl} />
                                         <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                                     </Avatar>
+
                                     <div className='flex-grow min-w-0'>
-                                        <p className="text-sm font-medium">{user.name}</p>
+                                        <p className="text-sm font-medium truncate">{user.name}</p>
                                         <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                                     </div>
-                                    {/* Display custom role name */}
-                                    <span className='text-xs text-gray-500 min-w-fit ml-4'>
-                                        {roleText || "<Custom name role>"}
-                                    </span>
                                 </div>
 
-                                <Checkbox
-                                    checked={isAssigned}
-                                    onCheckedChange={(checked) => {
-                                        // Pass the TeamMember object to the toggle handler
-                                        handleUserToggle(user, Boolean(checked));
-                                    }}
-                                />
+                                { /* Column 2: Primary Role (Fixed Width) */}
+                                <span className='text-xs text-gray-500 justify-self-start overflow-hidden'>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <span className="truncate block" style={{ maxWidth: '120px' }}>
+                                                {user.role}
+                                            </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent>{user.role}</TooltipContent>
+                                    </Tooltip>
+                                </span>
+
+                                {/* Column 3: Checkbox (Fixed Width and Right-Aligned) */}
+                                <div className="justify-self-end">
+                                    <Checkbox
+                                        checked={isAssigned}
+                                        onCheckedChange={(checked) => {
+                                            handleUserToggle(user, Boolean(checked));
+                                        }}
+                                    />
+                                </div>
                             </div>
                         );
                     })}

@@ -1,10 +1,12 @@
-import { useState, useEffect } from "react";
-import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FetchedUser, Project, ProjectMembershipRole, TeamMember } from "@/model/project-management";
 import { projectRepository } from "@/repository/project-repository";
+import { X } from "lucide-react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AlertMessage, AlertModal } from "../alert-modal/alert-modal";
+import { TeamProjectContext, TeamProjectContextProps } from "../sidebar/pages/project/team-project-context";
+import { cn } from "@/lib/utils";
 
 // --- 1. Debounce Hook ---
 /**
@@ -85,12 +87,56 @@ export const InviteMembersModal = ({
     getTeamMembers,
 }: InviteMembersModalProps) => {
     const [inviteEmail, setInviteEmail] = useState('');
+    const [editingUserId, setEditingUserId] = useState<number | null>(null);
 
     const [searchResults, setSearchResults] = useState<FetchedUser[]>([]);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const debouncedSearchQuery = useDebounce(inviteEmail, 300);
 
     const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
+
+    const {
+        selectedProject,
+    } = useContext<TeamProjectContextProps>(TeamProjectContext);
+
+    const handleUpdateCustomRoleName = useCallback((name: string) => {
+        projectRepository.updateMemberProject({
+            projectId: selectedProject?.id,
+            targetUserId: teamMembers.find(member => member.userId === editingUserId)?.userId,
+        }, {
+            customRoleName: name,
+        }).subscribe({
+            next: res => {
+                if (res?.status) {
+                    toast.success(res?.message || res?.msg);
+                    setEditingUserId(null);
+                    getTeamMembers();
+                }
+                else {
+                    setAlertMessage({
+                        type: "warning",
+                        title: res?.message || res?.msg,
+                        description: res?.data,
+                    });
+                }
+            },
+            error: err => {
+                const errors = err?.response?.data?.data;
+                const message = err?.response?.data?.msg || err?.response?.data?.message;
+                setAlertMessage({
+                    type: "warning",
+                    title: message,
+                    description: errors,
+                });
+            },
+        });
+    }, [
+        selectedProject,
+        editingUserId,
+        teamMembers,
+        setEditingUserId,
+        getTeamMembers,
+    ]);
 
     useEffect(() => {
         if (debouncedSearchQuery) {
@@ -172,6 +218,10 @@ export const InviteMembersModal = ({
         });
     };
 
+    const handleCancelEditing = useCallback(() => {
+        setEditingUserId(null);
+    }, [setEditingUserId]);
+
     // --- 5. New handler for selecting a user from dropdown ---
     const handleSelectUser = (user: FetchedUser) => {
         setInviteEmail(user.email);
@@ -193,7 +243,10 @@ export const InviteMembersModal = ({
     return (
         <>
             {/* --- Modal Card --- */}
-            <div className="w-full max-w-[600px] absolute top-[25%] left-[40%] p-8 bg-white rounded-2xl shadow-2xl">
+            <div className="
+                w-full max-w-[640px] absolute top-[25%] left-[30%] p-8 bg-white rounded-2xl shadow-2xl z-[9999]
+                animate-in fade-in slide-in-from-top-10 duration-500 ease-out
+            ">
 
                 {/* --- Close Button --- */}
                 <Button
@@ -277,7 +330,7 @@ export const InviteMembersModal = ({
                         {teamMembers.map((member) => (
                             <div key={member.userId} className="flex items-center justify-between">
                                 {/* Left part: Avatar and Info */}
-                                <div className="flex items-center space-x-3 flex-1 min-w-0">
+                                <div className="flex items-center space-x-3 flex-1 min-w-0 mr-5">
                                     <img
                                         src={member.avatarUrl || `https://placehold.co/40x40/E0E0E0/707070?text=${member.name[0] || 'A'}`}
                                         alt={member.name}
@@ -288,34 +341,67 @@ export const InviteMembersModal = ({
                                         }}
                                     />
                                     <div>
-                                        <div className="font-semibold text-sm text-gray-900">
+                                        <div className="font-semibold text-sm text-gray-900 truncate">
                                             {member.name}
                                         </div>
-                                        <div className="text-xs text-gray-500">
+                                        <div className="text-xs text-gray-500 truncate">
                                             {member.email}
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Right part: Role and Actions */}
-                                <div className="flex items-center space-x-4 flex-shrink-0">
-                                    <button className="text-sm text-blue-600 hover:text-blue-800">
-                                        {member.customRoleName || '<Custome name role>'}
-                                    </button>
-                                    <span className={`text-sm font-medium ${member.role === ProjectMembershipRole.OWNER ? 'text-gray-900' : 'text-gray-500'}`}>
+                                <div className="grid grid-cols-[150px_100px_32px] gap-2 items-center flex-shrink-0 ml-4">
+
+                                    {/* Column 1: Custom Role Name / Input */}
+                                    <div
+                                        className="text-sm truncate pr-2"
+                                        onDoubleClick={() => {
+                                            if (member?.role !== ProjectMembershipRole.OWNER) {
+                                                setEditingUserId(member.userId);
+                                            }
+                                        }}
+                                    >
+                                        {editingUserId === member.userId ? (
+                                            <EditingRoleInput
+                                                initialName={member.customRoleName || ''}
+                                                onSave={handleUpdateCustomRoleName}
+                                                onCancel={() => setEditingUserId(null)}
+                                            />
+                                        ) : (
+                                            <button
+                                                className={cn("text-sm text-center w-full",
+                                                    { "cursor-pointer text-blue-600 hover:text-blue-800": member?.role !== ProjectMembershipRole.OWNER },
+                                                    { "cursor-not-allowed text-gray-500": member?.role === ProjectMembershipRole.OWNER },
+                                                )}
+                                                disabled={member.role === ProjectMembershipRole.OWNER}
+                                                title={member.role === ProjectMembershipRole.OWNER ? 'Owner role cannot be customized' : 'Double click to customize role name'}
+                                            >
+                                                {member.customRoleName || `<Custom role name>`}
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Column 2: Primary Role (OWNER/MEMBER/INVITED) */}
+                                    <span
+                                        className={`text-sm font-medium ${member.role === ProjectMembershipRole.OWNER ? 'text-gray-900' : 'text-gray-500'}`}
+                                    >
                                         {member.role}
                                     </span>
-                                    {member.role !== ProjectMembershipRole.OWNER ? (
-                                        <button
-                                            onClick={() => onRemoveClick(member)}
-                                            className="text-gray-400 hover:text-red-500"
-                                            aria-label="Remove member"
-                                        >
-                                            <MinusCircle className={""} />
-                                        </button>
-                                    ) : (
-                                        <div className="w-5 h-5"></div>
-                                    )}
+
+                                    {/* Column 3: Remove Button (Fixed width for alignment) */}
+                                    <div className="flex justify-end">
+                                        {member.role !== ProjectMembershipRole.OWNER ? (
+                                            <button
+                                                onClick={() => onRemoveClick(member)}
+                                                className="text-gray-400 hover:text-red-500"
+                                                aria-label="Remove member"
+                                            >
+                                                <MinusCircle className={""} />
+                                            </button>
+                                        ) : (
+                                            <div className="w-5 h-5"></div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -335,3 +421,52 @@ export const InviteMembersModal = ({
 };
 
 export default InviteMembersModal;
+
+
+const EditingRoleInput = ({
+    initialName,
+    onSave,
+    onCancel,
+}: {
+    initialName: string;
+    onSave: (newRoleName: string) => void;
+    onCancel: () => void;
+}) => {
+    const [name, setName] = useState(initialName);
+
+    const handleSave = useCallback(() => {
+        if (name.trim() !== initialName.trim() && name.trim().length > 0) {
+            onSave(name.trim());
+        } else {
+            onCancel(); // Cancel if no valid change
+        }
+    }, [
+        onSave,
+        onCancel,
+        name,
+        initialName,
+    ]);
+
+    return (
+        <div className="flex items-center gap-1 w-full max-w-[200px] flex-shrink-0">
+            <input
+                autoFocus
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleSave();
+                    }
+                    if (e.key === "Escape") {
+                        onCancel();
+                    }
+                }}
+                className="w-full px-2 py-1 text-sm border border-blue-400 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                placeholder="Custom role name"
+            />
+            {/* The Save and Cancel buttons will be rendered inside the main list item now */}
+        </div>
+    );
+};

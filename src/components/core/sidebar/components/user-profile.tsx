@@ -15,7 +15,11 @@ export const UserProfile = ({ isCollapsed = false, onToggleCollapse }: { isColla
         setAvatarUrl(localStorage.getItem("avatarUrl"));
         setDisplayName(localStorage.getItem("displayName"));
         setEmail(localStorage.getItem("email"));
-    }, []);
+    }, [
+        localStorage.getItem("avatarUrl"),
+        localStorage.getItem("displayName"),
+        localStorage.getItem("email"),
+    ]);
 
     return (
         <div className={cn(

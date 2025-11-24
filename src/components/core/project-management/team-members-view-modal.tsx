@@ -14,7 +14,10 @@ export const TeamMembersViewModal = ({
 }: TeamMembersViewModalProps) => {
     return (
         // 4. Add relative class
-        <div className="w-full absolute top-[25%] left-[40%] max-w-[600px] p-8 bg-white rounded-2xl shadow-2xl">
+        <div className="
+            w-full absolute top-[25%] left-[30%] max-w-[600px] p-8 bg-white rounded-2xl shadow-2xl z-[9999]
+            animate-in fade-in slide-in-from-top-10 duration-500 ease-out
+        ">
 
             {/* --- 5. Add the 'X' Close Button --- */}
             <Button

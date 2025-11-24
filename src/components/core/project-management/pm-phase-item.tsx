@@ -47,7 +47,6 @@ function PM_PhaseItemBase({
 
     // 🆕 RBAC Check
     const canEditStructure = currentMember?.role === ProjectMembershipRole.OWNER;
-    const canView = true; // All users can view
 
     const animateLayoutChanges = (args: any) => {
         const { isSorting, wasDragging } = args;
@@ -157,6 +156,7 @@ function PM_PhaseItemBase({
         <div
             ref={setNodeRef}
             style={style}
+            id={phase.phaseIdStr}
             className={cn(
                 "ml-5 border-t border-gray-200",
                 canEditStructure ? 'cursor-grab' : 'cursor-default' // 🆕 Set cursor based on permission
