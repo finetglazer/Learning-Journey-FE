@@ -127,6 +127,48 @@ export class ProjectRepository extends BaseRepository {
         return this.http.put(`/${params.projectId}/tasks/${params.taskId}/status`, body)
             .pipe(map(res => res?.data));
     };
+
+    // Project summary metrics
+    public getDeliverableProgress = (params: { projectId: number }): Observable<any> => {
+        return this.http.get(`/${params.projectId}/summary/deliverable-progress`)
+            .pipe(map(res => res?.data));
+    };
+
+    /**
+     * Retrieves workload metrics showing task allocation across team members.
+     * Corresponds to: GET /{projectId}/summary/teammate-workload
+     */
+    public getTeammateWorkload = (params: { projectId: number }): Observable<any> => {
+        return this.http.get(`/${params.projectId}/summary/teammate-workload`)
+            .pipe(map(res => res?.data));
+    };
+
+    /**
+     * Retrieves key statistical data about tasks (e.g., completed, overdue, due soon).
+     * Corresponds to: GET /{projectId}/summary/task-stats
+     */
+    public getTaskStats = (params: { projectId: number }): Observable<any> => {
+        return this.http.get(`/${params.projectId}/summary/task-stats`)
+            .pipe(map(res => res?.data));
+    };
+
+    /**
+     * Retrieves data necessary to render the project's overall timeline or schedule.
+     * Corresponds to: GET /{projectId}/summary/timeline
+     */
+    public getProjectTimeline = (params: { projectId: number }): Observable<any> => {
+        return this.http.get(`/${params.projectId}/summary/timeline`)
+            .pipe(map(res => res?.data));
+    };
+
+    /**
+     * Retrieves a list of risks currently flagged as active for the project.
+     * Corresponds to: GET /{projectId}/summary/active-risks
+     */
+    public getActiveRisks = (params: { projectId: number }): Observable<any> => {
+        return this.http.get(`/${params.projectId}/summary/active-risks`)
+            .pipe(map(res => res?.data));
+    };
 };
 
 export const projectRepository = new ProjectRepository();

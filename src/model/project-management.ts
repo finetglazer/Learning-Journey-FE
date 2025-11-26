@@ -93,3 +93,57 @@ export interface PM_Deliverable {
     phases: PM_Phase[];  // Corresponds to List<PM_Phase>
     hasChildContainKeyword?: boolean;
 };
+
+export type TaskStatsByDeadline = { 
+    completed: number;
+    dueSoon: number;
+    overdue: number;
+    unassigned: number;
+};
+
+export type TaskStatsByStatus = {
+    toDo: number;
+    inProgress: number;
+    inReview: number;
+    done: number;
+};
+
+export type TaskStats = {
+    byStatus: TaskStatsByStatus;
+    byDeadline: TaskStatsByDeadline;
+};
+
+export type TimelineMilestone = {
+    id: number;
+    name: string;
+    date: string;   // YYYY-MM-DD
+};
+
+export type ProjectTimelineType = {
+    projectStartDate: string;   // YYYY-MM-DD
+    currentDate: string;        // YYYY-MM-DD
+    milestones: TimelineMilestone[];
+};
+
+export type ActiveRiskItem = {
+    key: string;
+    riskStatement: string;
+};
+
+export type ActiveRiskSummary = {
+    totalCount: number;
+    displayCount: number;
+    risks: ActiveRiskItem[];
+};
+
+export type DeliverableProgress = {
+    id: number;
+    name: string;
+    key: string;
+    percentage: number;
+};
+
+export type TeammateWorkload = {
+    name: string;
+    percentage: number;
+};

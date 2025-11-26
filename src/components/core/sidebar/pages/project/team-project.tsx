@@ -2,11 +2,12 @@ import { AlertModal } from "@/components/core/alert-modal/alert-modal";
 import InviteMembersModal from "@/components/core/project-management/invite-members-modal";
 import { ProjectHeader } from "@/components/core/project-management/project-header";
 import TeamMembersViewModal from "@/components/core/project-management/team-members-view-modal";
-import { PM_Task, Project } from "@/model/project-management";
-import { useContext, useMemo } from "react";
+import { Project } from "@/model/project-management";
+import { useContext } from "react";
 import { ListTab } from "./tabs/list-tab/list-tab";
 import { TaskboardTab } from "./tabs/task-board-tab/task-board-tab";
 import { TeamProjectContext, TeamProjectContextProps, TeamProjectTab } from "./team-project-context";
+import { SummaryTab } from "./tabs/summary-tab/summary-tab";
 
 export interface TeamProjectPageProps {
     currentSelectedProject: Project | null;
@@ -26,21 +27,8 @@ export const TeamProjectPage = ({
         getTeamMembers,
         members,
         currentMember,
-        deliverables,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
-
-    const allTasks = useMemo(() => {
-        let t: PM_Task[] = [];
-        deliverables.forEach(deliverable => {
-            deliverable.phases.forEach(phase => {
-                phase.tasks.forEach(task => {
-                    t.push(task);
-                })
-            })
-        });
-        return t;
-    }, [deliverables]);
-
+    
     return (
         <div className="relative w-full pl-2 pr-2">
             <ProjectHeader
@@ -57,9 +45,11 @@ export const TeamProjectPage = ({
             )}
 
             {tab === TeamProjectTab.TASK_BOARD && (
-                <TaskboardTab 
-                    tasks={allTasks}
-                />
+                <TaskboardTab />
+            )}
+
+            {tab === TeamProjectTab.SUMMARY && (
+                <SummaryTab />
             )}
 
             {/* Invite Members Modal */}

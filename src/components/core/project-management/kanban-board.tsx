@@ -14,18 +14,18 @@ import KanbanColumn from './kanban-column';
 import TaskCard from './kanban-task-card';
 import { KanbanColumnsType, KanbanColumnType } from './type';
 
-// Define a default empty state for initial rendering
-const EMPTY_COLUMNS: KanbanColumnsType = {
-    [TaskStatus.TO_DO]: { id: TaskStatus.TO_DO, title: 'TO DO', tasks: [] },
-    [TaskStatus.IN_PROGRESS]: { id: TaskStatus.IN_PROGRESS, title: 'IN PROGRESS', tasks: [] },
-    [TaskStatus.IN_REVIEW]: { id: TaskStatus.IN_REVIEW, title: 'IN REVIEW', tasks: [] },
-    [TaskStatus.DONE]: { id: TaskStatus.DONE, title: 'DONE', tasks: [] },
-};
-
 export interface KanbanBoardProps {
 };
 
 const KanbanBoard: React.FC<KanbanBoardProps> = () => {
+    // Define a default empty state for initial rendering
+    const EMPTY_COLUMNS: KanbanColumnsType = {
+        [TaskStatus.TO_DO]: { id: TaskStatus.TO_DO, title: 'TO DO', tasks: [] },
+        [TaskStatus.IN_PROGRESS]: { id: TaskStatus.IN_PROGRESS, title: 'IN PROGRESS', tasks: [] },
+        [TaskStatus.IN_REVIEW]: { id: TaskStatus.IN_REVIEW, title: 'IN REVIEW', tasks: [] },
+        [TaskStatus.DONE]: { id: TaskStatus.DONE, title: 'DONE', tasks: [] },
+    };
+
     const [tasks, setTasks] = useState<PM_Task[]>([]);
     const [columns, setColumns] = useState<KanbanColumnsType>(EMPTY_COLUMNS);
     const [activeTask, setActiveTask] = useState<PM_Task | null>(null);
@@ -149,7 +149,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = () => {
             projectId: selectedProject.id,
         }, {
             search: searchQuery,
-            isMyTask: showMyTasks,
+            showMyTask: showMyTasks,
         }).subscribe({
             next: res => {
                 if (res?.status) {

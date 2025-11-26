@@ -385,7 +385,7 @@ export default function RootPage() {
             {/* --- Sidebar --- */}
             <div
               className={`transition-all duration-300 ease-in-out ${isSidebarCollapse ? "w-[80px]" : "w-[250px]"
-                } h-full bg-gray-50 border-r border-gray-200 shadow-md`}
+                } h-auto bg-gray-50 border-r border-gray-200 shadow-md`}
               onClick={() => {
                 setModalStates([false, false, false, false]);
                 setCurrentSelectedProject(null);
