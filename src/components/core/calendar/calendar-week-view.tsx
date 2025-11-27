@@ -14,7 +14,7 @@ import { dayJsToISOString, toDayJs } from "@/lib/utils";
 import { Task, UnscheduledRoutine, UnscheduledTask } from "@/model/task";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { isNil } from "lodash";
-import { ClipboardList, Clock } from "lucide-react";
+import { ClipboardList, Clock, Users } from "lucide-react";
 import { useContext, useRef } from "react";
 import { AlertModal } from "../alert-modal/alert-modal";
 import { RoundedButton } from "../button/rounded-button";
@@ -28,6 +28,7 @@ import { DraggableTask } from "./draggable-task";
 import { UnscheduledRoutineItem } from "./unscheduled-routine-item";
 import { UnscheduledTaskItem } from "./unscheduled-task-item";
 import React from "react";
+import { CollapsibleUnscheduledBufferListPanel } from "./collapsible-unscheduled-buffer-list-panel";
 
 export interface WeekViewCalendarProps {
     tasks?: Task[];
@@ -78,6 +79,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
         onDragEnd,
         handleCellClick,
         getSleepBlocks,
+        isPanelBufferListDragging,
     } = useContext<CalendarContextInterface>(CalendarContext);
 
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -88,7 +90,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                 {/* ====== Header (Same as before) ====== */}
                 <CardHeader className="grid grid-cols-[auto_1fr_auto] items-center p-4 border-b border-gray-200 bg-slate-100/60 rounded-t-xl">
                     <div className="text-sm font-semibold text-slate-600 whitespace-nowrap">
-                        Private calendar / <span className="text-slate-800">Day View</span>
+                        Private calendar / <span className="text-slate-800">Week View</span>
                     </div>
                     {/* Centered Controls */}
                     <div className="flex items-center justify-center gap-4">
@@ -119,7 +121,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                         <Clock className="w-4 h-4 mx-auto text-slate-400" />
                                     </TableHead>
                                     {DAYS_OF_WEEK.map((day, index) => {
-                                        const currentRenderDay = currentMondayTime.add(index, "day").get("day");
+                                        const currentRenderDay = currentMondayTime.add(index, "day").get("date");
                                         const content = day.concat(" ").concat(currentRenderDay.toString().padStart(2, "0"));
                                         return (
                                             <TableHead
@@ -141,8 +143,8 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                         return (
                                             <TableCell
                                                 key={`all-day-${index}`}
-                                                className="text-left max-w-16.5 min-w-16.5 p-1 align-top border-b border-gray-200" 
-                                                style={{ minHeight: "2.5rem" }} 
+                                                className="text-left max-w-16.5 min-w-16.5 p-1 align-top border-b border-gray-200"
+                                                style={{ minHeight: "2.5rem" }}
                                             >
                                                 <div>
                                                     {Object.keys(calendarMap).map((id: string) => {
@@ -151,7 +153,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                                             const currentCalendarMapMonth = toDayJs(id, 0).get("month");
 
                                                             if (task?.type !== "memorable_event" || (currentRenderDay !== currentCalendarMapDay || currentRenderMonth !== currentCalendarMapMonth)) {
-                                                                return <React.Fragment key={`${id}-${index}`}></React.Fragment> 
+                                                                return <React.Fragment key={`${id}-${index}`}></React.Fragment>
                                                             }
                                                             return (
                                                                 <DraggableTask
@@ -249,8 +251,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                             <CollapsibleUnscheduledPanel
                                 unscheduledMonthData={unscheduledMonthData}
                                 position={panelPosition}
-                                handleRemoveUnscheduledBigTask={handleRemoveUnscheduledBigTask}
-                                handleRemoveUnscheduledSubTask={handleRemoveUnscheduledSubTask}
+                                handleRemoveUnscheduledSubTask={handleRemoveUnscheduledSubTask as any}
                                 onUnscheduledTaskTitleChange={onChangeUnscheduledTaskTitle}
                                 setUnscheduledMonthData={setUnscheduledMonthData}
                                 draggingUnscheduledTaskId={draggingUnscheduledTaskId}
@@ -258,6 +259,9 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                 selectedTaskId={selectedTaskId}
                                 selectedRoutineId={selectedRoutineId}
                             />
+
+                            <CollapsibleUnscheduledBufferListPanel />
+
                             <DragOverlay>
                                 {/* For scheduled items */}
                                 {!isNil(draggingScheduledTaskId) ? (
@@ -267,6 +271,13 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                     <div className="h-16 w-16 rounded-full bg-gray-700 border-4 border-white p-0 shadow-lg">
                                         <div className="flex h-full w-full items-center justify-center rounded-full bg-sky-300">
                                             <ClipboardList className="h-8 w-8 text-black" />
+                                        </div>
+                                    </div>
+                                )}
+                                {isPanelBufferListDragging && (
+                                    <div className="h-16 w-16 rounded-full bg-gray-700 border-4 border-white p-0 shadow-lg">
+                                        <div className="flex h-full w-full items-center justify-center rounded-full bg-sky-300">
+                                            <Users className="h-8 w-8 text-black" />
                                         </div>
                                     </div>
                                 )}

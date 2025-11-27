@@ -147,3 +147,16 @@ export type TeammateWorkload = {
     name: string;
     percentage: number;
 };
+
+export type ProjectGroup = {
+    projectId: number;
+    projectName: string;
+    tasks: UserTaskItem[];
+};
+
+export type UserTaskItem = {
+    pmTaskId: number;
+    name: string;
+    deadline: string;   // YYYY-MM-DD
+    overdue: boolean;
+};

@@ -170,7 +170,7 @@ export function CollapsibleUnscheduledPanel({
                         className="w-[350px] bg-white shadow-lg rounded-lg font-sans flex flex-col"
                     >
                         <div
-                            className="flex justify-between items-center p-4 border-b cursor-grab" // Added padding here
+                            className="flex justify-between items-center p-4 border-b cursor-grab"
                             onClick={() => setIsCollapsed(true)}
                         >
                             <h3 className="font-semibold text-lg">Unscheduled Tasks</h3>

@@ -128,6 +128,12 @@ export class ProjectRepository extends BaseRepository {
             .pipe(map(res => res?.data));
     };
 
+    public getUserProjectTasks = (): Observable<any> => {
+        // projectId = 0 because this API does not depend on projectId
+        return this.http.get(`/user/tasks`)
+            .pipe(map(res => res?.data));
+    };
+
     // Project summary metrics
     public getDeliverableProgress = (params: { projectId: number }): Observable<any> => {
         return this.http.get(`/${params.projectId}/summary/deliverable-progress`)

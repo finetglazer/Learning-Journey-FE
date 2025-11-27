@@ -7,7 +7,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Calendar, CheckSquare, Repeat } from "lucide-react";
+import { Calendar, CheckSquare, Repeat, Users } from "lucide-react";
 import { useContext } from "react";
 import { CalendarContext, CalendarContextInterface } from "../calendar/calendar-context";
 
@@ -16,6 +16,7 @@ export const typeConfig = {
     task: { label: "Task", Icon: CheckSquare, color: "bg-pink-500" },
     "big-task": { label: "Big task", Icon: CheckSquare, color: "bg-pink-500" },
     routine: { label: "Routine", Icon: Repeat, color: "bg-green-400" },
+    "project_work": { label: "Project task", Icon: Users, color: "bg-yellow-500" },
 };
 
 export type TaskType = keyof typeof typeConfig;
@@ -46,13 +47,17 @@ export function TaskTypeDropdown({ currentType, onTypeChange }: TaskTypeDropdown
                     {label}
                 </Button>
             </DropdownMenuTrigger>
+            {/* Dropdown menu would not contain PROJECT_WORK type */}
             <DropdownMenuContent className="z-[99999]">
-                {Object.entries(customTypeConfig).map(([key, { label, Icon }]) => (
-                    <DropdownMenuItem key={key} onSelect={() => onTypeChange(key as TaskType)} className="cursor-pointer">
-                        <Icon className="mr-2 h-4 w-4" />
-                        <span>{label}</span>
-                    </DropdownMenuItem>
-                ))}
+                {Object.entries(customTypeConfig)
+                    // Filter out the specific key here
+                    .filter(([key]) => key !== 'project_work')
+                    .map(([key, { label, Icon }]) => (
+                        <DropdownMenuItem key={key} onSelect={() => onTypeChange(key as TaskType)} className="cursor-pointer">
+                            <Icon className="mr-2 h-4 w-4" />
+                            <span> {label}</span>
+                        </DropdownMenuItem>
+                    ))}
             </DropdownMenuContent>
         </DropdownMenu>
     );

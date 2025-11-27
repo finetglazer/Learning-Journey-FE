@@ -435,7 +435,7 @@ export const TaskEditor = ({
                                 const { label, Icon, color } = typeConfig[typeKey];
                                 return (
                                     <div
-                                        className={`flex items-center cursor-default gap-2 rounded-md px-3 py-1 h-auto w-[100px] text-xs font-medium text-white ${color}`}
+                                        className={`flex items-center cursor-default gap-2 rounded-md px-3 py-1 h-auto w-[35%] text-xs font-medium text-white ${color}`}
                                     >
                                         <Icon size={14} />
                                         {label}

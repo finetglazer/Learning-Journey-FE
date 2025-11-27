@@ -1,21 +1,23 @@
-import { dayJsToISOString, getBigTask, getDetails, getEditorAdjustedPosition, getMondayOfThisWeek, getMonthName, getPercentageHeight, getRoutineById, getTaskById, initCalendarMap, reId, timeToFractionalHours, toDayJs, uuid4 } from "@/lib/utils";
+import { AppContext, AppContextProps } from "@/hooks/app-context";
+import { dayJsToISOString, getBigTask, getDetails, getEditorAdjustedPosition, getMondayOfThisWeek, getMonthName, getPercentageHeight, getProjectTaskById, getRoutineById, getTaskById, initCalendarMap, reId, timeToFractionalHours, toDayJs, uuid4 } from "@/lib/utils";
+import { ProjectGroup, UserTaskItem } from "@/model/project-management";
 import { Task, UnscheduledBigTask, UnscheduledMonthData, UnscheduledRoutine, UnscheduledTask } from "@/model/task";
 import { calendarRepository } from "@/repository/calendar-repository";
+import { projectRepository } from "@/repository/project-repository";
 import { DragEndEvent, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import dayjs, { Dayjs } from "dayjs";
 import { isNil } from "lodash";
 import React, { createContext, Dispatch, SetStateAction, useContext, useEffect, useState } from "react";
+import { finalize } from "rxjs";
 import { toast } from "sonner";
 import { AlertMessage } from "../alert-modal/alert-modal";
+import { TeamProjectContext, TeamProjectContextProps } from "../sidebar/pages/project/team-project-context";
 import { DraggableTask } from "./draggable-task";
-import { AppContext, AppContextProps } from "@/hooks/app-context";
-
-export interface CalendarContextProps {
-    initTasks?: Task[];
-};
 
 export interface CalendarContextInterface {
     currentDate: Dayjs;
+    projectGroups: ProjectGroup[];
+    setProjectGroups: Dispatch<SetStateAction<ProjectGroup[]>>;
     setCurrentDate: Dispatch<SetStateAction<Dayjs>>;
     tasksStyle: Record<string, any>;
     calendarMap: Record<string, any[]>;
@@ -61,6 +63,11 @@ export interface CalendarContextInterface {
         x: number;
         y: number;
     }>>;
+    panelBufferListPosition: { x: number; y: number; };
+    setPanelBufferListPosition: Dispatch<React.SetStateAction<{
+        x: number;
+        y: number;
+    }>>;
     getSleepBlocks: () => {
         top: string;
         height: string;
@@ -73,6 +80,10 @@ export interface CalendarContextInterface {
     // For EDITING unscheduled and scheduled routine
     selectedRoutineId: string | number | null;
     setSelectedRoutineId: Dispatch<SetStateAction<string | number | null>>;
+
+    // For DRAGGING project task 
+    draggingProjectTaskId: number | null;
+    setDraggingProjectTaskId: Dispatch<SetStateAction<number | null>>;
 
     // For DRAGGING unscheduled task
     draggingUnscheduledTaskId: string | number | null;
@@ -89,6 +100,8 @@ export interface CalendarContextInterface {
     // For DRAGGING unscheduled items panel
     isPanelDragging: boolean;
     setIsPanelDragging: Dispatch<SetStateAction<boolean>>;
+    isPanelBufferListDragging: boolean;
+    setIsPanelBufferListDragging: Dispatch<SetStateAction<boolean>>;
 
     // For editing CREATED task and NEW task 
     editingTask: Task | Partial<Task> | null;
@@ -97,6 +110,7 @@ export interface CalendarContextInterface {
     getDraggingRoutine: () => any;
     getDraggingTask: () => any;
     getDraggableTaskOverlay: () => any;
+    getDraggingProjectTask: () => any;
     onDeleteCalendarItem: (itemId?: number | string | null) => void;
 
     onDragStart: (event: DragStartEvent) => void;
@@ -113,6 +127,8 @@ export const CalendarContext = createContext<CalendarContextInterface>({
     setCurrentDate: () => { },
     tasksStyle: {},
     calendarMap: {},
+    projectGroups: [],
+    setProjectGroups: () => { },
     currentView: "week",
     setCurrentView: () => { },
     updatedTasks: [],
@@ -121,6 +137,8 @@ export const CalendarContext = createContext<CalendarContextInterface>({
     editorPosition: { x: 0, y: 0 },
     setEditorPosition: () => { },
     panelPosition: { x: 0, y: 0 },
+    panelBufferListPosition: { x: 0, y: 0 },
+    setPanelBufferListPosition: () => { },
     unscheduledMonthData: [],
     setUnscheduledMonthData: () => { },
     activeUnscheduledTask: undefined,
@@ -161,6 +179,8 @@ export const CalendarContext = createContext<CalendarContextInterface>({
     setSelectedRoutineId: () => { },
 
     // Dragging state for items
+    draggingProjectTaskId: null,
+    setDraggingProjectTaskId: () => { },
     draggingUnscheduledTaskId: null,
     setDraggingUnscheduledTaskId: () => { },
     draggingScheduledTaskId: null,
@@ -171,12 +191,15 @@ export const CalendarContext = createContext<CalendarContextInterface>({
     // Dragging state for the panel
     isPanelDragging: false,
     setIsPanelDragging: () => { },
+    isPanelBufferListDragging: false,
+    setIsPanelBufferListDragging: () => { },
 
     // Editor state for new/created tasks
     editingTask: null,
     setEditingTask: () => { },
     getDraggingRoutine: () => { },
     getDraggingTask: () => { },
+    getDraggingProjectTask: () => { },
     getDraggableTaskOverlay: () => { },
     onDeleteCalendarItem: () => { },
 
@@ -190,18 +213,18 @@ export const CalendarContext = createContext<CalendarContextInterface>({
     getSleepBlocks: () => [],
 });
 
-export const useCalendarHooks = ({
-    initTasks,
-}: CalendarContextProps) => {
+export const useCalendarHooks = () => {
     const [currentDate, setCurrentDate] = useState<Dayjs>(toDayJs());
     const [tasksStyle, setTasksStyle] = useState<Record<string, any>>({});
     const [calendarMap, setCalendarMap] = useState<Record<string, any[]>>({});
     const [currentMondayTime, setCurrentMondayTime] = useState<Dayjs>(getMondayOfThisWeek());
     const [currentView, setCurrentView] = useState<string>("day");
-    const [updatedTasks, setUpdatedTasks] = useState<Task[]>(reId(initTasks || []));
+    const [updatedTasks, setUpdatedTasks] = useState<Task[]>(reId([]));
+    const [projectGroups, setProjectGroups] = useState<ProjectGroup[]>([]);
     const [activeDragId, setActiveDragId] = useState<string | null>(null);
     const [editorPosition, setEditorPosition] = useState({ x: 0, y: 0 });
     const [panelPosition, setPanelPosition] = useState({ x: 20, y: 100 });
+    const [panelBufferListPosition, setPanelBufferListPosition] = useState({ x: 20, y: 100 });
     const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
 
     const [unscheduledMonthData, setUnscheduledMonthData] = useState<UnscheduledMonthData[]>([]);
@@ -214,6 +237,10 @@ export const useCalendarHooks = ({
     const hours = Array.from({ length: 24 }, (_, i) =>
         i.toString().padStart(2, "0")
     ); // 00 to 23
+
+    const {
+        selectedProject,
+    } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -383,6 +410,11 @@ export const useCalendarHooks = ({
         currentView,
         currentDate,
     ]);
+
+    useEffect(() => {
+        getUserProjectTasks();
+    }, []);
+
     // console.log("updatedTasks", updatedTasks);
     // console.log("calendarMap", calendarMap)
     // console.log("tasksStyle", tasksStyle);
@@ -405,7 +437,9 @@ export const useCalendarHooks = ({
     const [selectedTaskId, setSelectedTaskId] = useState<string | number | null>(null);
     // For EDITING unscheduled and scdeduled routine
     const [selectedRoutineId, setSelectedRoutineId] = useState<string | number | null>(null);
-    // For DRAGGING unscheduled task
+    // For DRAGGING project task
+    const [draggingProjectTaskId, setDraggingProjectTaskId] = useState<number | null>(null);
+    // For DRAGGING scheduled task
     const [draggingUnscheduledTaskId, setDraggingUnscheduledTaskId] = useState<string | number | null>(null);
     // For DRAGGING scheduled task
     const [draggingScheduledTaskId, setDraggingScheduledTaskId] = useState<string | number | null>(null);
@@ -413,6 +447,8 @@ export const useCalendarHooks = ({
     const [draggingUnscheduledRoutineId, setDraggingUnscheduledRoutineId] = useState<string | number | null>(null);
     // For DRAGGING unscheduled items panel
     const [isPanelDragging, setIsPanelDragging] = useState<boolean>(false);
+    // For DRAGGING unscheduled buffer list panel
+    const [isPanelBufferListDragging, setIsPanelBufferListDragging] = useState<boolean>(false);
     // For editing CREATED task and NEW task 
     const [editingTask, setEditingTask] = useState<Task | Partial<Task> | null>(null);
     const {
@@ -540,6 +576,10 @@ export const useCalendarHooks = ({
         return getRoutineById(unscheduledMonthData, draggingUnscheduledRoutineId, []);
     };
 
+    const getDraggingProjectTask = () => {
+        return getProjectTaskById(projectGroups, draggingProjectTaskId);
+    };
+
     const onDeleteCalendarItem = (itemId?: number | string | null, wouldGetUnscheduledItems?: boolean) => {
         // itemId could only be number
         calendarRepository.deleteCalendarItem(itemId as number)
@@ -576,29 +616,54 @@ export const useCalendarHooks = ({
     };
 
     const onDragStart = (event: DragStartEvent) => {
+        console.log(event.active.id)
         if (event.active?.data?.current?.type === "unscheduled-task") {
             setDraggingUnscheduledTaskId(event.active.id);
+            setDraggingProjectTaskId(null);
             setDraggingUnscheduledRoutineId(null);
             setDraggingScheduledTaskId(null);
             setIsPanelDragging(false);
+            setIsPanelBufferListDragging(false);
+        }
+        if (event.active?.data?.current?.type === "project-task") {
+            setDraggingUnscheduledTaskId(null);
+            setDraggingProjectTaskId(event.active.id as number);
+            setDraggingUnscheduledRoutineId(null);
+            setDraggingScheduledTaskId(null);
+            setIsPanelDragging(false);
+            setIsPanelBufferListDragging(false);
         }
         else if (event.active?.data?.current?.type === "unscheduled-routine") {
             setDraggingUnscheduledTaskId(null);
+            setDraggingProjectTaskId(null);
             setDraggingUnscheduledRoutineId(event.active.id);
             setDraggingScheduledTaskId(null);
             setIsPanelDragging(false);
+            setIsPanelBufferListDragging(false);
         }
         else if (event.active?.id === "draggable-panel") {
             setDraggingUnscheduledTaskId(null);
+            setDraggingProjectTaskId(null);
             setDraggingUnscheduledRoutineId(null);
             setDraggingScheduledTaskId(null);
             setIsPanelDragging(true);
+            setIsPanelBufferListDragging(false);
+        }
+        else if (event.active?.data?.current?.type === "draggable-panel-buffer-list") {
+            setDraggingUnscheduledTaskId(null);
+            setDraggingProjectTaskId(null);
+            setDraggingUnscheduledRoutineId(null);
+            setDraggingScheduledTaskId(null);
+            setIsPanelDragging(false);
+            setIsPanelBufferListDragging(true);
         }
         else if (["task", "event"].includes((event.active?.data?.current?.type || "").toLowerCase())) {
             setDraggingUnscheduledTaskId(null);
+            setDraggingProjectTaskId(null);
             setDraggingUnscheduledRoutineId(null);
             setDraggingScheduledTaskId(event.active.id);
             setIsPanelDragging(false);
+            setIsPanelBufferListDragging(false);
         }
     };
 
@@ -691,7 +756,7 @@ export const useCalendarHooks = ({
         }
         setUnscheduledMonthData([...unscheduledMonthData].splice(updatedMonthDataItemIndex, 1, updatedMonthDataItem));
         // Return monthPlanId, new routine list for using by other functions
-        return { 
+        return {
             monthPlanId: unscheduledMonthData[updatedMonthDataItemIndex]?.monthPlanId,
             newRoutineList: (updatedMonthDataItem?.unscheduledRoutines || []).map((routine: any) => routine?.name)
         };
@@ -707,7 +772,7 @@ export const useCalendarHooks = ({
         if (!res) {
             return;
         }
-        const {monthPlanId, newRoutineList} = res;
+        const { monthPlanId, newRoutineList } = res;
         updateRoutineList(monthPlanId as number, newRoutineList, true);
     };
 
@@ -819,9 +884,23 @@ export const useCalendarHooks = ({
                     console.log("Error occurs while fetching unscheduled items", err);
                 }
             });
-    }
+    };
 
-    const onDragEnd = (event: DragEndEvent) => {
+    const getUserProjectTasks = () => {
+        projectRepository.getUserProjectTasks().subscribe({
+            next: res => {
+                if (res?.status) {
+                    setProjectGroups(res?.data?.projects || []);
+                }
+                else {
+                    toast.error(res?.msg || res?.message);
+                }
+            },
+            error: err => { },
+        });
+    };
+
+    const onDragEnd = (event: DragEndEvent, forceToProceed?: boolean) => {
         const droppedCellId = String(event.over?.id || null);
         // For unscheduled tasks panel
         if (event.active.id === 'draggable-panel') {
@@ -830,6 +909,87 @@ export const useCalendarHooks = ({
                 y: prev.y + event.delta.y,
             }));
             setIsPanelDragging(false);
+            return;
+        }
+        // For buffer list panel
+        if (event.active.id === 'draggable-panel-buffer-list') {
+            setPanelBufferListPosition(prev => ({
+                x: prev.x + event.delta.x,
+                y: prev.y + event.delta.y,
+            }));
+            setIsPanelBufferListDragging(false);
+            return;
+        }
+        // For project task
+        if (!isNil(draggingProjectTaskId)) {
+            const projectTask: UserTaskItem | undefined = getProjectTaskById(projectGroups, draggingProjectTaskId);
+            if (!projectTask) {
+                return;
+            }
+            if (projectTask.overdue && !forceToProceed) {
+                setAlertMessage({
+                    type: "warning",
+                    title: "This task is overdue",
+                    description: "Would you like to continue add this task to calendar?",
+                    proceedAnyway: () => {
+                        onDragEnd(event, true);
+                    },
+                })
+                return;
+            }
+            const cellId = String(event.over?.id);
+            const newTask: Task = {
+                ...projectTask,
+                id: draggingProjectTaskId,
+                startTime: cellId,
+                endTime: dayJsToISOString(toDayJs(cellId).add(15, "minute")),
+                name: projectTask.name || "",
+                type: "project_work",
+                status: 'incomplete',
+                completionPercentage: 0,
+            };
+
+            // Temporarily update updatedTasks
+            setUpdatedTasks([...updatedTasks, newTask]);
+
+            calendarRepository.createCalendarItem(
+                {
+                    ...newTask,
+                    type: (newTask?.type as string).toUpperCase(),
+                    name: newTask?.name,
+                    calendarId: Number(localStorage.getItem("calendarId")),
+                    timeSlot: {
+                        startTime: newTask?.startTime,
+                        endTime: newTask?.endTime,
+                    },
+                    pmTaskId: draggingProjectTaskId,
+                })
+                .pipe(finalize(() => {
+                    setDraggingProjectTaskId(null);
+                    handleReload();
+                }))
+                .subscribe({
+                    next: res => {
+                        const success = res?.status;
+                        if (success) { }
+                        else {
+                            setAlertMessage({
+                                type: "warning",
+                                title: res?.msg,
+                                description: res?.data,
+                            });
+                        }
+                    },
+                    error: err => {
+                        const errors = err?.response?.data?.data;
+                        const message = err?.response?.data?.msg || err?.response?.data?.message;
+                        setAlertMessage({
+                            type: "warning",
+                            title: message,
+                            description: errors,
+                        });
+                    },
+                });
             return;
         }
         // For unscheduled task
@@ -1027,6 +1187,8 @@ export const useCalendarHooks = ({
         setCurrentDate,
         tasksStyle,
         calendarMap,
+        projectGroups,
+        setProjectGroups,
         topPosition,
         currentView,
         setCurrentView,
@@ -1066,12 +1228,19 @@ export const useCalendarHooks = ({
         draggingUnscheduledRoutineId,
         setDraggingUnscheduledRoutineId,
         isPanelDragging,
+        isPanelBufferListDragging,
         setIsPanelDragging,
+        setIsPanelBufferListDragging,
+        panelBufferListPosition,
+        setPanelBufferListPosition,
         editingTask,
+        draggingProjectTaskId,
+        setDraggingProjectTaskId,
         setEditingTask,
         getDraggingRoutine,
         getDraggingTask,
         getDraggableTaskOverlay,
+        getDraggingProjectTask,
         onDeleteCalendarItem,
         onDragStart,
         onDragEnd,

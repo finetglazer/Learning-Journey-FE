@@ -31,7 +31,6 @@ export const UnscheduledItemsForMonth = ({
     const [isPanelOpen, setIsPanelOpen] = useState(true);
     const [isRoutinesOpen, setIsRoutinesOpen] = useState(!!(unscheduledRoutines || []).length);
     const [isTasksOpen, setIsTasksOpen] = useState(!!(unscheduledBigTasks || []).length);
-    const [selectedItem, setSelectedItem] = useState<string>("");
     const [openTasks, setOpenTasks] = useState(Object.fromEntries(
         (unscheduledBigTasks || []).map(task => [task?.bigTaskId, false])
     ));

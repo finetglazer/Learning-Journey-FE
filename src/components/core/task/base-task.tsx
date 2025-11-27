@@ -2,7 +2,7 @@ import { CALENDAR_VIEW_OPTIONS } from '@/const/consts';
 import { cn, isoToHHMM, toDayJs } from '@/lib/utils';
 import { MonthPlanningBigTask, MonthPlanningEvent, Task } from '@/model/task';
 import { Tooltip } from 'antd';
-import { Save, Trash2 } from 'lucide-react';
+import { Bookmark, Save, Trash2 } from 'lucide-react';
 import React, { CSSProperties, Dispatch, SetStateAction, useEffect, useState } from 'react';
 
 export interface BaseTaskProps {
@@ -194,8 +194,8 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
         <Tooltip title={getTooltipTitle()} placement="top">
             <div
                 key={key}
-                className={cn("border-3 border-sky-300 bg-stone-50 cursor-pointer rounded-lg p-4 w-full",
-                    { "border-[#E62E7B]": type === "task" || type === "big-task" },
+                className={cn("border-3 relative border-sky-300 bg-stone-50 cursor-pointer rounded-lg p-4 w-full",
+                    { "border-[#E62E7B]": type === "task" || type === "big-task" || type === "project_work" },
                     { "border-[#68DE79]": type === "routine" },
                     { "border-[#91EEFF] !h-[50px]": type === "memorable_event" },
                     wrapperClassName,
@@ -203,18 +203,30 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                 style={{ ...wrapperStyle }}
                 onDoubleClick={(e) => handleDoubleClick?.(e, taskId as number, undefined, scrollContainerRef)}
             >
+                {type === "project_work" && (
+                    <div
+                        className="absolute top-0 right-8 transform translate-x-1/4 -translate-y-1/4"
+                        style={{ zIndex: 99 }}
+                    >
+                        <Bookmark
+                            size={25}
+                            className="text-[#E62E7B] fill-white drop-shadow-sm"
+                            strokeWidth={2}
+                        />
+                    </div>
+                )}
                 {type !== "memorable_event" && (
                     <div className={cn("flex items-center gap-2", badgeWrapperClassName)}>
                         <div className={cn("rounded bg-sky-400 px-2 py-1 text-xs font-bold text-white",
                             { "bg-[#68DE79]": type === "routine" },
-                            { "bg-[#E62E7B]": type === "task" || type === "big-task" },
+                            { "bg-[#E62E7B]": type === "task" || type === "big-task" || type === "project_work" },
                             badgeClassName,
                         )}>
                             {isoToHHMM((task as Task).startTime)}
                         </div>
                         <div className={cn("rounded bg-sky-400 px-2 py-1 text-xs font-bold text-white",
                             { "bg-[#68DE79]": type === "routine" },
-                            { "bg-[#E62E7B]": type === "task" || type === "big-task" },
+                            { "bg-[#E62E7B]": type === "task" || type === "big-task" || type === "project_work" },
                             badgeClassName,
                         )}>
                             {isoToHHMM((task as Task).endTime)}

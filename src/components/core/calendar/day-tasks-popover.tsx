@@ -5,7 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn, dayJsToISOString, getEditorAdjustedPosition, toDayJs } from "@/lib/utils";
 import { MonthPlanningBigTask, MonthPlanningEvent, Task, UnscheduledTask } from "@/model/task";
 import { format } from "date-fns";
-import { PlusCircle, X } from "lucide-react";
+import { PlusCircle, Users, X } from "lucide-react";
 import { Dispatch, SetStateAction, useState } from "react";
 
 interface DayTasksPopoverProps {
@@ -102,6 +102,9 @@ export function DayTasksPopover({
                                 )}
                                 onClick={(e) => {
                                     e.stopPropagation();
+                                    if (((task as any)?.type || "").toLowerCase() === "memorable_event") {
+                                        return;
+                                    }
                                     if (isBigTask(task)) {
                                         // Toggle big task menu
                                         setBigTaskMenuOpen(isMenuOpen ? null : taskId);
@@ -144,12 +147,18 @@ export function DayTasksPopover({
                                     <>
                                         <div
                                             className={cn("h-4 w-1.5 rounded-full shrink-0", {
-                                                "bg-blue-400": isEvent(task),
+                                                "bg-[#91EEFF]": ((task as any)?.type || "").toLowerCase() === "memorable_event",
+                                                "bg-blue-400": isEvent(task) || ((task as any)?.type || "").toLowerCase() === "event",
                                                 "bg-[#68DE79]": typeof task === "string" || ((task as any)?.type || "").toLowerCase() === "routine",
-                                                "bg-[#E62E7B]": isBigTask(task) || ((task as any)?.type || "").toLowerCase() === "task",
+                                                "bg-[#E62E7B]": isBigTask(task) || ((task as any)?.type || "").toLowerCase() === "task" || ((task as any)?.type || "").toLowerCase() === "project_work",
                                             })}
                                         />
                                         <span className="truncate">{typeof task === "string" ? task : task?.name}</span>
+                                        {((task as any)?.type || "").toLowerCase() === "project_work" && (
+                                            <Users 
+                                                size={16}
+                                            />
+                                        )}
                                     </>
                                 )}
 

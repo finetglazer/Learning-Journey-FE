@@ -364,14 +364,14 @@ export default function RootPage() {
   }, [activeItem, currentView]);
 
   return (
-    <CalendarContext.Provider value={calendarContextValues}>
-      <TeamProjectContext.Provider value={useTeamProjectHooks(currentSelectedProject)}>
+    <TeamProjectContext.Provider value={useTeamProjectHooks(currentSelectedProject)}>
+      <CalendarContext.Provider value={calendarContextValues}>
         <div className="relative">
           {isModalOpen && (
             <div
               className="fixed inset-0 bg-black/50 z-[1000] transition-opacity duration-300"
               // Close all modals when clicking the backdrop
-              onClick={() => setModalStates([false, false, false, false])} 
+              onClick={() => setModalStates([false, false, false, false])}
             />
           )}
 
@@ -463,7 +463,7 @@ export default function RootPage() {
             )}
           </div>
         </div>
-      </TeamProjectContext.Provider>
-    </CalendarContext.Provider>
+      </CalendarContext.Provider>
+    </TeamProjectContext.Provider>
   );
 };

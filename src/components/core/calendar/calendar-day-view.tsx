@@ -2,9 +2,9 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { dayJsToISOString } from "@/lib/utils";
 import { Task, UnscheduledRoutine, UnscheduledTask } from "@/model/task";
-import { DndContext, DragOverlay, useDndContext, useDraggable } from "@dnd-kit/core";
+import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { isNil } from "lodash";
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, Users } from "lucide-react";
 import { useContext, useRef } from "react";
 import { AlertModal } from "../alert-modal/alert-modal";
 import { RoundedButton } from "../button/rounded-button";
@@ -17,6 +17,8 @@ import { CollapsibleUnscheduledPanel } from "./collapsible-unscheduled-items-pan
 import { DraggableTask } from "./draggable-task";
 import { UnscheduledRoutineItem } from "./unscheduled-routine-item";
 import { UnscheduledTaskItem } from "./unscheduled-task-item";
+import { CollapsibleUnscheduledBufferListPanel } from "./collapsible-unscheduled-buffer-list-panel";
+import { BufferListProjectTask } from "./buffer-list-project-task";
 export const CalendarDayView = () => {
     const {
         tasksStyle,
@@ -60,6 +62,9 @@ export const CalendarDayView = () => {
         onDragEnd,
         getSleepBlocks,
         handleCellClick,
+        isPanelBufferListDragging,
+        draggingProjectTaskId,
+        getDraggingProjectTask,
     } = useContext<CalendarContextInterface>(CalendarContext);
 
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -180,13 +185,28 @@ export const CalendarDayView = () => {
                             selectedTaskId={selectedTaskId}
                             selectedRoutineId={selectedRoutineId}
                         />
+                        
+                        <CollapsibleUnscheduledBufferListPanel />
+
                         <DragOverlay>
                             {/* For scheduled items */}
                             {!isNil(draggingScheduledTaskId) ? (
                                 getDraggableTaskOverlay()
                             ) : null}
                             {isPanelDragging && (
-                                <PanelDragOverlay />
+                                <PanelDragOverlay 
+                                    type={"unscheduled-task-panel"}
+                                />
+                            )}
+                            {isPanelBufferListDragging && (
+                                <PanelDragOverlay
+                                    type="buffer-list-panel"
+                                />
+                            )}
+                            {!isNil(draggingProjectTaskId) && (
+                                <BufferListProjectTask
+                                    task={getDraggingProjectTask()}
+                                />
                             )}
                             {!isNil(draggingUnscheduledTaskId) && (
                                 <UnscheduledTaskItem
@@ -239,7 +259,9 @@ export const CalendarDayView = () => {
     );
 };
 
-export function PanelDragOverlay() {
+const PanelDragOverlay = (
+    type: "buffer-list-panel" | "unscheduled-task-panel",
+) => {
     // 1. Root styles: ONLY opacity. No transform or transition.
     const rootStyle: React.CSSProperties = {
         opacity: 0.9,
@@ -260,7 +282,8 @@ export function PanelDragOverlay() {
                 className="h-16 w-16 rounded-full bg-gray-700 border-4 border-white p-0 shadow-lg cursor-grabbing"
             >
                 <div className="flex h-full w-full items-center justify-center rounded-full bg-sky-300">
-                    <ClipboardList className="h-8 w-8 text-black" />
+                    {type === 'unscheduled-task-panel' && <ClipboardList className="h-8 w-8 text-black" />}
+                    {type === 'buffer-list-panel' && <Users className="h-8 w-8 text-black" />}
                 </div>
             </div>
         </div>

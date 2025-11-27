@@ -1,6 +1,7 @@
 import { DropdownItem } from "@/components/core/dropdown/type";
 import { PASSWORD_GOOD_LENGTH, PASSWORD_MINIMUM_LENGTH, PASSWORD_REGEX, TIME_STR_REGEX, timezoneGroups } from "@/const/consts";
 import { FieldError } from "@/model/field-error";
+import { ProjectGroup, UserTaskItem } from "@/model/project-management";
 import { Task, UnscheduledMonthData } from "@/model/task";
 import { clsx, type ClassValue } from "clsx"
 import { addWeeks, endOfMonth, endOfWeek, format, isBefore, isSameDay, roundToNearestHours, startOfMonth, startOfWeek } from "date-fns";
@@ -447,6 +448,22 @@ export const getTaskById = (monthData: UnscheduledMonthData[], subtaskId?: strin
     }
   }
   return (updatedTasks || []).find(updatedTask => updatedTask.id === subtaskId);
+};
+
+export const getProjectTaskById = (projectGroups: ProjectGroup[], taskId?: number | null) => {
+  if (isNil(taskId)) {
+    return undefined;
+  }
+
+  for (const project of projectGroups) {
+    const foundTask = (project.tasks || []).find(task => task.pmTaskId === taskId);
+
+    if (foundTask) {
+      return foundTask;
+    }
+  }
+
+  return undefined;
 };
 
 export const getRoutineById = (monthData: UnscheduledMonthData[], routineId?: string | number | null, updatedTasks?: Task[]) => {
