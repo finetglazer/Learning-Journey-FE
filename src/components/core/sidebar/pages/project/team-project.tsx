@@ -8,6 +8,7 @@ import { ListTab } from "./tabs/list-tab/list-tab";
 import { TaskboardTab } from "./tabs/task-board-tab/task-board-tab";
 import { TeamProjectContext, TeamProjectContextProps, TeamProjectTab } from "./team-project-context";
 import { SummaryTab } from "./tabs/summary-tab/summary-tab";
+import RiskRegisterTab from "./tabs/risk-register-tab/risk-register-tab";
 
 export interface TeamProjectPageProps {
     currentSelectedProject: Project | null;
@@ -50,6 +51,10 @@ export const TeamProjectPage = ({
 
             {tab === TeamProjectTab.SUMMARY && (
                 <SummaryTab />
+            )}
+
+            {tab === TeamProjectTab.RISK_REGISTER && (
+                <RiskRegisterTab />
             )}
 
             {/* Invite Members Modal */}

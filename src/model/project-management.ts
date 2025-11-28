@@ -94,7 +94,7 @@ export interface PM_Deliverable {
     hasChildContainKeyword?: boolean;
 };
 
-export type TaskStatsByDeadline = { 
+export type TaskStatsByDeadline = {
     completed: number;
     dueSoon: number;
     overdue: number;
@@ -159,4 +159,58 @@ export type UserTaskItem = {
     name: string;
     deadline: string;   // YYYY-MM-DD
     overdue: boolean;
+};
+
+export const RiskLevel = {
+    "1-Very low": {
+        value: 1,
+    },
+    "2-Low": {
+        value: 2,
+    },
+    "3-Medium": {
+        value: 3,
+    },
+    "4-High": {
+        value: 4,
+    },
+    "5-Very high": {
+        value: 5,
+    },
+};
+
+export const getRiskLevelLabel = (value: number) => {
+    switch (value) {
+        case 1: 
+            return "1-Very low";
+        case 2:
+            return "2-Low";
+        case 3:
+            return "3-Medium";
+        case 4: 
+            return "4-High";
+        case 5:
+            return "5-Very high";
+    };
+};
+
+export type RiskDegree = 'LOW' | 'MEDIUM' | 'HIGH';
+
+export interface RiskAssignee extends PM_TaskAssignee { };
+
+export interface RiskItem {
+    id: number;
+    key: string;
+    riskStatement: string;
+    probability: number;
+    impact: number;
+    status: 'COMPLETE' | 'INCOMPLETE';
+    riskScore: number;
+    riskDegree: RiskDegree;
+    assignees: RiskAssignee[];
+    mitigationPlan: string;
+    note: string;
+    revisedProbability?: number;
+    revisedImpact?: number;
+    isMine?: boolean;
 };

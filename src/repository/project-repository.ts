@@ -175,6 +175,57 @@ export class ProjectRepository extends BaseRepository {
         return this.http.get(`/${params.projectId}/summary/active-risks`)
             .pipe(map(res => res?.data));
     };
+
+    // RISK FUNCTIONS
+
+    /**
+     * Get list of risks with pagination and filtering
+     * Corresponds to: GET /api/pm/projects/{projectId}/risks
+     */
+    public getRisks = (params: {
+        projectId: number | string,
+        page?: number,
+        limit?: number,
+        search?: string,
+        assignee?: string
+    }): Observable<any> => {
+        const queryParams = new URLSearchParams({
+            page: (params.page || 1).toString(),
+            limit: (params.limit || 20).toString(),
+            ...(params.search && { search: params.search }),
+            ...(params.assignee && { assignee: params.assignee })
+        }).toString();
+
+        return this.http.get(`/${params.projectId}/risks?${queryParams}`)
+            .pipe(map(res => res?.data));
+    };
+
+    /**
+     * Create a new risk
+     * Corresponds to: POST /api/pm/projects/{projectId}/risks
+     */
+    public createRisk = (params: { projectId: number | string }, body: any): Observable<any> => {
+        return this.http.post(`/${params.projectId}/risks`, body)
+            .pipe(map(res => res?.data));
+    };
+
+    /**
+     * Update an existing risk
+     * Corresponds to: PUT /api/pm/projects/{projectId}/risks/{riskId}
+     */
+    public updateRisk = (params: { projectId: number | string, riskId: number | string }, body: any): Observable<any> => {
+        return this.http.put(`/${params.projectId}/risks/${params.riskId}`, body)
+            .pipe(map(res => res?.data));
+    };
+
+    /**
+     * Delete a risk
+     * Corresponds to: DELETE /api/pm/projects/{projectId}/risks/{riskId}
+     */
+    public deleteRisk = (params: { projectId: number | string, riskId: number | string }): Observable<any> => {
+        return this.http.delete(`/${params.projectId}/risks/${params.riskId}`)
+            .pipe(map(res => res?.data));
+    };
 };
 
 export const projectRepository = new ProjectRepository();
