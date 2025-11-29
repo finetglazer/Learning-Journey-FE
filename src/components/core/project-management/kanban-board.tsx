@@ -13,6 +13,7 @@ import { TeamProjectContext, TeamProjectContextProps } from '../sidebar/pages/pr
 import KanbanColumn from './kanban-column';
 import TaskCard from './kanban-task-card';
 import { KanbanColumnsType, KanbanColumnType } from './type';
+import SpinnerLoader from '../loader/spinner-loader';
 
 export interface KanbanBoardProps {
 };
@@ -29,13 +30,15 @@ const KanbanBoard: React.FC<KanbanBoardProps> = () => {
     const [tasks, setTasks] = useState<PM_Task[]>([]);
     const [columns, setColumns] = useState<KanbanColumnsType>(EMPTY_COLUMNS);
     const [activeTask, setActiveTask] = useState<PM_Task | null>(null);
-    const [searchQuery, setSearchQuery] = useState<string>(""); 
+    const [searchQuery, setSearchQuery] = useState<string>("");
     const [showMyTasks, setShowMyTasks] = useState<boolean>(false);
+    const [fetching, setFetching] = useState<boolean>(false);
+
     const {
         getProjectStructure,
         selectedProject,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
-    
+
     const findColumn = useCallback((id: string) => {
         if (columns && Object.keys(columns).includes(id)) {
             return id as TaskStatus;
@@ -150,28 +153,32 @@ const KanbanBoard: React.FC<KanbanBoardProps> = () => {
         }, {
             search: searchQuery,
             showMyTask: showMyTasks,
-        }).subscribe({
-            next: res => {
-                if (res?.status) {
-                    const updatedTasks = (res?.data || []).map((task: any) => {
-                        return {
-                            ...task,
-                            taskId: task.id,
-                            taskIdStr: "task-".concat(String(task.id)),
-                            phaseId: task.phaseId,
-                            phaseIdStr: "phase-".concat(String(task.phaseId)),
-                            status: task.status.toUpperCase().trim().split(/\s+/).join("_") as TaskStatus,
-                            priority: task.priority.toUpperCase() as TaskPriority,
-                        }
-                    });
+        })
+            .pipe(finalize(() => {
+                setFetching(false);
+            }))
+            .subscribe({
+                next: res => {
+                    if (res?.status) {
+                        const updatedTasks = (res?.data || []).map((task: any) => {
+                            return {
+                                ...task,
+                                taskId: task.id,
+                                taskIdStr: "task-".concat(String(task.id)),
+                                phaseId: task.phaseId,
+                                phaseIdStr: "phase-".concat(String(task.phaseId)),
+                                status: task.status.toUpperCase().trim().split(/\s+/).join("_") as TaskStatus,
+                                priority: task.priority.toUpperCase() as TaskPriority,
+                            }
+                        });
 
-                    setTasks(updatedTasks);
-                } else {
-                    toast.error(res?.msg || res?.message);
-                }
-            },
-            error: err => { },
-        });
+                        setTasks(updatedTasks);
+                    } else {
+                        toast.error(res?.msg || res?.message);
+                    }
+                },
+                error: err => { },
+            });
 
         return () => {
             subscription.unsubscribe();
@@ -187,6 +194,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = () => {
 
     // --- 3. useEffect to trigger the debounced function on dependency change ---
     useEffect(() => {
+        setFetching(true);
         debouncedFetchTasks();
 
         // Cleanup: Important! Cancel any pending debounced calls when dependencies change
@@ -248,27 +256,36 @@ const KanbanBoard: React.FC<KanbanBoardProps> = () => {
                 </div>
 
             </div>
+            {fetching && (
+                <div className="ml-[700px] w-[500px]">
+                    <SpinnerLoader
+                        sizeClass="24"
+                        message="Getting tasks..."
+                    />
+                </div>
+            )}
+            {!fetching && (
+                <div className="grid grid-cols-4 gap-4">
+                    <DndContext
+                        onDragStart={handleDragStart}
+                        onDragEnd={handleDragEnd}
+                        collisionDetection={closestCorners}
+                        sensors={sensors}
+                    >
+                        {Object.values(columns).map((column: KanbanColumnType) => (
+                            <KanbanColumn key={column.id} column={column} />
+                        ))}
 
-            <div className="grid grid-cols-4 gap-4">
-                <DndContext
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                    collisionDetection={closestCorners}
-                    sensors={sensors}
-                >
-                    {Object.values(columns).map((column: KanbanColumnType) => (
-                        <KanbanColumn key={column.id} column={column} />
-                    ))}
-
-                    <DragOverlay>
-                        {taskCardProps ? (
-                            <TaskCard
-                                task={taskCardProps.task}
-                            />
-                        ) : null}
-                    </DragOverlay>
-                </DndContext>
-            </div>
+                        <DragOverlay>
+                            {taskCardProps ? (
+                                <TaskCard
+                                    task={taskCardProps.task}
+                                />
+                            ) : null}
+                        </DragOverlay>
+                    </DndContext>
+                </div>
+            )}
         </div>
     );
 };

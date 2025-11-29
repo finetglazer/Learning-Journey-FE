@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { FetchedUser, Project, ProjectMembershipRole, TeamMember } from "@/model/project-management";
 import { projectRepository } from "@/repository/project-repository";
@@ -369,14 +371,14 @@ export const InviteMembersModal = ({
                                             />
                                         ) : (
                                             <button
-                                                className={cn("text-sm text-center w-full",
+                                                className={cn("text-sm truncate text-center w-full",
                                                     { "cursor-pointer text-blue-600 hover:text-blue-800": member?.role !== ProjectMembershipRole.OWNER },
                                                     { "cursor-not-allowed text-gray-500": member?.role === ProjectMembershipRole.OWNER },
                                                 )}
                                                 disabled={member.role === ProjectMembershipRole.OWNER}
                                                 title={member.role === ProjectMembershipRole.OWNER ? 'Owner role cannot be customized' : 'Double click to customize role name'}
                                             >
-                                                {member.customRoleName || `<Custom role name>`}
+                                                {member.customRoleName || `Contributor`}
                                             </button>
                                         )}
                                     </div>
@@ -423,7 +425,7 @@ export const InviteMembersModal = ({
 export default InviteMembersModal;
 
 
-const EditingRoleInput = ({
+export const EditingRoleInput = ({
     initialName,
     onSave,
     onCancel,

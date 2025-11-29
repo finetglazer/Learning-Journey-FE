@@ -636,3 +636,9 @@ export const getFallbackName = (name?: string) => {
   // Use + for simple concatenation.
   return parts[0][0] + parts[1][0];
 };
+
+export const getScoreDetails = (score: number) => {
+  if (score >= 13) return { label: `${score}-High`, color: "text-rose-500", bg: "bg-rose-50" };
+  if (score >= 6) return { label: `${score}-Medium`, color: "text-amber-500", bg: "bg-amber-50" };
+  return { label: `${score}-Low`, color: "text-emerald-500", bg: "bg-emerald-50" };
+};

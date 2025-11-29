@@ -92,6 +92,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
             className={`
                 bg-white p-4 mb-3 rounded-lg shadow-sm 
                 border transition-all cursor-grab
+                group hover:bg-yellow-300
                 ${isDragging ? 'border-blue-400 opacity-0 ring-2 ring-blue-300' : 'border-gray-200'}
             `}
         >
@@ -101,20 +102,20 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
                 {/* Priority Icon and Task Name */}
                 <div className="flex items-center space-x-2">
                     {/* Render the Priority Icon component with the size and color class */}
-                    <h4 className="font-semibold text-gray-800 text-sm">
+                    <h4 className="font-semibold text-gray-800 text-md truncate">
                         {task.name}
                     </h4>
                 </div>
                 <div className="flex justify-between items-center gap-3 mb-2">
                     <button
                         onClick={handleEditClick}
-                        className="p-1 rounded-sm text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer opacity-0 hover:opacity-100"
+                        className="p-1 rounded-sm text-gray-400 group-hover:text-gray-600 hover:bg-yellow-500 transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
                         title="Edit Task"
                     >
-                        <Edit size={17} />
+                        <Edit size={20} />
                     </button>
                     <PriorityIconComponent
-                        size={16}
+                        size={30}
                         className={colorClass}
                         title={`Priority: ${label}`}
                     />

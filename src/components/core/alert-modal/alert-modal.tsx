@@ -119,7 +119,7 @@ export function AlertModal({
                         onClick={onClose}
                         className={cn("font-semibold cursor-pointer", (config as any)?.secondaryButtonColor || (config as any)?.buttonColor)}
                     >
-                        Got it
+                        Okay
                     </Button>
                     {proceedAnyway && (
                         <Button

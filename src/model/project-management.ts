@@ -204,7 +204,7 @@ export interface RiskItem {
     riskStatement: string;
     probability: number;
     impact: number;
-    status: 'COMPLETE' | 'INCOMPLETE';
+    status: 'RESOLVED' | 'UNRESOLVED';
     riskScore: number;
     riskDegree: RiskDegree;
     assignees: RiskAssignee[];

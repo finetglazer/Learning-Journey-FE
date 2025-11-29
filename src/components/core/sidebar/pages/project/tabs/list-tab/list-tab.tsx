@@ -10,9 +10,11 @@ import { projectRepository } from "@/repository/project-repository";
 import { closestCenter, DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Check, Plus, Search, X } from "lucide-react";
-import { useCallback, useContext, useEffect, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { TeamProjectContext, TeamProjectContextProps } from "../../team-project-context";
+import SpinnerLoader from "@/components/core/loader/spinner-loader";
+import { debounce } from "lodash";
 
 export interface ListTabProps { };
 
@@ -22,6 +24,7 @@ export const ListTab = ({ }: ListTabProps) => {
     const [isAddingDeliverable, setIsAddingDeliverable] = useState(false);
     const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
     const scrollContainerRef = useRef(null);
+    const [fetching, setFetching] = useState(false);
     const {
         selectedProject,
         getProjectStructure,
@@ -436,14 +439,30 @@ export const ListTab = ({ }: ListTabProps) => {
         setIsAddingDeliverable(false);
     };
 
+    const debouncedGetProjectStructure = useMemo(
+        () => {
+            return debounce(getProjectStructure, 150);
+        },
+        [getProjectStructure]
+    );
+
     useEffect(() => {
-        // When navigating process happens, it opens this tab and triggers getProjectStructure(),
-        // causing deliverables changes, leading to below useEffect used for "flash-task" effect
-        // does not work well
-        if (!isNavigatingFromTaskBoard) {
-            getProjectStructure();
+        // Deliverables changes means something finished including fetching process finished
+        setFetching(false);
+    }, [deliverables]);
+
+    useEffect(() => {
+        // Only run the fetch if a project is selected
+        if (selectedProject?.id && !isNavigatingFromTaskBoard) {
+            setFetching(true);
+            debouncedGetProjectStructure();
         }
-    }, []);
+
+        // Cleanup: Important! This cleans up any pending debounced call when the hook unmounts or search/project changes
+        return () => {
+            debouncedGetProjectStructure.cancel();
+        };
+    }, [search, selectedProject, debouncedGetProjectStructure]);
 
     /**
      * 🎯 Scroll logic implementation
@@ -471,7 +490,7 @@ export const ListTab = ({ }: ListTabProps) => {
                 // Set transition property immediately
                 element.style.transition = `none`;
                 // Apply the bright flash color immediately
-                element.style.backgroundColor = '#fff3cd'; // Light yellow flash
+                element.style.backgroundColor = '#fce9ac'; // Light yellow flash
 
                 requestAnimationFrame(() => {
                     element.style.transition = `background-color ${FADE_DURATION_MS}ms ease-out`;
@@ -539,43 +558,53 @@ export const ListTab = ({ }: ListTabProps) => {
                 <div>Assigned to</div>
             </div>
             <div ref={scrollContainerRef} className="overflow-y-auto max-h-[calc(100vh-200px)]">
-                <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
-                >
-                    <SortableContext
-                        items={deliverables.map(d => d.deliverableIdStr)}
-                        strategy={verticalListSortingStrategy}
+                {fetching && (
+                    <div className="ml-[700px] w-[500px]">
+                        <SpinnerLoader
+                            sizeClass="24"
+                            message="Getting project deliverables..."
+                        />
+                    </div>
+                )}
+                {!fetching && (
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
                     >
-                        <div className="flex flex-col pb-10">
-                            {deliverables.map(del => (
-                                <PM_DeliverableItem
-                                    key={del.deliverableIdStr}
-                                    deliverable={del}
-                                    isExpanded={expandedDeliverables.has(del.deliverableIdStr)}
-                                    expandedPhaseIds={expandedPhases}
-                                    onToggle={handleToggleDeliverable}
-                                    onTogglePhase={handleTogglePhase}
-                                    onAddPhase={handleAddPhase}
-                                    onAddTask={handleAddTask}
-                                    onUpdateDeliverableName={handleUpdateDeliverable}
-                                    onDeleteDeliverable={handleDeleteDeliverable}
-                                    onUpdatePhaseName={handleUpdatePhase}
-                                    onDeletePhase={handleDeletePhase}
-                                    onUpdateTask={handleUpdateTask}
-                                    onDeleteTask={handleDeleteTask}
-                                />
-                            ))}
-                            {isAddingDeliverable && (
-                                <NewDeliverableInput
-                                    onSave={handleAddDeliverable}
-                                    onCancel={handleCancelAddDeliverable}
-                                />
-                            )}
-                        </div>
-                    </SortableContext>
-                </DndContext>
+                        <SortableContext
+                            items={deliverables.map(d => d.deliverableIdStr)}
+                            strategy={verticalListSortingStrategy}
+                        >
+                            <div className="flex flex-col pb-10">
+                                {deliverables.map(del => (
+                                    <PM_DeliverableItem
+                                        key={del.deliverableIdStr}
+                                        deliverable={del}
+                                        isExpanded={expandedDeliverables.has(del.deliverableIdStr)}
+                                        expandedPhaseIds={expandedPhases}
+                                        onToggle={handleToggleDeliverable}
+                                        onTogglePhase={handleTogglePhase}
+                                        onAddPhase={handleAddPhase}
+                                        onAddTask={handleAddTask}
+                                        onUpdateDeliverableName={handleUpdateDeliverable}
+                                        onDeleteDeliverable={handleDeleteDeliverable}
+                                        onUpdatePhaseName={handleUpdatePhase}
+                                        onDeletePhase={handleDeletePhase}
+                                        onUpdateTask={handleUpdateTask}
+                                        onDeleteTask={handleDeleteTask}
+                                    />
+                                ))}
+                                {isAddingDeliverable && (
+                                    <NewDeliverableInput
+                                        onSave={handleAddDeliverable}
+                                        onCancel={handleCancelAddDeliverable}
+                                    />
+                                )}
+                            </div>
+                        </SortableContext>
+                    </DndContext>
+                )}
             </div>
             {alertMessage && (
                 <AlertModal

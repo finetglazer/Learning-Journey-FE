@@ -3,8 +3,7 @@
 import { AppContext, AppContextProps } from "@/hooks/app-context";
 import { PM_Deliverable, Project, ProjectMembershipRole, ReorderType, TeamMember } from "@/model/project-management"; // Added PM_Phase, PM_Task for type clarity
 import { projectRepository } from "@/repository/project-repository";
-import { debounce } from "lodash";
-import { createContext, Dispatch, SetStateAction, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, Dispatch, SetStateAction, useCallback, useContext, useEffect, useState } from "react";
 import { finalize } from "rxjs";
 import { toast } from "sonner";
 
@@ -229,11 +228,6 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         };
     }, [selectedProject, setIsReordering]);
 
-    const debouncedGetProjectStructure = useMemo(
-        () => debounce(getProjectStructure, 150),
-        [getProjectStructure]
-    );
-
     // --- State Reset and Data Fetch on Project Change ---
     useEffect(() => {
         // 1. Set the newly selected project
@@ -263,19 +257,6 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         }
         getTeamMembers();
     }, [currentSelectedProject]);
-
-    // 3. Trigger debounced fetch when 'search' changes OR when 'selectedProject' is set/changed
-    useEffect(() => {
-        // Only run the fetch if a project is selected
-        if (selectedProject?.id) {
-            debouncedGetProjectStructure();
-        }
-
-        // Cleanup: Important! This cleans up any pending debounced call when the hook unmounts or search/project changes
-        return () => {
-            debouncedGetProjectStructure.cancel();
-        };
-    }, [search, selectedProject, debouncedGetProjectStructure]);
 
     return {
         tab,

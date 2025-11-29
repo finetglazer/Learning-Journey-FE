@@ -7,7 +7,7 @@ export const RiskLevelDropdown = ({
     value,
     onChange,
 }: {
-    value: number;
+    value: number | undefined;
     onChange: (val: number) => void;
 }) => {
     return (

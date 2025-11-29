@@ -165,7 +165,7 @@ export function TaskDetailDrawer({ task, members }: { task: PM_Task, members: Te
                                 <div key={index} className="flex items-center space-x-3 py-1.5 border-gray-100 last:border-b-0">
                                     {/* 🛠️ Property Name (W-32): Icon + Label */}
                                     <span className="w-32 text-sm text-gray-500 flex items-center space-x-2">
-                                        <PrefixIcon size={16} className={`text-gray-500`} />
+                                        {/* <PrefixIcon size={16} className={`text-gray-500`} /> */}
                                         <span>{prop.label}</span>
                                     </span>
 
@@ -173,7 +173,7 @@ export function TaskDetailDrawer({ task, members }: { task: PM_Task, members: Te
                                     <span className={`text-sm font-medium ${prop.valueColor || 'text-gray-700'}`}>
                                         {/* Render the value icon only if it's Status or Priority */}
                                         {(prop.label === 'Progress' || prop.label === 'Urgency') && ValueIcon && (
-                                            <ValueIcon size={16} className={cn(prop.valueColor, `mr-1 inline-block`)} />
+                                            <ValueIcon size={20} className={cn(prop.valueColor, `mr-1 inline-block`)} />
                                         )}
 
                                         {/* If Task Owner, render the component directly */}

@@ -24,9 +24,6 @@ function InvitationAcceptContent() {
         setLoadingPage,
     } = useContext<AppContextProps>(AppContext);
     
-    // 'loading': Validating the token
-    // 'success': Token was valid, user joined
-    // 'error': Token was invalid or expired
     const [status, setStatus] = useState<"loading" | "success" | "error">(
         "loading"
     );

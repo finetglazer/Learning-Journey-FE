@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useCallback, useTransition } from "react";
+import { Dispatch, type ReactNode, SetStateAction, useCallback, useTransition } from "react";
 import {
     Pagination,
     PaginationContent,
@@ -30,6 +30,7 @@ export interface PaginationWithLinksProps {
     pageSize: number;
     page: number;
     pageSearchParam?: string;
+    setCurrentPage?: Dispatch<SetStateAction<number>>;
     /**
      * Navigation mode: 'link' uses Next.js Link components, 'router' uses router.push with loading states
      * @default 'link'
@@ -43,6 +44,7 @@ export function PaginationWithLinks({
     totalCount,
     page,
     pageSearchParam,
+    setCurrentPage,
     navigationMode = "router",
 }: PaginationWithLinksProps) {
     const router = useRouter();
@@ -67,6 +69,7 @@ export function PaginationWithLinks({
         (newPage: number) => {
             if (navigationMode === "router") {
                 const url = buildLink(newPage);
+                setCurrentPage?.(newPage);
                 startTransition(() => {
                     router.push(url);
                 });
