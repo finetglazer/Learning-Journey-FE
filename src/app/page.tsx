@@ -64,7 +64,7 @@ export default function RootPage() {
   const [teamProjects, setTeamProjects] = useState<Project[]>([]);
 
   const { setSleepHours, setLoadingPage } = useContext<AppContextProps>(AppContext);
-  const calendarContextValues = useCalendarHooks({ initTasks: [] });
+  const calendarContextValues = useCalendarHooks();
   const isModalOpen = useMemo(() => {
     return modalStates.some(state => state === true);
   }, [modalStates]);
@@ -72,6 +72,7 @@ export default function RootPage() {
   const {
     currentDate,
     setAlertMessage,
+    getUserProjectTasks,
   } = calendarContextValues;
 
   const updateModalStates = (index: number, isOpen: boolean) => {
@@ -272,46 +273,48 @@ export default function RootPage() {
       },
       error: () => { },
     });
+
     // Get monthPlanId
-    calendarRepository.getMonthPlanIdByDate({ year: currentDate.get("year"), month: currentDate.get("month") + 1 }).subscribe({
-      next: (res) => {
-        const success = res?.status;
-        const monthPlanId = res?.data;
-        if (success && monthPlanId) {
-          localStorage.setItem("monthPlanId", monthPlanId);
-        }
-        else if (!success || !monthPlanId) {
-          // toast.error(res?.msg || res?.message);
-          localStorage.removeItem("monthPlanId");
-          // If monthPlanId not found, create new monthPlanId
-          calendarRepository.createMonthPlan({
-            year: currentDate.get("year"),
-            month: currentDate.get("month") + 1,
-          }).subscribe({
-            next: res => {
-              if (res.status) {
-                localStorage.setItem("monthPlanId", res?.data?.monthPlanId);
-              }
-              else {
-                toast.error(res?.message || res?.msg);
-              }
-            },
-            error: err => {
-              const errors = err?.response?.data?.data;
-              const message = err?.response?.data?.msg || err?.response?.data?.message;
-              setAlertMessage({
-                type: "warning",
-                title: message,
-                description: errors,
-              });
-            }
-          });
-        }
-      },
-      error: () => {
-        localStorage.removeItem("monthPlanId");
-      },
-    });
+    // calendarRepository.getMonthPlanIdByDate({ year: currentDate.get("year"), month: currentDate.get("month") + 1 }).subscribe({
+    //   next: (res) => {
+    //     const success = res?.status;
+    //     const monthPlanId = res?.data;
+    //     if (success && monthPlanId) {
+    //       localStorage.setItem("monthPlanId", monthPlanId);
+    //     }
+    //     else if (!success || !monthPlanId) {
+    //       // toast.error(res?.msg || res?.message);
+    //       localStorage.removeItem("monthPlanId");
+    //       // If monthPlanId not found, create new monthPlanId
+    //       calendarRepository.createMonthPlan({
+    //         year: currentDate.get("year"),
+    //         month: currentDate.get("month") + 1,
+    //       }).subscribe({
+    //         next: res => {
+    //           if (res.status) {
+    //             localStorage.setItem("monthPlanId", res?.data?.monthPlanId);
+    //           }
+    //           else {
+    //             toast.error(res?.message || res?.msg);
+    //           }
+    //         },
+    //         error: err => {
+    //           const errors = err?.response?.data?.data;
+    //           const message = err?.response?.data?.msg || err?.response?.data?.message;
+    //           setAlertMessage({
+    //             type: "warning",
+    //             title: message,
+    //             description: errors,
+    //           });
+    //         }
+    //       });
+    //     }
+    //   },
+    //   error: () => {
+    //     localStorage.removeItem("monthPlanId");
+    //   },
+    // });
+
     // Get calendarId
     calendarRepository.getCalendars().subscribe({
       next: res => {

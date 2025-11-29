@@ -112,6 +112,7 @@ export interface CalendarContextInterface {
     getDraggableTaskOverlay: () => any;
     getDraggingProjectTask: () => any;
     onDeleteCalendarItem: (itemId?: number | string | null) => void;
+    getUserProjectTasks: () => void;
 
     onDragStart: (event: DragStartEvent) => void;
     onDragEnd: (event: DragEndEvent) => void;
@@ -201,6 +202,7 @@ export const CalendarContext = createContext<CalendarContextInterface>({
     getDraggingTask: () => { },
     getDraggingProjectTask: () => { },
     getDraggableTaskOverlay: () => { },
+    getUserProjectTasks: () => { },
     onDeleteCalendarItem: () => { },
 
     onDragStart: () => { },
@@ -410,10 +412,6 @@ export const useCalendarHooks = () => {
         currentView,
         currentDate,
     ]);
-
-    useEffect(() => {
-        getUserProjectTasks();
-    }, []);
 
     // console.log("updatedTasks", updatedTasks);
     // console.log("calendarMap", calendarMap)
@@ -1195,6 +1193,7 @@ export const useCalendarHooks = () => {
         generateDateRangeLabel,
         onNextDateRangeNavigatorClick,
         onPreviousDateRangeNavigatorClick,
+        getUserProjectTasks,
         updatedTasks,
         setUpdatedTasks,
         editorPosition,

@@ -9,6 +9,7 @@ import {
 } from "axios";
 import { SIGN_IN_ROUTE } from "@/const/routes-const";
 import { firstValueFrom } from "rxjs";
+import { isNil } from "lodash";
 
 const REFRESH_TOKEN_URL = "/api/users/auth/refresh";
 
@@ -166,8 +167,10 @@ export class BaseRepository extends Repository {
           toast.error("Backend server does not respond");
           break;
         default:
-          toast.error("System error");
-          break;
+          if (!isNil(error.response)) {
+            toast.error("System error");
+            break;
+          }
       }
     }
 

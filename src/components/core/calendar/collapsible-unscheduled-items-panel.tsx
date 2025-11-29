@@ -72,7 +72,7 @@ export function CollapsibleUnscheduledPanel({
 
     useEffect(() => {
         // Get all unscheduled items, attach IDs for each unscheduled task and unscheduled routine
-        calendarRepository.getUnscheduledItems()
+        const subscription = calendarRepository.getUnscheduledItems()
             .subscribe({
                 next: res => {
                     const updatedUnscheduledMonthData: UnscheduledMonthData[] = (res?.data?.data?.monthGroups || []).map((monthGroup: any) => ({
@@ -99,6 +99,10 @@ export function CollapsibleUnscheduledPanel({
                     console.log("Error occurs while fetching unscheduled items", err);
                 }
             });
+
+        return () => {
+            subscription.unsubscribe();
+        }
     }, []);
 
     // Mark items that are being dragged or edited

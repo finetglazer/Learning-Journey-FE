@@ -496,7 +496,6 @@ export const ListTab = ({ }: ListTabProps) => {
                     element.style.transition = `background-color ${FADE_DURATION_MS}ms ease-out`;
                 });
 
-
                 // Timer 1: Remove the background color, initiating the smooth fade out.
                 const fadeStartTimer = setTimeout(() => {
                     element.style.backgroundColor = '';

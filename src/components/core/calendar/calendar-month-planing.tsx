@@ -187,7 +187,7 @@ export function CalendarMonthPlanning() {
         const year = currentDate.year();
         const month = currentDate.month() + 1;
 
-        calendarRepository.getMonthPlanIdByDate({ year, month }).subscribe({
+        const subscription = calendarRepository.getMonthPlanIdByDate({ year, month }).subscribe({
             next: (res) => {
                 const success = res?.status;
                 const monthPlanId = res?.data;
@@ -205,6 +205,7 @@ export function CalendarMonthPlanning() {
                         next: res => {
                             if (res.status) {
                                 localStorage.setItem("monthPlanId", res?.data?.monthPlanId);
+                                loadMonthPlanningItems(res?.data?.monthPlanId);
                             }
                             else {
                                 toast.error(res?.message || res?.msg);
@@ -226,6 +227,10 @@ export function CalendarMonthPlanning() {
                 localStorage.removeItem("monthPlanId");
             },
         });
+
+        return () => {
+            subscription.unsubscribe();
+        };
     };
 
     const onDeleteItem = (item: MonthPlanningBigTask | MonthPlanningEvent | UnscheduledTask | string) => {
@@ -411,9 +416,16 @@ export function CalendarMonthPlanning() {
         });
     };
 
+    const isInitialMount = useRef(true);
+    
     useEffect(() => {
-        getMonthPlanId();
         setCurrentView('month-planning');
+        // Suppress the first run (the Strict Mode check)
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            return;
+        }
+        getMonthPlanId();
     }, [currentDate]);
 
     useEffect(() => {

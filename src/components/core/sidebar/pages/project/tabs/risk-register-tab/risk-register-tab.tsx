@@ -290,6 +290,8 @@ export default function RiskRegisterTab({
         debouncedFetch,
     ]);
 
+    useEffect
+
     return (
         <div className="w-full p-6 bg-slate-50 min-h-screen font-sans">
             {/* Header */}

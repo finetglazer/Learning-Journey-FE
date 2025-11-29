@@ -3,7 +3,7 @@
 import { AppContext, AppContextProps } from "@/hooks/app-context";
 import { PM_Deliverable, Project, ProjectMembershipRole, ReorderType, TeamMember } from "@/model/project-management"; // Added PM_Phase, PM_Task for type clarity
 import { projectRepository } from "@/repository/project-repository";
-import { createContext, Dispatch, SetStateAction, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, Dispatch, SetStateAction, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { finalize } from "rxjs";
 import { toast } from "sonner";
 
@@ -25,6 +25,8 @@ export interface TeamProjectContextProps {
     setIsReordering: Dispatch<SetStateAction<boolean>>;
     selectedProject: Project | null;
     setSelectedProject: Dispatch<SetStateAction<Project | null>>;
+    overallLoading: boolean;
+    setOverallLoading: Dispatch<SetStateAction<boolean>>;
 
     getTeamMembers: () => void;
     members: TeamMember[];
@@ -58,6 +60,8 @@ export const TeamProjectContext = createContext<TeamProjectContextProps>({
     selectedProject: null,
     setSelectedProject: () => { },
     getTeamMembers: () => { },
+    overallLoading: false,
+    setOverallLoading: () => { },
     members: [],
     setMembers: () => { },
     currentMember: null,
@@ -86,6 +90,7 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
     const [isReordering, setIsReordering] = useState<boolean>(false);
     const [search, setSearch] = useState<string>("");
     const [scrollToItem, setScrollToItem] = useState<string>("");
+    const [overallLoading, setOverallLoading] = useState<boolean>(false);
     const [expandedDeliverables, setExpandedDeliverables] = useState<Set<string>>(
         new Set([])
     );
@@ -98,7 +103,7 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
 
     const getProjectStructure = useCallback(() => {
         const subscription = projectRepository.getProjectStructure({
-            projectId: selectedProject?.id,
+            projectId: currentSelectedProject?.id,
             search: search || "",
         }).subscribe({
             next: res => {
@@ -170,7 +175,7 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         return () => {
             subscription.unsubscribe();
         };
-    }, [selectedProject, setIsReordering, search, setExpandedDeliverables, setExpandedPhases]);
+    }, [currentSelectedProject, setIsReordering, search, setExpandedDeliverables, setExpandedPhases]);
 
     const getTeamMembers = useCallback(() => {
         const subscription = projectRepository.getTeamMembers({
@@ -228,14 +233,21 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         };
     }, [selectedProject, setIsReordering]);
 
+    const isInitialMount = useRef(true);
+
     // --- State Reset and Data Fetch on Project Change ---
     useEffect(() => {
         // 1. Set the newly selected project
         setSelectedProject(currentSelectedProject);
         setMembers([]);
+        // Suppress the first run (the Strict Mode check)
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            return;
+        }
         if (currentSelectedProject) {
-            // 2. Fetch team members for the new project
             getTeamMembers();
+            getProjectStructure();
         }
 
         // 3. 🎯 Reset ALL states related to the previous project structure
@@ -249,13 +261,6 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         // Note: The main project structure will be fetched by the dependency chain
         // (useEffect watching `selectedProject` calls `debouncedGetProjectStructure`).
 
-    }, [currentSelectedProject]);
-
-    useEffect(() => {
-        if (!currentSelectedProject) {
-            return;
-        }
-        getTeamMembers();
     }, [currentSelectedProject]);
 
     return {
@@ -272,6 +277,8 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         getTeamMembers,
         members,
         setMembers,
+        overallLoading,
+        setOverallLoading,
         currentMember,
         setCurrentMember,
         deliverables,

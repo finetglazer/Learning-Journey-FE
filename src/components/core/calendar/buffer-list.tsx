@@ -12,7 +12,7 @@ import {
     ChevronDown,
     LayoutGrid
 } from 'lucide-react';
-import { useContext, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { BufferListProjectTask } from "./buffer-list-project-task";
 import { CalendarContext, CalendarContextInterface } from "./calendar-context";
 
@@ -23,6 +23,7 @@ export interface BufferListProps {
 export function BufferList({ showAllTasks, }: BufferListProps) {
     const {
         projectGroups: projects,
+        getUserProjectTasks,
     } = useContext<CalendarContextInterface>(CalendarContext);
 
     const allTasks = useMemo(() => {
@@ -45,6 +46,17 @@ export function BufferList({ showAllTasks, }: BufferListProps) {
             [projectId]: !prev[projectId]
         }));
     };
+
+    const initialRender = useRef(true);
+    useEffect(() => {
+        // If it is the first re-render, dont getUserProjectTasks(), call it on the second re-render
+        if (initialRender.current) {
+            initialRender.current = false;
+            return;
+        }
+        
+        getUserProjectTasks();
+    }, []);
 
     return (
         <div className="w-[350px] bg-white rounded-lg shadow-xl border border-gray-200 flex flex-col font-sans h-[80vh] max-h-[800px]">
