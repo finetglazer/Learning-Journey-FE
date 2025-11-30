@@ -226,6 +226,99 @@ export class ProjectRepository extends BaseRepository {
         return this.http.delete(`/${params.projectId}/risks/${params.riskId}`)
             .pipe(map(res => res?.data));
     };
+
+    // TIMELINE FUNCTIONS
+
+    /**
+     * Retrieves the hierarchical structure of the project timeline.
+     * Corresponds to: GET /api/pm/projects/{projectId}/timeline/structure
+     */
+    public getTimelineStructure = (params: { projectId: number }): Observable<any> => {
+        return this.http.get(`/${params.projectId}/timeline/structure`)
+            .pipe(map(res => res?.data));
+    };
+
+    /**
+     * Updates the start and end dates for a specific timeline item (TASK, PHASE, DELIVERABLE).
+     * Corresponds to: PUT /api/pm/projects/{projectId}/timeline/dates
+     */
+    public updateTimelineDates = (
+        params: { projectId: number | string },
+        body: {
+            type: 'TASK' | 'PHASE' | 'DELIVERABLE', // ReorderType
+            id: number | string,
+            start_date: string, // YYYY-MM-DD
+            end_date: string    // YYYY-MM-DD
+        }
+    ): Observable<any> => {
+        return this.http.put(`/${params.projectId}/timeline/dates`, body)
+            .pipe(map(res => res?.data));
+    };
+
+    /**
+     * Offsets the dates of a timeline item (PHASE or DELIVERABLE) by a number of days.
+     * Corresponds to: PUT /api/pm/projects/{projectId}/timeline/offset
+     */
+    public offsetTimelineItem = (
+        params: { projectId: number | string },
+        body: {
+            type: 'PHASE' | 'DELIVERABLE',
+            id: number | string,
+            offsetDays: number
+        }
+    ): Observable<any> => {
+        return this.http.put(`/${params.projectId}/timeline/offset`, body)
+            .pipe(map(res => res?.data));
+    };
+
+    // DEPENDENCY FUNCTIONS
+
+    /**
+     * Get dependencies for a specific item.
+     */
+    public getDependencies = (params: {
+        projectId: number,
+        itemId: number,
+        itemType: 'TASK' | 'PHASE' | 'DELIVERABLE'
+    }): Observable<any> => {
+        const queryParams = new URLSearchParams({
+            itemId: params.itemId.toString(),
+            itemType: params.itemType
+        }).toString();
+
+        return this.http.get(`/${params.projectId}/dependencies?${queryParams}`)
+            .pipe(map(res => res?.data));
+    };
+
+    /**
+     * Create a new dependency between two items.
+     */
+    public createDependency = (
+        params: { projectId: number },
+        body: {
+            type: 'TASK' | 'PHASE' | 'DELIVERABLE',
+            fromId: number,
+            toItemId: number,
+        }
+    ): Observable<any> => {
+        return this.http.post(`/${params.projectId}/dependencies`, body)
+            .pipe(map(res => res?.data));
+    };
+
+    /**
+     * Delete an existing dependency.
+     */
+    public deleteDependency = (
+        params: { projectId: number | string },
+        body: {
+            type: 'TASK' | 'PHASE' | 'DELIVERABLE'
+            fromItemId: number,
+            toItemId: number,
+        }
+    ): Observable<any> => {
+        return this.http.delete(`/${params.projectId}/dependencies`, { data: body })
+            .pipe(map(res => res?.data));
+    };
 };
 
 export const projectRepository = new ProjectRepository();

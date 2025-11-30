@@ -1,7 +1,8 @@
 "use client";
 
 import { AppContext, AppContextProps } from "@/hooks/app-context";
-import { PM_Deliverable, Project, ProjectMembershipRole, ReorderType, TeamMember } from "@/model/project-management"; // Added PM_Phase, PM_Task for type clarity
+import { getId } from "@/lib/utils";
+import { PM_Deliverable, Project, ProjectDependency, ProjectMembershipRole, ProjectTimelineStructure, ReorderType, TeamMember, TimelineItem } from "@/model/project-management"; // Added PM_Phase, PM_Task for type clarity
 import { projectRepository } from "@/repository/project-repository";
 import { createContext, Dispatch, SetStateAction, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { finalize } from "rxjs";
@@ -20,7 +21,7 @@ export interface TeamProjectContextProps {
     tab: string;
     setTab: Dispatch<SetStateAction<string>>;
     isNavigatingFromTaskBoard: boolean,
-    setIsNavigatingFromTaskBoard: Dispatch<SetStateAction<boolean>>,
+    setIsNavigatingFromTaskBoard: Dispatch<SetStateAction<boolean>>;
     isReordering: boolean;
     setIsReordering: Dispatch<SetStateAction<boolean>>;
     selectedProject: Project | null;
@@ -38,6 +39,12 @@ export interface TeamProjectContextProps {
     setDeliverables: Dispatch<SetStateAction<PM_Deliverable[]>>;
 
     getProjectStructure: () => () => void; // Function that returns a cleanup function
+    getProjectTimeline: () => () => void;
+    getItemDependencies: (item: TimelineItem) => () => void;
+    timelineData: ProjectTimelineStructure | null;
+    setTimelineData: Dispatch<SetStateAction<ProjectTimelineStructure | null>>;
+    dependencies: ProjectDependency[];
+    setDependencies: Dispatch<SetStateAction<ProjectDependency[]>>;
     handleReorderList: (orderedIds: number[], parentId: number, type: ReorderType) => void;
 
     expandedDeliverables: Set<string>;
@@ -67,8 +74,14 @@ export const TeamProjectContext = createContext<TeamProjectContextProps>({
     currentMember: null,
     setCurrentMember: () => { },
     deliverables: [],
+    timelineData: null,
+    dependencies: [],
+    getItemDependencies: () => () => { },
+    setDependencies: () => { },
     setDeliverables: () => { },
+    setTimelineData: () => { },
     getProjectStructure: () => () => { },
+    getProjectTimeline: () => () => { },
     handleReorderList: () => { },
     expandedDeliverables: new Set(),
     expandedPhases: new Set(),
@@ -82,6 +95,8 @@ export const TeamProjectContext = createContext<TeamProjectContextProps>({
 
 export const useTeamProjectHooks = (currentSelectedProject: Project | null): TeamProjectContextProps => {
     const [tab, setTab] = useState<string>(TeamProjectTab.SUMMARY);
+    const [timelineData, setTimelineData] = useState<ProjectTimelineStructure | null>(null);
+    const [dependencies, setDependencies] = useState<ProjectDependency[]>([]);
     const [isNavigatingFromTaskBoard, setIsNavigatingFromTaskBoard] = useState<boolean>(false);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [members, setMembers] = useState<TeamMember[]>([]);
@@ -202,6 +217,70 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         };
     }, [currentSelectedProject, setMembers, setCurrentMember, email]);
 
+    const getItemDependencies = useCallback((item: TimelineItem) => {
+        const subscription = projectRepository.getDependencies({
+            projectId: currentSelectedProject?.id as number,
+            itemId: item.id,
+            itemType: item.type,
+        })
+            .subscribe({
+                next: res => {
+                    if (res?.status) {
+                        setDependencies(res?.data?.dependencies || []);
+                    }
+                    else {
+                        toast.error(res?.msg || res?.message);
+                    }
+                },
+                error: err => { },
+            });
+
+        return () => {
+            return subscription.unsubscribe();
+        }
+    }, [
+        currentSelectedProject,
+    ]);
+
+    const getNumericIds = (items?: any[]) => {
+        if (!items) {
+            return [];
+        }
+        let res: any[] = [];
+        items.forEach((item: any) => {
+            res.push({
+                ...item,
+                id: Number(item.id.split("-")[1]),
+            });
+            res = res.concat([...getNumericIds(item.children)]);
+        });
+
+        return res;
+    };
+
+    const getProjectTimeline = useCallback(() => {
+        const subscription = projectRepository.getTimelineStructure({
+            projectId: currentSelectedProject?.id as number,
+        }).subscribe({
+            next: res => {
+                if (res?.status) {
+                    const timelineItems = res?.data?.items || [];
+                    setTimelineData({
+                        ...res?.data,
+                        items: getNumericIds(timelineItems),
+                    });
+                } else {
+                    toast.error(res?.message || res?.msg);
+                }
+            },
+            error: err => { },
+        });
+
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, [currentSelectedProject]);
+
     const handleReorderList = useCallback((orderedIds: number[], parentId: number, type: ReorderType) => {
         setIsReordering(true);
         const subscription = projectRepository.reorderList({
@@ -248,6 +327,7 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         if (currentSelectedProject) {
             getTeamMembers();
             getProjectStructure();
+            getProjectTimeline();
         }
 
         // 3. 🎯 Reset ALL states related to the previous project structure
@@ -275,6 +355,12 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         selectedProject,
         setSelectedProject,
         getTeamMembers,
+        getItemDependencies,
+        dependencies,
+        setDependencies,
+        getProjectTimeline,
+        timelineData,
+        setTimelineData,
         members,
         setMembers,
         overallLoading,

@@ -598,15 +598,15 @@ export const isTaskOnDay = (taskStartTime: string, day: Date) => {
 };
 
 export const getTasksForDayInYearView = (tasks: Task[], day: Date): Task[] => {
-    if (!tasks || tasks.length === 0) {
-      return [];
-    }
-    return tasks.filter(task => {
-      if (!task.startTime) return false;
-      // Compare the task's start date with the day
-      return isSameDay(new Date(task.startTime), day);
-    });
-  };
+  if (!tasks || tasks.length === 0) {
+    return [];
+  }
+  return tasks.filter(task => {
+    if (!task.startTime) return false;
+    // Compare the task's start date with the day
+    return isSameDay(new Date(task.startTime), day);
+  });
+};
 
 /**
  * Generates fallback initials from a name.
@@ -641,4 +641,95 @@ export const getScoreDetails = (score: number) => {
   if (score >= 13) return { label: `${score}-High`, color: "text-rose-500", bg: "bg-rose-50" };
   if (score >= 6) return { label: `${score}-Medium`, color: "text-amber-500", bg: "bg-amber-50" };
   return { label: `${score}-Low`, color: "text-emerald-500", bg: "bg-emerald-50" };
+};
+
+export const getDaysDiff = (start: Date, end: Date) => {
+  const oneDay = 24 * 60 * 60 * 1000;
+  return Math.round(Math.abs((start.getTime() - end.getTime()) / oneDay));
+};
+
+/**
+ * Calculates the CSS 'left' and 'width' percentages for a Gantt bar
+ */
+export const calculateBarPosition = (
+  itemStart: string,
+  itemEnd: string,
+  viewStart: Date,
+  totalViewDays: number
+) => {
+  const start = new Date(itemStart);
+  const end = new Date(itemEnd);
+
+  // Calculate offset from the start of the view
+  const daysFromStart = getDaysDiff(start, viewStart);
+  // Calculate duration of the item
+  const duration = getDaysDiff(end, start) + 1; // +1 to include the last day
+
+  // Guard against date math errors
+  if (isNaN(daysFromStart) || isNaN(duration)) return { left: 0, width: 0 };
+
+  const leftPercent = (daysFromStart / totalViewDays) * 100;
+  const widthPercent = (duration / totalViewDays) * 100;
+
+  return {
+    left: `${leftPercent}%`,
+    width: `${widthPercent}%`
+  };
+};
+
+export interface Point { x: number; y: number; }
+
+export const getOrthogonalPath = (start: Point, end: Point, cornerRadius = 10) => {
+  const { x: x1, y: y1 } = start;
+  const { x: x2, y: y2 } = end;
+
+  // Distance to move horizontally away from the bar before turning
+  const offset = 20;
+
+  let path = "";
+
+  // Scenario 1: Target is far enough to the right to draw a clean Z shape
+  if (x2 >= x1 + (offset * 2)) {
+    const midX = x1 + (x2 - x1) / 2;
+
+    // Move to start, Line to first turn, Curve, Line down, Curve, Line to end
+    path = `
+      M ${x1} ${y1} 
+      L ${midX - cornerRadius} ${y1}
+      Q ${midX} ${y1} ${midX} ${y1 < y2 ? y1 + cornerRadius : y1 - cornerRadius}
+      L ${midX} ${y2 < y1 ? y2 + cornerRadius : y2 - cornerRadius}
+      Q ${midX} ${y2} ${midX + cornerRadius} ${y2}
+      L ${x2} ${y2}
+    `;
+  }
+  // Scenario 2: Target is too close or to the left (requires a more complex step)
+  else {
+    const downDirection = y2 > y1 ? 1 : -1;
+    const midY = y1 + ((y2 - y1) / 2);
+
+    // For simplicity in this visual, we force a specific 'detour' shape
+    // Or we simply draw a direct curve if spacing is tight.
+    // Here is a simplified "S" variant for tight spaces:
+    path = `
+      M ${x1} ${y1}
+      L ${x1 + offset} ${y1}
+      L ${x1 + offset} ${midY}
+      L ${x2 - offset} ${midY}
+      L ${x2 - offset} ${y2}
+      L ${x2} ${y2}
+    `;
+  }
+
+  return path.replace(/\s+/g, ' ').trim();
+};
+
+export const getId = (itemType: 'DELIVERABLE' | 'PHASE' | 'TASK', itemId: number) => {
+  switch (itemType) {
+    case 'DELIVERABLE':
+      return "del-".concat(itemId.toString());
+    case 'PHASE':
+      return "phase-".concat(itemId.toString());
+    case 'TASK':
+      return "task-".concat(itemId.toString());
+  }
 };

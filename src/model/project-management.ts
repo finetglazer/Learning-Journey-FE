@@ -214,3 +214,25 @@ export interface RiskItem {
     revisedImpact?: number;
     isMine?: boolean;
 };
+
+export interface TimelineItem {
+    id: number;
+    type: "DELIVERABLE" | "PHASE";
+    name: string;
+    startDate: string;
+    endDate: string;
+    children: TimelineItem[];
+};
+
+export interface ProjectTimelineStructure {
+    items: TimelineItem[];
+    milestones: TimelineMilestone[];
+    projectStartDate: string; // YYYY-MM-DD
+};
+
+
+export interface ProjectDependency {
+    type: "TASK" | "PHASE" | "DELIVERABLE";
+    fromId: number;
+    toId: number;
+};

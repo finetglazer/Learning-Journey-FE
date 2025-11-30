@@ -9,6 +9,7 @@ import { TaskboardTab } from "./tabs/task-board-tab/task-board-tab";
 import { TeamProjectContext, TeamProjectContextProps, TeamProjectTab } from "./team-project-context";
 import { SummaryTab } from "./tabs/summary-tab/summary-tab";
 import RiskRegisterTab from "./tabs/risk-register-tab/risk-register-tab";
+import { GanttTimelineBoard, MOCK_GANTT_DATA, VIEW_END_DATE, VIEW_START_DATE, WEEK_HEADERS } from "./tabs/timeline-tab/timeline-tab";
 
 export interface TeamProjectPageProps {
     currentSelectedProject: Project | null;
@@ -40,6 +41,10 @@ export const TeamProjectPage = ({
                 currentSelectedProject={currentSelectedProject}
             />
 
+            {tab === TeamProjectTab.SUMMARY && (
+                <SummaryTab />
+            )}
+
             {/* List tab */}
             {tab === TeamProjectTab.LIST && (
                 <ListTab />
@@ -49,8 +54,8 @@ export const TeamProjectPage = ({
                 <TaskboardTab />
             )}
 
-            {tab === TeamProjectTab.SUMMARY && (
-                <SummaryTab />
+            {tab === TeamProjectTab.TIMELINE && (
+                <GanttTimelineBoard />
             )}
 
             {tab === TeamProjectTab.RISK_REGISTER && (
