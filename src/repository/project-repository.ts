@@ -298,7 +298,7 @@ export class ProjectRepository extends BaseRepository {
         body: {
             type: 'TASK' | 'PHASE' | 'DELIVERABLE',
             fromId: number,
-            toItemId: number,
+            toId: number,
         }
     ): Observable<any> => {
         return this.http.post(`/${params.projectId}/dependencies`, body)
@@ -312,8 +312,8 @@ export class ProjectRepository extends BaseRepository {
         params: { projectId: number | string },
         body: {
             type: 'TASK' | 'PHASE' | 'DELIVERABLE'
-            fromItemId: number,
-            toItemId: number,
+            fromId: number,
+            toId: number,
         }
     ): Observable<any> => {
         return this.http.delete(`/${params.projectId}/dependencies`, { data: body })

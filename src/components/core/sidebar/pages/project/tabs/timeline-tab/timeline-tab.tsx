@@ -3,14 +3,18 @@
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { calculateBarPosition, cn, getDaysDiff, getId, getOrthogonalPath, toDayJs } from "@/lib/utils";
-import { ProjectTimelineStructure, TimelineItem } from '@/model/project-management';
+import { ProjectDependency, ProjectTimelineStructure, TimelineItem } from '@/model/project-management';
+import { projectRepository } from "@/repository/project-repository";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { isEqual } from "lodash";
-import { ChevronDown, ChevronRight, Link2, Link2Off, Save, Undo2, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Link2, Link2Off, Save, X } from "lucide-react";
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { finalize } from "rxjs";
+import { toast } from "sonner";
 import { TeamProjectContext, TeamProjectContextProps } from '../../team-project-context';
 import GanttBar from "./components/gnatt-bar";
+import { AlertMessage, AlertModal } from "@/components/core/alert-modal/alert-modal";
 dayjs.extend(isoWeek);
 
 export interface GanttTimelineBoardProps {
@@ -26,12 +30,155 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
     const [selectedItem, setSelectedItem] = useState<TimelineItem | null>(null);
     const [containerWidth, setContainerWidth] = useState(0);
     const [isAddingDependency, setIsAddingDependency] = useState(false);
+    const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
+    const [dependencyDragLine, setDependencyDragLine] = useState<{
+        startX: number;
+        startY: number;
+        currentX: number;
+        currentY: number;
+    } | null>(null);
+    const [dependencySource, setDependencySource] = useState<TimelineItem | null>(null);
+    const [dependencies, setDependencies] = useState<ProjectDependency[]>([]);
+    const [dependencyBeingHovered, setDependencyBeingHovered] = useState<ProjectDependency | null>(null);
 
     const {
         timelineData: originalTimelineStructure,
         getItemDependencies,
-        dependencies,
+        dependencies: originalDependencies,
+        selectedProject,
+        getProjectTimeline,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
+
+    const getLocalCoordinates = useCallback((e: MouseEvent | React.MouseEvent) => {
+        if (!timelineScrollRef.current) return { x: 0, y: 0 };
+
+        const rect = timelineScrollRef.current.getBoundingClientRect();
+        return {
+            x: e.clientX - rect.left + timelineScrollRef.current.scrollLeft,
+            y: e.clientY - rect.top + timelineScrollRef.current.scrollTop
+        };
+    }, []);
+
+    const handleMouseMoveWhenAddingDependency = (moveEvent: MouseEvent) => {
+        const local = getLocalCoordinates(moveEvent);
+        setDependencyDragLine(prev => prev ? ({
+            ...prev,
+            currentX: local.x,
+            currentY: local.y
+        }) : null);
+    };
+
+    const handleMouseUpWhenAddingDependency = () => {
+        document.removeEventListener('mousemove', handleMouseMoveWhenAddingDependency);
+        document.removeEventListener('mouseup', handleMouseUpWhenAddingDependency);
+
+        setDependencyDragLine(null);
+    };
+
+    const handleDraggingLineDropWhenAddingDependency = (target: TimelineItem) => {
+        const updatedDependencies = [...dependencies];
+        const newDependency: ProjectDependency = {
+            type: target.type,
+            fromId: dependencySource?.id as number,
+            toId: target.id,
+        };
+        updatedDependencies.push(newDependency)
+        setDependencies(updatedDependencies);
+        setSelectedItem(target);
+
+        const subscription = projectRepository.createDependency({
+            projectId: selectedProject?.id as number,
+        }, {
+            type: newDependency.type,
+            fromId: newDependency.fromId,
+            toId: newDependency.toId,
+        })
+            .pipe(finalize(() => {
+                setDependencySource(null);
+                getProjectTimeline();
+            }))
+            .subscribe({
+                next: res => {
+                    if (res?.status) {
+                        toast.success(res?.msg || res?.message);
+                    }
+                    else {
+                        setAlertMessage({
+                            type: "warning",
+                            title: res?.message || res?.msg,
+                            description: res?.data,
+                        });
+                    }
+                },
+                error: err => {
+                    const errors = err?.response?.data?.data;
+                    const message = err?.response?.data?.msg || err?.response?.data?.message;
+                    setAlertMessage({
+                        type: "warning",
+                        title: message,
+                        description: errors,
+                    });
+                },
+            });
+
+        return () => {
+            subscription.unsubscribe();
+        }
+    };
+
+    const handleMouseDownWhenAddingDependency = (e: any, item: TimelineItem) => {
+        const currentItemCoords = itemCoordinates.coords.get(getId(item.type, item.id));
+
+        if (isAddingDependency && currentItemCoords) {
+            e.stopPropagation();
+            e.preventDefault();
+
+            const startX = currentItemCoords.xEnd;
+            const startY = currentItemCoords.y;
+
+            setDependencyDragLine({
+                startX: startX,
+                startY: startY,
+                currentX: startX,
+                currentY: startY
+            });
+
+            setDependencySource(item);
+
+            // Add listeners
+            document.addEventListener('mousemove', handleMouseMoveWhenAddingDependency);
+            document.addEventListener('mouseup', handleMouseUpWhenAddingDependency);
+        }
+    };
+
+    const handleDeleteDependency = useCallback(() => {
+        if (!dependencyBeingHovered) {
+            return;
+        }
+        const subscription = projectRepository.deleteDependency({
+            projectId: selectedProject?.id as number,
+        }, {
+            ...dependencyBeingHovered,
+        })
+        .subscribe({
+            next: res => {
+                if (res?.status) {
+                    toast.success(res?.message || res?.msg);
+                    setDependencyBeingHovered(null);
+                    setSelectedItem(null);
+                    getProjectTimeline();
+                }
+                else {
+                    toast.error(res?.message || res?.msg);
+                }
+            },
+            error: err => { },
+        });
+
+        return () => {
+            subscription.unsubscribe();
+        }
+    }, [selectedProject, getProjectTimeline, dependencyBeingHovered]);
 
     const hasUnsavedChanges = useMemo(() => {
         if (!timelineStructure || !originalTimelineStructure) {
@@ -335,6 +482,10 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
     }, [originalTimelineStructure]);
 
     useEffect(() => {
+        setDependencies([...originalDependencies]);
+    }, [originalDependencies]);
+
+    useEffect(() => {
         if (selectedItem) {
             getItemDependencies(selectedItem);
         }
@@ -369,6 +520,18 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         };
     }, []);
 
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (dependencyBeingHovered && (e.key === 'Delete' || e.key === 'Backspace')) {
+                e.preventDefault();
+                handleDeleteDependency();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [dependencyBeingHovered]);
+
     // --- 5. Render ---
     return (
         <div className="grid grid-cols-[350px_1fr] h-full overflow-hidden border rounded-xl shadow-lg bg-white">
@@ -376,10 +539,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
             {/* === LEFT PANEL: HIERARCHY === */}
             <div className="flex flex-col border-r border-gray-200 h-full bg-white z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
                 {/* Header */}
-                <div className="border-b border-gray-100 flex items-center justify-between px-4 bg-gray-50/50" style={{ height: 89 }}>
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                        Work Item
-                    </span>
+                <div className="border-b border-gray-100 flex items-center justify-between px-1 bg-gray-50/50" style={{ height: 89 }}>
                     <div className="flex items-center gap-3">
                         <Button
                             size="sm"
@@ -403,7 +563,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                                 </>
                             )}
                         </Button>
-                        
+
                         {(selectedItem || hasUnsavedChanges) && (
                             <>
                                 {(selectedItem || hasUnsavedChanges) && (
@@ -504,13 +664,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
             <div className="flex flex-col h-full overflow-hidden bg-white relative">
 
                 {/* Header (Dates) */}
-                {/* We create a separate scroll container for the header to sync X-axis later if needed, 
-                    but usually, the main body handles X-scroll. Here we stick header to top. */}
                 <div className="h-12 border-b border-gray-100 flex bg-gray-50/50 absolute top-0 left-0 right-0 z-30 pointer-events-none">
-                    {/* Note: In a real app, this header needs to scroll horizontally with the body. 
-                        For simplicity in this grid layout, we often render it inside the scroll container 
-                        or use a sync-scroll hook for X-axis too. 
-                        Here, I will render it inside the scroll container for automatic X alignment. */}
                 </div>
 
                 {/* Scrollable Timeline Body (Both X and Y) */}
@@ -581,7 +735,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                         })()}
                         {/* SVG LAYER (Z-Curve Connections) */}
                         <svg
-                            className="absolute top-0 left-0 pointer-events-none z-10"
+                            className={cn("absolute top-0 left-0 pointer-events-none z-10", { "z-98": isAddingDependency })}
                             style={{
                                 width: `${itemCoordinates.totalWidth}px`,
                                 height: `${itemCoordinates.totalHeight}px`,
@@ -609,6 +763,8 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                                 // Connect: Source Right (Tail) -> Target Left (Head)
                                 const pathData = getOrthogonalPath(p1, p2);
                                 const opacity = isRelevant ? 1 : 0;
+                                const midX = p1.x + (p2.x - p1.x) / 2;
+                                const midY = p1.y + (p2.y - p1.y) / 2;
                                 return (
                                     <g
                                         className="group"
@@ -616,6 +772,8 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                                             opacity: opacity,
                                             transition: 'opacity 0.3s ease-in-out'
                                         }}
+                                        onMouseEnter={() => setDependencyBeingHovered(dep)}
+                                        onMouseLeave={() => setDependencyBeingHovered(null)}
                                     >
                                         {/* Thick invisible stroke for easier hovering */}
                                         <path d={pathData} stroke="transparent" strokeWidth="10" fill="none" />
@@ -624,13 +782,43 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                                         <path
                                             d={pathData}
                                             stroke={lineColor}
-                                            strokeWidth="2"
+                                            strokeWidth="3"
                                             fill="none"
-                                            className={`transition-colors duration-200 ${isRelevant ? hoverColorClass : ''}`}
+                                            className={`transition-colors cursor-pointer pointer-events-auto duration-200 ${isRelevant ? hoverColorClass : ''}`}
                                         />
+
+                                        {dependencyBeingHovered && (
+                                            <g
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteDependency();
+                                                }}
+                                                className="cursor-pointer pointer-events-auto"
+                                                transform={`translate(${midX}, ${midY})`}
+                                                style={{ transform: `translate(${midX + 20}px, ${midY}px)` }}
+                                            >
+                                                {/* White background circle */}
+                                                <circle r="10" fill="white" stroke="#ef4444" strokeWidth="1" />
+                                                {/* X Icon (SVG Lines) */}
+                                                <line x1="-4" y1="-4" x2="4" y2="4" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
+                                                <line x1="4" y1="-4" x2="-4" y2="4" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
+                                            </g>
+                                        )}
                                     </g>
                                 );
                             })}
+                            {dependencyDragLine && (
+                                <line
+                                    x1={dependencyDragLine.startX}
+                                    y1={dependencyDragLine.startY}
+                                    x2={dependencyDragLine.currentX}
+                                    y2={dependencyDragLine.currentY}
+                                    stroke="#3b82f6"
+                                    strokeWidth="2"
+                                    strokeDasharray="5,5"
+                                    className="transition-all duration-75 ease-linear"
+                                />
+                            )}
                         </svg>
                         <TableHeader>
                             <TableRow className="h-8 border-b border-gray-100">
@@ -676,22 +864,13 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                                         ))}
 
                                         {/* Render Gantt Bar (Absolute Overlay) */}
-                                        {/* We place this absolute relative to the row */}
                                         <div className="absolute inset-0 w-full h-full pointer-events-none">
-                                            {/* Container for the bar allows us to use % width relative to the whole timeline row width 
-                                                Note: For % width to work based on viewStartDate/EndDate, the row width must represent the total view time. 
-                                                If the table is wider than the view (horizontal scroll), the math needs to account for pixel width.
-                                                
-                                                *Simplification*: We assume the TableRow width spans the visual area. 
-                                                For a robust chart, you usually use a specific pixel width per day (e.g., 40px) 
-                                                and calculate Left/Width in pixels, not %.
-                                            */}
-
-                                            {/* For this demo, we assume the Table width tracks the full view duration. */}
-                                            <div className="relative w-full h-full pointer-events-auto" onClick={(e) => {
-                                                e.stopPropagation();
-                                                setSelectedItem(item);
-                                            }}>
+                                            <div className="relative w-full h-full pointer-events-auto"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSelectedItem(item);
+                                                }}
+                                            >
                                                 <GanttBar
                                                     item={item}
                                                     originalStyle={barPosition}
@@ -703,6 +882,9 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                                                     parentStartDate={parentDates.parentStartDate}
                                                     parentEndDate={parentDates.parentEndDate}
                                                     handleMoveGnattBar={handleMoveGnattBar}
+                                                    isAddingDependency={isAddingDependency}
+                                                    handleMouseDownWhenAddingDependency={handleMouseDownWhenAddingDependency}
+                                                    handleDraggingLineDropWhenAddingDependency={handleDraggingLineDropWhenAddingDependency}
                                                 />
                                             </div>
                                         </div>
@@ -713,6 +895,12 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                     </Table>
                 </div>
             </div>
+            {alertMessage && (
+                <AlertModal
+                    alertMessage={alertMessage}
+                    onClose={() => setAlertMessage(null)}
+                />
+            )}
         </div>
     );
 }

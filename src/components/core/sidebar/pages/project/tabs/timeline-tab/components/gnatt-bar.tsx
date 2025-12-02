@@ -3,7 +3,7 @@
 import { calculateBarPosition, cn, getId, toDayJs } from "@/lib/utils";
 import { TimelineItem } from '@/model/project-management';
 import dayjs from 'dayjs';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 
 interface GanttBarProps {
     item: TimelineItem;
@@ -13,9 +13,12 @@ interface GanttBarProps {
     projectStartDate: Date;
     parentStartDate: string;
     parentEndDate: string;
+    isAddingDependency: boolean;
     isRelated: boolean;
     onDateUpdate: (id: number | string, newStart: string, newEnd: string) => void;
     handleMoveGnattBar: (id: string | number, daysShift: number) => void;
+    handleDraggingLineDropWhenAddingDependency: (item: TimelineItem) => void;
+    handleMouseDownWhenAddingDependency: (e: any, item: TimelineItem) => void;
 };
 
 const GanttBar = ({
@@ -26,9 +29,12 @@ const GanttBar = ({
     isHovered,
     isRelated,
     onDateUpdate,
+    isAddingDependency,
     parentStartDate,
     parentEndDate,
     handleMoveGnattBar,
+    handleDraggingLineDropWhenAddingDependency,
+    handleMouseDownWhenAddingDependency,
 }: GanttBarProps) => {
     const barRef = useRef<HTMLDivElement>(null);
 
@@ -99,6 +105,10 @@ const GanttBar = ({
         }
         e.stopPropagation();
         e.preventDefault();
+
+        if (isAddingDependency) {
+            return;
+        }
 
         setIsDragging(true);
         setDragMode(edge);
@@ -202,7 +212,7 @@ const GanttBar = ({
                 barStyles.container,
                 barStyles.height,
                 isRelated || isHovered
-                    ? ((isHovered || isDragging) ? "cursor-grab ring-2 ring-offset-1 ring-blue-300 opacity-100" : "opacity-90 hover:opacity-100")
+                    ? ((isHovered || isDragging) ? cn("cursor-grab ring-2 ring-offset-1 ring-blue-300 opacity-100", { "cursor-default": isAddingDependency }) : "opacity-90 hover:opacity-100")
                     : "opacity-30 cursor-default bg-transparent border-none",
 
                 isDragging && "transition-none cursor-grabbing",
@@ -210,16 +220,18 @@ const GanttBar = ({
             )}
             style={style || undefined}
             onMouseDown={(e) => {
-                handleMouseDown(e, 'move');
+                if (isAddingDependency) {
+                    handleMouseDownWhenAddingDependency(e, item);
+                }
+                else {
+                    handleMouseDown(e, 'move');
+                }
             }}
-        // onMouseUp={() => {
-        //     if (dragMode !== 'move') {
-        //         onDateUpdate(item.id, localStartDate, localEndDate);
-        //     }
-        //     else {
-        //         handleMoveGnattBar(getId(item.type, item.id), currentShiftRef.current);
-        //     }
-        // }}
+            onMouseUp={() => {
+                if (isAddingDependency) {
+                    handleDraggingLineDropWhenAddingDependency(item);
+                }
+            }}
         >
             {/* --- Head Handle (Start Date) --- */}
             <div
