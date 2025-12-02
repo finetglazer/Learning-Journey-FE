@@ -1,7 +1,7 @@
 "use client";
 
 import { AppContext, AppContextProps } from "@/hooks/app-context";
-import { getId } from "@/lib/utils";
+import { getId, toDayJs } from "@/lib/utils";
 import { PM_Deliverable, Project, ProjectDependency, ProjectMembershipRole, ProjectTimelineStructure, ReorderType, TeamMember, TimelineItem } from "@/model/project-management"; // Added PM_Phase, PM_Task for type clarity
 import { projectRepository } from "@/repository/project-repository";
 import { createContext, Dispatch, SetStateAction, useCallback, useContext, useEffect, useRef, useState } from "react";
@@ -236,13 +236,13 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
             });
 
         return () => {
-            return subscription.unsubscribe();
+            subscription.unsubscribe();
         }
     }, [
         currentSelectedProject,
     ]);
 
-    const getNumericIds = (items?: any[]) => {
+    const mappingTimelineItems = (projectStartDate: string, items?: any[]) => {
         if (!items) {
             return [];
         }
@@ -251,8 +251,10 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
             res.push({
                 ...item,
                 id: Number(item.id.split("-")[1]),
+                startDate: item?.startDate || projectStartDate,
+                endDate: item?.endDate || toDayJs().endOf("year").format("YYYY-MM-DD"),
+                children: mappingTimelineItems(projectStartDate, item.children),
             });
-            res = res.concat([...getNumericIds(item.children)]);
         });
 
         return res;
@@ -267,7 +269,7 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
                     const timelineItems = res?.data?.items || [];
                     setTimelineData({
                         ...res?.data,
-                        items: getNumericIds(timelineItems),
+                        items: mappingTimelineItems(res?.data?.projectStartDate, timelineItems),
                     });
                 } else {
                     toast.error(res?.message || res?.msg);

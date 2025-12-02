@@ -1,6 +1,6 @@
 "use client";
 
-import { calculateBarPosition, cn, dateToDayJs } from "@/lib/utils";
+import { calculateBarPosition, cn, getId, toDayJs } from "@/lib/utils";
 import { TimelineItem } from '@/model/project-management';
 import dayjs from 'dayjs';
 import React, { useEffect, useRef, useState } from 'react';
@@ -8,26 +8,47 @@ import React, { useEffect, useRef, useState } from 'react';
 interface GanttBarProps {
     item: TimelineItem;
     totalViewDays: number;
-    projectStartDate: Date;
     originalStyle: React.CSSProperties; // Initial positioning
     isHovered: boolean;
-    onDateUpdate: (id: number, newStart: string, newEnd: string) => void;
+    projectStartDate: Date;
+    parentStartDate: string;
+    parentEndDate: string;
+    isRelated: boolean;
+    onDateUpdate: (id: number | string, newStart: string, newEnd: string) => void;
+    handleMoveGnattBar: (id: string | number, daysShift: number) => void;
 };
 
-const GanttBar = ({ item, totalViewDays, originalStyle, projectStartDate, isHovered, onDateUpdate }: GanttBarProps) => {
+const GanttBar = ({
+    item,
+    totalViewDays,
+    originalStyle,
+    projectStartDate,
+    isHovered,
+    isRelated,
+    onDateUpdate,
+    parentStartDate,
+    parentEndDate,
+    handleMoveGnattBar,
+}: GanttBarProps) => {
     const barRef = useRef<HTMLDivElement>(null);
 
+    const currentShiftRef = useRef(0);
+    const constraintRef = useRef({
+        startDate: item.startDate,
+        endDate: item.endDate,
+    });
+
     // Local state for smooth dragging visual feedback
-    const [localStartDate, setLocalStartDate] = useState(item.startDate || dateToDayJs(projectStartDate).format("YYYY-MM-DD"));
-    const [localEndDate, setLocalEndDate] = useState(item.endDate || dateToDayJs(projectStartDate).format("YYYY-MM-DD"));
+    const [localStartDate, setLocalStartDate] = useState(item.startDate);
+    const [localEndDate, setLocalEndDate] = useState(item.endDate);
     const [isDragging, setIsDragging] = useState(false);
-    const [dragEdge, setDragEdge] = useState<'start' | 'end' | null>(null);
+    const [dragMode, setDragMode] = useState<'start' | 'end' | 'move' | null>(null);
     const [style, setStyle] = useState<React.CSSProperties | null>(null);
 
     useEffect(() => {
         if (!isDragging) {
-            setLocalStartDate(item.startDate || dateToDayJs(projectStartDate).format("YYYY-MM-DD"));
-            setLocalEndDate(item.endDate || dateToDayJs(projectStartDate).format("YYYY-MM-DD"));
+            setLocalStartDate(item.startDate);
+            setLocalEndDate(item.endDate);
         }
     }, [item.startDate, item.endDate]);
 
@@ -49,21 +70,42 @@ const GanttBar = ({ item, totalViewDays, originalStyle, projectStartDate, isHove
         totalViewDays,
     ]);
 
+
     // --- Math Helper ---
-    const calculateDuration = (s: string, e: string) => dayjs(e).diff(dayjs(s), 'day') + 1;
+    const calculateDuration = (s: string, e: string) => toDayJs(e).diff(toDayJs(s), 'day') + 1;
     const duration = calculateDuration(localStartDate, localEndDate);
 
+    const applyConstraints = (newStart: dayjs.Dayjs, newEnd: dayjs.Dayjs, initialDurationDays: number, mode: 'start' | 'end' | 'move') => {
+        let validStart = newStart;
+        let validEnd = newEnd;
+
+        if (parentStartDate && validStart.isBefore(toDayJs(parentStartDate, 0))) {
+            validStart = toDayJs(parentStartDate, 0);
+            if (mode === 'move') validEnd = validStart.add(initialDurationDays, 'day');
+        }
+
+        if (parentEndDate && validEnd.isAfter(toDayJs(parentEndDate, 0))) {
+            validEnd = toDayJs(parentEndDate, 0);
+            if (mode === 'move') validStart = validEnd.subtract(initialDurationDays, 'day');
+        }
+
+        return { validStart, validEnd };
+    };
+
     // --- Drag Logic ---
-    const handleMouseDown = (e: React.MouseEvent, edge: 'start' | 'end') => {
+    const handleMouseDown = (e: React.MouseEvent, edge: 'start' | 'end' | 'move') => {
+        if (!isRelated) {
+            return;
+        }
         e.stopPropagation(); // Prevent row click
         e.preventDefault();  // Prevent text selection
 
         setIsDragging(true);
-        setDragEdge(edge);
+        setDragMode(edge);
 
         const startX = e.clientX;
-        const initialStart = dayjs(localStartDate);
-        const initialEnd = dayjs(localEndDate);
+        const initialStart = toDayJs(localStartDate, 0);
+        const initialEnd = toDayJs(localEndDate, 0);
 
         // Get the width of the parent timeline container (the 100% width reference)
         // We use offsetParent because the bar is absolute positioned relative to it.
@@ -72,39 +114,57 @@ const GanttBar = ({ item, totalViewDays, originalStyle, projectStartDate, isHove
 
         const handleMouseMove = (moveEvent: MouseEvent) => {
             const deltaX = moveEvent.clientX - startX;
-
-            // Calculate how many days we have moved (rounded to nearest integer)
             const daysShift = Math.round(deltaX / pixelsPerDay);
 
-            if (edge === 'start') {
-                const newStart = initialStart.add(daysShift, 'day');
-                // Constraint: Start date cannot be after End date
-                if (newStart.isBefore(initialEnd) || newStart.isSame(initialEnd)) {
-                    setLocalStartDate(newStart.format('YYYY-MM-DD'));
-                }
-            } else {
-                const newEnd = initialEnd.add(daysShift, 'day');
-                // Constraint: End date cannot be before Start date
-                if (newEnd.isAfter(initialStart) || newEnd.isSame(initialStart)) {
-                    setLocalEndDate(newEnd.format('YYYY-MM-DD'));
-                }
+            let newStart = initialStart;
+            let newEnd = initialEnd;
+            const initialDurationDays = initialEnd.diff(initialStart, 'day');
+
+            if (edge === 'move') {
+                newStart = initialStart.add(daysShift, 'day');
+                newEnd = newStart.add(initialDurationDays, 'day');
             }
+            else if (edge === 'start') {
+                newStart = initialStart.add(daysShift, 'day');
+                // Don't let start pass end
+                if (newStart.isAfter(initialEnd)) newStart = initialEnd;
+            }
+            else if (edge === 'end') {
+                newEnd = initialEnd.add(daysShift, 'day');
+                // Don't let end pass start
+                if (newEnd.isBefore(initialStart)) newEnd = initialStart;
+            }
+
+            // --- 2. Apply Parent/Project Constraints ---
+            constraintRef.current = {
+                startDate: newStart.format("YYYY-MM-DD"),
+                endDate: newEnd.format("YYYY-MM-DD"),
+            }
+
+            const constrained = applyConstraints(newStart, newEnd, initialDurationDays, edge);
+            constraintRef.current = {
+                startDate: constrained.validStart.format("YYYY-MM-DD"),
+                endDate: constrained.validEnd.format("YYYY-MM-DD"),
+            }
+            currentShiftRef.current = constrained.validStart.diff(initialStart, 'day');
+
+            setLocalStartDate(constraintRef.current.startDate);
+            setLocalEndDate(constraintRef.current.endDate);
         };
 
         const handleMouseUp = () => {
             setIsDragging(false);
-            setDragEdge(null);
+            setDragMode(null);
 
             // Clean up listeners
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
 
-            // 🚀 Trigger the update callback to Parent
-            // We use the state values inside this closure's scope reference or ref
-            // Note: Since setLocalStartDate is async, in a real event listener usually we'd track the 'finalDate' variable.
-            // For simplicity here, we rely on the fact that React 18 batches updates or we could pass the calculated date.
-            // A safer way inside a closure is recalculating the final date one last time:
-            // But for this snippet, let's assume the user stops moving for a split second or we pass the calculated values.
+            if (edge === 'move') {
+                handleMoveGnattBar(getId(item.type, item.id), currentShiftRef.current);
+            } else {
+                onDateUpdate(getId(item.type, item.id), constraintRef.current.startDate, constraintRef.current.endDate);
+            }
         };
 
         document.addEventListener('mousemove', handleMouseMove);
@@ -125,57 +185,6 @@ const GanttBar = ({ item, totalViewDays, originalStyle, projectStartDate, isHove
 
     const barStyles = getBarStyles(item.type);
 
-    // Calculate dynamic style based on Local State (so it moves while dragging)
-    // We override the 'left' and 'width' from props if we are dragging
-    // Note: We need the parent logic `calculateBarPosition` here to convert Date -> CSS %
-    // Since we don't have that helper inside here, a trick is to rely on the parent props for initial,
-    // but calculating the visual shift is cleaner if the Parent passes the math helper. 
-
-    // **Alternative**: If we want pure visual feedback without parent recalc, we can modify `style` prop.
-    // However, the cleanest way is:
-    // 1. Calculate visual percentage based on local dates.
-    // Since we don't have the `viewStartDate` here to calc offset, we can only update the text.
-    // **CRITICAL**: To make the bar physically grow/shrink, we need to invoke `onDateUpdate` on mouseUp, 
-    // but for smooth dragging, we usually need the `left` and `width` to react.
-
-    // *Simplified Approach for this Component*: 
-    // We assume the Parent component will re-render this bar when we call `onDateUpdate`.
-    // BUT, for 60fps smoothness, we want to update DOM locally. 
-    // Let's assume the `style` prop passed is ignored during drag and we calculate our own based on days.
-
-    // Actually, to make it fully robust without passing `viewStartDate` down:
-    // We will just fire `onDateUpdate` on mouseUp. The visual bar won't move until mouseUp? 
-    // NO, that's bad UX.
-
-    // **Solution**: We will trigger the Parent's update function *on Mouse Up*, 
-    // but we need to calculate the CSS locally.
-    // Since `calculateBarPosition` (from previous prompts) is outside, we'll assume
-    // we need to return a simple `div` here and assume the parent handles the re-render fast enough,
-    // OR we simply modify the existing `style` object with a transform.
-
-    // Let's implement the `useEffect` trigger on mouseUp. For visual feedback, 
-    // we will rely on the Tooltip updating. To make the bar actually stretch, 
-    // the best architecture is for the Parent to pass the `viewStartDate` so we can calc %.
-
-    // Assuming `onDateUpdate` is fast (React State update), we can call it on `mousemove`.
-    // If that's too slow (database call), we should use `transform`.
-
-    // Let's stick to updating the local dates for the Tooltip, and trigger the save on MouseUp.
-    // To make the bar visually resize, we need to update the style.
-    // *Hack for visual resize without context*: 
-    // We can assume the initial style.width/left are accurate, convert them to pixels on mount, 
-    // and manipulate pixels.
-
-    // **BETTER**: Just pass `onDateUpdate` (state update only) on MouseUp. 
-    // For this code snippet, I will assume the parent passes `onDateChange` which updates the PARENT state, 
-    // causing a re-render. If that's slow, we need a different approach.
-
-    // ⚠️ CRITICAL FIX: To make the bar resize visually *before* saving:
-    // We need to recalculate the style object. 
-    // I will assume `calculateBarPosition` logic is injected or we pass `viewStartDate` as prop.
-    // Since I don't have `viewStartDate` in props, I will rely on the `onDateUpdate` passed in 
-    // `handleMouseUp` to snap the bar to the new position.
-
     const connectorCircleClasses = cn(
         "absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-2 rounded-full z-20 cursor-ew-resize",
         "transition-transform hover:scale-125",
@@ -192,12 +201,25 @@ const GanttBar = ({ item, totalViewDays, originalStyle, projectStartDate, isHove
                 isDragging ? "transition-none" : "transition-all duration-300",
                 barStyles.container,
                 barStyles.height,
+                isRelated || isHovered
+                    ? ((isHovered || isDragging) ? "cursor-grab ring-2 ring-offset-1 ring-blue-300 opacity-100" : "opacity-90 hover:opacity-100")
+                    : "opacity-30 cursor-default bg-transparent border-none",
+
+                isDragging && "transition-none cursor-grabbing",
                 (isHovered || isDragging) ? "ring-2 ring-offset-1 ring-blue-300 opacity-100" : "opacity-90 hover:opacity-100"
             )}
             style={style || undefined}
-            onMouseUp={() => {
-                onDateUpdate(item.id, localStartDate, localEndDate)
+            onMouseDown={(e) => {
+                handleMouseDown(e, 'move');
             }}
+        // onMouseUp={() => {
+        //     if (dragMode !== 'move') {
+        //         onDateUpdate(item.id, localStartDate, localEndDate);
+        //     }
+        //     else {
+        //         handleMoveGnattBar(getId(item.type, item.id), currentShiftRef.current);
+        //     }
+        // }}
         >
             {/* --- Head Handle (Start Date) --- */}
             <div
@@ -229,9 +251,9 @@ const GanttBar = ({ item, totalViewDays, originalStyle, projectStartDate, isHove
             >
                 <div className="font-semibold mb-0.5">{item.name}</div>
                 <div className="text-gray-300 flex items-center gap-1">
-                    <span>{dayjs(localStartDate).format('DD/MM/YY')}</span>
+                    <span>{toDayJs(localStartDate, 0).format('DD/MM/YY')}</span>
                     <span>-</span>
-                    <span>{dayjs(localEndDate).format('DD/MM/YY')}</span>
+                    <span>{toDayJs(localEndDate, 0).format('DD/MM/YY')}</span>
                     <span className="text-gray-400 ml-1">({duration} days)</span>
                 </div>
                 <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>

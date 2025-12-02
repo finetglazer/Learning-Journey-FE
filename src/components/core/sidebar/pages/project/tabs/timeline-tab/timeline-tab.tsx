@@ -1,15 +1,15 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { calculateBarPosition, cn, getDaysDiff, getId, getOrthogonalPath, toDayJs } from "@/lib/utils";
-import { ProjectDependency, ProjectTimelineStructure, TimelineItem } from '@/model/project-management';
+import { ProjectTimelineStructure, TimelineItem } from '@/model/project-management';
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
-import { ChevronDown, ChevronRight, Save, Undo2 } from "lucide-react";
-import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { TeamProjectContext, TeamProjectContextProps } from '../../team-project-context';
 import { isEqual } from "lodash";
-import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronRight, Save, Undo2, X } from "lucide-react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { TeamProjectContext, TeamProjectContextProps } from '../../team-project-context';
 import GanttBar from "./components/gnatt-bar";
 dayjs.extend(isoWeek);
 
@@ -24,6 +24,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
     const [hoveredRowId, setHoveredRowId] = useState<number | null>(null);
     const [timelineStructure, setTimelineStructure] = useState<ProjectTimelineStructure | null>(null);
     const [selectedItem, setSelectedItem] = useState<TimelineItem | null>(null);
+    const [containerWidth, setContainerWidth] = useState(0);
 
     const {
         timelineData: originalTimelineStructure,
@@ -37,7 +38,36 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         }
 
         return !isEqual(timelineStructure, originalTimelineStructure);
-    }, [timelineStructure, originalTimelineStructure]);
+    }, [timelineStructure, originalTimelineStructure, selectedItem, hoveredRowId]);
+
+    const relatedIds = useMemo(() => {
+        // If nothing is selected, the set is empty (logic handled in render)
+        if (!selectedItem) return new Set<string>();
+
+        const startId = getId(selectedItem.type, selectedItem.id);
+        const visited = new Set<string>();
+        const queue = [startId];
+
+        while (queue.length > 0) {
+            const currentId = queue.shift()!;
+
+            if (visited.has(currentId)) continue;
+            visited.add(currentId);
+
+            dependencies.forEach(dep => {
+                const source = getId(dep.type, dep.fromId);
+                const target = getId(dep.type, dep.toId);
+
+                if (source === currentId) {
+                    if (!visited.has(target)) queue.push(target);
+                } else if (target === currentId) {
+                    if (!visited.has(source)) queue.push(source);
+                }
+            });
+        }
+
+        return visited;
+    }, [selectedItem, dependencies]);
 
     const { months, weeks } = useMemo(() => {
         if (!timelineStructure?.projectStartDate) {
@@ -116,7 +146,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
             if (!prevStructure) return null;
             const updateRecursive = (items: TimelineItem[]): TimelineItem[] => {
                 return items.map((item) => {
-                    if (item.id === id) {
+                    if (getId(item.type, item.id) === id) {
                         return {
                             ...item,
                             startDate: newStart,
@@ -133,7 +163,6 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                     return item;
                 });
             };
-
             return {
                 ...prevStructure,
                 items: updateRecursive(prevStructure.items || [])
@@ -141,8 +170,42 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         });
     }, []);
 
-    // --- 4. Flattening Logic ---
+    const handleMoveGnattBar = useCallback((id: number | string, daysShift: number) => {
+        setTimelineStructure((prevStructure) => {
+            if (!prevStructure) return null;
 
+            const shiftItemAndSubtree = (item: TimelineItem): TimelineItem => {
+                return {
+                    ...item,
+                    startDate: toDayJs(item.startDate, 0).add(daysShift, 'day').format('YYYY-MM-DD'),
+                    endDate: toDayJs(item.endDate, 0).add(daysShift, 'day').format('YYYY-MM-DD'),
+                    children: item.children ? item.children.map(shiftItemAndSubtree) : []
+                };
+            };
+
+            const findAndShiftRecursive = (items: TimelineItem[]): TimelineItem[] => {
+                return items.map((item) => {
+                    if (getId(item.type, item.id) === id) {
+                        return shiftItemAndSubtree(item);
+                    }
+                    if (item.children && item.children.length > 0) {
+                        return {
+                            ...item,
+                            children: findAndShiftRecursive(item.children)
+                        };
+                    }
+                    return item;
+                });
+            };
+
+            return {
+                ...prevStructure,
+                items: findAndShiftRecursive(prevStructure.items || [])
+            };
+        });
+    }, []);
+
+    // --- 4. Flattening Logic ---
     const getVisibleItems = useCallback((items: TimelineItem[]): { item: TimelineItem, depth: number }[] => {
         let visible: { item: TimelineItem, depth: number }[] = [];
 
@@ -170,11 +233,15 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
 
         let currentY = 0;
         const ROW_HEIGHT = 48; // Must match your CSS h-12 (12 * 4px = 48px)
-        const HEADER_HEIGHT = 48; // Height of the date header
+        const HEADER_HEIGHT = 88; // Height of the date header
 
         // Calculate Total Width in Pixels (Crucial for SVG)
         // We assume 150px per week column as defined in your TableHead
-        const TOTAL_WIDTH = weeks.length * 150;
+        const realTableWidth = timelineScrollRef.current
+            ? timelineScrollRef.current.scrollWidth
+            : (weeks.length * 150);
+
+        const TOTAL_WIDTH = realTableWidth;
 
         visibleRows.forEach(({ item }) => {
             // Y Coordinate: Top of row + Half Height + Header Offset
@@ -182,8 +249,8 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
 
             // X Coordinates: Calculate percentage, then convert to pixels based on TOTAL_WIDTH
             // Reuse your existing logic for math
-            const start = new Date(item.startDate);
-            const end = new Date(item.endDate);
+            const start = new Date(item.startDate || originalTimelineStructure?.projectStartDate || toDayJs().format("YYYY-MM-DD"));
+            const end = new Date(item.endDate || originalTimelineStructure?.projectStartDate || toDayJs().format("YYYY-MM-DD"));
 
             const daysFromStart = getDaysDiff(start, new Date(originalTimelineStructure?.projectStartDate || toDayJs().format("YYYY-MM-DD")));
             const duration = getDaysDiff(end, start) + 1;
@@ -204,7 +271,29 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         });
 
         return { coords, totalHeight: currentY + HEADER_HEIGHT, totalWidth: TOTAL_WIDTH };
-    }, [visibleRows, originalTimelineStructure?.projectStartDate, weeks]);
+    }, [visibleRows, originalTimelineStructure?.projectStartDate, weeks, containerWidth]);
+
+    const getParentStartDateEndDate = useCallback((timelineItem: TimelineItem) => {
+        let parentStartDate = timelineStructure?.projectStartDate || toDayJs(undefined, 0).format("YYYY-MM-DD");
+        let parentEndDate = toDayJs(undefined, 0).endOf("year").format("YYYY-MM-DD");
+        if (timelineItem.type === 'DELIVERABLE') {
+            return {
+                parentStartDate,
+                parentEndDate,
+            }
+        }
+        (timelineStructure?.items || []).forEach(item => {
+            if ((item.children || []).some(child => child.id === timelineItem.id)) {
+                parentStartDate = item.startDate || parentStartDate;
+                parentEndDate = item.endDate || parentEndDate;
+            }
+        });
+
+        return {
+            parentStartDate,
+            parentEndDate,
+        }
+    }, [timelineStructure]);
 
     // --- Scroll Synchronization ---
     useEffect(() => {
@@ -237,7 +326,11 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
     }, []);
 
     useEffect(() => {
-        setTimelineStructure(originalTimelineStructure);
+        setTimelineStructure({
+            projectStartDate: originalTimelineStructure?.projectStartDate || toDayJs().format("YYYY-MM-DD"),
+            items: [...(originalTimelineStructure?.items || [])],
+            milestones: [...(originalTimelineStructure?.milestones || [])],
+        });
     }, [originalTimelineStructure]);
 
     useEffect(() => {
@@ -245,6 +338,35 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
             getItemDependencies(selectedItem);
         }
     }, [selectedItem]);
+
+    useEffect(() => {
+        // Function to update width
+        const handleResize = () => {
+            if (timelineScrollRef.current) {
+                // We track the scrollWidth or clientWidth to detect layout changes
+                setContainerWidth(timelineScrollRef.current.clientWidth);
+            }
+        };
+
+        // 1. Initial measurement
+        handleResize();
+
+        // 2. Window resize listener
+        window.addEventListener('resize', handleResize);
+
+        // 3. (Optional but recommended) ResizeObserver for the specific container
+        // This catches layout changes that aren't just window resizes (e.g. sidebar toggles)
+        const resizeObserver = new ResizeObserver(handleResize);
+        if (timelineScrollRef.current) {
+            resizeObserver.observe(timelineScrollRef.current);
+        }
+
+        // Cleanup
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            resizeObserver.disconnect();
+        };
+    }, []);
 
     // --- 5. Render ---
     return (
@@ -258,26 +380,37 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                         Work Item
                     </span>
 
-                    {hasUnsavedChanges && (
+                    {(selectedItem || hasUnsavedChanges) && (
                         <div className="flex items-center gap-3">
-                            <Button
-                                size="sm"
-                                onClick={() => {
-                                    setTimelineStructure(originalTimelineStructure);
-                                }}
-                                className="h-7 px-3 text-xs cursor-pointer font-medium bg-red-500 hover:bg-red-600 text-white shadow-sm transition-all animate-in fade-in zoom-in duration-300"
-                            >
-                                <Undo2 className="w-3.5 h-3.5 mr-1.5" />
-                                Discard
-                            </Button>
-                            <Button
-                                size="sm"
-                                // onClick={onSave}
-                                className="h-7 px-3 text-xs cursor-pointer font-medium bg-indigo-500 hover:bg-indigo-700 text-white shadow-sm transition-all animate-in fade-in zoom-in duration-300"
-                            >
-                                <Save className="w-3.5 h-3.5 mr-1.5" />
-                                Update
-                            </Button>
+                            {(selectedItem || hasUnsavedChanges) && (
+                                <Button
+                                    size="sm"
+                                    onClick={() => {
+                                        setSelectedItem(null);
+                                        setTimelineStructure({
+                                            projectStartDate: originalTimelineStructure?.projectStartDate || toDayJs().format("YYYY-MM-DD"),
+                                            items: [...(originalTimelineStructure?.items || [])],
+                                            milestones: [...(originalTimelineStructure?.milestones || [])],
+                                        });
+                                    }}
+                                    className="h-7 px-3 text-xs cursor-pointer font-medium bg-white hover:bg-gray-100 text-gray-700 border border-gray-200 shadow-sm transition-all animate-in fade-in zoom-in duration-300"
+                                >
+                                    <X className="w-3.5 h-3.5 mr-1.5" />
+                                    Cancel
+                                </Button>
+                            )}
+                            {hasUnsavedChanges && (
+                                <>
+                                    <Button
+                                        size="sm"
+                                        // onClick={onSave}
+                                        className="h-7 px-3 text-xs cursor-pointer font-medium bg-indigo-500 hover:bg-indigo-700 text-white shadow-sm transition-all animate-in fade-in zoom-in duration-300"
+                                    >
+                                        <Save className="w-3.5 h-3.5 mr-1.5" />
+                                        Update
+                                    </Button>
+                                </>
+                            )}
                         </div>
                     )}
                 </div>
@@ -342,7 +475,6 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                 </div>
             </div>
 
-
             {/* === RIGHT PANEL: TIMELINE === */}
             <div className="flex flex-col h-full overflow-hidden bg-white relative">
 
@@ -361,53 +493,78 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                     ref={timelineScrollRef}
                     className="flex-1 overflow-auto relative"
                 >
-                    {/* SVG LAYER (Z-Curve Connections) */}
-                    <svg
-                        className="absolute top-0 left-0 pointer-events-none z-0"
+                    {/* BACKDROP OVERLAY */}
+                    {/* Covers the entire scrollable area when an item is selected */}
+                    <div
+                        className={cn(
+                            "absolute inset-0 bg-black/40 z-10 transition-opacity duration-300 pointer-events-none",
+                            selectedItem ? "opacity-100" : "opacity-0"
+                        )}
                         style={{
-                            width: `${itemCoordinates.totalWidth}px`,
-                            height: `${itemCoordinates.totalHeight}px`
+                            // Ensure backdrop covers the full calculated width/height of content
+                            width: `${Math.max(itemCoordinates.totalWidth, containerWidth)}px`,
+                            height: `${itemCoordinates.totalHeight}px`,
                         }}
-                    >
-                        <defs>
-                            {/* Arrowhead Marker */}
-                            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                                <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8" />
-                            </marker>
-                        </defs>
-
-                        {dependencies.map(dep => {
-                            const source = itemCoordinates.coords.get(getId(dep.type, dep.fromId));
-                            const target = itemCoordinates.coords.get(getId(dep.type, dep.toId));
-
-                            // Only draw if both items are currently visible (expanded)
-                            if (!source || !target) return null;
-
-                            // Connect: Source Right (Tail) -> Target Left (Head)
-                            const pathData = getOrthogonalPath(
-                                { x: source.xEnd, y: source.y },
-                                { x: target.xStart, y: target.y }
-                            );
-
-                            return (
-                                <g className="group">
-                                    {/* Thick invisible stroke for easier hovering */}
-                                    <path d={pathData} stroke="transparent" strokeWidth="10" fill="none" />
-                                    {/* The visible line */}
-                                    <path
-                                        d={pathData}
-                                        stroke="#cbd5e1" // slate-300
-                                        strokeWidth="2"
-                                        fill="none"
-                                        markerEnd="url(#arrowhead)"
-                                        className="transition-colors duration-200 group-hover:stroke-blue-500"
-                                    />
-                                </g>
-                            );
-                        })}
-                    </svg>
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedItem(null);
+                        }}
+                    />
 
                     <Table style={{ minWidth: '100%' }}> {/* Ensure table can expand horizontally */}
+                        {/* SVG LAYER (Z-Curve Connections) */}
+                        <svg
+                            className="absolute top-0 left-0 pointer-events-none z-10"
+                            style={{
+                                width: `${itemCoordinates.totalWidth}px`,
+                                height: `${itemCoordinates.totalHeight}px`,
+                            }}
+                        >
+                            {dependencies.map(dep => {
+                                let source = itemCoordinates.coords.get(getId(dep.type, dep.fromId));
+                                let target = itemCoordinates.coords.get(getId(dep.type, dep.toId));
+
+                                if (!source || !target) return null;
+
+                                const isBackwardsOrTouching = source.xEnd >= target.xStart;
+
+                                const lineColor = isBackwardsOrTouching ? "#3b82f6" : "#ef4444"; // Blue : Red
+                                const hoverColorClass = isBackwardsOrTouching ? "group-hover:stroke-blue-700" : "group-hover:stroke-red-700";
+                                const isRelevant = (relatedIds.has(getId(dep.type, dep.fromId)) && relatedIds.has(getId(dep.type, dep.toId)));
+
+                                let p1 = { x: source.xEnd, y: source.y };   // Source Tail
+                                let p2 = { x: target.xStart, y: target.y }; // Target Head
+
+                                if (p1.y > p2.y) {
+                                    [p1, p2] = [p2, p1];
+                                }
+
+                                // Connect: Source Right (Tail) -> Target Left (Head)
+                                const pathData = getOrthogonalPath(p1, p2);
+                                const opacity = isRelevant ? 1 : 0;
+                                return (
+                                    <g
+                                        className="group"
+                                        style={{
+                                            opacity: opacity,
+                                            transition: 'opacity 0.3s ease-in-out'
+                                        }}
+                                    >
+                                        {/* Thick invisible stroke for easier hovering */}
+                                        <path d={pathData} stroke="transparent" strokeWidth="10" fill="none" />
+
+                                        {/* The visible line */}
+                                        <path
+                                            d={pathData}
+                                            stroke={lineColor}
+                                            strokeWidth="2"
+                                            fill="none"
+                                            className={`transition-colors duration-200 ${isRelevant ? hoverColorClass : ''}`}
+                                        />
+                                    </g>
+                                );
+                            })}
+                        </svg>
                         <TableHeader>
                             <TableRow className="h-8 border-b border-gray-100">
                                 {months.map((month: any, i: number) => (
@@ -433,14 +590,16 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                             {visibleRows.map(({ item }) => {
                                 const barPosition = calculateBarPosition(item.startDate, item.endDate, new Date(timelineStructure?.projectStartDate || toDayJs().format("YYYY-MM-DD")), totalViewDays);
                                 const isHovered = hoveredRowId === item.id;
+                                const isRelated = !selectedItem || relatedIds.has(getId(item.type, item.id));
+                                const parentDates = getParentStartDateEndDate(item);
 
                                 return (
                                     <TableRow
                                         key={item.id}
-                                        className={cn(
-                                            "h-12 border-b border-gray-50 transition-colors relative group",
-                                            isHovered ? "bg-blue-50/50" : "hover:bg-transparent"
-                                        )}
+                                        className={
+                                            cn(
+                                                "h-12 border-b border-gray-50 transition-colors relative group",
+                                            )}
                                         onMouseEnter={() => setHoveredRowId(item.id)}
                                         onMouseLeave={() => setHoveredRowId(null)}
                                     >
@@ -471,8 +630,12 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                                                     originalStyle={barPosition}
                                                     projectStartDate={new Date(timelineStructure?.projectStartDate || toDayJs().format("YYY-MM-DD"))}
                                                     isHovered={isHovered}
+                                                    isRelated={isRelated}
                                                     totalViewDays={totalViewDays}
                                                     onDateUpdate={handleUpdateGnattBarDate}
+                                                    parentStartDate={parentDates.parentStartDate}
+                                                    parentEndDate={parentDates.parentEndDate}
+                                                    handleMoveGnattBar={handleMoveGnattBar}
                                                 />
                                             </div>
                                         </div>

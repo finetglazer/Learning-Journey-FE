@@ -14,21 +14,26 @@ export interface AppContextProps {
     setSleepHours: Dispatch<SetStateAction<SleepHour[]>>;
     email: string;
     setEmail: Dispatch<SetStateAction<string>>;
+    darkBg: boolean;
+    setDarkBg: Dispatch<SetStateAction<boolean>>;
 };
 
 export const AppContext = createContext<AppContextProps>({
     loadingPage: false,
-    setLoadingPage: () => {},
+    setLoadingPage: () => { },
     sleepHours: [],
-    setSleepHours: () => {},
+    setSleepHours: () => { },
     email: "",
-    setEmail: () => {},
+    setEmail: () => { },
+    darkBg: false,
+    setDarkBg: () => { },
 });
 
 export const useAppHooks = (): AppContextProps => {
     const [loadingPage, setLoadingPage] = useState<boolean>(false);
     const [sleepHours, setSleepHours] = useState<SleepHour[]>([]);
     const [email, setEmail] = useState<string>("");
+    const [darkBg, setDarkBg] = useState<boolean>(false);
 
     useEffect(() => {
         setEmail(localStorage.getItem("email") || "");
@@ -41,5 +46,7 @@ export const useAppHooks = (): AppContextProps => {
         setSleepHours,
         email,
         setEmail,
+        darkBg,
+        setDarkBg,
     };
 };

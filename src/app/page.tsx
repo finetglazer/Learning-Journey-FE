@@ -63,17 +63,11 @@ export default function RootPage() {
   const [modalStates, setModalStates] = useState([false, false, false, false]);
   const [teamProjects, setTeamProjects] = useState<Project[]>([]);
 
-  const { setSleepHours, setLoadingPage } = useContext<AppContextProps>(AppContext);
+  const { setSleepHours, setLoadingPage, darkBg, setDarkBg, } = useContext<AppContextProps>(AppContext);
   const calendarContextValues = useCalendarHooks();
   const isModalOpen = useMemo(() => {
     return modalStates.some(state => state === true);
   }, [modalStates]);
-
-  const {
-    currentDate,
-    setAlertMessage,
-    getUserProjectTasks,
-  } = calendarContextValues;
 
   const updateModalStates = (index: number, isOpen: boolean) => {
     const updatedModalStates = [...modalStates];
@@ -366,15 +360,27 @@ export default function RootPage() {
     }
   }, [activeItem, currentView]);
 
+  useEffect(() => {
+    if (isModalOpen) {
+      setDarkBg(true);
+    }
+    else {
+      setDarkBg(false);
+    }
+  }, [isModalOpen]);
+
   return (
     <TeamProjectContext.Provider value={useTeamProjectHooks(currentSelectedProject)}>
       <CalendarContext.Provider value={calendarContextValues}>
         <div className="relative">
-          {isModalOpen && (
+          {darkBg && (
             <div
               className="fixed inset-0 bg-black/50 z-[1000] transition-opacity duration-300"
               // Close all modals when clicking the backdrop
-              onClick={() => setModalStates([false, false, false, false])}
+              onClick={() => {
+                setModalStates([false, false, false, false]);
+                setDarkBg(false);
+              }}
             />
           )}
 
