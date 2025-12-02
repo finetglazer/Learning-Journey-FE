@@ -7,7 +7,7 @@ import { ProjectTimelineStructure, TimelineItem } from '@/model/project-manageme
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { isEqual } from "lodash";
-import { ChevronDown, ChevronRight, Save, Undo2, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Link2, Link2Off, Save, Undo2, X } from "lucide-react";
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { TeamProjectContext, TeamProjectContextProps } from '../../team-project-context';
 import GanttBar from "./components/gnatt-bar";
@@ -25,6 +25,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
     const [timelineStructure, setTimelineStructure] = useState<ProjectTimelineStructure | null>(null);
     const [selectedItem, setSelectedItem] = useState<TimelineItem | null>(null);
     const [containerWidth, setContainerWidth] = useState(0);
+    const [isAddingDependency, setIsAddingDependency] = useState(false);
 
     const {
         timelineData: originalTimelineStructure,
@@ -379,40 +380,64 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                     <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
                         Work Item
                     </span>
-
-                    {(selectedItem || hasUnsavedChanges) && (
-                        <div className="flex items-center gap-3">
-                            {(selectedItem || hasUnsavedChanges) && (
-                                <Button
-                                    size="sm"
-                                    onClick={() => {
-                                        setSelectedItem(null);
-                                        setTimelineStructure({
-                                            projectStartDate: originalTimelineStructure?.projectStartDate || toDayJs().format("YYYY-MM-DD"),
-                                            items: [...(originalTimelineStructure?.items || [])],
-                                            milestones: [...(originalTimelineStructure?.milestones || [])],
-                                        });
-                                    }}
-                                    className="h-7 px-3 text-xs cursor-pointer font-medium bg-white hover:bg-gray-100 text-gray-700 border border-gray-200 shadow-sm transition-all animate-in fade-in zoom-in duration-300"
-                                >
-                                    <X className="w-3.5 h-3.5 mr-1.5" />
-                                    Cancel
-                                </Button>
+                    <div className="flex items-center gap-3">
+                        <Button
+                            size="sm"
+                            onClick={() => setIsAddingDependency(!isAddingDependency)}
+                            className={cn(
+                                "h-7 px-3 text-xs cursor-pointer font-medium shadow-sm transition-all animate-in fade-in zoom-in duration-300",
+                                isAddingDependency
+                                    ? "bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-200" // Cancel Style
+                                    : "bg-white hover:bg-gray-100 text-gray-700 border border-gray-200"       // Add Style
                             )}
-                            {hasUnsavedChanges && (
+                        >
+                            {isAddingDependency ? (
                                 <>
-                                    <Button
-                                        size="sm"
-                                        // onClick={onSave}
-                                        className="h-7 px-3 text-xs cursor-pointer font-medium bg-indigo-500 hover:bg-indigo-700 text-white shadow-sm transition-all animate-in fade-in zoom-in duration-300"
-                                    >
-                                        <Save className="w-3.5 h-3.5 mr-1.5" />
-                                        Update
-                                    </Button>
+                                    <Link2Off className="w-3.5 h-3.5 mr-1.5" />
+                                    Cancel add
+                                </>
+                            ) : (
+                                <>
+                                    <Link2 className="w-3.5 h-3.5 mr-1.5" />
+                                    Add dependency
                                 </>
                             )}
-                        </div>
-                    )}
+                        </Button>
+                        
+                        {(selectedItem || hasUnsavedChanges) && (
+                            <>
+                                {(selectedItem || hasUnsavedChanges) && (
+                                    <Button
+                                        size="sm"
+                                        onClick={() => {
+                                            setSelectedItem(null);
+                                            setTimelineStructure({
+                                                projectStartDate: originalTimelineStructure?.projectStartDate || toDayJs().format("YYYY-MM-DD"),
+                                                items: [...(originalTimelineStructure?.items || [])],
+                                                milestones: [...(originalTimelineStructure?.milestones || [])],
+                                            });
+                                        }}
+                                        className="h-7 px-3 text-xs cursor-pointer font-medium bg-white hover:bg-gray-100 text-gray-700 border border-gray-200 shadow-sm transition-all animate-in fade-in zoom-in duration-300"
+                                    >
+                                        <X className="w-3.5 h-3.5 mr-1.5" />
+                                        Cancel
+                                    </Button>
+                                )}
+                                {hasUnsavedChanges && (
+                                    <>
+                                        <Button
+                                            size="sm"
+                                            // onClick={onSave}
+                                            className="h-7 px-3 text-xs cursor-pointer font-medium bg-indigo-500 hover:bg-indigo-700 text-white shadow-sm transition-all animate-in fade-in zoom-in duration-300"
+                                        >
+                                            <Save className="w-3.5 h-3.5 mr-1.5" />
+                                            Update
+                                        </Button>
+                                    </>
+                                )}
+                            </>
+                        )}
+                    </div>
                 </div>
 
                 {/* Scrollable List */}
@@ -512,6 +537,48 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                     />
 
                     <Table style={{ minWidth: '100%' }}> {/* Ensure table can expand horizontally */}
+                        {/* TODAY LINE */}
+                        {(() => {
+                            const today = toDayJs(undefined, 0);
+                            const startDate = toDayJs(timelineStructure?.projectStartDate || toDayJs(undefined, 0).format("YYYY-MM-DD"), 0);
+                            const diffDays = today.diff(startDate, 'day');
+
+                            // Check if today is within view
+                            if (diffDays >= 0 && diffDays <= totalViewDays) {
+                                const leftPixel = (diffDays / totalViewDays) * itemCoordinates.totalWidth;
+
+                                return (
+                                    <div
+                                        className="absolute top-0 z-40 flex flex-col items-center pointer-events-none"
+                                        style={{
+                                            left: `${leftPixel}px`,
+                                            height: `${itemCoordinates.totalHeight}px`,
+                                            transform: 'translateX(-50%)'
+                                        }}
+                                    >
+                                        {/* Hitbox area for hover */}
+                                        <div className="h-full w-4 flex flex-col items-center group pointer-events-auto">
+
+                                            {/* Visible Blue Line */}
+                                            <div className="h-full w-[2px] bg-blue-400 relative shadow-[0_0_8px_rgba(96,165,250,0.6)]">
+                                                {/* Top Dot */}
+                                                <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-blue-400 rounded-full border-2 border-white shadow-sm" />
+                                                {/* Bottom Dot */}
+                                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-blue-400 rounded-full border-2 border-white shadow-sm" />
+                                            </div>
+
+                                            {/* Tooltip */}
+                                            <div className="absolute top-8 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-md shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                                                Today - {today.format('DD/MM/YY')}
+                                                {/* Tooltip Arrow */}
+                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            }
+                            return null;
+                        })()}
                         {/* SVG LAYER (Z-Curve Connections) */}
                         <svg
                             className="absolute top-0 left-0 pointer-events-none z-10"
@@ -528,7 +595,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
 
                                 const isBackwardsOrTouching = source.xEnd >= target.xStart;
 
-                                const lineColor = isBackwardsOrTouching ? "#3b82f6" : "#ef4444"; // Blue : Red
+                                const lineColor = isBackwardsOrTouching ? "#33BFFF" : "#E62E7B"; // Blue : Red
                                 const hoverColorClass = isBackwardsOrTouching ? "group-hover:stroke-blue-700" : "group-hover:stroke-red-700";
                                 const isRelevant = (relatedIds.has(getId(dep.type, dep.fromId)) && relatedIds.has(getId(dep.type, dep.toId)));
 

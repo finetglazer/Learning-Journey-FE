@@ -97,8 +97,8 @@ const GanttBar = ({
         if (!isRelated) {
             return;
         }
-        e.stopPropagation(); // Prevent row click
-        e.preventDefault();  // Prevent text selection
+        e.stopPropagation();
+        e.preventDefault();
 
         setIsDragging(true);
         setDragMode(edge);
