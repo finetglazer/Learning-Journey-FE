@@ -529,7 +529,7 @@ export const ListTab = ({ }: ListTabProps) => {
         <div className="relative">
             {/* --- Top Actions Bar --- */}
             <div className="flex justify-between items-center mb-4 mt-4">
-                {/* Search Bar (from image) */}
+                {/* Search Bar */}
                 <div className="relative w-64">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input placeholder="Search list" className="pl-8 h-9 bg-white" value={search} onChange={(e) => setSearch(e.target.value)} />

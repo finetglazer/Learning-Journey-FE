@@ -1,20 +1,23 @@
 "use client";
 
+import { AlertMessage, AlertModal } from "@/components/core/alert-modal/alert-modal";
+import SpinnerLoader from "@/components/core/loader/spinner-loader";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { calculateBarPosition, cn, getDaysDiff, getId, getOrthogonalPath, toDayJs } from "@/lib/utils";
 import { ProjectDependency, ProjectTimelineStructure, TimelineItem, TimelineMilestone } from '@/model/project-management';
 import { projectRepository } from "@/repository/project-repository";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
-import { isEqual } from "lodash";
-import { ChevronDown, ChevronRight, Link2, Link2Off, Loader2, Save, X } from "lucide-react";
+import { debounce, isEqual } from "lodash";
+import { ChevronDown, ChevronRight, Edit, Link2, Link2Off, Loader2, Save, Search, X } from "lucide-react";
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { finalize } from "rxjs";
 import { toast } from "sonner";
-import { TeamProjectContext, TeamProjectContextProps } from '../../team-project-context';
+import { TeamProjectContext, TeamProjectContextProps, TeamProjectTab } from '../../team-project-context';
+import { AddMilestoneCard } from "./components/add-milestone-card";
 import GanttBar from "./components/gnatt-bar";
-import { AlertMessage, AlertModal } from "@/components/core/alert-modal/alert-modal";
 dayjs.extend(isoWeek);
 
 export interface GanttTimelineBoardProps {
@@ -41,13 +44,21 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
     const [dependencySource, setDependencySource] = useState<TimelineItem | null>(null);
     const [dependencies, setDependencies] = useState<ProjectDependency[]>([]);
     const [dependencyBeingHovered, setDependencyBeingHovered] = useState<ProjectDependency | null>(null);
-
+    const [search, setSearch] = useState<string>("");
+    const [showMyTasks, setShowMyTasks] = useState<boolean>(false);
+    const [fetching, setFetching] = useState<boolean>(false);
+    const [selectedMilestone, setSelectedMilestone] = useState<TimelineMilestone | null>(null);
     const {
         timelineData: originalTimelineStructure,
+        setTimelineData: setOriginalTimelineData,
         getItemDependencies,
         dependencies: originalDependencies,
         selectedProject,
-        getProjectTimeline,
+        setTab,
+        setScrollToItem,
+        setIsNavigatingFromTaskBoard,
+        deliverables,
+        setExpandedDeliverables: setListTabExpandedDeliverables,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
     const getLocalCoordinates = useCallback((e: MouseEvent | React.MouseEvent) => {
@@ -225,7 +236,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         return () => {
             subscription.unsubscribe();
         }
-    }, [selectedProject, getProjectTimeline, dependencyBeingHovered, dependencies]);
+    }, [selectedProject, dependencyBeingHovered, dependencies]);
 
     const initUpdateTimelineItemsBody = (item: TimelineItem, body: TimelineItem[]) => {
         const originalItem = originalItemsMap.get(getId(item.type, item.id));
@@ -249,7 +260,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         let body: any[] = [];
 
         setIsUpdating(true);
-        
+
         (timelineStructure?.items || []).forEach((item: TimelineItem) => {
             initUpdateTimelineItemsBody(item, body);
         });
@@ -261,33 +272,33 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
             start_date: body[0].startDate,
             end_date: body[0].endDate,
         })
-        .pipe(finalize(() => {
-            setIsUpdating(false);
-        }))
-        .subscribe({
-            next: res => {
-                if (res?.status) {
-                    toast.success(res?.message || res?.msg);
-                    getProjectTimeline();
-                }
-                else {
+            .pipe(finalize(() => {
+                setIsUpdating(false);
+            }))
+            .subscribe({
+                next: res => {
+                    if (res?.status) {
+                        toast.success(res?.message || res?.msg);
+                        getProjectTimeline();
+                    }
+                    else {
+                        setAlertMessage({
+                            type: "error",
+                            title: res?.msg || res?.message,
+                            description: res?.data
+                        });
+                    }
+                },
+                error: err => {
+                    const errors = err?.response?.data?.data;
+                    const message = err?.response?.data?.msg || err?.response?.data?.message;
                     setAlertMessage({
                         type: "error",
-                        title: res?.msg || res?.message,
-                        description: res?.data
+                        title: message,
+                        description: errors,
                     });
                 }
-            },
-            error: err => {
-                const errors = err?.response?.data?.data;
-                const message = err?.response?.data?.msg || err?.response?.data?.message;
-                setAlertMessage({
-                    type: "error",
-                    title: message,
-                    description: errors,
-                });
-            }
-        });
+            });
 
         return () => {
             subscription.unsubscribe();
@@ -330,6 +341,80 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
 
         return visited;
     }, [selectedItem, dependencies]);
+
+    const handleCreateNewMilestone = useCallback((name: string, date: string) => {
+        const subscription = projectRepository.createMilestone({
+            projectId: selectedProject?.id as number,
+        }, {
+            name,
+            date,
+        })
+            .subscribe({
+                next: res => {
+                    if (res?.status) {
+                        toast.success(res?.message || res?.msg);
+                        getProjectTimeline();
+                    }
+                    else {
+                        setAlertMessage({
+                            type: "error",
+                            title: res?.msg || res?.message,
+                            description: res?.data
+                        });
+                    }
+                },
+                error: err => {
+                    const errors = err?.response?.data?.data;
+                    const message = err?.response?.data?.msg || err?.response?.data?.message;
+                    setAlertMessage({
+                        type: "error",
+                        title: message,
+                        description: errors,
+                    });
+                },
+            });
+
+        return () => {
+            subscription.unsubscribe();
+        }
+    }, [selectedProject]);
+
+    const handleUpdateMilestone = useCallback((milestone: TimelineMilestone) => {
+        const subscription = projectRepository.updateMilestone({
+            projectId: selectedProject?.id as number,
+            milestoneId: milestone.id,
+        }, {
+            ...milestone,
+        })
+            .subscribe({
+                next: res => {
+                    if (res?.status) {
+                        toast.success(res?.message || res?.msg);
+                        getProjectTimeline();
+                    }
+                    else {
+                        setAlertMessage({
+                            type: "error",
+                            title: res?.msg || res?.message,
+                            description: res?.data
+                        });
+                    }
+                },
+                error: err => {
+                    const errors = err?.response?.data?.data;
+                    const message = err?.response?.data?.msg || err?.response?.data?.message;
+                    setAlertMessage({
+                        type: "error",
+                        title: message,
+                        description: errors,
+                    });
+                },
+            });
+
+        return () => {
+            subscription.unsubscribe();
+        }
+    }, [selectedProject]);
 
     const { months, weeks } = useMemo(() => {
         if (!timelineStructure?.projectStartDate) {
@@ -557,6 +642,81 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         }
     }, [timelineStructure]);
 
+    const handleEditClick = (e: React.MouseEvent, item: TimelineItem) => {
+        e.stopPropagation();
+        setTab(TeamProjectTab.LIST);
+        setIsNavigatingFromTaskBoard(true);
+        setScrollToItem(getId(item.type, item.id));
+        if (isEqual(item.type, 'DELIVERABLE')) {
+            setListTabExpandedDeliverables((prev: Set<string>) => new Set(prev).add(getId(item.type, item.id)))
+        }
+        if (isEqual(item.type, 'PHASE')) {
+            setListTabExpandedDeliverables((prev: Set<string>) => new Set(prev).add((deliverables || []).find(deliverable => deliverable.phases.some(phase => isEqual(phase.phaseId, item.id)))?.deliverableIdStr as string))
+        }
+    };
+
+    const mappingTimelineItems = (projectStartDate: string, items?: any[]) => {
+        if (!items) {
+            return [];
+        }
+        let res: any[] = [];
+        items.forEach((item: any) => {
+            if (item.type === 'DELIVERABLE' && item.childrenContainSearchKeyword) {
+                setExpandedDeliverables(prev => new Set(prev).add(Number(item.id.split("-")[1])));
+            }
+            res.push({
+                ...item,
+                id: Number(item.id.split("-")[1]),
+                startDate: item?.startDate || projectStartDate,
+                endDate: item?.endDate || toDayJs().endOf("year").format("YYYY-MM-DD"),
+                children: mappingTimelineItems(projectStartDate, item.children),
+            });
+        });
+
+        return res;
+    };
+
+    const getProjectTimeline = useCallback(() => {
+        const subscription = projectRepository.getTimelineStructure({
+            projectId: selectedProject?.id as number,
+        }, {
+            search: search,
+        }).subscribe({
+            next: res => {
+                if (res?.status) {
+                    const timelineItems = res?.data?.items || [];
+                    setOriginalTimelineData({
+                        ...res?.data,
+                        items: mappingTimelineItems(res?.data?.projectStartDate, timelineItems),
+                    });
+                } else {
+                    toast.error(res?.message || res?.msg);
+                }
+            },
+            error: err => { },
+        });
+
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, [selectedProject, search]);
+
+    const debouncedFetchTimeline = useMemo(
+        () => debounce(getProjectTimeline, 100),
+        [getProjectTimeline]
+    );
+
+    useEffect(() => {
+        setFetching(true);
+        debouncedFetchTimeline();
+
+        // Cleanup: Important! Cancel any pending debounced calls when dependencies change
+        // or the component unmounts to prevent stale state updates.
+        return () => {
+            debouncedFetchTimeline.cancel();
+        };
+    }, [search, showMyTasks, debouncedFetchTimeline]);
+
     // --- Scroll Synchronization ---
     useEffect(() => {
         const timelineEl = timelineScrollRef.current;
@@ -593,6 +753,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
             items: [...(originalTimelineStructure?.items || [])],
             milestones: [...(originalTimelineStructure?.milestones || [])],
         });
+        setFetching(false);
     }, [originalTimelineStructure]);
 
     useEffect(() => {
@@ -646,415 +807,496 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [dependencyBeingHovered]);
 
-    // --- 5. Render ---
     return (
-        <div className="grid grid-cols-[350px_1fr] h-full overflow-hidden border rounded-xl shadow-lg bg-white">
+        <>
+            {/* Header */}
+            <div className="mt-3 flex justify-between mr-3">
+                <div className="flex gap-7">
+                    {/* Search bar */}
+                    <div className="relative w-64">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input placeholder="Search list" className="pl-8 h-9 bg-white" value={search} onChange={(e) => setSearch(e.target.value)} />
+                    </div>
+                    {/* My Tasks Checkbox - Tasks are not available in this tab */}
+                    {/* <div className="flex items-center space-x-2">
+                        <input
+                            type="checkbox"
+                            id="my-tasks-checkbox"
+                            checked={showMyTasks}
+                            onChange={(e) => setShowMyTasks(e.target.checked)}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                        />
+                        <label htmlFor="my-tasks-checkbox" className="text-sm text-gray-700 select-none">
+                            My tasks
+                        </label>
+                    </div> */}
+                </div>
 
-            {/* === LEFT PANEL: HIERARCHY === */}
-            <div className="flex flex-col border-r border-gray-200 h-full bg-white z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
-                {/* Header */}
-                <div className="border-b border-gray-100 flex items-center justify-between px-1 bg-gray-50/50" style={{ height: 89 }}>
-                    <div className="flex items-center gap-3 overflow-hidden">
-                        <Button
-                            size="sm"
-                            onClick={() => setIsAddingDependency(!isAddingDependency)}
-                            className={cn(
-                                "h-7 px-3 text-xs cursor-pointer font-medium shadow-sm transition-all animate-in fade-in zoom-in duration-300",
-                                isAddingDependency
-                                    ? "bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-200" // Cancel Style
-                                    : "bg-white hover:bg-gray-100 text-gray-700 border border-gray-200"       // Add Style
-                            )}
-                        >
-                            {isAddingDependency ? (
-                                <>
-                                    <Link2Off className="w-3.5 h-3.5 mr-1.5" />
-                                    Cancel add
-                                </>
-                            ) : (
-                                <>
-                                    <Link2 className="w-3.5 h-3.5 mr-1.5" />
-                                    Add dependency
-                                </>
-                            )}
-                        </Button>
-
-                        {(selectedItem || hasUnsavedChanges) && (
+                <div className="flex items-center gap-3 overflow-hidden">
+                    <Button
+                        size="sm"
+                        onClick={() => setIsAddingDependency(!isAddingDependency)}
+                        className={cn(
+                            "h-7 px-3 text-xs cursor-pointer font-medium shadow-sm transition-all animate-in fade-in zoom-in duration-300",
+                            isAddingDependency
+                                ? "bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-200" // Cancel Style (Amber)
+                                : "bg-purple-600 hover:bg-purple-700 text-white border border-transparent"  // Add Style (Purple)
+                        )}
+                    >
+                        {isAddingDependency ? (
                             <>
-                                {(selectedItem || hasUnsavedChanges) && (
-                                    <Button
-                                        size="sm"
-                                        onClick={() => {
-                                            setSelectedItem(null);
-                                            setTimelineStructure({
-                                                projectStartDate: originalTimelineStructure?.projectStartDate || toDayJs().format("YYYY-MM-DD"),
-                                                items: [...(originalTimelineStructure?.items || [])],
-                                                milestones: [...(originalTimelineStructure?.milestones || [])],
-                                            });
-                                        }}
-                                        className="h-7 px-3 text-xs cursor-pointer font-medium bg-white hover:bg-gray-100 text-gray-700 border border-gray-200 shadow-sm transition-all animate-in fade-in zoom-in duration-300"
-                                    >
-                                        <X className="w-3.5 h-3.5 mr-1.5" />
-                                        Cancel
-                                    </Button>
-                                )}
-                                {hasUnsavedChanges && (
-                                    <>
-                                        <Button
-                                            size="sm"
-                                            onClick={handleUpdateTimelineDates}
-                                            className="h-7 px-3 text-xs cursor-pointer font-medium bg-indigo-500 hover:bg-indigo-700 text-white shadow-sm transition-all animate-in fade-in zoom-in duration-300"
-                                            disabled={isUpdating}
-                                        >
-                                            {!isUpdating && <Save className="w-3.5 h-3.5 mr-1.5" />}
-                                            {isUpdating && <Loader2 className="w-3.5 h-3.5 mr-1.5" />}
-                                            {!isUpdating ? "Update" : "Updating..."}
-                                        </Button>
-                                    </>
-                                )}
+                                <Link2Off className="w-3.5 h-3.5 mr-1.5" />
+                                Cancel add
+                            </>
+                        ) : (
+                            <>
+                                <Link2 className="w-3.5 h-3.5 mr-1.5" />
+                                Add dependency
                             </>
                         )}
-                    </div>
-                </div>
+                    </Button>
 
-                {/* Scrollable List */}
-                <div
-                    ref={hierarchyScrollRef}
-                    className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide" // Hide scrollbar on left, rely on right
-                >
-                    <Table>
-                        <TableBody>
-                            {visibleRows.map(({ item, depth }) => {
-                                const hasChildren = item.children && item.children.length > 0;
-                                const isExpanded = isItemExpanded(item);
-                                const isHovered = hoveredRowId === item.id;
-
-                                return (
-                                    <TableRow
-                                        key={item.id}
-                                        className={cn(
-                                            "h-12 border-b border-gray-50 transition-colors",
-                                            isHovered ? "bg-blue-50/50" : "hover:bg-transparent"
-                                        )}
-                                        onMouseEnter={() => setHoveredRowId(item.id)}
-                                        onMouseLeave={() => setHoveredRowId(null)}
+                    {(selectedItem || hasUnsavedChanges) && (
+                        <>
+                            {(selectedItem || hasUnsavedChanges) && (
+                                <Button
+                                    size="sm"
+                                    onClick={() => {
+                                        setSelectedItem(null);
+                                        setTimelineStructure({
+                                            projectStartDate: originalTimelineStructure?.projectStartDate || toDayJs().format("YYYY-MM-DD"),
+                                            items: [...(originalTimelineStructure?.items || [])],
+                                            milestones: [...(originalTimelineStructure?.milestones || [])],
+                                        });
+                                    }}
+                                    className="h-7 px-3 text-xs cursor-pointer font-medium bg-white hover:bg-gray-100 text-gray-700 border border-gray-200 shadow-sm transition-all animate-in fade-in zoom-in duration-300"
+                                >
+                                    <X className="w-3.5 h-3.5 mr-1.5" />
+                                    Cancel
+                                </Button>
+                            )}
+                            {hasUnsavedChanges && (
+                                <>
+                                    <Button
+                                        size="sm"
+                                        onClick={handleUpdateTimelineDates}
+                                        className="h-7 px-3 text-xs cursor-pointer font-medium bg-indigo-500 hover:bg-indigo-700 text-white shadow-sm transition-all animate-in fade-in zoom-in duration-300"
+                                        disabled={isUpdating}
                                     >
-                                        <TableCell className="p-0 border-none">
-                                            <div
-                                                className="flex items-center h-full pr-4 cursor-pointer select-none"
-                                                style={{ paddingLeft: `${(depth * 20) + 16}px` }}
-                                                onClick={() => hasChildren && toggleExpand(item)}
+                                        {!isUpdating && <Save className="w-3.5 h-3.5 mr-1.5" />}
+                                        {isUpdating && <Loader2 className="w-3.5 h-3.5 mr-1.5" />}
+                                        {!isUpdating ? "Update" : "Updating..."}
+                                    </Button>
+                                </>
+                            )}
+                        </>
+                    )}
+
+                    <AddMilestoneCard
+                        onAdd={handleCreateNewMilestone}
+                        onUpdate={handleUpdateMilestone}
+                        selectedMilestone={selectedMilestone}
+                        setSelectedMilestone={setSelectedMilestone}
+                    />
+                </div>
+            </div>
+
+            {fetching && (
+                <div className="ml-[700px] w-[500px]">
+                    <SpinnerLoader
+                        sizeClass="24"
+                        message="Getting project timeline..."
+                    />
+                </div>
+            )}
+
+            {/* Table */}
+            {!fetching && (
+                <div className="grid grid-cols-[350px_1fr] mt-10 h-full overflow-hidden border rounded-xl shadow-lg bg-white">
+                    {/* === LEFT PANEL: HIERARCHY === */}
+                    <div className="flex flex-col border-r border-gray-200 h-full bg-white z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+                        {/* Header */}
+                        <div className="border-b border-gray-100 flex items-center justify-between px-1 bg-gray-50/50" style={{ height: 89 }}>
+                            <span className="ml-5 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                Work Item
+                            </span>
+                        </div>
+
+                        {/* Scrollable List */}
+                        <div
+                            ref={hierarchyScrollRef}
+                            className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide" // Hide scrollbar on left, rely on right
+                        >
+                            <Table>
+                                <TableBody>
+                                    {visibleRows.map(({ item, depth }) => {
+                                        const hasChildren = item.children && item.children.length > 0;
+                                        const isExpanded = isItemExpanded(item);
+                                        const isHovered = hoveredRowId === item.id;
+
+                                        return (
+                                            <TableRow
+                                                key={item.id}
+                                                className={cn(
+                                                    "h-12 border-b border-gray-50 transition-colors",
+                                                    isHovered ? "bg-blue-50/50" : "hover:bg-transparent"
+                                                )}
+                                                onMouseEnter={() => setHoveredRowId(item.id)}
+                                                onMouseLeave={() => setHoveredRowId(null)}
                                             >
-                                                {/* Collapse Icon */}
-                                                <div className={cn(
-                                                    "mr-2 p-0.5 rounded-md transition-colors",
-                                                    hasChildren ? "text-gray-400 hover:bg-gray-200 hover:text-gray-700" : "opacity-0"
-                                                )}>
-                                                    {isExpanded ? <ChevronDown size={14} strokeWidth={3} /> : <ChevronRight size={14} strokeWidth={3} />}
+                                                <TableCell className="p-0 border-none group">
+                                                    <div
+                                                        className="flex items-center h-full pr-4 cursor-pointer select-none"
+                                                        style={{ paddingLeft: `${(depth * 20) + 16}px` }}
+                                                        onClick={() => hasChildren && toggleExpand(item)}
+                                                    >
+                                                        {/* Collapse Icon */}
+                                                        <div className={cn(
+                                                            "mr-2 p-0.5 rounded-md transition-colors",
+                                                            hasChildren ? "text-gray-400 hover:bg-gray-200 hover:text-gray-700" : "opacity-0"
+                                                        )}>
+                                                            {isExpanded ? <ChevronDown size={14} strokeWidth={3} /> : <ChevronRight size={14} strokeWidth={3} />}
+                                                        </div>
+
+                                                        {/* Text Label */}
+                                                        <span className={cn(
+                                                            "text-sm truncate",
+                                                            item.type === 'DELIVERABLE' ? "font-semibold text-gray-800" :
+                                                                item.type === 'PHASE' ? "font-medium text-gray-700" : "text-gray-600 font-light"
+                                                        )}>
+                                                            {item.name}
+                                                        </span>
+
+                                                        <div
+                                                            className="ml-2 opacity-0 cursor-pointer group-hover:opacity-100 transition-opacity duration-200 p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-blue-600"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleEditClick(e, item);
+                                                            }}
+                                                        >
+                                                            <Edit size={14} />
+                                                        </div>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
+                                    {/* Empty state filler if needed */}
+                                    {visibleRows.length === 0 && (
+                                        <TableRow>
+                                            <TableCell className="text-center text-gray-400 py-8">No items found</TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </div>
+
+                    {/* === RIGHT PANEL: TIMELINE === */}
+                    <div
+                        className="flex flex-col h-full overflow-hidden bg-white relative"
+                    >
+                        {/* Scrollable Timeline Body (Both X and Y) */}
+                        <div
+                            ref={timelineScrollRef}
+                            className="flex-1 overflow-auto relative"
+                        >
+                            {/* BACKDROP OVERLAY */}
+                            {/* Covers the entire scrollable area when an item is selected */}
+                            <div
+                                className={cn(
+                                    "absolute inset-0 bg-black/40 z-10 transition-opacity duration-300 pointer-events-none",
+                                    selectedItem ? "opacity-100" : "opacity-0"
+                                )}
+                                style={{
+                                    // Ensure backdrop covers the full calculated width/height of content
+                                    width: `${Math.max(itemCoordinates.totalWidth, containerWidth)}px`,
+                                    height: `${itemCoordinates.totalHeight}px`,
+                                }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedItem(null);
+                                }}
+                            />
+
+                            {/* 2a. TODAY LINE (Single Instance) */}
+                            {(() => {
+                                const today = dayjs(); // Current Date
+                                const startDate = dayjs(timelineStructure?.projectStartDate || toDayJs(undefined, 0).format("YYYY-MM-DD"));
+                                const diffDays = today.diff(startDate, 'day');
+
+                                // Check if today is within view
+                                if (diffDays >= 0 && diffDays <= totalViewDays) {
+                                    const leftPixel = (diffDays / totalViewDays) * itemCoordinates.totalWidth;
+
+                                    return (
+                                        <div
+                                            className="absolute top-0 z-40 flex flex-col items-center pointer-events-none"
+                                            style={{
+                                                left: `${leftPixel}px`,
+                                                height: `${itemCoordinates.totalHeight + 2}px`,
+                                                transform: 'translateX(-50%)'
+                                            }}
+                                        >
+                                            {/* Hitbox area for hover */}
+                                            <div className="h-full w-4 flex flex-col items-center group pointer-events-auto">
+
+                                                {/* Visible Blue Line */}
+                                                <div className="h-full w-[2px] bg-blue-400 relative shadow-[0_0_8px_rgba(96,165,250,0.6)]">
+                                                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-blue-400 rounded-full border-2 border-white shadow-sm" />
+                                                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-blue-400 rounded-full border-2 border-white shadow-sm" />
                                                 </div>
 
-                                                {/* Text Label */}
-                                                <span className={cn(
-                                                    "text-sm truncate",
-                                                    item.type === 'DELIVERABLE' ? "font-semibold text-gray-800" :
-                                                        item.type === 'PHASE' ? "font-medium text-gray-700" : "text-gray-600 font-light"
-                                                )}>
-                                                    {item.name}
-                                                </span>
+                                                {/* Tooltip */}
+                                                <div className="absolute top-8 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-md shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                                                    Today - {today.format('DD/MM/YY')}
+                                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900" />
+                                                </div>
                                             </div>
-                                        </TableCell>
-                                    </TableRow>
-                                );
+                                        </div>
+                                    );
+                                }
+                                return null;
+                            })()}
+
+                            {/* 2b. MILESTONE LINES */}
+                            {(timelineStructure?.milestones || []).map((milestone: TimelineMilestone) => {
+                                const milestoneDate = dayjs(milestone.date);
+                                const startDate = dayjs(timelineStructure?.projectStartDate || toDayJs(undefined, 0).format("YYYY-MM-DD"));
+                                const diffDays = milestoneDate.diff(startDate, 'day');
+
+                                // Only render if visible
+                                if (diffDays >= 0 && diffDays <= totalViewDays) {
+                                    const leftPixel = (diffDays / totalViewDays) * itemCoordinates.totalWidth;
+
+                                    // Choose color (e.g., Orange for milestones)
+                                    const colorClass = "bg-orange-500";
+
+                                    return (
+                                        <div
+                                            key={milestone.id}
+                                            className="absolute top-0 z-30 flex flex-col items-center pointer-events-none"
+                                            style={{
+                                                left: `${leftPixel}px`,
+                                                height: `${itemCoordinates.totalHeight + 2}px`,
+                                                transform: 'translateX(-50%)',
+                                                zIndex: selectedMilestone ? 50 : 30,
+                                            }}
+                                        >
+                                            {/* Hitbox */}
+                                            <div className="h-full w-4 flex flex-col items-center group pointer-events-auto">
+
+                                                {/* Visible Line */}
+                                                <div
+                                                    className={cn(
+                                                        `h-full w-[2px] ${colorClass} cursor-pointer relative transition-all duration-200`,
+                                                        "group-hover:w-[4px] group-hover:shadow-[0_0_8px_rgba(249,115,22,0.8)]",
+                                                        (isEqual(selectedMilestone?.id, milestone.id)) && "w-[4px] shadow-[0_0_12px_rgba(249,115,22,0.9)]"
+                                                    )}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        // Toggle selection logic if needed, or just set
+                                                        setSelectedMilestone(selectedMilestone ? null : milestone);
+                                                    }}
+                                                >
+                                                    {/* Top Dot */}
+                                                    <div className={cn(
+                                                        `absolute -top-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 ${colorClass} rounded-full border-2 border-white shadow-sm transition-all duration-200`,
+                                                        "group-hover:w-4 group-hover:h-4 group-hover:-top-1.5 group-hover:border-orange-200",
+                                                        (isEqual(selectedMilestone?.id, milestone.id)) && "w-4 h-4 -top-1.5 border-orange-200 ring-2 ring-orange-100"
+                                                    )} />
+
+                                                    {/* Bottom Dot */}
+                                                    <div className={cn(
+                                                        `absolute -bottom-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 ${colorClass} rounded-full border-2 border-white shadow-sm transition-all duration-200`,
+                                                        "group-hover:w-4 group-hover:h-4 group-hover:-bottom-1.5 group-hover:border-orange-200",
+                                                        (isEqual(selectedMilestone?.id, milestone.id)) && "w-4 h-4 -bottom-1.5 border-orange-200 ring-2 ring-orange-100"
+                                                    )} />
+                                                </div>
+
+                                                {/* Tooltip */}
+                                                <div className="absolute top-8 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-md shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                                                    {milestone.name} - {milestoneDate.format('DD/MM/YY')}
+                                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                }
+                                return null;
                             })}
-                            {/* Empty state filler if needed */}
-                            {visibleRows.length === 0 && (
-                                <TableRow>
-                                    <TableCell className="text-center text-gray-400 py-8">No items found</TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-            </div>
-
-            {/* === RIGHT PANEL: TIMELINE === */}
-            <div className="flex flex-col h-full overflow-hidden bg-white relative">
-                {/* Scrollable Timeline Body (Both X and Y) */}
-                <div
-                    ref={timelineScrollRef}
-                    className="flex-1 overflow-auto relative"
-                >
-                    {/* BACKDROP OVERLAY */}
-                    {/* Covers the entire scrollable area when an item is selected */}
-                    <div
-                        className={cn(
-                            "absolute inset-0 bg-black/40 z-10 transition-opacity duration-300 pointer-events-none",
-                            selectedItem ? "opacity-100" : "opacity-0"
-                        )}
-                        style={{
-                            // Ensure backdrop covers the full calculated width/height of content
-                            width: `${Math.max(itemCoordinates.totalWidth, containerWidth)}px`,
-                            height: `${itemCoordinates.totalHeight}px`,
-                        }}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedItem(null);
-                        }}
-                    />
-
-                    {/* 2a. TODAY LINE (Single Instance) */}
-                    {(() => {
-                        const today = dayjs(); // Current Date
-                        const startDate = dayjs(timelineStructure?.projectStartDate || toDayJs(undefined, 0).format("YYYY-MM-DD"));
-                        const diffDays = today.diff(startDate, 'day');
-
-                        // Check if today is within view
-                        if (diffDays >= 0 && diffDays <= totalViewDays) {
-                            const leftPixel = (diffDays / totalViewDays) * itemCoordinates.totalWidth;
-
-                            return (
-                                <div
-                                    className="absolute top-0 z-40 flex flex-col items-center pointer-events-none"
+                            <table className="w-full caption-bottom text-sm" style={{ minWidth: '100%' }}>
+                                {/* SVG LAYER (Z-Curve Connections) */}
+                                <svg
+                                    className={cn("absolute top-0 left-0 pointer-events-none z-10", { "z-98": isAddingDependency })}
                                     style={{
-                                        left: `${leftPixel}px`,
-                                        height: `${itemCoordinates.totalHeight + 2}px`,
-                                        transform: 'translateX(-50%)'
+                                        width: `${itemCoordinates.totalWidth}px`,
+                                        height: `${itemCoordinates.totalHeight}px`,
                                     }}
                                 >
-                                    {/* Hitbox area for hover */}
-                                    <div className="h-full w-4 flex flex-col items-center group pointer-events-auto">
+                                    {dependencies.map(dep => {
+                                        let source = itemCoordinates.coords.get(getId(dep.type, dep.fromId));
+                                        let target = itemCoordinates.coords.get(getId(dep.type, dep.toId));
 
-                                        {/* Visible Blue Line */}
-                                        <div className="h-full w-[2px] bg-blue-400 relative shadow-[0_0_8px_rgba(96,165,250,0.6)]">
-                                            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-blue-400 rounded-full border-2 border-white shadow-sm" />
-                                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-blue-400 rounded-full border-2 border-white shadow-sm" />
-                                        </div>
+                                        if (!source || !target) return null;
 
-                                        {/* Tooltip */}
-                                        <div className="absolute top-8 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-md shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
-                                            Today - {today.format('DD/MM/YY')}
-                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900" />
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        }
-                        return null;
-                    })()}
+                                        const isBackwardsOrTouching = source.xEnd >= target.xStart;
 
-                    {/* 2b. MILESTONE LINES */}
-                    {(timelineStructure?.milestones || []).map((milestone: TimelineMilestone) => {
-                        const milestoneDate = dayjs(milestone.date);
-                        const startDate = dayjs(timelineStructure?.projectStartDate || toDayJs(undefined, 0).format("YYYY-MM-DD"));
-                        const diffDays = milestoneDate.diff(startDate, 'day');
+                                        const lineColor = isBackwardsOrTouching ? "#33BFFF" : "#E62E7B"; // Blue : Red
+                                        const hoverColorClass = isBackwardsOrTouching ? "group-hover:stroke-blue-700" : "group-hover:stroke-red-700";
+                                        const isRelevant = (relatedIds.has(getId(dep.type, dep.fromId)) && relatedIds.has(getId(dep.type, dep.toId)));
 
-                        // Only render if visible
-                        if (diffDays >= 0 && diffDays <= totalViewDays) {
-                            const leftPixel = (diffDays / totalViewDays) * itemCoordinates.totalWidth;
+                                        let p1 = { x: source.xEnd, y: source.y };   // Source Tail
+                                        let p2 = { x: target.xStart, y: target.y }; // Target Head
 
-                            // Choose color (e.g., Orange for milestones)
-                            const colorClass = "bg-orange-500";
+                                        // if (p1.y > p2.y) {
+                                        //     [p1, p2] = [p2, p1];
+                                        // }
 
-                            return (
-                                <div
-                                    key={milestone.id}
-                                    className="absolute top-0 z-30 flex flex-col items-center pointer-events-none"
-                                    style={{
-                                        left: `${leftPixel}px`,
-                                        height: `${itemCoordinates.totalHeight + 2}px`,
-                                        transform: 'translateX(-50%)'
-                                    }}
-                                >
-                                    {/* Hitbox */}
-                                    <div className="h-full w-4 flex flex-col items-center group pointer-events-auto">
-
-                                        {/* Visible Line */}
-                                        <div className={`h-full w-[2px] ${colorClass} relative`}>
-                                            <div className={`absolute -top-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 ${colorClass} rounded-full border-2 border-white shadow-sm`} />
-                                            <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 ${colorClass} rounded-full border-2 border-white shadow-sm`} />
-                                        </div>
-
-                                        {/* Tooltip */}
-                                        <div className="absolute top-8 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-md shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
-                                            {milestone.name} - {milestoneDate.format('DD/MM/YY')}
-                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900" />
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        }
-                        return null;
-                    })}
-                    <table className="w-full caption-bottom text-sm" style={{ minWidth: '100%' }}>
-                        {/* SVG LAYER (Z-Curve Connections) */}
-                        <svg
-                            className={cn("absolute top-0 left-0 pointer-events-none z-10", { "z-98": isAddingDependency })}
-                            style={{
-                                width: `${itemCoordinates.totalWidth}px`,
-                                height: `${itemCoordinates.totalHeight}px`,
-                            }}
-                        >
-                            {dependencies.map(dep => {
-                                let source = itemCoordinates.coords.get(getId(dep.type, dep.fromId));
-                                let target = itemCoordinates.coords.get(getId(dep.type, dep.toId));
-
-                                if (!source || !target) return null;
-
-                                const isBackwardsOrTouching = source.xEnd >= target.xStart;
-
-                                const lineColor = isBackwardsOrTouching ? "#33BFFF" : "#E62E7B"; // Blue : Red
-                                const hoverColorClass = isBackwardsOrTouching ? "group-hover:stroke-blue-700" : "group-hover:stroke-red-700";
-                                const isRelevant = (relatedIds.has(getId(dep.type, dep.fromId)) && relatedIds.has(getId(dep.type, dep.toId)));
-
-                                let p1 = { x: source.xEnd, y: source.y };   // Source Tail
-                                let p2 = { x: target.xStart, y: target.y }; // Target Head
-
-                                // if (p1.y > p2.y) {
-                                //     [p1, p2] = [p2, p1];
-                                // }
-
-                                // Connect: Source Right (Tail) -> Target Left (Head)
-                                const pathData = getOrthogonalPath(p1, p2);
-                                const opacity = isRelevant ? 1 : 0;
-                                const midX = p1.x + (p2.x - p1.x) / 2;
-                                const midY = p1.y + (p2.y - p1.y) / 2;
-                                return (
-                                    <g
-                                        className="group"
-                                        style={{
-                                            opacity: opacity,
-                                            transition: 'opacity 0.3s ease-in-out'
-                                        }}
-                                        onMouseEnter={() => setDependencyBeingHovered(dep)}
-                                        onMouseLeave={() => setDependencyBeingHovered(null)}
-                                    >
-                                        {/* Thick invisible stroke for easier hovering */}
-                                        <path d={pathData} stroke="transparent" strokeWidth="10" fill="none" />
-
-                                        {/* The visible line */}
-                                        <path
-                                            d={pathData}
-                                            stroke={lineColor}
-                                            strokeWidth="3"
-                                            fill="none"
-                                            className={`transition-colors cursor-pointer pointer-events-auto duration-200 ${isRelevant ? hoverColorClass : ''}`}
-                                        />
-
-                                        {dependencyBeingHovered && (
+                                        // Connect: Source Right (Tail) -> Target Left (Head)
+                                        const pathData = getOrthogonalPath(p1, p2);
+                                        const opacity = isRelevant ? 1 : 0;
+                                        const midX = p1.x + (p2.x - p1.x) / 2;
+                                        const midY = p1.y + (p2.y - p1.y) / 2;
+                                        return (
                                             <g
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleDeleteDependency();
+                                                className="group"
+                                                style={{
+                                                    opacity: opacity,
+                                                    transition: 'opacity 0.3s ease-in-out'
                                                 }}
-                                                className="cursor-pointer pointer-events-auto"
-                                                transform={`translate(${midX}, ${midY})`}
-                                                style={{ transform: `translate(${midX}px, ${midY}px)` }}
+                                                onMouseEnter={() => setDependencyBeingHovered(dep)}
+                                                onMouseLeave={() => setDependencyBeingHovered(null)}
                                             >
-                                                {/* White background circle */}
-                                                <circle r="10" fill="white" stroke="#ef4444" strokeWidth="1" />
-                                                {/* X Icon (SVG Lines) */}
-                                                <line x1="-4" y1="-4" x2="4" y2="4" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
-                                                <line x1="4" y1="-4" x2="-4" y2="4" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
-                                            </g>
-                                        )}
-                                    </g>
-                                );
-                            })}
-                            {dependencyDragLine && (
-                                <line
-                                    x1={dependencyDragLine.startX}
-                                    y1={dependencyDragLine.startY}
-                                    x2={dependencyDragLine.currentX}
-                                    y2={dependencyDragLine.currentY}
-                                    stroke="#3b82f6"
-                                    strokeWidth="2"
-                                    strokeDasharray="5,5"
-                                    className="transition-all duration-75 ease-linear"
-                                />
-                            )}
-                        </svg>
-                        <TableHeader>
+                                                {/* Thick invisible stroke for easier hovering */}
+                                                <path d={pathData} stroke="transparent" strokeWidth="10" fill="none" />
 
-                            <TableRow className="h-8 border-b border-gray-100">
-                                {months.map((month: any, i: number) => (
-                                    <TableHead
-                                        key={i}
-                                        colSpan={month.colSpan}
-                                        className="text-center text-xs font-bold text-gray-700 bg-gray-100/50 border-l border-gray-200"
-                                    >
-                                        {month.label}
-                                    </TableHead>
-                                ))}
-                            </TableRow>
-
-                            <TableRow className="h-12 border-b border-gray-200">
-                                {weeks.map((week: string, i: number) => (
-                                    <TableHead key={i} className="min-w-[150px] border-l border-gray-100 text-center text-xs font-semibold text-gray-700 bg-gray-50/80">
-                                        {week}
-                                    </TableHead>
-                                ))}
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {visibleRows.map(({ item }) => {
-                                const barPosition = calculateBarPosition(item.startDate, item.endDate, new Date(timelineStructure?.projectStartDate || toDayJs().format("YYYY-MM-DD")), totalViewDays);
-                                const isHovered = hoveredRowId === item.id;
-                                const isRelated = !selectedItem || relatedIds.has(getId(item.type, item.id));
-                                const parentDates = getParentStartDateEndDate(item);
-
-                                return (
-                                    <TableRow
-                                        key={item.id}
-                                        className={
-                                            cn(
-                                                "h-12 border-b border-gray-50 transition-colors relative group",
-                                            )}
-                                        onMouseEnter={() => setHoveredRowId(item.id)}
-                                        onMouseLeave={() => setHoveredRowId(null)}
-                                    >
-                                        {/* Render Grid Cells (Background) */}
-                                        {weeks.map((_: string, i: number) => (
-                                            <TableCell key={i} className="p-0 border-l border-gray-100 min-w-[150px] relative pointer-events-none" />
-                                        ))}
-
-                                        {/* Render Gantt Bar (Absolute Overlay) */}
-                                        <div className="absolute inset-0 w-full h-full pointer-events-none">
-                                            <div className="relative w-full h-full pointer-events-auto"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setSelectedItem(item);
-                                                }}
-                                            >
-                                                <GanttBar
-                                                    item={item}
-                                                    originalStyle={barPosition}
-                                                    projectStartDate={new Date(timelineStructure?.projectStartDate || toDayJs().format("YYY-MM-DD"))}
-                                                    isHovered={isHovered}
-                                                    isRelated={isRelated}
-                                                    totalViewDays={totalViewDays}
-                                                    onDateUpdate={handleUpdateGnattBarDate}
-                                                    parentStartDate={parentDates.parentStartDate}
-                                                    parentEndDate={parentDates.parentEndDate}
-                                                    handleMoveGnattBar={handleMoveGnattBar}
-                                                    isAddingDependency={isAddingDependency}
-                                                    hasUnsavedChanges={hasUnsavedChanges}
-                                                    handleMouseDownWhenAddingDependency={handleMouseDownWhenAddingDependency}
-                                                    handleDraggingLineDropWhenAddingDependency={handleDraggingLineDropWhenAddingDependency}
+                                                {/* The visible line */}
+                                                <path
+                                                    d={pathData}
+                                                    stroke={lineColor}
+                                                    strokeWidth="3"
+                                                    fill="none"
+                                                    className={`transition-colors cursor-pointer pointer-events-auto duration-200 ${isRelevant ? hoverColorClass : ''}`}
                                                 />
-                                            </div>
-                                        </div>
+
+                                                {dependencyBeingHovered && (
+                                                    <g
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDeleteDependency();
+                                                        }}
+                                                        className="cursor-pointer pointer-events-auto"
+                                                        transform={`translate(${midX}, ${midY})`}
+                                                        style={{ transform: `translate(${midX}px, ${midY}px)` }}
+                                                    >
+                                                        {/* White background circle */}
+                                                        <circle r="10" fill="white" stroke="#ef4444" strokeWidth="1" />
+                                                        {/* X Icon (SVG Lines) */}
+                                                        <line x1="-4" y1="-4" x2="4" y2="4" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
+                                                        <line x1="4" y1="-4" x2="-4" y2="4" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
+                                                    </g>
+                                                )}
+                                            </g>
+                                        );
+                                    })}
+                                    {dependencyDragLine && (
+                                        <line
+                                            x1={dependencyDragLine.startX}
+                                            y1={dependencyDragLine.startY}
+                                            x2={dependencyDragLine.currentX}
+                                            y2={dependencyDragLine.currentY}
+                                            stroke="#3b82f6"
+                                            strokeWidth="2"
+                                            strokeDasharray="5,5"
+                                            className="transition-all duration-75 ease-linear"
+                                        />
+                                    )}
+                                </svg>
+                                <TableHeader>
+                                    <TableRow className="h-8 border-b border-gray-100">
+                                        {months.map((month: any, i: number) => (
+                                            <TableHead
+                                                key={i}
+                                                colSpan={month.colSpan}
+                                                className="text-center text-xs font-bold text-gray-700 bg-gray-100/50 border-l border-gray-200"
+                                            >
+                                                {month.label}
+                                            </TableHead>
+                                        ))}
                                     </TableRow>
-                                );
-                            })}
-                        </TableBody>
-                    </table>
+
+                                    <TableRow className="h-12 border-b border-gray-200">
+                                        {weeks.map((week: string, i: number) => (
+                                            <TableHead key={i} className="min-w-[150px] border-l border-gray-100 text-center text-xs font-semibold text-gray-700 bg-gray-50/80">
+                                                {week}
+                                            </TableHead>
+                                        ))}
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {visibleRows.map(({ item }) => {
+                                        const barPosition = calculateBarPosition(item.startDate, item.endDate, new Date(timelineStructure?.projectStartDate || toDayJs().format("YYYY-MM-DD")), totalViewDays);
+                                        const isHovered = hoveredRowId === item.id;
+                                        const isRelated = !selectedItem || relatedIds.has(getId(item.type, item.id));
+                                        const parentDates = getParentStartDateEndDate(item);
+
+                                        return (
+                                            <TableRow
+                                                key={item.id}
+                                                className={
+                                                    cn(
+                                                        "h-12 border-b border-gray-50 transition-colors relative group",
+                                                    )}
+                                                onMouseEnter={() => setHoveredRowId(item.id)}
+                                                onMouseLeave={() => setHoveredRowId(null)}
+                                            >
+                                                {/* Render Grid Cells (Background) */}
+                                                {weeks.map((_: string, i: number) => (
+                                                    <TableCell key={i} className="p-0 border-l border-gray-100 min-w-[150px] relative pointer-events-none" />
+                                                ))}
+
+                                                {/* Render Gantt Bar (Absolute Overlay) */}
+                                                <div className="absolute inset-0 w-full h-full pointer-events-none">
+                                                    <div className="relative w-full h-full pointer-events-auto"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setSelectedItem(item);
+                                                        }}
+                                                    >
+                                                        <GanttBar
+                                                            item={item}
+                                                            originalStyle={barPosition}
+                                                            projectStartDate={new Date(timelineStructure?.projectStartDate || toDayJs().format("YYY-MM-DD"))}
+                                                            isHovered={isHovered}
+                                                            isRelated={isRelated}
+                                                            totalViewDays={totalViewDays}
+                                                            onDateUpdate={handleUpdateGnattBarDate}
+                                                            parentStartDate={parentDates.parentStartDate}
+                                                            parentEndDate={parentDates.parentEndDate}
+                                                            handleMoveGnattBar={handleMoveGnattBar}
+                                                            isAddingDependency={isAddingDependency}
+                                                            hasUnsavedChanges={hasUnsavedChanges}
+                                                            handleMouseDownWhenAddingDependency={handleMouseDownWhenAddingDependency}
+                                                            handleDraggingLineDropWhenAddingDependency={handleDraggingLineDropWhenAddingDependency}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </TableRow>
+                                        );
+                                    })}
+                                </TableBody>
+                            </table>
+                        </div>
+                    </div>
+                    {alertMessage && (
+                        <AlertModal
+                            alertMessage={alertMessage}
+                            onClose={() => setAlertMessage(null)}
+                        />
+                    )}
                 </div>
-            </div>
-            {alertMessage && (
-                <AlertModal
-                    alertMessage={alertMessage}
-                    onClose={() => setAlertMessage(null)}
-                />
             )}
-        </div>
+        </>
     );
 }

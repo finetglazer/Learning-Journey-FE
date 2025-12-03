@@ -12,7 +12,7 @@ export interface HomePanelProps {
     sections: SidebarSectionConfig[];
     activeItem: string;
     isCollapsed: boolean;
-    onToggleCollapse: () => void;
+    onToggleCollapse: (e: any) => void;
 };
 
 export const HomePanel = ({ sections, activeItem, isCollapsed, onToggleCollapse }: HomePanelProps) => {

@@ -413,7 +413,10 @@ export default function RootPage() {
                       sections={homeSections}
                       activeItem={activeItem}
                       isCollapsed={isSidebarCollapse}
-                      onToggleCollapse={() => { setIsSidebarCollapse(!isSidebarCollapse) }}
+                      onToggleCollapse={(e: any) => {
+                        e.stopPropagation();
+                        setIsSidebarCollapse(!isSidebarCollapse);
+                      }}
                     />
                   </div>
 
@@ -424,7 +427,10 @@ export default function RootPage() {
                       onShowHome={() => setCurrentView("home")}
                       activeItem={activeItem}
                       isCollapsed={isSidebarCollapse}
-                      onToggleCollapse={() => { setIsSidebarCollapse(!isSidebarCollapse) }}
+                      onToggleCollapse={(e: any) => {
+                        e.stopPropagation();
+                        setIsSidebarCollapse(!isSidebarCollapse);
+                      }}
                     />
                   </div>
                 </div>

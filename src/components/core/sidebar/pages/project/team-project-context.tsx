@@ -2,7 +2,7 @@
 
 import { AppContext, AppContextProps } from "@/hooks/app-context";
 import { toDayJs } from "@/lib/utils";
-import { PM_Deliverable, Project, ProjectDependency, ProjectMembershipRole, ProjectMilestone, ProjectTimelineStructure, ReorderType, TeamMember, TimelineItem } from "@/model/project-management"; // Added PM_Phase, PM_Task for type clarity
+import { PM_Deliverable, Project, ProjectDependency, ProjectMembershipRole, ProjectTimelineStructure, ReorderType, TeamMember, TimelineItem } from "@/model/project-management"; // Added PM_Phase, PM_Task for type clarity
 import { projectRepository } from "@/repository/project-repository";
 import { createContext, Dispatch, SetStateAction, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { finalize } from "rxjs";
@@ -39,7 +39,6 @@ export interface TeamProjectContextProps {
     setDeliverables: Dispatch<SetStateAction<PM_Deliverable[]>>;
 
     getProjectStructure: () => () => void; // Function that returns a cleanup function
-    getProjectTimeline: () => () => void;
     getItemDependencies: (item: TimelineItem) => () => void;
     timelineData: ProjectTimelineStructure | null;
     setTimelineData: Dispatch<SetStateAction<ProjectTimelineStructure | null>>;
@@ -81,7 +80,6 @@ export const TeamProjectContext = createContext<TeamProjectContextProps>({
     setDeliverables: () => { },
     setTimelineData: () => { },
     getProjectStructure: () => () => { },
-    getProjectTimeline: () => () => { },
     handleReorderList: () => { },
     expandedDeliverables: new Set(),
     expandedPhases: new Set(),
@@ -242,47 +240,6 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         currentSelectedProject,
     ]);
 
-    const mappingTimelineItems = (projectStartDate: string, items?: any[]) => {
-        if (!items) {
-            return [];
-        }
-        let res: any[] = [];
-        items.forEach((item: any) => {
-            res.push({
-                ...item,
-                id: Number(item.id.split("-")[1]),
-                startDate: item?.startDate || projectStartDate,
-                endDate: item?.endDate || toDayJs().endOf("year").format("YYYY-MM-DD"),
-                children: mappingTimelineItems(projectStartDate, item.children),
-            });
-        });
-
-        return res;
-    };
-
-    const getProjectTimeline = useCallback(() => {
-        const subscription = projectRepository.getTimelineStructure({
-            projectId: currentSelectedProject?.id as number,
-        }).subscribe({
-            next: res => {
-                if (res?.status) {
-                    const timelineItems = res?.data?.items || [];
-                    setTimelineData({
-                        ...res?.data,
-                        items: mappingTimelineItems(res?.data?.projectStartDate, timelineItems),
-                    });
-                } else {
-                    toast.error(res?.message || res?.msg);
-                }
-            },
-            error: err => { },
-        });
-
-        return () => {
-            subscription.unsubscribe();
-        };
-    }, [currentSelectedProject]);
-
     const handleReorderList = useCallback((orderedIds: number[], parentId: number, type: ReorderType) => {
         setIsReordering(true);
         const subscription = projectRepository.reorderList({
@@ -329,7 +286,6 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         if (currentSelectedProject) {
             getTeamMembers();
             getProjectStructure();
-            getProjectTimeline();
         }
 
         // 3. 🎯 Reset ALL states related to the previous project structure
@@ -360,7 +316,6 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         getItemDependencies,
         dependencies,
         setDependencies,
-        getProjectTimeline,
         timelineData,
         setTimelineData,
         members,

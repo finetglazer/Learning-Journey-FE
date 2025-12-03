@@ -11,7 +11,7 @@ export interface SettingsPanelProps {
     onShowHome: () => void;
     activeItem: string;
     isCollapsed: boolean;
-    onToggleCollapse: () => void;
+    onToggleCollapse: (e: any) => void;
 };
 export const SettingsPanel = ({ sections, onShowHome, activeItem, isCollapsed, onToggleCollapse }: SettingsPanelProps) => {
     return (
@@ -32,7 +32,9 @@ export const SettingsPanel = ({ sections, onShowHome, activeItem, isCollapsed, o
                     Settings
                 </h3>
                 <Button
-                    onClick={onToggleCollapse}
+                    onClick={(e) => {
+                        onToggleCollapse(e);
+                    }}
                     variant="ghost"
                     size="icon"
                     className={cn("text-gray-600 cursor-pointer hover:bg-gray-100 h-8 w-8", isCollapsed ? "ml-0" : "ml-auto")}

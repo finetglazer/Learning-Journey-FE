@@ -221,6 +221,7 @@ export interface TimelineItem {
     name: string;
     startDate: string;
     endDate: string;
+    childrenContainSearchKeyword: boolean;
     children: TimelineItem[];
 };
 

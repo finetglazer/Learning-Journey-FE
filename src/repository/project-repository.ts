@@ -231,10 +231,10 @@ export class ProjectRepository extends BaseRepository {
 
     /**
      * Retrieves the hierarchical structure of the project timeline.
-     * Corresponds to: GET /api/pm/projects/{projectId}/timeline/structure
+     * Corresponds to: POST /api/pm/projects/{projectId}/timeline/structure
      */
-    public getTimelineStructure = (params: { projectId: number }): Observable<any> => {
-        return this.http.get(`/${params.projectId}/timeline/structure`)
+    public getTimelineStructure = (params: { projectId: number }, body: any): Observable<any> => {
+        return this.http.post(`/${params.projectId}/timeline/structure`, body)
             .pipe(map(res => res?.data));
     };
 
@@ -317,6 +317,38 @@ export class ProjectRepository extends BaseRepository {
         }
     ): Observable<any> => {
         return this.http.delete(`/${params.projectId}/dependencies`, { data: body })
+            .pipe(map(res => res?.data));
+    };
+
+    // MILESTONE FUNCTIONS
+
+    /**
+     * Create a new milestone.
+     * Corresponds to: POST /api/pm/projects/{projectId}/milestones
+     */
+    public createMilestone = (params: { projectId: number | string }, body: any): Observable<any> => {
+        return this.http.post(`/${params.projectId}/milestones`, body)
+            .pipe(map(res => res?.data));
+    };
+
+    /**
+     * Update an existing milestone.
+     * Corresponds to: PUT /api/pm/projects/{projectId}/milestones/{milestoneId}
+     */
+    public updateMilestone = (
+        params: { projectId: number | string, milestoneId: number | string },
+        body: any
+    ): Observable<any> => {
+        return this.http.put(`/${params.projectId}/milestones/${params.milestoneId}`, body)
+            .pipe(map(res => res?.data));
+    };
+
+    /**
+     * Delete a milestone.
+     * Corresponds to: DELETE /api/pm/projects/{projectId}/milestones/{milestoneId}
+     */
+    public deleteMilestone = (params: { projectId: number | string, milestoneId: number | string }): Observable<any> => {
+        return this.http.delete(`/${params.projectId}/milestones/${params.milestoneId}`)
             .pipe(map(res => res?.data));
     };
 };

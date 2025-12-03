@@ -6,7 +6,7 @@ import { Tooltip } from "antd";
 import { PanelLeft, User } from "lucide-react";
 import { useState, useEffect } from "react";
 
-export const UserProfile = ({ isCollapsed = false, onToggleCollapse }: { isCollapsed: boolean, onToggleCollapse: () => void }) => {
+export const UserProfile = ({ isCollapsed = false, onToggleCollapse }: { isCollapsed: boolean, onToggleCollapse: (e: any) => void }) => {
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [displayName, setDisplayName] = useState<string | null>(null);
     const [email, setEmail] = useState<string | null>(null);
@@ -48,7 +48,9 @@ export const UserProfile = ({ isCollapsed = false, onToggleCollapse }: { isColla
             </div>
             {!isCollapsed && (
                 <Button
-                    onClick={onToggleCollapse}
+                    onClick={(e) => {
+                        onToggleCollapse(e);
+                    }}
                     variant="ghost"
                     size="icon"
                     className="absolute right-0 top-1 text-gray-600 hover:bg-gray-100 h-10 w-10 cursor-pointer" // Made button smaller
