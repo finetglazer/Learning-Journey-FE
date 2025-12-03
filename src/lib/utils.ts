@@ -680,7 +680,6 @@ export const calculateBarPosition = (
 export interface Point { x: number; y: number; }
 
 export const getOrthogonalPath = (start: Point, end: Point, cornerRadius = 10) => {
-  start.x -= 20;
   const { x: x1, y: y1 } = start;
   const { x: x2, y: y2 } = end;
 

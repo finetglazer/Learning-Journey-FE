@@ -1,8 +1,8 @@
 "use client";
 
 import { AppContext, AppContextProps } from "@/hooks/app-context";
-import { getId, toDayJs } from "@/lib/utils";
-import { PM_Deliverable, Project, ProjectDependency, ProjectMembershipRole, ProjectTimelineStructure, ReorderType, TeamMember, TimelineItem } from "@/model/project-management"; // Added PM_Phase, PM_Task for type clarity
+import { toDayJs } from "@/lib/utils";
+import { PM_Deliverable, Project, ProjectDependency, ProjectMembershipRole, ProjectMilestone, ProjectTimelineStructure, ReorderType, TeamMember, TimelineItem } from "@/model/project-management"; // Added PM_Phase, PM_Task for type clarity
 import { projectRepository } from "@/repository/project-repository";
 import { createContext, Dispatch, SetStateAction, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { finalize } from "rxjs";

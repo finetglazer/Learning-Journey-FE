@@ -3,12 +3,12 @@
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { calculateBarPosition, cn, getDaysDiff, getId, getOrthogonalPath, toDayJs } from "@/lib/utils";
-import { ProjectDependency, ProjectTimelineStructure, TimelineItem } from '@/model/project-management';
+import { ProjectDependency, ProjectTimelineStructure, TimelineItem, TimelineMilestone } from '@/model/project-management';
 import { projectRepository } from "@/repository/project-repository";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { isEqual } from "lodash";
-import { ChevronDown, ChevronRight, Link2, Link2Off, Save, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Link2, Link2Off, Loader2, Save, X } from "lucide-react";
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { finalize } from "rxjs";
 import { toast } from "sonner";
@@ -37,6 +37,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         currentX: number;
         currentY: number;
     } | null>(null);
+    const [isUpdating, setIsUpdating] = useState<boolean>(false);
     const [dependencySource, setDependencySource] = useState<TimelineItem | null>(null);
     const [dependencies, setDependencies] = useState<ProjectDependency[]>([]);
     const [dependencyBeingHovered, setDependencyBeingHovered] = useState<ProjectDependency | null>(null);
@@ -75,7 +76,35 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         setDependencyDragLine(null);
     };
 
+    const originalItemsMap = useMemo(() => {
+        const map = new Map<string, TimelineItem>();
+
+        const traverse = (items: TimelineItem[]) => {
+            items.forEach(item => {
+                map.set(getId(item.type, item.id), item);
+
+                if (item.children) traverse(item.children);
+            });
+        };
+
+        if (originalTimelineStructure?.items) {
+            traverse(originalTimelineStructure.items);
+        }
+
+        return map;
+    }, [originalTimelineStructure]);
+
     const handleDraggingLineDropWhenAddingDependency = (target: TimelineItem) => {
+        // If target is null, or source is null, or target type differs from source type, show alert and cancel create dependency
+        if (!dependencySource || !target || !isEqual(dependencySource?.type, target.type)) {
+            setAlertMessage({
+                type: "error",
+                title: "Could not create dependency",
+                description: "Could not create dependency between 2 items with different types"
+            });
+
+            return;
+        }
         const updatedDependencies = [...dependencies];
         const newDependency: ProjectDependency = {
             type: target.type,
@@ -95,11 +124,13 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         })
             .pipe(finalize(() => {
                 setDependencySource(null);
+                setIsAddingDependency(false);
                 getProjectTimeline();
             }))
             .subscribe({
                 next: res => {
                     if (res?.status) {
+                        setSelectedItem(target);
                         toast.success(res?.msg || res?.message);
                     }
                     else {
@@ -108,6 +139,8 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                             title: res?.message || res?.msg,
                             description: res?.data,
                         });
+
+                        setSelectedItem(null);
                     }
                 },
                 error: err => {
@@ -118,6 +151,8 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                         title: message,
                         description: errors,
                     });
+
+                    setSelectedItem(null);
                 },
             });
 
@@ -127,14 +162,15 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
     };
 
     const handleMouseDownWhenAddingDependency = (e: any, item: TimelineItem) => {
-        const currentItemCoords = itemCoordinates.coords.get(getId(item.type, item.id));
+        const startCoordinates = getLocalCoordinates(e);
 
-        if (isAddingDependency && currentItemCoords) {
+        if (isAddingDependency && startCoordinates) {
             e.stopPropagation();
             e.preventDefault();
 
-            const startX = currentItemCoords.xEnd;
-            const startY = currentItemCoords.y;
+
+            const startX = startCoordinates.x;
+            const startY = startCoordinates.y;
 
             setDependencyDragLine({
                 startX: startX,
@@ -155,30 +191,108 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         if (!dependencyBeingHovered) {
             return;
         }
+
+        const deleteDependencyIndex = dependencies.findIndex(dep => isEqual(dep.type, dependencyBeingHovered.type)
+            && isEqual(dep.fromId, dependencyBeingHovered.fromId) && isEqual(dep.toId, dependencyBeingHovered.toId));
+        if (deleteDependencyIndex === -1) {
+            return;
+        }
+        const updatedDependencies = [...dependencies];
+        updatedDependencies.splice(deleteDependencyIndex, 1);
+        setDependencies(updatedDependencies);
+
         const subscription = projectRepository.deleteDependency({
             projectId: selectedProject?.id as number,
         }, {
             ...dependencyBeingHovered,
         })
+            .pipe(finalize(() => {
+                getProjectTimeline();
+            }))
+            .subscribe({
+                next: res => {
+                    if (res?.status) {
+                        toast.success(res?.message || res?.msg);
+                        setDependencyBeingHovered(null);
+                    }
+                    else {
+                        toast.error(res?.message || res?.msg);
+                    }
+                },
+                error: err => { },
+            });
+
+        return () => {
+            subscription.unsubscribe();
+        }
+    }, [selectedProject, getProjectTimeline, dependencyBeingHovered, dependencies]);
+
+    const initUpdateTimelineItemsBody = (item: TimelineItem, body: TimelineItem[]) => {
+        const originalItem = originalItemsMap.get(getId(item.type, item.id));
+
+        if (!originalItem) {
+            return body;
+        }
+        if (!isEqual(originalItem.startDate, item.startDate) || !isEqual(originalItem.endDate, item.endDate)) {
+            body.push(item);
+        }
+        if (!item.children || !item.children.length) {
+            return body;
+        }
+        item.children.forEach((child: TimelineItem) => {
+            initUpdateTimelineItemsBody(child, body);
+        });
+        return body;
+    };
+
+    const handleUpdateTimelineDates = useCallback(() => {
+        let body: any[] = [];
+
+        setIsUpdating(true);
+        
+        (timelineStructure?.items || []).forEach((item: TimelineItem) => {
+            initUpdateTimelineItemsBody(item, body);
+        });
+        const subscription = projectRepository.updateTimelineDates({
+            projectId: selectedProject?.id as number,
+        }, {
+            type: body[0].type,
+            id: body[0].id,
+            start_date: body[0].startDate,
+            end_date: body[0].endDate,
+        })
+        .pipe(finalize(() => {
+            setIsUpdating(false);
+        }))
         .subscribe({
             next: res => {
                 if (res?.status) {
                     toast.success(res?.message || res?.msg);
-                    setDependencyBeingHovered(null);
-                    setSelectedItem(null);
                     getProjectTimeline();
                 }
                 else {
-                    toast.error(res?.message || res?.msg);
+                    setAlertMessage({
+                        type: "error",
+                        title: res?.msg || res?.message,
+                        description: res?.data
+                    });
                 }
             },
-            error: err => { },
+            error: err => {
+                const errors = err?.response?.data?.data;
+                const message = err?.response?.data?.msg || err?.response?.data?.message;
+                setAlertMessage({
+                    type: "error",
+                    title: message,
+                    description: errors,
+                });
+            }
         });
 
         return () => {
             subscription.unsubscribe();
         }
-    }, [selectedProject, getProjectTimeline, dependencyBeingHovered]);
+    }, [selectedProject, timelineStructure]);
 
     const hasUnsavedChanges = useMemo(() => {
         if (!timelineStructure || !originalTimelineStructure) {
@@ -385,8 +499,8 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
 
         // Calculate Total Width in Pixels (Crucial for SVG)
         // We assume 150px per week column as defined in your TableHead
-        const realTableWidth = timelineScrollRef.current
-            ? timelineScrollRef.current.scrollWidth
+        const realTableWidth = containerWidth
+            ? containerWidth
             : (weeks.length * 150);
 
         const TOTAL_WIDTH = realTableWidth;
@@ -486,10 +600,10 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
     }, [originalDependencies]);
 
     useEffect(() => {
-        if (selectedItem) {
+        if (selectedItem && !isAddingDependency) {
             getItemDependencies(selectedItem);
         }
-    }, [selectedItem]);
+    }, [selectedItem, isAddingDependency]);
 
     useEffect(() => {
         // Function to update width
@@ -540,7 +654,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
             <div className="flex flex-col border-r border-gray-200 h-full bg-white z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
                 {/* Header */}
                 <div className="border-b border-gray-100 flex items-center justify-between px-1 bg-gray-50/50" style={{ height: 89 }}>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 overflow-hidden">
                         <Button
                             size="sm"
                             onClick={() => setIsAddingDependency(!isAddingDependency)}
@@ -587,11 +701,13 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                                     <>
                                         <Button
                                             size="sm"
-                                            // onClick={onSave}
+                                            onClick={handleUpdateTimelineDates}
                                             className="h-7 px-3 text-xs cursor-pointer font-medium bg-indigo-500 hover:bg-indigo-700 text-white shadow-sm transition-all animate-in fade-in zoom-in duration-300"
+                                            disabled={isUpdating}
                                         >
-                                            <Save className="w-3.5 h-3.5 mr-1.5" />
-                                            Update
+                                            {!isUpdating && <Save className="w-3.5 h-3.5 mr-1.5" />}
+                                            {isUpdating && <Loader2 className="w-3.5 h-3.5 mr-1.5" />}
+                                            {!isUpdating ? "Update" : "Updating..."}
                                         </Button>
                                     </>
                                 )}
@@ -662,11 +778,6 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
 
             {/* === RIGHT PANEL: TIMELINE === */}
             <div className="flex flex-col h-full overflow-hidden bg-white relative">
-
-                {/* Header (Dates) */}
-                <div className="h-12 border-b border-gray-100 flex bg-gray-50/50 absolute top-0 left-0 right-0 z-30 pointer-events-none">
-                </div>
-
                 {/* Scrollable Timeline Body (Both X and Y) */}
                 <div
                     ref={timelineScrollRef}
@@ -690,49 +801,90 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                         }}
                     />
 
-                    <Table style={{ minWidth: '100%' }}> {/* Ensure table can expand horizontally */}
-                        {/* TODAY LINE */}
-                        {(() => {
-                            const today = toDayJs(undefined, 0);
-                            const startDate = toDayJs(timelineStructure?.projectStartDate || toDayJs(undefined, 0).format("YYYY-MM-DD"), 0);
-                            const diffDays = today.diff(startDate, 'day');
+                    {/* 2a. TODAY LINE (Single Instance) */}
+                    {(() => {
+                        const today = dayjs(); // Current Date
+                        const startDate = dayjs(timelineStructure?.projectStartDate || toDayJs(undefined, 0).format("YYYY-MM-DD"));
+                        const diffDays = today.diff(startDate, 'day');
 
-                            // Check if today is within view
-                            if (diffDays >= 0 && diffDays <= totalViewDays) {
-                                const leftPixel = (diffDays / totalViewDays) * itemCoordinates.totalWidth;
+                        // Check if today is within view
+                        if (diffDays >= 0 && diffDays <= totalViewDays) {
+                            const leftPixel = (diffDays / totalViewDays) * itemCoordinates.totalWidth;
 
-                                return (
-                                    <div
-                                        className="absolute top-0 z-40 flex flex-col items-center pointer-events-none"
-                                        style={{
-                                            left: `${leftPixel}px`,
-                                            height: `${itemCoordinates.totalHeight}px`,
-                                            transform: 'translateX(-50%)'
-                                        }}
-                                    >
-                                        {/* Hitbox area for hover */}
-                                        <div className="h-full w-4 flex flex-col items-center group pointer-events-auto">
+                            return (
+                                <div
+                                    className="absolute top-0 z-40 flex flex-col items-center pointer-events-none"
+                                    style={{
+                                        left: `${leftPixel}px`,
+                                        height: `${itemCoordinates.totalHeight + 2}px`,
+                                        transform: 'translateX(-50%)'
+                                    }}
+                                >
+                                    {/* Hitbox area for hover */}
+                                    <div className="h-full w-4 flex flex-col items-center group pointer-events-auto">
 
-                                            {/* Visible Blue Line */}
-                                            <div className="h-full w-[2px] bg-blue-400 relative shadow-[0_0_8px_rgba(96,165,250,0.6)]">
-                                                {/* Top Dot */}
-                                                <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-blue-400 rounded-full border-2 border-white shadow-sm" />
-                                                {/* Bottom Dot */}
-                                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-blue-400 rounded-full border-2 border-white shadow-sm" />
-                                            </div>
+                                        {/* Visible Blue Line */}
+                                        <div className="h-full w-[2px] bg-blue-400 relative shadow-[0_0_8px_rgba(96,165,250,0.6)]">
+                                            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-blue-400 rounded-full border-2 border-white shadow-sm" />
+                                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-blue-400 rounded-full border-2 border-white shadow-sm" />
+                                        </div>
 
-                                            {/* Tooltip */}
-                                            <div className="absolute top-8 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-md shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
-                                                Today - {today.format('DD/MM/YY')}
-                                                {/* Tooltip Arrow */}
-                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900" />
-                                            </div>
+                                        {/* Tooltip */}
+                                        <div className="absolute top-8 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-md shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                                            Today - {today.format('DD/MM/YY')}
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900" />
                                         </div>
                                     </div>
-                                );
-                            }
-                            return null;
-                        })()}
+                                </div>
+                            );
+                        }
+                        return null;
+                    })()}
+
+                    {/* 2b. MILESTONE LINES */}
+                    {(timelineStructure?.milestones || []).map((milestone: TimelineMilestone) => {
+                        const milestoneDate = dayjs(milestone.date);
+                        const startDate = dayjs(timelineStructure?.projectStartDate || toDayJs(undefined, 0).format("YYYY-MM-DD"));
+                        const diffDays = milestoneDate.diff(startDate, 'day');
+
+                        // Only render if visible
+                        if (diffDays >= 0 && diffDays <= totalViewDays) {
+                            const leftPixel = (diffDays / totalViewDays) * itemCoordinates.totalWidth;
+
+                            // Choose color (e.g., Orange for milestones)
+                            const colorClass = "bg-orange-500";
+
+                            return (
+                                <div
+                                    key={milestone.id}
+                                    className="absolute top-0 z-30 flex flex-col items-center pointer-events-none"
+                                    style={{
+                                        left: `${leftPixel}px`,
+                                        height: `${itemCoordinates.totalHeight + 2}px`,
+                                        transform: 'translateX(-50%)'
+                                    }}
+                                >
+                                    {/* Hitbox */}
+                                    <div className="h-full w-4 flex flex-col items-center group pointer-events-auto">
+
+                                        {/* Visible Line */}
+                                        <div className={`h-full w-[2px] ${colorClass} relative`}>
+                                            <div className={`absolute -top-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 ${colorClass} rounded-full border-2 border-white shadow-sm`} />
+                                            <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 ${colorClass} rounded-full border-2 border-white shadow-sm`} />
+                                        </div>
+
+                                        {/* Tooltip */}
+                                        <div className="absolute top-8 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-md shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                                            {milestone.name} - {milestoneDate.format('DD/MM/YY')}
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900" />
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        }
+                        return null;
+                    })}
+                    <table className="w-full caption-bottom text-sm" style={{ minWidth: '100%' }}>
                         {/* SVG LAYER (Z-Curve Connections) */}
                         <svg
                             className={cn("absolute top-0 left-0 pointer-events-none z-10", { "z-98": isAddingDependency })}
@@ -756,9 +908,9 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                                 let p1 = { x: source.xEnd, y: source.y };   // Source Tail
                                 let p2 = { x: target.xStart, y: target.y }; // Target Head
 
-                                if (p1.y > p2.y) {
-                                    [p1, p2] = [p2, p1];
-                                }
+                                // if (p1.y > p2.y) {
+                                //     [p1, p2] = [p2, p1];
+                                // }
 
                                 // Connect: Source Right (Tail) -> Target Left (Head)
                                 const pathData = getOrthogonalPath(p1, p2);
@@ -795,7 +947,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                                                 }}
                                                 className="cursor-pointer pointer-events-auto"
                                                 transform={`translate(${midX}, ${midY})`}
-                                                style={{ transform: `translate(${midX + 20}px, ${midY}px)` }}
+                                                style={{ transform: `translate(${midX}px, ${midY}px)` }}
                                             >
                                                 {/* White background circle */}
                                                 <circle r="10" fill="white" stroke="#ef4444" strokeWidth="1" />
@@ -821,6 +973,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                             )}
                         </svg>
                         <TableHeader>
+
                             <TableRow className="h-8 border-b border-gray-100">
                                 {months.map((month: any, i: number) => (
                                     <TableHead
@@ -883,6 +1036,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                                                     parentEndDate={parentDates.parentEndDate}
                                                     handleMoveGnattBar={handleMoveGnattBar}
                                                     isAddingDependency={isAddingDependency}
+                                                    hasUnsavedChanges={hasUnsavedChanges}
                                                     handleMouseDownWhenAddingDependency={handleMouseDownWhenAddingDependency}
                                                     handleDraggingLineDropWhenAddingDependency={handleDraggingLineDropWhenAddingDependency}
                                                 />
@@ -892,7 +1046,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                                 );
                             })}
                         </TableBody>
-                    </Table>
+                    </table>
                 </div>
             </div>
             {alertMessage && (

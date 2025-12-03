@@ -3,6 +3,7 @@
 import { calculateBarPosition, cn, getId, toDayJs } from "@/lib/utils";
 import { TimelineItem } from '@/model/project-management';
 import dayjs from 'dayjs';
+import { isEqual } from "lodash";
 import React, { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 
 interface GanttBarProps {
@@ -15,6 +16,7 @@ interface GanttBarProps {
     parentEndDate: string;
     isAddingDependency: boolean;
     isRelated: boolean;
+    hasUnsavedChanges: boolean;
     onDateUpdate: (id: number | string, newStart: string, newEnd: string) => void;
     handleMoveGnattBar: (id: string | number, daysShift: number) => void;
     handleDraggingLineDropWhenAddingDependency: (item: TimelineItem) => void;
@@ -33,6 +35,7 @@ const GanttBar = ({
     parentStartDate,
     parentEndDate,
     handleMoveGnattBar,
+    hasUnsavedChanges,
     handleDraggingLineDropWhenAddingDependency,
     handleMouseDownWhenAddingDependency,
 }: GanttBarProps) => {
@@ -98,6 +101,48 @@ const GanttBar = ({
         return { validStart, validEnd };
     };
 
+    const applyConstraintsWhenExpandingOrShrinking = (newStart: dayjs.Dayjs, newEnd: dayjs.Dayjs) => {
+        let earliestChildStart: dayjs.Dayjs | null = null;
+        let latestChildEnd: dayjs.Dayjs | null = null;
+
+        const checkChildren = (children: TimelineItem[]) => {
+            children.forEach(child => {
+                const cStart = toDayJs(child.startDate, 0);
+                const cEnd = toDayJs(child.endDate, 0);
+
+                if (!earliestChildStart || cStart.isBefore(earliestChildStart)) {
+                    earliestChildStart = cStart;
+                }
+                if (!latestChildEnd || cEnd.isAfter(latestChildEnd)) {
+                    latestChildEnd = cEnd;
+                }
+
+                if (child.children && child.children.length > 0) {
+                    checkChildren(child.children);
+                }
+            });
+        };
+
+        if (item.children && item.children.length > 0) {
+            checkChildren(item.children);
+        }
+
+        let validStart = newStart;
+        let validEnd = newEnd;
+
+        // 2. Apply Constraint: Parent START cannot be after any child's start
+        if (earliestChildStart && newStart.isAfter(earliestChildStart)) {
+            validStart = earliestChildStart;
+        }
+
+        // 3. Apply Constraint: Parent END cannot be before any child's end
+        if (latestChildEnd && newEnd.isBefore(latestChildEnd)) {
+            validEnd = latestChildEnd;
+        }
+
+        return { validStart, validEnd };
+    };
+
     // --- Drag Logic ---
     const handleMouseDown = (e: React.MouseEvent, edge: 'start' | 'end' | 'move') => {
         if (!isRelated) {
@@ -117,6 +162,8 @@ const GanttBar = ({
         const initialStart = toDayJs(localStartDate, 0);
         const initialEnd = toDayJs(localEndDate, 0);
 
+        const DRAG_THRESHOLD = 1; // pixels
+
         // Get the width of the parent timeline container (the 100% width reference)
         // We use offsetParent because the bar is absolute positioned relative to it.
         const parentWidth = (barRef.current?.offsetParent as HTMLElement)?.offsetWidth || 1000;
@@ -125,7 +172,9 @@ const GanttBar = ({
         const handleMouseMove = (moveEvent: MouseEvent) => {
             const deltaX = moveEvent.clientX - startX;
             const daysShift = Math.round(deltaX / pixelsPerDay);
-
+            if (Math.abs(daysShift) <= DRAG_THRESHOLD) {
+                return;
+            }
             let newStart = initialStart;
             let newEnd = initialEnd;
             const initialDurationDays = initialEnd.diff(initialStart, 'day');
@@ -151,13 +200,20 @@ const GanttBar = ({
                 endDate: newEnd.format("YYYY-MM-DD"),
             }
 
-            const constrained = applyConstraints(newStart, newEnd, initialDurationDays, edge);
+            let constrained = applyConstraints(newStart, newEnd, initialDurationDays, edge);
+            if (!isEqual(edge, 'move') && item.children && item.children.length > 0) {
+                let childConstrained = applyConstraintsWhenExpandingOrShrinking(newStart, newEnd);
+                constrained = {
+                    validStart: childConstrained.validStart.isBefore(constrained.validStart) ? childConstrained.validStart : constrained.validStart,
+                    validEnd: childConstrained.validEnd.isAfter(constrained.validEnd) ? childConstrained.validEnd : constrained.validEnd,
+                };      
+            }
+            
+            currentShiftRef.current = constrained.validStart.diff(initialStart, 'day');
             constraintRef.current = {
                 startDate: constrained.validStart.format("YYYY-MM-DD"),
                 endDate: constrained.validEnd.format("YYYY-MM-DD"),
             }
-            currentShiftRef.current = constrained.validStart.diff(initialStart, 'day');
-
             setLocalStartDate(constraintRef.current.startDate);
             setLocalEndDate(constraintRef.current.endDate);
         };
@@ -220,6 +276,10 @@ const GanttBar = ({
             )}
             style={style || undefined}
             onMouseDown={(e) => {
+                if (hasUnsavedChanges) {
+                    return;
+                }
+
                 if (isAddingDependency) {
                     handleMouseDownWhenAddingDependency(e, item);
                 }
@@ -236,7 +296,13 @@ const GanttBar = ({
             {/* --- Head Handle (Start Date) --- */}
             <div
                 className={cn(connectorCircleClasses, "-left-1.5")}
-                onMouseDown={(e) => handleMouseDown(e, 'start')}
+                onMouseDown={(e) => {
+                    if (hasUnsavedChanges) {
+                        return;
+                    }
+
+                    handleMouseDown(e, 'start');
+                }}
             />
 
             {/* Label */}
@@ -249,7 +315,12 @@ const GanttBar = ({
             {/* --- Tail Handle (End Date) --- */}
             <div
                 className={cn(connectorCircleClasses, "-right-1.5")}
-                onMouseDown={(e) => handleMouseDown(e, 'end')}
+                onMouseDown={(e) => {
+                    if (hasUnsavedChanges) {
+                        return;
+                    }
+                    handleMouseDown(e, 'end');
+                }}
             />
 
             {/* --- Tooltip (Updated with Local State) --- */}

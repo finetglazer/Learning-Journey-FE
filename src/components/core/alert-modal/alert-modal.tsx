@@ -12,11 +12,11 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { isNil } from "lodash";
 
-export type AlertType = 'danger' | 'warning' | 'info';
+export type AlertType = 'error' | 'warning' | 'info';
 
 const alertConfig = {
-    danger: {
-        title: "Danger",
+    error: {
+        title: "Error",
         titleColor: "text-red-500",
         buttonColor: "bg-red-500 hover:bg-red-600 text-white",
     },

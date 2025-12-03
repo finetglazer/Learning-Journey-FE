@@ -230,7 +230,6 @@ export interface ProjectTimelineStructure {
     projectStartDate: string; // YYYY-MM-DD
 };
 
-
 export interface ProjectDependency {
     type: "TASK" | "PHASE" | "DELIVERABLE";
     fromId: number;
