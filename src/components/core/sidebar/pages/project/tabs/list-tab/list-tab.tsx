@@ -16,6 +16,7 @@ import { TeamProjectContext, TeamProjectContextProps } from "../../team-project-
 import SpinnerLoader from "@/components/core/loader/spinner-loader";
 import { debounce } from "lodash";
 import { finalize } from "rxjs";
+import { EmptyData } from "@/components/core/project-management/empty-data";
 
 export interface ListTabProps { };
 
@@ -569,7 +570,13 @@ export const ListTab = ({ }: ListTabProps) => {
                         />
                     </div>
                 )}
-                {!fetching && (
+                {((!deliverables || !deliverables.length) && !fetching) ? (
+                    <EmptyData 
+                        title="No deliverables found"
+                        message={!search ? "You haven't added any deliverables yet. Add one to get started." : `No items found with "${search}"`}
+                    />
+                ) : null}
+                {(!fetching && deliverables && deliverables.length) ? (
                     <DndContext
                         sensors={sensors}
                         collisionDetection={closestCenter}
@@ -607,7 +614,7 @@ export const ListTab = ({ }: ListTabProps) => {
                             </div>
                         </SortableContext>
                     </DndContext>
-                )}
+                ) : null}
             </div>
             {alertMessage && (
                 <AlertModal

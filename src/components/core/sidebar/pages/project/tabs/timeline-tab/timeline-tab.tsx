@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { TeamProjectContext, TeamProjectContextProps, TeamProjectTab } from '../../team-project-context';
 import { AddMilestoneCard } from "./components/add-milestone-card";
 import GanttBar from "./components/gnatt-bar";
+import { EmptyData } from "@/components/core/project-management/empty-data";
 dayjs.extend(isoWeek);
 
 export interface GanttTimelineBoardProps {
@@ -984,7 +985,12 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                                     {/* Empty state filler if needed */}
                                     {visibleRows.length === 0 && (
                                         <TableRow>
-                                            <TableCell className="text-center text-gray-400 py-8">No items found</TableCell>
+                                            <TableCell className="text-center text-gray-400 py-8 px-3">
+                                                <EmptyData
+                                                    title="No items found"
+                                                    message={!search ? "You haven't added any items yet." : `No items found with "${search}"`}
+                                                />
+                                            </TableCell>
                                         </TableRow>
                                     )}
                                 </TableBody>

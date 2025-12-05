@@ -27,17 +27,18 @@ import { debounce } from "lodash";
 import { getScoreDetails } from "@/lib/utils";
 import CreateRiskModal from "./components/create-risk-modal";
 import SpinnerLoader from "@/components/core/loader/spinner-loader";
+import { EmptyData } from "@/components/core/project-management/empty-data";
+import { useSearchParams } from "next/navigation";
 
 export interface RiskRegisterTabProps {
 };
-
-const PAGE_SIZE_LIMIT = 10;
 
 export default function RiskRegisterTab({
 }: RiskRegisterTabProps) {
     const [data, setData] = useState<RiskItem[]>([]);
     const [isMyRisk, setIsMyRisk] = useState<boolean>(false);
     const [currentPage, setCurrentPage] = useState<number>(1);
+    const [pageSize, setPageSize] = useState<number>(20);
     const [totalCount, setTotalCount] = useState<number>(0);
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [openRiskId, setOpenRiskId] = useState<number | null>(null);
@@ -53,6 +54,10 @@ export default function RiskRegisterTab({
         currentMember,
         members,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
+    
+    const urlParams = useSearchParams();
+
+    const pageSizeUrlParam = Number(urlParams.get("pageSize")) || 20;
 
     const hasRiskItemChanged = (current: RiskItem, original: RiskItem): boolean => {
         return (
@@ -67,11 +72,11 @@ export default function RiskRegisterTab({
         );
     };
 
-    const getRiskItems = useCallback(() => {
+    const getRiskItems = useCallback((useCustomPageSize?: boolean, customPageSize?: number) => {
         const subscription = projectRepository.getRisks({
             projectId: selectedProject?.id as number,
             page: currentPage,
-            limit: PAGE_SIZE_LIMIT,
+            limit: useCustomPageSize ? customPageSize : pageSize,
             search: searchQuery,
             assignee: isMyRisk ? "me" : "",
         })
@@ -301,7 +306,11 @@ export default function RiskRegisterTab({
         debouncedFetch,
     ]);
 
-    useEffect
+    useEffect(() => {
+        setPageSize(pageSizeUrlParam);
+        setFetching(true);
+        getRiskItems(true, pageSizeUrlParam);
+    }, [pageSizeUrlParam]);
 
     return (
         <div className="w-full p-6 bg-slate-50 min-h-screen font-sans">
@@ -360,6 +369,18 @@ export default function RiskRegisterTab({
                                             message="Getting risk items..."
                                         />
                                     </div>
+                                </TableCell>
+                            </TableRow>
+                        </TableBody>
+                    )}
+                    {(!fetching && (!data || !data.length)) && (
+                        <TableBody>
+                            <TableRow>
+                                <TableCell colSpan={7} className="h-24 text-center">
+                                    <EmptyData
+                                        title="No risks found"
+                                        message={!searchQuery ? "You haven't added any risks yet. Add one to get started." : `No risks found with "${searchQuery}"`}
+                                    />
                                 </TableCell>
                             </TableRow>
                         </TableBody>
@@ -662,8 +683,12 @@ export default function RiskRegisterTab({
                 <PaginationWithLinks
                     page={currentPage}
                     setCurrentPage={setCurrentPage}
-                    pageSize={PAGE_SIZE_LIMIT}
+                    pageSize={pageSize}
                     totalCount={totalCount}
+                    pageSizeSelectOptions={{
+                        pageSizeSearchParam: "pageSize",
+                        pageSizeOptions: [20, 30, 40, 50]
+                    }}
                 />
             </div>
         </div>

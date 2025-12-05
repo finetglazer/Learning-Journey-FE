@@ -14,6 +14,7 @@ import KanbanColumn from './kanban-column';
 import TaskCard from './kanban-task-card';
 import { KanbanColumnsType, KanbanColumnType } from './type';
 import SpinnerLoader from '../loader/spinner-loader';
+import { EmptyData } from './empty-data';
 
 export interface KanbanBoardProps {
 };
@@ -264,7 +265,13 @@ const KanbanBoard: React.FC<KanbanBoardProps> = () => {
                     />
                 </div>
             )}
-            {!fetching && (
+            {(!fetching && (!tasks || !tasks.length)) ? (
+                <EmptyData
+                    title="No tasks found"
+                    message={!searchQuery ? "You haven't added any tasks yet. Add one to get started." : `No tasks found with "${searchQuery}"`}
+                />
+            ) : null}
+            {(!fetching && tasks && tasks.length) ? (
                 <div className="grid grid-cols-4 gap-4">
                     <DndContext
                         onDragStart={handleDragStart}
@@ -285,7 +292,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = () => {
                         </DragOverlay>
                     </DndContext>
                 </div>
-            )}
+            ) : null}
         </div>
     );
 };
