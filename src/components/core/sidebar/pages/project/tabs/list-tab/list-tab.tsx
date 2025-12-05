@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { TeamProjectContext, TeamProjectContextProps } from "../../team-project-context";
 import SpinnerLoader from "@/components/core/loader/spinner-loader";
 import { debounce } from "lodash";
+import { finalize } from "rxjs";
 
 export interface ListTabProps { };
 
@@ -45,7 +46,7 @@ export const ListTab = ({ }: ListTabProps) => {
         setIsNavigatingFromTaskBoard,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
-    // 🆕 RBAC Check
+    // RBAC Check
     const canEditStructure = currentMember?.role === ProjectMembershipRole.OWNER;
 
     const sensors = useSensors(
@@ -128,11 +129,14 @@ export const ListTab = ({ }: ListTabProps) => {
         projectRepository.deleteDeliverable({
             projectId: selectedProject?.id,
             deliverableId: deliverableId,
-        }).subscribe({
+        })
+        .pipe(finalize(() => {
+            getProjectStructure();
+        }))
+        .subscribe({
             next: res => {
                 if (res?.status) {
                     toast.success(res?.message || res?.msg);
-                    getProjectStructure();
                 }
                 else {
                     toast.error(res?.message || res?.msg);

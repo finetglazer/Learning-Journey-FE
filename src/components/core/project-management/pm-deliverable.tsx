@@ -169,7 +169,7 @@ function PM_DeliverableItemBase({
         >
             {/* The draggable header part (Deliverable header) */}
             <div
-                className={cn(`flex items-center w-full py-3 px-5 bg-gray-50`,
+                className={cn(`flex items-center group w-full py-3 px-5 bg-gray-50`,
                     isExpanded ? 'border-b border-gray-200' : '',
                     canEditStructure ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'
                 )}
@@ -202,7 +202,7 @@ function PM_DeliverableItemBase({
                         <DropdownMenuTrigger asChild>
                             <button
                                 onClick={(e) => e.stopPropagation()}
-                                className="p-1 rounded-full opacity-0 hover:opacity-100 hover:bg-gray-200 hover:text-gray-700"
+                                className="p-1 rounded-full opacity-0 group-hover:opacity-100 hover:opacity-100 hover:bg-gray-200 hover:text-gray-700 group-hover:text-gray-500"
                             >
                                 <MoreHorizontal size={16} />
                             </button>
@@ -210,7 +210,10 @@ function PM_DeliverableItemBase({
                         <DropdownMenuContent align="end">
                             {/* Option 1: Edit Name (Alternative to double-click) */}
                             {canEditStructure && (
-                                <DropdownMenuItem className="cursor-pointer" onClick={handleStartEdit}>
+                                <DropdownMenuItem className="cursor-pointer" onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStartEdit();
+                                }}>
                                     <span>Edit Name</span>
                                 </DropdownMenuItem>
                             )}
@@ -221,7 +224,10 @@ function PM_DeliverableItemBase({
                             {canEditStructure && (
                                 <DropdownMenuItem
                                     className="text-red-600 focus:text-red-700 cursor-pointer focus:bg-red-50"
-                                    onClick={handleDelete}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDelete();
+                                    }}
                                 >
                                     <span>Delete Deliverable</span>
                                 </DropdownMenuItem>

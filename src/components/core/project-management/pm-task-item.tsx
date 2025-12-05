@@ -329,21 +329,24 @@ function PM_TaskItemBase({ task, onUpdateTask, onDeleteTask }: TaskItemProps) {
                         <DropdownMenuContent align="start">
                             {canEditFull && (
                                 <>
-                                    <DropdownMenuItem className="cursor-pointer" onClick={handleStartEdit}>
+                                    <DropdownMenuItem className="cursor-pointer" onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleStartEdit();
+                                    }}>
                                         <span>Edit Name</span>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem className="cursor-pointer">
-                                        <span>Edit timeline</span>
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                 </>
                             )}
 
-                            {/* 🆕 Delete Option (Owners only) */}
+                            {/* Delete Option (Owners only) */}
                             {canEditFull && (
                                 <DropdownMenuItem
                                     className="text-red-600 focus:text-red-600 cursor-pointer focus:bg-red-50"
-                                    onClick={handleDelete}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDelete();
+                                    }}
                                 >
                                     <span>Delete Task</span>
                                 </DropdownMenuItem>

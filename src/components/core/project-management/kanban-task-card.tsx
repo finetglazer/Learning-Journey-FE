@@ -2,14 +2,14 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { PM_Task, TaskPriority, TeamMember } from '@/model/project-management';
+import { PM_Task, ProjectMembershipRole, TaskPriority, TeamMember } from '@/model/project-management';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Edit } from 'lucide-react';
 import React, { useContext } from 'react';
 import { TeamProjectContext, TeamProjectContextProps, TeamProjectTab } from '../sidebar/pages/project/team-project-context';
 import { PRIORITY_CONFIG } from './task-detail-drawer';
-import { getFallbackName } from '@/lib/utils';
+import { cn, getFallbackName } from '@/lib/utils';
 
 export interface TaskCardProps {
     task: PM_Task;
@@ -57,7 +57,11 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
         setExpandedPhases,
         setScrollToItem,
         setIsNavigatingFromTaskBoard,
+        currentMember,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
+
+    // 🆕 RBAC Check
+    const canEdit = currentMember?.role === ProjectMembershipRole.OWNER;
 
     const style = {
         transform: CSS.Translate.toString(transform),
@@ -87,14 +91,14 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
         <div
             ref={setNodeRef}
             style={style}
-            {...attributes}
-            {...listeners}
-            className={`
+            {...(canEdit ? attributes : {})}
+            {...(canEdit ? listeners : {})}
+            className={cn(`
                 bg-white p-4 mb-3 rounded-lg shadow-sm 
-                border transition-all cursor-grab
+                border transition-all
                 group hover:bg-yellow-300
                 ${isDragging ? 'border-blue-400 opacity-0 ring-2 ring-blue-300' : 'border-gray-200'}
-            `}
+            `, (canEdit ? "cursor-grab" : "cursor-default"))}
         >
             {/* --- Task Header --- */}
             <div className="flex justify-between items-start mb-2">

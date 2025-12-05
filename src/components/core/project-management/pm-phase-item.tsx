@@ -12,7 +12,7 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Check, ChevronDown, MoreHorizontal, Plus, Trash2, X } from 'lucide-react'; // Added Trash2
+import { Check, ChevronDown, MoreHorizontal, Plus, X } from 'lucide-react'; // Added Trash2
 import { memo, useCallback, useContext, useState } from 'react'; // Added useContext
 import { TeamProjectContext, TeamProjectContextProps } from '../sidebar/pages/project/team-project-context'; // Assuming this context is in scope
 import { PM_TaskItem } from './pm-task-item';
@@ -159,16 +159,16 @@ function PM_PhaseItemBase({
             id={phase.phaseIdStr}
             className={cn(
                 "ml-5 border-t border-gray-200",
-                canEditStructure ? 'cursor-grab' : 'cursor-default' // 🆕 Set cursor based on permission
+                canEditStructure ? 'cursor-grab' : 'cursor-default'
             )}
         >
             {/* The draggable header part */}
             <div
                 className={cn(
-                    `flex items-center w-full py-2.5 px-4`,
+                    `flex items-center w-full group py-2.5 px-4`,
                     canEditStructure ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'
                 )}
-                // 🆕 Only spread drag listeners/attributes if user can edit structure
+                // Only spread drag listeners/attributes if user can edit structure
                 {...(canEditStructure ? attributes : {})}
                 {...(canEditStructure ? listeners : {})}
             >
@@ -199,7 +199,7 @@ function PM_PhaseItemBase({
                         <DropdownMenuTrigger asChild>
                             <button
                                 onClick={(e) => e.stopPropagation()}
-                                className="p-1 rounded-full opacity-0 hover:opacity-100 hover:bg-gray-200 hover:text-gray-700"
+                                className="p-1 rounded-full opacity-0 group-hover:opacity-100 hover:opacity-100 hover:bg-gray-200 hover:text-gray-700 group-hover:text-gray-500"
                             >
                                 <MoreHorizontal size={16} />
                             </button>
@@ -207,7 +207,10 @@ function PM_PhaseItemBase({
                         <DropdownMenuContent align="end">
                             {/* Option 1: Edit Name (Only visible inside dropdown if canEditStructure is true) */}
                             {canEditStructure && (
-                                <DropdownMenuItem className="cursor-pointer" onClick={handleStartEdit}>
+                                <DropdownMenuItem className="cursor-pointer" onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStartEdit();
+                                }}>
                                     <span>Edit Name</span>
                                 </DropdownMenuItem>
                             )}
@@ -218,9 +221,11 @@ function PM_PhaseItemBase({
                             {canEditStructure && (
                                 <DropdownMenuItem
                                     className="text-red-600 focus:text-red-700 cursor-pointer focus:bg-red-50"
-                                    onClick={handleDelete}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDelete();
+                                    }}
                                 >
-                                    <Trash2 size={16} className="mr-2" />
                                     <span>Delete Phase</span>
                                 </DropdownMenuItem>
                             )}
@@ -237,7 +242,7 @@ function PM_PhaseItemBase({
                 )}
             >
                 <div className="overflow-hidden">
-                    {/* 🆕 Conditionally render SortableContext based on permission */}
+                    {/* Conditionally render SortableContext based on permission */}
                     {canEditStructure ? (
                         <SortableContext
                             items={phase.tasks.map((t) => t.taskIdStr)}

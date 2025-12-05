@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { getRiskLevelLabel, RiskAssignee, RiskItem, RiskLevel } from "@/model/project-management";
 import { projectRepository } from "@/repository/project-repository";
-import { Edit, Loader2, Plus, Search, Trash2, UserPlus, X } from "lucide-react";
+import { Edit, Loader2, Plus, RotateCcw, Search, Trash2, UserPlus, X } from "lucide-react";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { TeamProjectContext, TeamProjectContextProps } from "../../team-project-context";
@@ -274,6 +274,17 @@ export default function RiskRegisterTab({
         );
     };
 
+    const handleRevertRiskItem = (id: number) => {
+        setData((prev) =>
+            prev.map((item) => {
+                if (item.id === id) {
+                    item = originalData[item.id];
+                }
+                return item;
+            })
+        );
+    };
+
     useEffect(() => {
         if (selectedProject?.id) {
             setFetching(true);
@@ -340,12 +351,18 @@ export default function RiskRegisterTab({
                         </TableRow>
                     </TableHeader>
                     {fetching && (
-                        <div className="ml-[700px] w-[200px]">
-                        <SpinnerLoader 
-                            sizeClass="24"
-                            message="Getting risk items..."
-                        />
-                        </div>
+                        <TableBody>
+                            <TableRow>
+                                <TableCell colSpan={7} className="h-24 text-center">
+                                    <div className="flex justify-center items-center w-full">
+                                        <SpinnerLoader
+                                            sizeClass="24"
+                                            message="Getting risk items..."
+                                        />
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        </TableBody>
                     )}
                     {!fetching && (
                         <TableBody>
@@ -463,7 +480,7 @@ export default function RiskRegisterTab({
                                                 <TableCell className="text-center pr-2 w-[80px]">
                                                     <div className="flex justify-end space-x-1">
 
-                                                        {/* UPDATE BUTTON (Conditional Visibility) */}
+                                                        {/* UPDATE BUTTON */}
                                                         {isDirty && (
                                                             <Button
                                                                 variant="ghost"
@@ -480,6 +497,23 @@ export default function RiskRegisterTab({
                                                                 ) : (
                                                                     <Edit className="h-4 w-4" />
                                                                 )}
+                                                            </Button>
+                                                        )}
+
+                                                        {/* REVERT BUTTON */}
+                                                        {isDirty && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                disabled={isLoading}
+                                                                title="Revert changes"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleRevertRiskItem(item.id);
+                                                                }}
+                                                                className="h-8 w-8 cursor-pointer text-amber-600 hover:bg-amber-50"
+                                                            >
+                                                                <RotateCcw className="h-4 w-4" />
                                                             </Button>
                                                         )}
 

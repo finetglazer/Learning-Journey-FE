@@ -114,10 +114,10 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         email,
     } = useContext<AppContextProps>(AppContext);
 
-    const getProjectStructure = useCallback(() => {
+    const getProjectStructure = useCallback((searchWithParam?: boolean, searchParam?: string) => {
         const subscription = projectRepository.getProjectStructure({
             projectId: currentSelectedProject?.id,
-            search: search || "",
+            search: searchWithParam ? searchParam || "" : search || "",
         }).subscribe({
             next: res => {
                 if (res?.status) {
@@ -300,6 +300,13 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         // (useEffect watching `selectedProject` calls `debouncedGetProjectStructure`).
 
     }, [currentSelectedProject]);
+
+    useEffect(() => {
+        if (tab !== TeamProjectTab.LIST && search) {
+            setSearch("");
+            getProjectStructure(true, "");
+        }
+    }, [tab]);
 
     return {
         tab,

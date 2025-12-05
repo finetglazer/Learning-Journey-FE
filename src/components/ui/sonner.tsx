@@ -19,14 +19,19 @@ const Toaster = ({ ...props }: ToasterProps) => {
 
           "--success-bg": "var(--green-600)",
           "--success-text": "var(--white)",
+          "--success-border": "var(--green-600)",
 
           "--error-bg": "var(--destructive)",
           "--error-text": "var(--white)",
+          "--error-border": "var(--destructive)",
 
           "--info-bg": "var(--blue-600)",
           "--info-text": "var(--white)",
+          "--info-border": "var(--blue-600)",
+          
           "--warning-bg": "var(--yellow-500)",
           "--warning-text": "var(--white)",
+          "--warning-border": "var(--yellow-500)",
         } as React.CSSProperties,
       }}
       {...props}
