@@ -60,7 +60,7 @@ export function DayTasksPopover({
 
     return (
         <div className="w-64 rounded-lg border bg-white p-2 shadow-lg font-sans">
-            <div className="mb-2 flex items-center justify-between border-b pb-2 text-sm font-bold text-gray-700">
+            <div className="flex items-center justify-between pb-2 text-sm font-bold text-gray-700">
                 <span className="flex-1 text-center">
                     {(type === 'month-view' || !type) && day ? format(day, "EEE d").toUpperCase() : (week || "")}
                 </span>
@@ -130,7 +130,7 @@ export function DayTasksPopover({
                                             setEditingMonthPlanItem?.(task);
                                             if (typeof task === "string") setOpenRoutineEditor?.(true);
                                             setEditingTask?.(null);
-                                        }
+                                        }   
                                         else if (type === 'month-planning') {
                                             setEditingMonthPlanItem?.(task as UnscheduledTask);
                                             setEditingTask?.(null);

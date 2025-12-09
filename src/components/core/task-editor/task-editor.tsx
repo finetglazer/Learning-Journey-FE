@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { getDetails, isoToHHMM, isoToStandardTime, toDayJs, uuid4 } from "@/lib/utils"
+import { cn, dayJsToISOString, getDetails, isoToHHMM, isoToStandardTime, toDayJs, uuid4 } from "@/lib/utils"
 import { MonthPlanningBigTask, MonthPlanningEvent, Task, UnscheduledTask } from "@/model/task"
 import { calendarRepository } from "@/repository/calendar-repository"
 import { formService } from "@/service/form-service"
@@ -37,6 +37,7 @@ import { TaskStatusDropdown } from "./task-status-dropdown"
 import { TaskType, TaskTypeDropdown, typeConfig } from "./task-type-dropdown"
 
 export interface TaskEditorProps {
+    open: boolean;
     task: Task | Partial<Task> | MonthPlanningEvent | UnscheduledTask;
     currentView?: string;
     currentTaskType?: string;
@@ -52,6 +53,7 @@ export interface TaskEditorProps {
 };
 
 export const TaskEditor = ({
+    open,
     task,
     currentView,
     currentTaskType,
@@ -100,6 +102,7 @@ export const TaskEditor = ({
                 model.id as number,
                 {
                     ...model,
+                    status: model?.status || "INCOMPLETE",
                     timeSlot: {
                         startTime: (model as Task)?.startTime,
                         endTime: (model as Task)?.endTime,
@@ -379,9 +382,25 @@ export const TaskEditor = ({
         onClose?.();
     };
 
+    // Get nearest "rounded" times (for init)
+    useEffect(() => {
+        const startMinute = toDayJs(model?.startTime, 0).get('minute');
+        const endMinute = toDayJs(model?.endTime, 0).get('minute');
+
+        if (startMinute % 15 || endMinute % 15) {
+            const updatedStartTime = toDayJs(model?.startTime).set('minute', (Math.floor(toDayJs(model?.startTime, 0).get('minute') / 15) * 15));
+            const updatedEndTime = updatedStartTime.add(15, 'minutes');
+            updateModel("startTime", dayJsToISOString(updatedStartTime, 0));
+            updateModel("endTime", dayJsToISOString(updatedEndTime, 0));
+        }
+    }, [
+        model?.startTime,
+        model?.endTime,
+    ]);
+
     return (
         <TooltipProvider>
-            <Card style={style} className="w-[380px] bg-[#F9FAFB] rounded-xl shadow-md font-sans p-4 absolute z-[10000]">
+            <Card id="task-editor-id" style={style} className={cn("w-[380px] bg-[#F9FAFB] opacity-0 pointer-events-auto rounded-xl shadow-md font-sans p-4 absolute z-[10000]", { "opacity-100": open }, { "pointer-events-none": !open })}>
                 <CardContent className="p-2">
                     {/* Header Section */}
                     <div className="flex justify-between items-center mb-4 gap-2">
@@ -465,7 +484,7 @@ export const TaskEditor = ({
                     <div className="border-t border-gray-200 my-4"></div>
 
                     {/* Status Dropdown Section: Only show if current view is not MONTH-PLANNING MODE VIEW */}
-                    {currentView !== 'month-planning' && (
+                    {(currentView !== 'month-planning') && (
                         <>
                             <div className="mb-4">
                                 <TaskStatusDropdown
@@ -643,15 +662,17 @@ export const TaskEditor = ({
                     )}
 
                     {/* Notes Section */}
-                    <div className="flex items-center space-x-3 text-black px-2">
-                        <Pencil size={20} />
-                        <Input
-                            placeholder="Notes"
-                            className="border-none focus:ring-0 shadow-none text-sm bg-transparent p-0"
-                            value={model?.note}
-                            onChange={(e) => { updateModel("note", e.target.value) }}
-                        />
-                    </div>
+                    {currentView !== 'month-planning' && (
+                        <div className="flex items-center space-x-3 text-black px-2">
+                            <Pencil size={20} />
+                            <Input
+                                placeholder="Notes"
+                                className="border-none focus:ring-0 shadow-none text-sm bg-transparent p-0"
+                                value={model?.note}
+                                onChange={(e) => { updateModel("note", e.target.value) }}
+                            />
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </TooltipProvider>

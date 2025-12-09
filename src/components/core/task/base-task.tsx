@@ -178,10 +178,10 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                     {type === "big-task" && (
                         <div className={cn("flex items-center justify-center sm:justify-self-center gap-2 sm:gap-3", badgeWrapperClassName)}>
                             <div className={cn("flex h-8 w-10 items-center justify-center rounded-lg bg-[#E62E7B] text-white text-sm sm:text-base font-bold", badgeClassName)}>
-                                {toDayJs((task as MonthPlanningBigTask).estimatedStartDate).get("date").toString().padStart(2)}
+                                {toDayJs((task as MonthPlanningBigTask).estimatedStartDate, 0).get("date").toString().padStart(2)}
                             </div>
                             <div className={cn("flex h-8 w-10 items-center justify-center rounded-lg bg-[#E62E7B] text-white text-sm sm:text-base font-bold", badgeClassName)}>
-                                {toDayJs((task as MonthPlanningBigTask).estimatedEndDate).get("date").toString().padStart(2)}
+                                {toDayJs((task as MonthPlanningBigTask).estimatedEndDate, 0).get("date").toString().padStart(2)}
                             </div>
                         </div>
                     )}

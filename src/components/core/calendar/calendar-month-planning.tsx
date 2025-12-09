@@ -417,7 +417,7 @@ export function CalendarMonthPlanning() {
     };
 
     const isInitialMount = useRef(true);
-    
+
     useEffect(() => {
         setCurrentView('month-planning');
         // Suppress the first run (the Strict Mode check)
@@ -436,12 +436,12 @@ export function CalendarMonthPlanning() {
                 const weekStart = startDate.format("YYYY-MM-DD");
                 const weekEnd = endDate.format("YYYY-MM-DD");
                 const startTime = bigTask.estimatedStartDate;
-                if (weekStart <= startTime && startTime <= weekEnd) {
-                    const daysDiff = toDayJs(startTime).diff(startDate, "day");
-                    const range = toDayJs(bigTask.estimatedEndDate).diff(startTime, "day");
+                if (weekStart <= startTime && startTime <= weekEnd && !newBigTaskStyles[bigTask.id as number]) {
+                    const daysDiff = toDayJs(startTime, 0).diff(startDate, "day");
+                    const range = toDayJs(bigTask.estimatedEndDate, 0).diff(toDayJs(startTime, 0), "day");
                     newBigTaskStyles[bigTask.id as number] = {
-                        left: (daysDiff / 6) * 100,
-                        width: (range / 6) * 100,
+                        left: (daysDiff / 7) * 100,
+                        width: (range / 7) * 100,
                     };
                 }
             });
@@ -450,7 +450,7 @@ export function CalendarMonthPlanning() {
     }, [monthPlanningBigTasks]);
 
     return (
-        <Card className="w-full h-[100vh] mx-auto rounded-xl shadow-lg bg-white p-0">
+        <Card className="w-full h-full mx-auto rounded-xl shadow-lg bg-white p-0">
             <CardHeader className="grid grid-cols-[auto_1fr_auto] items-center p-4 border-b border-gray-200 bg-slate-100/60 rounded-t-xl">
                 <div className="text-sm font-semibold text-slate-600 whitespace-nowrap">
                     Private calendar / <span className="text-slate-800">Month planning</span>
@@ -482,148 +482,179 @@ export function CalendarMonthPlanning() {
                             </TableRow>
                         </TableHeader>
                         <TableBody className="relative">
-                            {categories.map((category) => (
-                                <TableRow key={category} className="h-[28vh]">
-                                    <TableCell className="font-semibold text-gray-700 align-top pt-4 w-15 border-r-2">
-                                        {category}
-                                    </TableCell>
-                                    {weeks.map((week, index) => {
-                                        const currentType = getType(category);
-                                        const monthPlanningItems =
-                                            currentType === "event"
-                                                ? monthPlanningEvents
-                                                : currentType === "routine"
-                                                    ? monthPlanningRoutines
-                                                    : monthPlanningBigTasks;
-                                        const tasksForCell = monthPlanningItems.filter((task) => {
-                                            const { startDate, endDate } = getWeekStartTimeEndTime(week, currentDate);
-                                            const weekStart = startDate.format("YYYY-MM-DD");
-                                            const weekEnd = endDate.format("YYYY-MM-DD");
+                            {categories.map((category) => {
+                                let bigTaskVisited: Record<number, boolean> = {};
+                                let bigTaskRendered: Record<number, boolean> = {};
+                                let currentBigTaskIndex = -1;
 
-                                            if (currentType === "event") {
-                                                const taskTime = (task as MonthPlanningEvent).specificDate;
-                                                return weekStart <= taskTime && taskTime <= weekEnd;
-                                            } else if (currentType === "big-task") {
-                                                const startTime = (task as MonthPlanningBigTask).estimatedStartDate;
-                                                return weekStart <= startTime && startTime <= weekEnd;
-                                            }
-                                            return index === 0;
-                                        });
+                                return (
+                                    <TableRow key={category} className="h-[28vh]">
+                                        <TableCell className="font-semibold text-gray-700 align-top pt-4 w-15 border-r-2">
+                                            {category}
+                                        </TableCell>
+                                        {weeks.map((week, index) => {
+                                            const currentType = getType(category);
+                                            const monthPlanningItems =
+                                                currentType === "event"
+                                                    ? monthPlanningEvents
+                                                    : currentType === "routine"
+                                                        ? monthPlanningRoutines
+                                                        : monthPlanningBigTasks;
+                                            const tasksForCell = monthPlanningItems.filter((task) => {
+                                                const { startDate, endDate } = getWeekStartTimeEndTime(week, currentDate);
+                                                const weekStart = startDate.format("YYYY-MM-DD");
+                                                const weekEnd = endDate.format("YYYY-MM-DD");
 
-                                        return (
-                                            <TableCell
-                                                key={`${category}-${week}`}
-                                                className="relative align-top p-2 border-r-2 w-55"
-                                                onClick={(e) => { handleCellClick(getType(category), e, scrollContainerRef) }}
-                                            >
-                                                <div className="flex-1 overflow-y-auto space-y-1">
-                                                    {tasksForCell.slice(0, MAX_VISIBLE_TASKS).map((task, i) => (
-                                                        <div key={i} onClick={(e) => e.stopPropagation()}>
-                                                            <BaseTask
-                                                                key={`month-planning-item-${i}`}
-                                                                task={task}
-                                                                scrollContainerRef={scrollContainerRef}
-                                                                taskType={currentType}
-                                                                isEditing={!!editingItem && editingItem === task && typeof task === 'string'}    // For routine
-                                                                updateRoutineList={updateRoutineList}
-                                                                setOpenRoutineEditor={setOpenRoutineEditor}
-                                                                handleCancelEdit={() => {
-                                                                    setEditingItem(null);
-                                                                    setEditingTask(null);
-                                                                }}
-                                                                handleDoubleClick={handleDoubleClick as any}
-                                                                handleCellClick={handleBigTaskClick as any}
-                                                                calendarType="month-planning"
-                                                                wrapperClassName={cn("h-[50px] mb-5 mt-4 z-[9]")}
-                                                                wrapperStyle={{
-                                                                    ...(currentType === "routine" && {
-                                                                        width: `${weeks.length * 100}%`,
-                                                                        position: "absolute",
-                                                                        top: `${i * 40}%`,
-                                                                    }),
-                                                                    ...(currentType === "big-task" && {
-                                                                        position: "absolute",
-                                                                        top: `${i * 40}%`,
-                                                                        left: `${bigTaskStyles[
-                                                                            (task as MonthPlanningBigTask).id as number
-                                                                        ]?.left || 0
-                                                                            }%`,
-                                                                        width: `${bigTaskStyles[
-                                                                            (task as MonthPlanningBigTask).id as number
-                                                                        ]?.width || 0
-                                                                            }%`,
-                                                                    }),
-                                                                }}
-                                                                badgeWrapperClassName="mr-3"
-                                                            />
-                                                        </div>
-                                                    ))}
+                                                if (currentType === "event") {
+                                                    const taskTime = (task as MonthPlanningEvent).specificDate;
+                                                    return weekStart <= taskTime && taskTime <= weekEnd;
+                                                } else if (currentType === "big-task") {
+                                                    let visited = false;
+                                                    const startTime = (task as MonthPlanningBigTask).estimatedStartDate;
+                                                    const satisfied = weekStart <= startTime && startTime <= weekEnd;
+                                                    if (satisfied) {
+                                                        visited = bigTaskVisited[(task as MonthPlanningBigTask).id as number];
+                                                        bigTaskVisited[(task as MonthPlanningBigTask).id as number] = true;
+                                                    }
 
-                                                    {tasksForCell.length > MAX_VISIBLE_TASKS && (
-                                                        <Popover
-                                                            open={weekPopoverState.open && weekPopoverState.id === week}
-                                                            onOpenChange={(isOpen) => {
-                                                                setWeekPopoverState({
-                                                                    open: isOpen,
-                                                                    id: isOpen ? week : null,
-                                                                });
-                                                            }}
-                                                        >
-                                                            <PopoverTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                                                <div
-                                                                    data-popover-trigger="true" // For cell click check
-                                                                    className={cn(
-                                                                        "rounded-lg z-[9] cursor-pointer bg-gray-200 text-center px-2 py-1 text-xs text-gray-600 hover:bg-gray-300 font-medium",
-                                                                        {
-                                                                            "absolute bottom-1 left-1 w-[95%]": [
-                                                                                "routine",
-                                                                                "big-task",
-                                                                            ].includes(currentType),
-                                                                        },
-                                                                        {
-                                                                            "w-[500%]": currentType === "routine",
-                                                                        }
-                                                                    )}
-                                                                    onClick={() => {
-                                                                        // Turn off TaskEditor
-                                                                        setEditingItem(null);
-                                                                        setEditingTask(null);
-                                                                    }}
-                                                                >
-                                                                    {tasksForCell.length - MAX_VISIBLE_TASKS} more
+                                                    return satisfied && !visited;
+                                                }
+                                                return index === 0;
+                                            });
+
+                                            return (
+                                                <TableCell
+                                                    key={`${category}-${week}`}
+                                                    className="relative align-top p-2 border-r-2 w-55"
+                                                    onClick={(e) => { handleCellClick(getType(category), e, scrollContainerRef) }}
+                                                >
+                                                    <div className="flex-1 overflow-y-auto space-y-1">
+                                                        {(currentType === "big-task" ? tasksForCell : tasksForCell.slice(0, MAX_VISIBLE_TASKS)).map((task, i) => {
+                                                            if (currentType === "big-task") {
+                                                                ++currentBigTaskIndex;
+
+                                                                if (currentBigTaskIndex + 1 > MAX_VISIBLE_TASKS) {
+                                                                    return <></>
+                                                                }
+                                                                else {
+                                                                    bigTaskRendered[(task as MonthPlanningBigTask).id as number] = true;
+                                                                }
+                                                            }
+                                                            return (
+                                                                <div key={i} onClick={(e) => e.stopPropagation()}>
+                                                                    <BaseTask
+                                                                        key={`month-planning-item-${i}`}
+                                                                        task={task}
+                                                                        scrollContainerRef={scrollContainerRef}
+                                                                        taskType={currentType}
+                                                                        isEditing={!!editingItem && editingItem === task && typeof task === 'string'}    // For routine
+                                                                        updateRoutineList={updateRoutineList}
+                                                                        setOpenRoutineEditor={setOpenRoutineEditor}
+                                                                        handleCancelEdit={() => {
+                                                                            setEditingItem(null);
+                                                                            setEditingTask(null);
+                                                                        }}
+                                                                        handleDoubleClick={handleDoubleClick as any}
+                                                                        handleCellClick={handleBigTaskClick as any}
+                                                                        calendarType="month-planning"
+                                                                        wrapperClassName={cn("h-[50px] mb-5 mt-4 z-[9]")}
+                                                                        wrapperStyle={{
+                                                                            ...(currentType === "routine" && {
+                                                                                width: `${weeks.length * 100}%`,
+                                                                                position: "absolute",
+                                                                                top: `${i * 40}%`,
+                                                                            }),
+                                                                            ...(currentType === "big-task" && {
+                                                                                position: "absolute",
+                                                                                top: `${currentBigTaskIndex * 40}%`,
+                                                                                left: `${bigTaskStyles[
+                                                                                    (task as MonthPlanningBigTask).id as number
+                                                                                ]?.left || 0
+                                                                                    }%`,
+                                                                                width: `${bigTaskStyles[
+                                                                                    (task as MonthPlanningBigTask).id as number
+                                                                                ]?.width || 0
+                                                                                    }%`,
+                                                                            }),
+                                                                        }}
+                                                                        badgeWrapperClassName="mr-3"
+                                                                    />
                                                                 </div>
-                                                            </PopoverTrigger>
-                                                            <PopoverContent className="w-auto p-0 z-[999]" side="bottom" align="start">
-                                                                <DayTasksPopover
-                                                                    tasks={tasksForCell.slice(
-                                                                        MAX_VISIBLE_TASKS,
-                                                                        tasksForCell.length
-                                                                    )}
-                                                                    scrollContainerRef={scrollContainerRef}
-                                                                    setPopoverState={(weekPopoverState) => setWeekPopoverState(weekPopoverState)}
-                                                                    currentTaskType={currentType}
-                                                                    type="month-planning"
-                                                                    setOpenRoutineEditor={setOpenRoutineEditor}
-                                                                    handleBigTaskClick={handleBigTaskClick as any}
-                                                                    selectedTaskId={selectedItemId}
-                                                                    setSelectedTaskId={setSelectedItemId}
-                                                                    setEditingMonthPlanItem={setEditingItem}
-                                                                    setEditorPosition={setEditorPosition}
-                                                                    editorOffset={{ x: 120, y: 0 }}
-                                                                    onTaskClick={() => {
-                                                                        // Close this popover when a task inside is clicked
-                                                                        setWeekPopoverState({ open: false, id: null });
-                                                                    }}
-                                                                />
-                                                            </PopoverContent>
-                                                        </Popover>
-                                                    )}
-                                                </div>
-                                            </TableCell>
-                                        );
-                                    })}
-                                </TableRow>
-                            ))}
+                                                            )
+                                                        })}
+
+                                                        {(tasksForCell.length > MAX_VISIBLE_TASKS || (currentType === "big-task" && monthPlanningBigTasks.length > MAX_VISIBLE_TASKS && !index)) && (
+                                                            <Popover
+                                                                open={(weekPopoverState.open && weekPopoverState.id === week) || (currentType === "big-task" && weekPopoverState.open)}
+                                                                onOpenChange={(isOpen) => {
+                                                                    setWeekPopoverState({
+                                                                        open: isOpen,
+                                                                        id: isOpen && currentType !== "big-task" ? week : null,
+                                                                    });
+                                                                }}
+                                                            >
+                                                                <PopoverTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                                                    <div
+                                                                        data-popover-trigger="true" // For cell click check
+                                                                        className={cn(
+                                                                            "rounded-lg z-[9] cursor-pointer bg-gray-200 text-center px-2 py-1 text-xs text-gray-600 hover:bg-gray-300 font-medium",
+                                                                            {
+                                                                                "absolute bottom-1 left-1 w-[95%]": [
+                                                                                    "routine",
+                                                                                    "big-task",
+                                                                                ].includes(currentType),
+                                                                            },
+                                                                            {
+                                                                                "w-[500%]": ["routine", "big-task"].includes(currentType),
+                                                                            },
+                                                                            {
+                                                                                "w-[0%]": currentType === "big-task" && index > 0
+                                                                            }
+                                                                        )}
+                                                                        onClick={() => {
+                                                                            // Turn off TaskEditor
+                                                                            setEditingItem(null);
+                                                                            setEditingTask(null);
+                                                                        }}
+                                                                    >
+                                                                        {(currentType !== "big-task" ? tasksForCell.length : monthPlanningBigTasks.length) - MAX_VISIBLE_TASKS} more
+                                                                    </div>
+                                                                </PopoverTrigger>
+                                                                <PopoverContent className="w-auto p-0 z-[999]" side="bottom" align="start">
+                                                                    <DayTasksPopover
+                                                                        tasks={currentType !== "big-task" ? tasksForCell.slice(
+                                                                            MAX_VISIBLE_TASKS,
+                                                                            tasksForCell.length
+                                                                        ) : (() => {
+                                                                            let t = [...monthPlanningBigTasks];
+                                                                            return t.filter(bigTask => !bigTaskRendered[bigTask.id as number]);
+                                                                        })()}
+                                                                        scrollContainerRef={scrollContainerRef}
+                                                                        setPopoverState={(weekPopoverState) => setWeekPopoverState(weekPopoverState)}
+                                                                        currentTaskType={currentType}
+                                                                        type="month-planning"
+                                                                        setOpenRoutineEditor={setOpenRoutineEditor}
+                                                                        handleBigTaskClick={handleBigTaskClick as any}
+                                                                        selectedTaskId={selectedItemId}
+                                                                        setSelectedTaskId={setSelectedItemId}
+                                                                        setEditingMonthPlanItem={setEditingItem}
+                                                                        setEditorPosition={setEditorPosition}
+                                                                        editorOffset={{ x: 120, y: 0 }}
+                                                                        onTaskClick={() => {
+                                                                            // Close this popover when a task inside is clicked
+                                                                            setWeekPopoverState({ open: false, id: null });
+                                                                        }}
+                                                                    />
+                                                                </PopoverContent>
+                                                            </Popover>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                            );
+                                        })}
+                                    </TableRow>
+                                )
+                            })}
                             {alertMessage && (
                                 <AlertModal
                                     alertMessage={alertMessage}
@@ -684,23 +715,6 @@ export function CalendarMonthPlanning() {
                                     />
                                 </PopoverContent>
                             </Popover>
-
-                            {((editingItem && typeof editingItem !== "string") || editingTask) && (
-                                <TaskEditor
-                                    key="month-planning-task-editor"
-                                    currentView="month-planning"
-                                    currentTaskType={(editingTask || editingItem as any)?.type}
-                                    task={(editingItem as any) || editingTask}
-                                    setAlertMessage={setAlertMessage}
-                                    onClose={() => {
-                                        setEditingItem(null);
-                                        setEditingTask(null);
-                                    }}
-                                    handleReload={() => loadMonthPlanningItems(Number(localStorage.getItem("monthPlanId")))}
-                                    style={{ top: editorPosition.y, left: editorPosition.x }}
-                                    onDelete={() => onDeleteItem((editingTask || editingItem as any))}
-                                />
-                            )}
                             {openRoutineEditor && (
                                 <RoutineEditor
                                     editingItem={editingItem as string}
@@ -710,6 +724,22 @@ export function CalendarMonthPlanning() {
                             )}
                         </TableBody>
                     </Table>
+
+                    <TaskEditor
+                        key="month-planning-task-editor"
+                        open={(!!editingItem && typeof editingItem !== "string") || !!editingTask}
+                        currentView="month-planning"
+                        currentTaskType={(editingTask || editingItem as any)?.type}
+                        task={(editingItem as any) || editingTask}
+                        setAlertMessage={setAlertMessage}
+                        onClose={() => {
+                            setEditingItem(null);
+                            setEditingTask(null);
+                        }}
+                        handleReload={() => loadMonthPlanningItems(Number(localStorage.getItem("monthPlanId")))}
+                        style={{ top: editorPosition.y, left: editorPosition.x }}
+                        onDelete={() => onDeleteItem((editingTask || editingItem as any))}
+                    />
                 </div>
             </CardContent>
         </Card>

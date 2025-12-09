@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn, dateToIsoString, isoStringToDate, isoToHHMM } from "@/lib/utils";
-import { Task } from "@/model/task";
 import { PopoverTrigger } from "@radix-ui/react-popover";
 import { isSameDay } from "date-fns";
 import { Dispatch, SetStateAction } from "react";
@@ -136,7 +135,7 @@ export const DateTimePicker = (props: DateTimePickerProps) => {
                         <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
                             <ScrollArea className="w-64 sm:w-auto">
                                 <div className="flex sm:flex-col p-2">
-                                    {hours.slice().reverse().map((hour) => ( // Use slice() to avoid mutating original
+                                    {hours.slice().reverse().map((hour) => (
                                         <Button
                                             key={hour}
                                             size="icon"
@@ -156,7 +155,7 @@ export const DateTimePicker = (props: DateTimePickerProps) => {
                             </ScrollArea>
                             <ScrollArea className="w-64 sm:w-auto">
                                 <div className="flex sm:flex-col p-2">
-                                    {/* Updated to be 5 minute intervals for better usability */}
+                                    {/* Updated to be 15 minute intervals for better usability */}
                                     {Array.from({ length: 4 }, (_, i) => i * 15).map((minute) => (
                                         <Button
                                             key={minute}

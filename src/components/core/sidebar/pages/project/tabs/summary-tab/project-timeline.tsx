@@ -139,7 +139,6 @@ export function ProjectTimeline({ data }: ProjectTimelineProps) {
                                 "h-full flex items-center justify-center text-[0.8rem] font-bold",
                                 segment.color,
                                 segment.textColor,
-                                index === 0 ? "rounded-l-full" : "",
                             )}
                             style={{
                                 width: `${segment.widthPercent}%`,

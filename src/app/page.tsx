@@ -33,7 +33,7 @@ import { toast } from "sonner";
 
 import { CalendarContext, useCalendarHooks } from "@/components/core/calendar/calendar-context";
 import { CalendarDayView } from "@/components/core/calendar/calendar-day-view";
-import { CalendarMonthPlanning } from "@/components/core/calendar/calendar-month-planing";
+import { CalendarMonthPlanning } from "@/components/core/calendar/calendar-month-planning";
 import { CalendarMonthView } from "@/components/core/calendar/calendar-month-view";
 import { CalendarWeekView } from "@/components/core/calendar/calendar-week-view";
 import { CalendarYearView } from "@/components/core/calendar/calendar-year-view";
@@ -127,7 +127,7 @@ export default function RootPage() {
         return {
           id: `project-${project?.id}`,
           label: project?.name,
-          icon: <span className={`h-4 w-4 rounded-full border-2 border-white`} style={{ backgroundColor: `${project?.color}` }} />,
+          icon: <Users size={16} />,
           actionIcon: <MoreHorizontal size={16} />,
           onClick: (e: any) => {
             e.stopPropagation();

@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { MonthPlanningBigTask, MonthPlanningEvent, UnscheduledTask } from "@/model/task";
-import { Save } from "lucide-react";
+import { Save, Trash2 } from "lucide-react";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 
 export interface RoutineEditorProps {
@@ -15,7 +15,7 @@ export interface RoutineEditorProps {
 
 export const RoutineEditor = ({
     editingItem,
-    setOpenRoutineEditor,    
+    setOpenRoutineEditor,
     updateRoutineList,
 }: RoutineEditorProps) => {
 
@@ -46,6 +46,11 @@ export const RoutineEditor = ({
                 }} className="cursor-pointer text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-100" aria-label="Save">
                     <Save size={20} />
                 </button>
+                {editingItem && (
+                    <button onClick={() => updateRoutineList?.(editingItem, "")} className="cursor-pointer text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100" aria-label="Delete">
+                        <Trash2 size={20} />
+                    </button>
+                )}
                 <button className="cursor-pointer ml-3 text-cyan-950" onClick={() => {
                     setOpenRoutineEditor?.(false);
                 }}>Cancel</button>

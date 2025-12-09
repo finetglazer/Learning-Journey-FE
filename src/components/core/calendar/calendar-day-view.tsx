@@ -260,7 +260,7 @@ export const CalendarDayView = () => {
 };
 
 const PanelDragOverlay = (
-    type: "buffer-list-panel" | "unscheduled-task-panel",
+    { type }: { type: "buffer-list-panel" | "unscheduled-task-panel" },
 ) => {
     // 1. Root styles: ONLY opacity. No transform or transition.
     const rootStyle: React.CSSProperties = {

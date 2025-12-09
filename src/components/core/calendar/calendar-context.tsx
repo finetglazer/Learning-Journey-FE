@@ -614,7 +614,6 @@ export const useCalendarHooks = () => {
     };
 
     const onDragStart = (event: DragStartEvent) => {
-        console.log(event.active.id)
         if (event.active?.data?.current?.type === "unscheduled-task") {
             setDraggingUnscheduledTaskId(event.active.id);
             setDraggingProjectTaskId(null);
@@ -647,7 +646,7 @@ export const useCalendarHooks = () => {
             setIsPanelDragging(true);
             setIsPanelBufferListDragging(false);
         }
-        else if (event.active?.data?.current?.type === "draggable-panel-buffer-list") {
+        else if (event.active?.id === "draggable-panel-buffer-list") {
             setDraggingUnscheduledTaskId(null);
             setDraggingProjectTaskId(null);
             setDraggingUnscheduledRoutineId(null);

@@ -179,7 +179,7 @@ export const RiskLevel = {
     },
 };
 
-export const getRiskLevelLabel = (value: number) => {
+export const getRiskLevelLabel = (value: number | undefined) => {
     switch (value) {
         case 1: 
             return "1-Very low";
@@ -191,6 +191,8 @@ export const getRiskLevelLabel = (value: number) => {
             return "4-High";
         case 5:
             return "5-Very high";
+        default:
+            return "NaN";
     };
 };
 

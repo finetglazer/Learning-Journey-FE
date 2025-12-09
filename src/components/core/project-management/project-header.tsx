@@ -190,7 +190,7 @@ export const ProjectHeader = ({
                             className="py-2.5 px-3 cursor-pointer rounded-md text-gray-500 data-[state=active]:text-blue-600 data-[state=active]:font-medium data-[state=active]:bg-blue-50"
                         >
                             <Files className="h-4 w-4 mr-2" />
-                            Shared file
+                            Shared source
                         </TabsTrigger>
 
                         {/* Risk register */}

@@ -1,23 +1,27 @@
 "use client";
 
-import { calculateBarPosition, cn, getId, toDayJs } from "@/lib/utils";
-import { TimelineItem } from '@/model/project-management';
+import { calculateBarPosition, cn, findRecursive, getId, toDayJs } from "@/lib/utils";
+import { ProjectTimelineStructure, TimelineItem } from '@/model/project-management';
 import dayjs from 'dayjs';
 import { isEqual } from "lodash";
 import React, { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 
 interface GanttBarProps {
     item: TimelineItem;
+    canEdit: boolean;
     totalViewDays: number;
     originalStyle: React.CSSProperties; // Initial positioning
     isHovered: boolean;
-    projectStartDate: Date;
+    timelineStructure: ProjectTimelineStructure | null;
+    viewStartDate: Date;
     parentStartDate: string;
     parentEndDate: string;
     isAddingDependency: boolean;
     isRelated: boolean;
     hasUnsavedChanges: boolean;
-    onDateUpdate: (id: number | string, newStart: string, newEnd: string) => void;
+    parentMap: Record<string, string | undefined>;
+    setUnsavedTimelineItem: Dispatch<SetStateAction<TimelineItem | null>>;
+    onDateUpdate: (id: number | string, newStart: string, newEnd: string, isUpdate?: boolean) => void;
     handleMoveGnattBar: (id: string | number, daysShift: number) => void;
     handleDraggingLineDropWhenAddingDependency: (item: TimelineItem) => void;
     handleMouseDownWhenAddingDependency: (e: any, item: TimelineItem) => void;
@@ -25,9 +29,11 @@ interface GanttBarProps {
 
 const GanttBar = ({
     item,
+    canEdit,
     totalViewDays,
     originalStyle,
-    projectStartDate,
+    viewStartDate,
+    timelineStructure,
     isHovered,
     isRelated,
     onDateUpdate,
@@ -36,6 +42,8 @@ const GanttBar = ({
     parentEndDate,
     handleMoveGnattBar,
     hasUnsavedChanges,
+    parentMap,
+    setUnsavedTimelineItem,
     handleDraggingLineDropWhenAddingDependency,
     handleMouseDownWhenAddingDependency,
 }: GanttBarProps) => {
@@ -54,9 +62,18 @@ const GanttBar = ({
     const [dragMode, setDragMode] = useState<'start' | 'end' | 'move' | null>(null);
     const [style, setStyle] = useState<React.CSSProperties | null>(null);
 
+    const getParentTimelineItem = (timelineItem: TimelineItem) => {
+        if (!parentMap[getId(timelineItem.type, timelineItem.id)]) {
+            return undefined;
+        }
+
+        return findRecursive(timelineStructure?.items || [], parentMap[getId(timelineItem.type, timelineItem.id)] as string);
+    };
+
     useEffect(() => {
         if (!isDragging) {
-            setLocalStartDate(item.startDate);
+            const updatedLocalStartDate = item.startDate || parentStartDate
+            setLocalStartDate(updatedLocalStartDate);
             setLocalEndDate(item.endDate);
         }
     }, [item.startDate, item.endDate]);
@@ -65,8 +82,9 @@ const GanttBar = ({
         setStyle(originalStyle);
     }, [originalStyle]);
 
+
     useEffect(() => {
-        const barPosition = calculateBarPosition(localStartDate, localEndDate, projectStartDate, totalViewDays);
+        const barPosition = calculateBarPosition(localStartDate, localEndDate, viewStartDate, totalViewDays);
         setStyle({
             ...style,
             left: barPosition.left,
@@ -75,10 +93,43 @@ const GanttBar = ({
     }, [
         localStartDate,
         localEndDate,
-        projectStartDate,
+        viewStartDate,
         totalViewDays,
     ]);
 
+    // useEffect(() => {
+    //     const limits = { start: null as dayjs.Dayjs | null, end: null as dayjs.Dayjs | null };
+
+    //     let parent = getParentTimelineItem(getId(item.type, item.id));
+
+    //     if (!parent) {
+    //         return;
+    //     }
+
+    //     getChildLimits(parent.children, limits);
+
+    //     const earliestChildStart = limits.start;
+    //     const latestChildEnd = limits.end;
+
+    //     while (parent) {
+    //         let needToUpdate = false;
+    //         let updateParentStartDate = toDayJs(parent.startDate, 0);
+    //         let updateParentEndDate = toDayJs(parent.endDate, 0);
+    //         if (earliestChildStart && toDayJs(parent.startDate, 0).isAfter(earliestChildStart)) {
+    //             needToUpdate = true;
+    //             updateParentStartDate = earliestChildStart;
+    //         }
+    //         if (latestChildEnd && toDayJs(parent.endDate, 0).isBefore(latestChildEnd)) {
+    //             needToUpdate = true;
+    //             updateParentEndDate = latestChildEnd;
+    //         }
+
+    //         if (needToUpdate) {
+    //             onDateUpdate(getId(parent.type, parent.id), updateParentStartDate.format("YYYY-MM-DD"), updateParentEndDate.format("YYYY-MM-DD"));
+    //         }
+    //         parent = getParentTimelineItem(getId(parent.type, parent.id));
+    //     }
+    // }, [item]);
 
     // --- Math Helper ---
     const calculateDuration = (s: string, e: string) => toDayJs(e).diff(toDayJs(s), 'day') + 1;
@@ -101,32 +152,36 @@ const GanttBar = ({
         return { validStart, validEnd };
     };
 
+    const getChildLimits = (
+        children: TimelineItem[],
+        limits: { start: dayjs.Dayjs | null, end: dayjs.Dayjs | null }
+    ) => {
+        children.forEach(child => {
+            const cStart = toDayJs(child.startDate, 0);
+            const cEnd = toDayJs(child.endDate, 0);
+
+            if (!limits.start || cStart.isBefore(limits.start)) {
+                limits.start = cStart;
+            }
+            if (!limits.end || cEnd.isAfter(limits.end)) {
+                limits.end = cEnd;
+            }
+
+            if (child.children && child.children.length > 0) {
+                getChildLimits(child.children, limits);
+            }
+        });
+    };
+
     const applyConstraintsWhenExpandingOrShrinking = (newStart: dayjs.Dayjs, newEnd: dayjs.Dayjs) => {
-        let earliestChildStart: dayjs.Dayjs | null = null;
-        let latestChildEnd: dayjs.Dayjs | null = null;
-
-        const checkChildren = (children: TimelineItem[]) => {
-            children.forEach(child => {
-                const cStart = toDayJs(child.startDate, 0);
-                const cEnd = toDayJs(child.endDate, 0);
-
-                if (!earliestChildStart || cStart.isBefore(earliestChildStart)) {
-                    earliestChildStart = cStart;
-                }
-                if (!latestChildEnd || cEnd.isAfter(latestChildEnd)) {
-                    latestChildEnd = cEnd;
-                }
-
-                if (child.children && child.children.length > 0) {
-                    checkChildren(child.children);
-                }
-            });
-        };
+        const limits = { start: null as dayjs.Dayjs | null, end: null as dayjs.Dayjs | null };
 
         if (item.children && item.children.length > 0) {
-            checkChildren(item.children);
+            getChildLimits(item.children, limits);
         }
 
+        let earliestChildStart = limits.start;
+        let latestChildEnd = limits.end;
         let validStart = newStart;
         let validEnd = newEnd;
 
@@ -142,6 +197,42 @@ const GanttBar = ({
 
         return { validStart, validEnd };
     };
+
+    const recalculateParents = (timeline: TimelineItem, newStart: dayjs.Dayjs, newEnd: dayjs.Dayjs) => {
+        const limits = { start: null as dayjs.Dayjs | null, end: null as dayjs.Dayjs | null };
+
+        let parent = getParentTimelineItem(timeline);
+
+        if (!parent) {
+            return;
+        }
+
+        getChildLimits(parent.children, limits);
+
+        const earliestChildStart = limits.start?.isAfter(newStart) ? newStart : limits.start;
+        const latestChildEnd = limits.end?.isBefore(newEnd) ? newEnd : limits.end;
+
+        while (parent) {
+            let needToUpdate = false;
+            let updateParentStartDate = toDayJs(parent.startDate, 0);
+            let updateParentEndDate = toDayJs(parent.endDate, 0);
+            if (earliestChildStart && toDayJs(parent.startDate, 0).isAfter(earliestChildStart)) {
+                needToUpdate = true;
+                updateParentStartDate = earliestChildStart;
+            }
+            if (latestChildEnd && toDayJs(parent.endDate, 0).isBefore(latestChildEnd)) {
+                needToUpdate = true;
+                updateParentEndDate = latestChildEnd;
+            }
+
+            if (needToUpdate) {
+                onDateUpdate(getId(parent.type, parent.id), updateParentStartDate.format("YYYY-MM-DD"), updateParentEndDate.format("YYYY-MM-DD"));
+            }
+
+            parent = getParentTimelineItem(parent);
+
+        }
+    }
 
     // --- Drag Logic ---
     const handleMouseDown = (e: React.MouseEvent, edge: 'start' | 'end' | 'move') => {
@@ -162,7 +253,7 @@ const GanttBar = ({
         const initialStart = toDayJs(localStartDate, 0);
         const initialEnd = toDayJs(localEndDate, 0);
 
-        const DRAG_THRESHOLD = 1; // pixels
+        const DRAG_THRESHOLD = 2; // pixels
 
         // Get the width of the parent timeline container (the 100% width reference)
         // We use offsetParent because the bar is absolute positioned relative to it.
@@ -178,6 +269,8 @@ const GanttBar = ({
             let newStart = initialStart;
             let newEnd = initialEnd;
             const initialDurationDays = initialEnd.diff(initialStart, 'day');
+
+            setUnsavedTimelineItem(item);
 
             if (edge === 'move') {
                 newStart = initialStart.add(daysShift, 'day');
@@ -206,9 +299,9 @@ const GanttBar = ({
                 constrained = {
                     validStart: childConstrained.validStart.isBefore(constrained.validStart) ? childConstrained.validStart : constrained.validStart,
                     validEnd: childConstrained.validEnd.isAfter(constrained.validEnd) ? childConstrained.validEnd : constrained.validEnd,
-                };      
+                };
             }
-            
+
             currentShiftRef.current = constrained.validStart.diff(initialStart, 'day');
             constraintRef.current = {
                 startDate: constrained.validStart.format("YYYY-MM-DD"),
@@ -226,11 +319,16 @@ const GanttBar = ({
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
 
+            const newStart = toDayJs(constraintRef.current.startDate, 0);
+            const newEnd = toDayJs(constraintRef.current.endDate, 0);
+
             if (edge === 'move') {
                 handleMoveGnattBar(getId(item.type, item.id), currentShiftRef.current);
             } else {
-                onDateUpdate(getId(item.type, item.id), constraintRef.current.startDate, constraintRef.current.endDate);
+                onDateUpdate(getId(item.type, item.id), constraintRef.current.startDate, constraintRef.current.endDate, true);
             }
+
+            recalculateParents(item, newStart, newEnd);
         };
 
         document.addEventListener('mousemove', handleMouseMove);
@@ -241,9 +339,11 @@ const GanttBar = ({
     const getBarStyles = (type: string) => {
         switch (type.toUpperCase()) { // Handle case sensitivity
             case 'DELIVERABLE':
-                return { container: 'bg-blue-50 border-blue-400 text-blue-700', border: 'border-blue-400', height: 'h-8' };
+                return { container: 'bg-green-50 border-[#29CC39] text-green-700', border: 'border-[#29CC39]', height: 'h-8' };
             case 'PHASE':
-                return { container: 'bg-purple-50 border-purple-400 text-purple-700', border: 'border-purple-400', height: 'h-8' };
+                return { container: 'bg-blue-50 border-[#33BFFF] text-blue-700', border: 'border-[#33BFFF]', height: 'h-8' };
+            case 'TASK':
+                return { container: 'bg-purple-50 border-[#8833FF] text-purple-700', border: 'border-[#8833FF]', height: 'h-8' };
             default:
                 return { container: 'bg-gray-100 border-gray-300 text-gray-700', border: 'border-gray-400', height: 'h-8' };
         }
@@ -268,15 +368,15 @@ const GanttBar = ({
                 barStyles.container,
                 barStyles.height,
                 isRelated || isHovered
-                    ? ((isHovered || isDragging) ? cn("cursor-grab ring-2 ring-offset-1 ring-blue-300 opacity-100", { "cursor-default": isAddingDependency }) : "opacity-90 hover:opacity-100")
+                    ? ((isHovered || isDragging) ? cn("cursor-grab ring-2 ring-offset-1 ring-blue-300 opacity-100", { "cursor-default": !canEdit || isAddingDependency }) : "opacity-90 hover:opacity-100")
                     : "opacity-30 cursor-default bg-transparent border-none",
 
-                isDragging && "transition-none cursor-grabbing",
+                isDragging && canEdit ? "transition-none cursor-grabbing" : "",
                 (isHovered || isDragging) ? "ring-2 ring-offset-1 ring-blue-300 opacity-100" : "opacity-90 hover:opacity-100"
             )}
             style={style || undefined}
             onMouseDown={(e) => {
-                if (hasUnsavedChanges) {
+                if (!canEdit || hasUnsavedChanges) {
                     return;
                 }
 
@@ -294,34 +394,38 @@ const GanttBar = ({
             }}
         >
             {/* --- Head Handle (Start Date) --- */}
-            <div
-                className={cn(connectorCircleClasses, "-left-1.5")}
-                onMouseDown={(e) => {
-                    if (hasUnsavedChanges) {
-                        return;
-                    }
+            {canEdit && (
+                <div
+                    className={cn(connectorCircleClasses, "-left-1.5")}
+                    onMouseDown={(e) => {
+                        if (!canEdit || hasUnsavedChanges) {
+                            return;
+                        }
 
-                    handleMouseDown(e, 'start');
-                }}
-            />
+                        handleMouseDown(e, 'start');
+                    }}
+                />
+            )}
 
             {/* Label */}
             {duration > 5 && (
-                <span className="text-[10px] font-medium truncate px-2 w-full pointer-events-none select-none">
+                <span className="text-[12px] font-medium truncate px-2 w-full pointer-events-none select-none">
                     {item.name}
                 </span>
             )}
 
             {/* --- Tail Handle (End Date) --- */}
-            <div
-                className={cn(connectorCircleClasses, "-right-1.5")}
-                onMouseDown={(e) => {
-                    if (hasUnsavedChanges) {
-                        return;
-                    }
-                    handleMouseDown(e, 'end');
-                }}
-            />
+            {canEdit && (
+                <div
+                    className={cn(connectorCircleClasses, "-right-1.5")}
+                    onMouseDown={(e) => {
+                        if (!canEdit || hasUnsavedChanges) {
+                            return;
+                        }
+                        handleMouseDown(e, 'end');
+                    }}
+                />
+            )}
 
             {/* --- Tooltip (Updated with Local State) --- */}
             <div

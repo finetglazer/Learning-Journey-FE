@@ -1,12 +1,12 @@
 import { DropdownItem } from "@/components/core/dropdown/type";
 import { PASSWORD_GOOD_LENGTH, PASSWORD_MINIMUM_LENGTH, PASSWORD_REGEX, TIME_STR_REGEX, timezoneGroups } from "@/const/consts";
 import { FieldError } from "@/model/field-error";
-import { ProjectGroup, UserTaskItem } from "@/model/project-management";
+import { ProjectGroup, TimelineItem, UserTaskItem } from "@/model/project-management";
 import { Task, UnscheduledMonthData } from "@/model/task";
 import { clsx, type ClassValue } from "clsx"
 import { addWeeks, endOfMonth, endOfWeek, format, isBefore, isSameDay, roundToNearestHours, startOfMonth, startOfWeek } from "date-fns";
 import dayjs, { Dayjs } from "dayjs";
-import { isNil } from "lodash";
+import { isEqual, isNil } from "lodash";
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
@@ -93,8 +93,8 @@ export const toISOString = (dateString: string) => {
   return date.toISOString();
 }
 
-export const dayJsToISOString = (dayjs: Dayjs) => {
-  dayjs = dayjs.add(7, "hour").millisecond(0);
+export const dayJsToISOString = (dayjs: Dayjs, gmt?: number) => {
+  dayjs = dayjs.add(!isNil(gmt) ? gmt : 7, "hour").millisecond(0);
   return dayjs.toISOString();
 };
 
@@ -358,11 +358,13 @@ export const getDaysInMonth = (month: number) => {
 export const getEditorAdjustedPosition = (
   clickX: number, // This is e.clientX
   clickY: number, // This is e.clientY
-  scrollContainer?: HTMLDivElement | null
+  scrollContainer?: HTMLDivElement | null,
 ) => {
   // These constants were in your original stub.
+  const taskEditorRef = document.getElementById("task-editor-id");
+
   const EDITOR_WIDTH = 380;
-  const EDITOR_HEIGHT = 550;
+  const EDITOR_HEIGHT = taskEditorRef?.getBoundingClientRect().height || 550;
   const VIEWPORT_PADDING = 16; // Use a simple 16px padding
 
   // Fallback if the ref isn't ready
@@ -400,7 +402,7 @@ export const getEditorAdjustedPosition = (
   relativeX = Math.max(parentScrollLeft, relativeX);
   relativeY = Math.max(parentScrollTop, relativeY);
 
-  return { x: relativeX, y: relativeY };
+  return { x: relativeX, y: relativeY - 200 };
 };
 
 export const getWeeksInMonth = (month: number, year?: number) => {
@@ -723,7 +725,10 @@ export const getOrthogonalPath = (start: Point, end: Point, cornerRadius = 10) =
   return path.replace(/\s+/g, ' ').trim();
 };
 
-export const getId = (itemType: 'DELIVERABLE' | 'PHASE' | 'TASK', itemId: number) => {
+export const getId = (itemType: 'DELIVERABLE' | 'PHASE' | 'TASK', itemId: number | string) => {
+  if (typeof itemId === "string") {
+    return itemId;
+  }
   switch (itemType) {
     case 'DELIVERABLE':
       return "del-".concat(itemId.toString());
@@ -732,4 +737,21 @@ export const getId = (itemType: 'DELIVERABLE' | 'PHASE' | 'TASK', itemId: number
     case 'TASK':
       return "task-".concat(itemId.toString());
   }
+};
+
+export const findRecursive = (items: TimelineItem[], timelineItemId: string): TimelineItem | undefined => {
+  let res: TimelineItem | undefined = undefined;
+
+  for (let i = 0; i < items.length; ++i) {
+    const curItem = items[i];
+    if (isEqual(getId(curItem.type, curItem.id), timelineItemId)) {
+      return curItem;
+    }
+    res = findRecursive(curItem.children || [], timelineItemId);
+    if (res) {
+      break;
+    }
+  };
+
+  return res;
 };
