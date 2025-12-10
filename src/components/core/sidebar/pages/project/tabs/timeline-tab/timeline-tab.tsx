@@ -7,7 +7,7 @@ import { EmptyData } from "@/components/core/project-management/empty-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { calculateBarPosition, cn, findRecursive, getDaysDiff, getId, getOrthogonalPath, toDayJs } from "@/lib/utils";
+import { calculateBarPosition, cn, dateToDayJs, findRecursive, getDaysDiff, getId, getOrthogonalPath, toDayJs } from "@/lib/utils";
 import { ProjectDependency, ProjectMembershipRole, ProjectTimelineStructure, TimelineItem, TimelineMilestone } from '@/model/project-management';
 import { projectRepository } from "@/repository/project-repository";
 import dayjs from "dayjs";
@@ -42,6 +42,12 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         startY: number;
         currentX: number;
         currentY: number;
+    } | null>(null);
+    const [ghostBar, setGhostBar] = useState<{
+        itemId: number | string;
+        startDate: string;
+        endDate: string;
+        x: number;
     } | null>(null);
     const [isUpdating, setIsUpdating] = useState<boolean>(false);
     const [dependencySource, setDependencySource] = useState<TimelineItem | null>(null);
@@ -465,6 +471,77 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         selectedMilestone,
     ]);
 
+    const handleCreateTimelineItem = useCallback(() => {
+        if (!ghostBar || !selectedProject) {
+            return;
+        }
+        setGhostBar(null);
+
+        const pref = (ghostBar.itemId as string).split("-")[0];
+        const type = isEqual(pref, "deli") ? "DELIVERABLE" : isEqual(pref, "phase") ? "PHASE" : "TASK";
+        const subscription = projectRepository.updateTimelineDates({
+            projectId: selectedProject.id,
+        }, {
+            type: type,
+            id: Number((ghostBar.itemId as string).split("-")[1]),
+            start_date: ghostBar.startDate,
+            end_date: ghostBar.endDate,
+        }).subscribe({
+            next: res => {
+                if (res?.status) {
+                    toast.success(res?.message || res?.msg);
+                    getProjectTimeline();
+                }
+                else {
+                    toast.error(res?.message || res?.msg);
+                }
+            },
+            error: err => { },
+        });
+
+        return () => {
+            subscription.unsubscribe();
+        }
+    }, [
+        selectedProject,
+        ghostBar,
+    ]);
+
+    const handleDeleteTimeline = useCallback(() => {
+        if (!selectedItem || !selectedProject) {
+            return;
+        }
+
+        const subscription = projectRepository.deleteTimelineItem({
+            projectId: selectedProject.id as number,
+        }, {
+            type: selectedItem.type,
+            id: selectedItem.id,
+        })
+            .pipe(finalize(() => {
+                getProjectTimeline();
+            }))
+            .subscribe({
+                next: res => {
+                    if (res?.status) {
+                        toast.success(res?.msg || res?.message);
+                        setSelectedItem(null);
+                    }
+                    else {
+                        toast.error(res?.msg || res?.message);
+                    }
+                },
+                error: err => { },
+            });
+
+        return () => {
+            subscription.unsubscribe();
+        }
+    }, [
+        selectedProject,
+        selectedItem,
+    ]);
+
     const jumpToToday = () => {
         if (!timelineScrollRef.current) return;
         const today = new Date();
@@ -714,13 +791,14 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         }
     };
 
-    const mappingTimelineItems = (projectStartDate: string, items: any[], currentParent: TimelineItem | undefined, parentMap: Record<string, string | undefined>) => {
+    const mappingTimelineItems = (items: any[], currentParent: TimelineItem | undefined, parentMap: Record<string, string | undefined>) => {
         if (!items) {
             return [];
         }
         let res: any[] = [];
         items.forEach((item: any) => {
             parentMap[item.id] = currentParent ? getId(currentParent?.type, currentParent?.id) : undefined;
+
             if (item.type === 'DELIVERABLE' && item.childrenContainSearchKeyword) {
                 setExpandedDeliverables(prev => new Set(prev).add(Number(item.id.split("-")[1])));
             }
@@ -728,9 +806,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
             res.push({
                 ...item,
                 id: Number(item.id.split("-")[1]),
-                startDate: item?.startDate,
-                endDate: item?.endDate,
-                children: mappingTimelineItems(projectStartDate, item.children, item, parentMap),
+                children: mappingTimelineItems(item.children, item, parentMap),
             });
         });
 
@@ -749,7 +825,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                     const timelineItems = res?.data?.items || [];
                     setOriginalTimelineData({
                         ...res?.data,
-                        items: mappingTimelineItems(res?.data?.projectStartDate, timelineItems, undefined, parentMap),
+                        items: mappingTimelineItems(timelineItems, undefined, parentMap),
                     });
                     setParentMap(parentMap);
                 } else {
@@ -927,9 +1003,9 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                             )}
                         </Button>
 
-                        {(selectedItem || !!unsavedTimelineItem || selectedMilestone) && (
+                        {(!!selectedItem || !!unsavedTimelineItem || !!selectedMilestone) && (
                             <>
-                                {(selectedItem || !!unsavedTimelineItem || selectedMilestone) && (
+                                {(!!selectedItem || !!unsavedTimelineItem || !!selectedMilestone) && (
                                     <Button
                                         size="sm"
                                         onClick={() => {
@@ -965,7 +1041,18 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                             </>
                         )}
 
-                        {selectedMilestone && (
+                        {(!!selectedItem) && (
+                            <Button
+                                size="sm"
+                                onClick={() => { handleDeleteTimeline(); }}
+                                className="h-7 px-3 text-sm cursor-pointer font-medium bg-amber-500 hover:bg-amber-700 text-white border border-transparent shadow-sm transition-all animate-in fade-in zoom-in duration-300"
+                            >
+                                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                                Delete timeline
+                            </Button>
+                        )}
+
+                        {(!!selectedMilestone) && (
                             <Button
                                 size="sm"
                                 onClick={() => {
@@ -1242,13 +1329,41 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                                         height: `${itemCoordinates.totalHeight}px`,
                                     }}
                                 >
+                                    <defs>
+                                        {/* Blue Arrow Marker */}
+                                        <marker
+                                            id="arrow-blue"
+                                            markerWidth="6"
+                                            markerHeight="6"
+                                            refX="5"
+                                            refY="3"
+                                            orient="auto"
+                                            markerUnits="strokeWidth"
+                                        >
+                                            <path d="M0,0 L6,3 L0,6" fill="none" stroke="#33BFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                        </marker>
+
+                                        {/* Red Arrow Marker */}
+                                        <marker
+                                            id="arrow-red"
+                                            markerWidth="6"
+                                            markerHeight="6"
+                                            refX="5"
+                                            refY="3"
+                                            orient="auto"
+                                            markerUnits="strokeWidth"
+                                        >
+                                            <path d="M0,0 L6,3 L0,6" fill="none" stroke="#E62E7B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                        </marker>
+                                    </defs>
+
                                     {dependencies.map(dep => {
                                         let source = itemCoordinates.coords.get(getId(dep.type, dep.fromId));
                                         let target = itemCoordinates.coords.get(getId(dep.type, dep.toId));
 
                                         if (!source || !target) return null;
 
-                                        const isBackwardsOrTouching = source.xEnd >= target.xStart;
+                                        const isBackwardsOrTouching = source.xEnd <= target.xStart;
 
                                         const lineColor = isBackwardsOrTouching ? "#33BFFF" : "#E62E7B"; // Blue : Red
                                         const hoverColorClass = isBackwardsOrTouching ? "group-hover:stroke-blue-700" : "group-hover:stroke-red-700";
@@ -1257,17 +1372,15 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                                         let p1 = { x: source.xEnd, y: source.y };   // Source Tail
                                         let p2 = { x: target.xStart, y: target.y }; // Target Head
 
-                                        // if (p1.y > p2.y) {
-                                        //     [p1, p2] = [p2, p1];
-                                        // }
-
                                         // Connect: Source Right (Tail) -> Target Left (Head)
                                         const pathData = getOrthogonalPath(p1, p2);
                                         const opacity = isRelevant ? 1 : 0;
                                         const midX = p1.x + (p2.x - p1.x) / 2;
                                         const midY = p1.y + (p2.y - p1.y) / 2;
+
                                         return (
                                             <g
+                                                key={dep.type.concat("-").concat(dep.fromId + "-" + dep.toId)}
                                                 className="group"
                                                 style={{
                                                     opacity: opacity,
@@ -1283,8 +1396,9 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                                                 <path
                                                     d={pathData}
                                                     stroke={lineColor}
-                                                    strokeWidth="3"
+                                                    strokeWidth="2"
                                                     fill="none"
+                                                    markerEnd={`url(#arrow-${isBackwardsOrTouching ? 'blue' : 'red'})`}
                                                     className={`transition-colors cursor-pointer pointer-events-auto duration-200 ${isRelevant ? hoverColorClass : ''}`}
                                                 />
 
@@ -1296,11 +1410,8 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                                                         }}
                                                         className="cursor-pointer pointer-events-auto"
                                                         transform={`translate(${midX}, ${midY})`}
-                                                        style={{ transform: `translate(${midX}px, ${midY}px)` }}
                                                     >
-                                                        {/* White background circle */}
                                                         <circle r="10" fill="white" stroke="#ef4444" strokeWidth="1" />
-                                                        {/* X Icon (SVG Lines) */}
                                                         <line x1="-4" y1="-4" x2="4" y2="4" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
                                                         <line x1="4" y1="-4" x2="-4" y2="4" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
                                                     </g>
@@ -1308,6 +1419,8 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                                             </g>
                                         );
                                     })}
+
+                                    {/* Dragging Line */}
                                     {dependencyDragLine && (
                                         <line
                                             x1={dependencyDragLine.startX}
@@ -1317,10 +1430,12 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                                             stroke="#3b82f6"
                                             strokeWidth="2"
                                             strokeDasharray="5,5"
+                                            markerEnd="url(#arrow-blue)"
                                             className="transition-all duration-75 ease-linear"
                                         />
                                     )}
                                 </svg>
+
                                 <TableHeader>
                                     <TableRow className="h-8 border-b border-gray-100">
                                         {months.map((month: any, i: number) => (
@@ -1344,9 +1459,11 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                                 </TableHeader>
                                 <TableBody>
                                     {visibleRows.map(({ item }) => {
-                                        const barPosition = calculateBarPosition(item.startDate, item.endDate, new Date(timelineStructure?.projectStartDate || toDayJs().format("YYYY-MM-DD")), totalViewDays);
+                                        const barPosition = calculateBarPosition(item.startDate, item.endDate, new Date(timelineStructure?.projectStartDate || toDayJs(undefined, 0).format("YYYY-MM-DD")), totalViewDays);
                                         const isHovered = hoveredRowId === getId(item.type, item.id);
                                         const isRelated = !selectedItem || relatedIds.has(getId(item.type, item.id));
+                                        const hasTimeline = !isNil(item.startDate) && !isNil(item.endDate);
+                                        const isGhosting = !hasTimeline && isEqual(ghostBar?.itemId, getId(item.type, item.id));
 
                                         return (
                                             <TableRow
@@ -1356,7 +1473,32 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                                                         "h-12 border-b border-gray-50 transition-colors relative group",
                                                     )}
                                                 onMouseEnter={() => setHoveredRowId(getId(item.type, item.id))}
-                                                onMouseLeave={() => setHoveredRowId(null)}
+                                                onMouseMove={(e) => {
+                                                    if (hasTimeline || !canEdit || !timelineScrollRef?.current) return;
+
+                                                    const getDateFromX = (x: number, totalWidth: number, totalViewDays: number, startDate: Date) => {
+                                                        if (totalWidth === 0) return dateToDayJs(startDate, 0);
+                                                        const ratio = x / totalWidth;
+                                                        const daysToAdd = Math.floor(ratio * totalViewDays);
+                                                        return dateToDayJs(startDate, 0).add(daysToAdd, 'day');
+                                                    };
+
+                                                    const rect = e.currentTarget.getBoundingClientRect();
+                                                    const x = e.clientX - rect.left;
+                                                    const viewStart = toDayJs(undefined, 0).subtract(6, 'month');
+                                                    const centerDate = getDateFromX(x, itemCoordinates.totalWidth, totalViewDays, viewStart.toDate());
+
+                                                    setGhostBar({
+                                                        itemId: getId(item.type, item.id),
+                                                        startDate: centerDate.subtract(1, 'week').format("YYYY-MM-DD"),
+                                                        endDate: centerDate.add(1, 'week').format("YYYY-MM-DD"),
+                                                        x: x
+                                                    });
+                                                }}
+                                                onMouseLeave={() => {
+                                                    setHoveredRowId(null);
+                                                    setGhostBar(null);
+                                                }}
                                             >
                                                 {/* Render Grid Cells (Background) */}
                                                 {weeks.map((_: string, i: number) => (
@@ -1364,6 +1506,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                                                 ))}
 
                                                 {/* Render Gantt Bar (Absolute Overlay) */}
+
                                                 <div className="absolute inset-0 w-full h-full pointer-events-none">
                                                     <div className="relative w-full h-full pointer-events-auto"
                                                         onClick={(e) => {
@@ -1371,11 +1514,17 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                                                             if (!canEdit) {
                                                                 return;
                                                             }
+                                                            if (isGhosting) {
+                                                                handleCreateTimelineItem();
+                                                                return;
+                                                            }
                                                             setSelectedItem(item);
                                                         }}
                                                     >
                                                         <GanttBar
                                                             item={item}
+                                                            ghostBar={ghostBar}
+                                                            isGhosting={isGhosting}
                                                             canEdit={canEdit}
                                                             originalStyle={barPosition}
                                                             viewStartDate={new Date(toDayJs(undefined, 0).subtract(6, "month").format("YYYY-MM-DD"))}

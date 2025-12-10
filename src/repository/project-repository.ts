@@ -262,12 +262,23 @@ export class ProjectRepository extends BaseRepository {
     public offsetTimelineItem = (
         params: { projectId: number | string },
         body: {
-            type: 'PHASE' | 'DELIVERABLE',
+            type: 'PHASE' | 'DELIVERABLE' | 'TASK',
             id: number | string,
             offsetDays: number
         }
     ): Observable<any> => {
         return this.http.put(`/${params.projectId}/timeline/offset`, body)
+            .pipe(map(res => res?.data));
+    };
+
+    public deleteTimelineItem = (
+        params: { projectId: number | string },
+        body: {
+            type: 'PHASE' | 'DELIVERABLE' | 'TASK',
+            id: number,
+        }
+    ): Observable<any> => {
+        return this.http.delete(`/${params.projectId}/timeline`, { data: body })
             .pipe(map(res => res?.data));
     };
 

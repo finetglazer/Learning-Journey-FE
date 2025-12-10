@@ -3,14 +3,21 @@
 import { calculateBarPosition, cn, findRecursive, getId, toDayJs } from "@/lib/utils";
 import { ProjectTimelineStructure, TimelineItem } from '@/model/project-management';
 import dayjs from 'dayjs';
-import { isEqual } from "lodash";
+import { isEqual, isNil } from "lodash";
 import React, { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 
 interface GanttBarProps {
     item: TimelineItem;
+    isGhosting: boolean;
+    ghostBar: {
+        itemId: string | number;
+        startDate: string;
+        endDate: string;
+        x: number;
+    } | null;
     canEdit: boolean;
     totalViewDays: number;
-    originalStyle: React.CSSProperties; // Initial positioning
+    originalStyle: React.CSSProperties | undefined; // Initial positioning
     isHovered: boolean;
     timelineStructure: ProjectTimelineStructure | null;
     viewStartDate: Date;
@@ -29,6 +36,8 @@ interface GanttBarProps {
 
 const GanttBar = ({
     item,
+    isGhosting,
+    ghostBar,
     canEdit,
     totalViewDays,
     originalStyle,
@@ -71,15 +80,25 @@ const GanttBar = ({
     };
 
     useEffect(() => {
+        if (isGhosting) {
+            if (!ghostBar) {
+                return;
+            }
+            setLocalStartDate(ghostBar.startDate);
+            setLocalEndDate(ghostBar.endDate);
+            return;
+        }
         if (!isDragging) {
-            const updatedLocalStartDate = item.startDate || parentStartDate
+            const updatedLocalStartDate = item.startDate || parentStartDate;
             setLocalStartDate(updatedLocalStartDate);
             setLocalEndDate(item.endDate);
         }
-    }, [item.startDate, item.endDate]);
+    }, [item.startDate, item.endDate, ghostBar, isGhosting]);
 
     useEffect(() => {
-        setStyle(originalStyle);
+        if (originalStyle) {
+            setStyle(originalStyle);
+        }
     }, [originalStyle]);
 
 
@@ -96,40 +115,6 @@ const GanttBar = ({
         viewStartDate,
         totalViewDays,
     ]);
-
-    // useEffect(() => {
-    //     const limits = { start: null as dayjs.Dayjs | null, end: null as dayjs.Dayjs | null };
-
-    //     let parent = getParentTimelineItem(getId(item.type, item.id));
-
-    //     if (!parent) {
-    //         return;
-    //     }
-
-    //     getChildLimits(parent.children, limits);
-
-    //     const earliestChildStart = limits.start;
-    //     const latestChildEnd = limits.end;
-
-    //     while (parent) {
-    //         let needToUpdate = false;
-    //         let updateParentStartDate = toDayJs(parent.startDate, 0);
-    //         let updateParentEndDate = toDayJs(parent.endDate, 0);
-    //         if (earliestChildStart && toDayJs(parent.startDate, 0).isAfter(earliestChildStart)) {
-    //             needToUpdate = true;
-    //             updateParentStartDate = earliestChildStart;
-    //         }
-    //         if (latestChildEnd && toDayJs(parent.endDate, 0).isBefore(latestChildEnd)) {
-    //             needToUpdate = true;
-    //             updateParentEndDate = latestChildEnd;
-    //         }
-
-    //         if (needToUpdate) {
-    //             onDateUpdate(getId(parent.type, parent.id), updateParentStartDate.format("YYYY-MM-DD"), updateParentEndDate.format("YYYY-MM-DD"));
-    //         }
-    //         parent = getParentTimelineItem(getId(parent.type, parent.id));
-    //     }
-    // }, [item]);
 
     // --- Math Helper ---
     const calculateDuration = (s: string, e: string) => toDayJs(e).diff(toDayJs(s), 'day') + 1;
@@ -236,7 +221,7 @@ const GanttBar = ({
 
     // --- Drag Logic ---
     const handleMouseDown = (e: React.MouseEvent, edge: 'start' | 'end' | 'move') => {
-        if (!isRelated) {
+        if (!isRelated || isGhosting) {
             return;
         }
         e.stopPropagation();
@@ -259,11 +244,13 @@ const GanttBar = ({
         // We use offsetParent because the bar is absolute positioned relative to it.
         const parentWidth = (barRef.current?.offsetParent as HTMLElement)?.offsetWidth || 1000;
         const pixelsPerDay = parentWidth / totalViewDays;
+        currentShiftRef.current = 0;
 
         const handleMouseMove = (moveEvent: MouseEvent) => {
             const deltaX = moveEvent.clientX - startX;
             const daysShift = Math.round(deltaX / pixelsPerDay);
             if (Math.abs(daysShift) <= DRAG_THRESHOLD) {
+                currentShiftRef.current = 0;
                 return;
             }
             let newStart = initialStart;
@@ -358,6 +345,10 @@ const GanttBar = ({
         (isHovered || isDragging) ? "opacity-100" : "opacity-0"
     );
 
+    if (!isGhosting && (isNil(item.startDate) || isNil(item.endDate))) {
+        return <></>;
+    }
+
     return (
         <div
             ref={barRef}
@@ -372,11 +363,12 @@ const GanttBar = ({
                     : "opacity-30 cursor-default bg-transparent border-none",
 
                 isDragging && canEdit ? "transition-none cursor-grabbing" : "",
-                (isHovered || isDragging) ? "ring-2 ring-offset-1 ring-blue-300 opacity-100" : "opacity-90 hover:opacity-100"
+                (isHovered || isDragging) ? "ring-2 ring-offset-1 ring-blue-300 opacity-100" : "opacity-90 hover:opacity-100",
+                { "opacity-50": isGhosting },
             )}
             style={style || undefined}
             onMouseDown={(e) => {
-                if (!canEdit || hasUnsavedChanges) {
+                if (!canEdit || hasUnsavedChanges || isGhosting) {
                     return;
                 }
 
