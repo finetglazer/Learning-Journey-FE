@@ -39,6 +39,17 @@ export function useCollaborativeEditor(
 ): UseCollaborativeEditorReturn {
     const { storageRef, onSynced, onDisconnect, onError } = options;
 
+    // Use refs for callbacks to avoid infinite loops
+    const onSyncedRef = useRef(onSynced);
+    const onDisconnectRef = useRef(onDisconnect);
+    const onErrorRef = useRef(onError);
+
+    useEffect(() => {
+        onSyncedRef.current = onSynced;
+        onDisconnectRef.current = onDisconnect;
+        onErrorRef.current = onError;
+    }, [onSynced, onDisconnect, onError]);
+
     const [provider, setProvider] = useState<HocuspocusProvider | null>(null);
     const [ydoc, setYdoc] = useState<Y.Doc | null>(null);
     const [isConnected, setIsConnected] = useState(false);
@@ -46,21 +57,25 @@ export function useCollaborativeEditor(
     const [awarenessUsers, setAwarenessUsers] = useState<AwarenessUser[]>([]);
     const [threads, setThreadsState] = useState<CommentThread[]>([]);
 
-    // Store refs for cleanup
     const providerRef = useRef<HocuspocusProvider | null>(null);
     const docRef = useRef<Y.Doc | null>(null);
 
     useEffect(() => {
-        // Don't initialize if no storageRef or if we're on the server
         if (!storageRef || typeof window === "undefined") return;
 
         const token = localStorage.getItem("accessToken");
+        console.log("[Client Debug] Token being sent:", token); // <--- Add this
+
+        if (!token) {
+            onErrorRef.current?.(new Error("No access token found"));
+            return;
+        }
         const userId = localStorage.getItem("userId") || "";
         const userName = localStorage.getItem("displayName") || "Anonymous";
         const userAvatar = localStorage.getItem("avatarUrl") || "";
 
         if (!token) {
-            onError?.(new Error("No access token found"));
+            onErrorRef.current?.(new Error("No access token found"));
             return;
         }
 
@@ -85,26 +100,22 @@ export function useCollaborativeEditor(
                     const threadsMap = doc.getMap("threads");
                     const loadedThreads = Array.from(threadsMap.values()) as CommentThread[];
                     setThreadsState(loadedThreads);
-                    onSynced?.();
+                    onSyncedRef.current?.();
                 }
             },
             onDisconnect: () => {
                 console.log("Disconnected from Hocuspocus");
                 setIsConnected(false);
                 setIsSynced(false);
-                onDisconnect?.();
+                onDisconnectRef.current?.();
             },
             onAuthenticationFailed: ({ reason }: { reason: string }) => {
                 console.error("Authentication failed:", reason);
-                onError?.(new Error(reason));
+                onErrorRef.current?.(new Error(reason));
             },
         });
 
         providerRef.current = hocuspocusProvider;
-
-        // CRITICAL: Patch .doc for Tiptap CollaborationCursor compatibility
-        // The CollaborationCursor extension looks for 'provider.doc', but Hocuspocus uses 'provider.document'
-        (hocuspocusProvider as any).doc = doc;
 
         const awareness = hocuspocusProvider.awareness;
         const userColor = getStableColor(userId || "anonymous");
@@ -153,7 +164,6 @@ export function useCollaborativeEditor(
             }
             threadsMap.unobserve(threadsObserver);
 
-            // Cleanup
             hocuspocusProvider.destroy();
             doc.destroy();
 
@@ -165,7 +175,7 @@ export function useCollaborativeEditor(
             setIsConnected(false);
             setIsSynced(false);
         };
-    }, [storageRef, onSynced, onDisconnect, onError]);
+    }, [storageRef]); // Only depend on storageRef
 
     const setThreads = useCallback((newThreads: CommentThread[]) => {
         const doc = docRef.current;

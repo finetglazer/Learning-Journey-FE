@@ -65,6 +65,8 @@ export default function DocumentPage() {
                     documentRepository.getDocumentDetails(nodeId)
                 );
 
+                console.log("🚀 REAL DATA FROM API:", doc);
+
                 setDocument(doc);
             } catch (err: any) {
                 console.error("Failed to load document:", err);
@@ -188,22 +190,22 @@ export default function DocumentPage() {
     return (
         <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
             {/* Document header */}
-            <header className="flex items-center gap-4 px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-                <Button variant="ghost" size="sm" onClick={() => router.back()}>
-                    <ArrowLeft className="h-4 w-4" />
-                </Button>
+            {/*<header className="flex items-center gap-4 px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">*/}
+            {/*    <Button variant="ghost" size="sm" onClick={() => router.back()}>*/}
+            {/*        <ArrowLeft className="h-4 w-4" />*/}
+            {/*    </Button>*/}
 
-                <div className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-gray-500" />
-                    <h1 className="font-semibold text-lg">{document.name}</h1>
-                </div>
+            {/*    <div className="flex items-center gap-2">*/}
+            {/*        <FileText className="h-5 w-5 text-gray-500" />*/}
+            {/*        <h1 className="font-semibold text-lg">{document.name}</h1>*/}
+            {/*    </div>*/}
 
-                {!canEdit && (
-                    <span className="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
-                        View only
-                    </span>
-                )}
-            </header>
+            {/*    {!canEdit && (*/}
+            {/*        <span className="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">*/}
+            {/*            View only*/}
+            {/*        </span>*/}
+            {/*    )}*/}
+            {/*</header>*/}
 
             {/* Editor */}
             <div className="flex-1 overflow-hidden">
@@ -224,6 +226,18 @@ export default function DocumentPage() {
                         onLoadVersions={handleLoadVersions}
                         onRestoreVersion={handleRestoreVersion}
                         isRestoringVersion={isRestoringVersion}
+
+                        // ✅ NEW: Connect Real Data Here
+                        documentTitle={document.name}          // Maps 'name' from API to title
+                        createdBy={document.createdBy}         // Maps 'createdBy' from API
+                        createdAt={document.createdAt}         // Maps 'createdAt' from API
+
+                        // ✅ Optional: Allow local editing of the title
+                        onTitleChange={(newTitle) => {
+                            setDocument(prev => prev ? { ...prev, name: newTitle } : null);
+                        }}
+
+                        onBack={() => router.back()}
                     />
                 ) : (
                     <div className="flex items-center justify-center h-full">

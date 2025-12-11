@@ -12,20 +12,23 @@ import TableRow from "@tiptap/extension-table-row";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
 import Collaboration from "@tiptap/extension-collaboration";
-import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
 import { HocuspocusProvider } from "@hocuspocus/provider";
 import * as Y from "yjs";
-
+import BubbleMenuExtension from "@tiptap/extension-bubble-menu";
 import { CommentMark } from "./extensions/comment-mark";
 import { SlashCommands } from "./extensions/slash-commands";
-import { Toolbar } from "./toolbar";
+import { EditorBubbleMenu } from "./bubble-menu";
 import { CommentSidebar } from "./comment-sidebar";
 import { PresenceAvatars } from "./presence-avatars";
 import { VersionHistoryDialog } from "./version-history-dialog";
 import { CommentThread, DocVersionDTO, AwarenessUser } from "@/model/document";
 import { Button } from "@/components/ui/button";
-import { History, PanelRightClose, PanelRight } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { ArrowLeft, History, User, Calendar } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
+import { format } from "date-fns";
 
 interface NotionEditorProps {
     provider: HocuspocusProvider;
@@ -43,16 +46,11 @@ interface NotionEditorProps {
     onLoadVersions: () => void;
     onRestoreVersion: (versionId: number) => void;
     isRestoringVersion: boolean;
-}
-
-// Generate stable color on client side only
-function getStableColor(userId: string): string {
-    const colors = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#DDA0DD", "#98D8C8", "#F7DC6F", "#BB8FCE", "#85C1E9"];
-    let hash = 0;
-    for (let i = 0; i < userId.length; i++) {
-        hash = userId.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return colors[Math.abs(hash) % colors.length];
+    documentTitle?: string;
+    onTitleChange?: (title: string) => void;
+    createdBy?: string;
+    createdAt?: string;
+    onBack?: () => void;
 }
 
 export function NotionEditor({
@@ -71,21 +69,25 @@ export function NotionEditor({
                                  onLoadVersions,
                                  onRestoreVersion,
                                  isRestoringVersion,
+                                 documentTitle = "",
+                                 onTitleChange,
+                                 createdBy = "Jane Doe",
+                                 createdAt = new Date().toISOString(),
+                                 onBack,
                              }: NotionEditorProps) {
     const [showComments, setShowComments] = useState(true);
     const [showVersionHistory, setShowVersionHistory] = useState(false);
     const [selectedThreadId, setSelectedThreadId] = useState<string>();
     const [isMounted, setIsMounted] = useState(false);
+    const [title, setTitle] = useState(documentTitle);
 
-    // Store user info in state - only read localStorage after mount
     const [currentUser, setCurrentUser] = useState({
         id: "",
         name: "Anonymous",
         avatar: "",
-        color: "#4ECDC4"
     });
 
-    // Read localStorage ONLY on client side after mount
+    // Read localStorage and set mounted state
     useEffect(() => {
         setIsMounted(true);
         const userId = localStorage.getItem("userId") || "";
@@ -96,20 +98,17 @@ export function NotionEditor({
             id: userId,
             name: displayName,
             avatar: avatarUrl,
-            color: getStableColor(userId || "anonymous")
         });
     }, []);
 
-    // Patch provider.doc for Tiptap compatibility - only after mount
+    // Sync title with prop
     useEffect(() => {
-        if (provider && !(provider as any).doc) {
-            (provider as any).doc = ydoc;
-        }
-    }, [provider, ydoc]);
+        setTitle(documentTitle);
+    }, [documentTitle]);
 
-    // Memoize extensions to prevent recreation
-    const extensions = useMemo(() => {
-        const baseExtensions = [
+    // Extensions without CollaborationCursor
+    const extensions = useMemo(
+        () => [
             StarterKit.configure({
                 history: false,
             } as any),
@@ -129,26 +128,13 @@ export function NotionEditor({
             TableHeader,
             CommentMark,
             SlashCommands,
-        ];
-
-        // Only add collaboration extensions when mounted and provider/ydoc are ready
-        if (isMounted && ydoc && provider) {
-            baseExtensions.push(
-                Collaboration.configure({
-                    document: ydoc,
-                }),
-                CollaborationCursor.configure({
-                    provider: provider,
-                    user: {
-                        name: currentUser.name,
-                        color: currentUser.color,
-                    },
-                })
-            );
-        }
-
-        return baseExtensions;
-    }, [ydoc, provider, isMounted, currentUser.name, currentUser.color]);
+            BubbleMenuExtension,
+            Collaboration.configure({
+                document: ydoc,
+            }),
+        ],
+        [ydoc]
+    );
 
     const editor = useEditor(
         {
@@ -167,52 +153,56 @@ export function NotionEditor({
 
     // Handle comment click in editor
     useEffect(() => {
-        if (!editor) return;
+        if (!editor || !editor.view || editor.isDestroyed) return;
 
-        const handleClick = (event: MouseEvent) => {
-            const target = event.target as HTMLElement;
-            const commentElement = target.closest("[data-thread-id]");
+        try {
+            const editorElement = editor.view.dom;
+            if (!editorElement) return;
 
-            if (commentElement) {
-                const threadId = commentElement.getAttribute("data-thread-id");
-                if (threadId) {
-                    setSelectedThreadId(threadId);
-                    setShowComments(true);
+            const handleClick = (event: MouseEvent) => {
+                const target = event.target as HTMLElement;
+                const commentElement = target.closest("[data-thread-id]");
+
+                if (commentElement) {
+                    const threadId = commentElement.getAttribute("data-thread-id");
+                    if (threadId) {
+                        setSelectedThreadId(threadId);
+                        setShowComments(true);
+                    }
                 }
-            }
-        };
+            };
 
-        const editorElement = editor.view.dom;
-        editorElement.addEventListener("click", handleClick);
+            editorElement.addEventListener("click", handleClick);
 
-        return () => {
-            editorElement.removeEventListener("click", handleClick);
-        };
+            return () => {
+                if (editorElement) {
+                    editorElement.removeEventListener("click", handleClick);
+                }
+            };
+        } catch (error) {
+            console.warn("Editor view not ready for click handler:", error);
+            return;
+        }
     }, [editor]);
 
-    // Add comment handler
     const handleAddComment = useCallback(() => {
         if (!editor || editor.state.selection.empty) return;
 
         const threadId = uuidv4();
-
-        // Apply comment mark to selection
         editor.chain().focus().setComment(threadId).run();
 
-        // Create thread
         const newThread: CommentThread = {
             threadId,
             userId: currentUser.id,
             userName: currentUser.name,
             userAvatar: currentUser.avatar,
-            content: "", // Will be filled by user
+            content: "",
             replies: [],
             resolved: false,
             orphaned: false,
             createdAt: new Date().toISOString(),
         };
 
-        // Open prompt for comment content
         const content = window.prompt("Add your comment:");
 
         if (content) {
@@ -221,18 +211,13 @@ export function NotionEditor({
             setSelectedThreadId(threadId);
             setShowComments(true);
         } else {
-            // Remove mark if cancelled
             editor.chain().focus().unsetComment(threadId).run();
         }
     }, [editor, currentUser, addThread]);
 
-    // Resolve thread handler
     const handleResolveThread = useCallback(
         (threadId: string) => {
-            // Remove mark from editor
             editor?.chain().focus().unsetComment(threadId).run();
-
-            // Update thread
             updateThread(threadId, {
                 resolved: true,
                 resolvedBy: currentUser.id,
@@ -242,19 +227,14 @@ export function NotionEditor({
         [editor, updateThread, currentUser.id]
     );
 
-    // Delete thread handler
     const handleDeleteThread = useCallback(
         (threadId: string) => {
-            // Remove mark from editor
             editor?.chain().focus().unsetComment(threadId).run();
-
-            // Delete thread
             deleteThread(threadId);
         },
         [editor, deleteThread]
     );
 
-    // Add reply handler
     const handleAddReply = useCallback(
         (threadId: string, content: string) => {
             const thread = threads.find((t) => t.threadId === threadId);
@@ -277,7 +257,6 @@ export function NotionEditor({
         [threads, updateThread, currentUser]
     );
 
-    // Delete reply handler
     const handleDeleteReply = useCallback(
         (threadId: string, replyId: string) => {
             const thread = threads.find((t) => t.threadId === threadId);
@@ -291,13 +270,16 @@ export function NotionEditor({
         [threads, updateThread]
     );
 
-    // Open version history
     const handleOpenVersionHistory = () => {
         setShowVersionHistory(true);
         onLoadVersions();
     };
 
-    // Don't render until mounted to avoid hydration issues
+    const handleTitleChange = (newTitle: string) => {
+        setTitle(newTitle);
+        onTitleChange?.(newTitle);
+    };
+
     if (!isMounted) {
         return (
             <div className="flex items-center justify-center h-full">
@@ -324,67 +306,75 @@ export function NotionEditor({
 
     return (
         <div className="flex h-full">
-            {/* Main editor area */}
             <div className="flex-1 flex flex-col overflow-hidden">
-                {/* Header */}
-                <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-                    <div className="flex items-center gap-4">
-                        {/* Connection status */}
-                        <div className="flex items-center gap-2">
-                            <span
-                                className={`w-2 h-2 rounded-full ${
-                                    isConnected ? "bg-green-500" : "bg-red-500"
-                                }`}
-                            />
-                            <span className="text-sm text-gray-500">
-                                {isConnected ? "Connected" : "Disconnected"}
-                            </span>
-                        </div>
-
-                        {/* Presence avatars */}
-                        <PresenceAvatars users={awarenessUsers} />
-                    </div>
+                {/* Top Bar - Back button and Avatars only */}
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={onBack}
+                        className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                        <ArrowLeft className="h-5 w-5" />
+                    </Button>
 
                     <div className="flex items-center gap-2">
-                        {/* Version history button */}
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleOpenVersionHistory}
-                        >
-                            <History className="h-4 w-4 mr-2" />
-                            History
-                        </Button>
-
-                        {/* Toggle comments sidebar */}
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setShowComments(!showComments)}
-                        >
-                            {showComments ? (
-                                <PanelRightClose className="h-4 w-4" />
-                            ) : (
-                                <PanelRight className="h-4 w-4" />
-                            )}
-                        </Button>
+                        <PresenceAvatars users={awarenessUsers} />
                     </div>
                 </div>
 
-                {/* Toolbar */}
-                <Toolbar
-                    editor={editor}
-                    onAddComment={handleAddComment}
-                    canEdit={canEdit}
-                />
+                {/* Document Metadata Section */}
+                <div className="px-8 py-6 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                    <Input
+                        type="text"
+                        value={title}
+                        onChange={(e) => handleTitleChange(e.target.value)}
+                        placeholder="<Title>"
+                        className="text-3xl font-bold border-none px-0 focus-visible:ring-0 focus-visible:ring-offset-0 mb-4"
+                        disabled={!canEdit}
+                    />
 
-                {/* Editor content */}
+                    <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center gap-2">
+                            <User className="h-4 w-4" />
+                            <span className="font-medium">Created by</span>
+                            <span>{createdBy}</span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4" />
+                            <span className="font-medium">Created at</span>
+                            <span>{format(new Date(createdAt), "d MMM, yyyy")}</span>
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-2">
+                            <Checkbox
+                                id="show-comment"
+                                checked={showComments}
+                                onCheckedChange={(checked) => setShowComments(checked as boolean)}
+                            />
+                            <Label htmlFor="show-comment" className="cursor-pointer">
+                                Show comment
+                            </Label>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Bubble Menu */}
+                {editor && (
+                    <EditorBubbleMenu
+                        editor={editor}
+                        onAddComment={handleAddComment}
+                    />
+                )}
+
+                {/* Editor Content */}
                 <div className="flex-1 overflow-auto bg-white dark:bg-gray-900">
                     <EditorContent editor={editor} />
                 </div>
             </div>
 
-            {/* Comments sidebar */}
+            {/* Comment Sidebar */}
             {showComments && (
                 <CommentSidebar
                     threads={threads}
@@ -399,7 +389,7 @@ export function NotionEditor({
                 />
             )}
 
-            {/* Version history dialog */}
+            {/* Version History Dialog */}
             <VersionHistoryDialog
                 open={showVersionHistory}
                 onOpenChange={setShowVersionHistory}
