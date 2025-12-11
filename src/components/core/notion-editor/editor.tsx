@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Underline from "@tiptap/extension-underline";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
-import {Table} from "@tiptap/extension-table";
+import { Table } from "@tiptap/extension-table";
 import TableRow from "@tiptap/extension-table-row";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
@@ -28,8 +28,8 @@ import { History, PanelRightClose, PanelRight } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 
 interface NotionEditorProps {
-    provider: HocuspocusProvider | null;
-    ydoc: Y.Doc | null;
+    provider: HocuspocusProvider;
+    ydoc: Y.Doc;
     isConnected: boolean;
     isSynced: boolean;
     awarenessUsers: AwarenessUser[];
@@ -43,6 +43,16 @@ interface NotionEditorProps {
     onLoadVersions: () => void;
     onRestoreVersion: (versionId: number) => void;
     isRestoringVersion: boolean;
+}
+
+// Generate stable color on client side only
+function getStableColor(userId: string): string {
+    const colors = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#DDA0DD", "#98D8C8", "#F7DC6F", "#BB8FCE", "#85C1E9"];
+    let hash = 0;
+    for (let i = 0; i < userId.length; i++) {
+        hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
 }
 
 export function NotionEditor({
@@ -65,67 +75,85 @@ export function NotionEditor({
     const [showComments, setShowComments] = useState(true);
     const [showVersionHistory, setShowVersionHistory] = useState(false);
     const [selectedThreadId, setSelectedThreadId] = useState<string>();
+    const [isMounted, setIsMounted] = useState(false);
 
-    // === FIX STARTS HERE ===
-    // 1. Initialize with default values (safe for Server Side)
+    // Store user info in state - only read localStorage after mount
     const [currentUser, setCurrentUser] = useState({
         id: "",
         name: "Anonymous",
-        avatar: ""
+        avatar: "",
+        color: "#4ECDC4"
     });
 
-    // 2. Read LocalStorage ONLY on the Client Side (after mount)
+    // Read localStorage ONLY on client side after mount
     useEffect(() => {
-        if (typeof window !== "undefined") {
-            setCurrentUser({
-                id: localStorage.getItem("userId") || "",
-                name: localStorage.getItem("displayName") || "Anonymous",
-                avatar: localStorage.getItem("avatarUrl") || ""
-            });
-        }
+        setIsMounted(true);
+        const userId = localStorage.getItem("userId") || "";
+        const displayName = localStorage.getItem("displayName") || "Anonymous";
+        const avatarUrl = localStorage.getItem("avatarUrl") || "";
+
+        setCurrentUser({
+            id: userId,
+            name: displayName,
+            avatar: avatarUrl,
+            color: getStableColor(userId || "anonymous")
+        });
     }, []);
 
-    const currentUserId = localStorage.getItem("userId") || "";
-    const currentUserName = localStorage.getItem("displayName") || "Anonymous";
-    const currentUserAvatar = localStorage.getItem("avatarUrl") || "";
+    // Patch provider.doc for Tiptap compatibility - only after mount
+    useEffect(() => {
+        if (provider && !(provider as any).doc) {
+            (provider as any).doc = ydoc;
+        }
+    }, [provider, ydoc]);
+
+    // Memoize extensions to prevent recreation
+    const extensions = useMemo(() => {
+        const baseExtensions = [
+            StarterKit.configure({
+                history: false,
+            } as any),
+            Placeholder.configure({
+                placeholder: 'Type "/" for commands...',
+            }),
+            Underline,
+            TaskList,
+            TaskItem.configure({
+                nested: true,
+            }),
+            Table.configure({
+                resizable: true,
+            }),
+            TableRow,
+            TableCell,
+            TableHeader,
+            CommentMark,
+            SlashCommands,
+        ];
+
+        // Only add collaboration extensions when mounted and provider/ydoc are ready
+        if (isMounted && ydoc && provider) {
+            baseExtensions.push(
+                Collaboration.configure({
+                    document: ydoc,
+                }),
+                CollaborationCursor.configure({
+                    provider: provider,
+                    user: {
+                        name: currentUser.name,
+                        color: currentUser.color,
+                    },
+                })
+            );
+        }
+
+        return baseExtensions;
+    }, [ydoc, provider, isMounted, currentUser.name, currentUser.color]);
 
     const editor = useEditor(
         {
-            extensions: [
-                StarterKit.configure({
-                    history: false,
-                } as any),
-                Placeholder.configure({
-                    placeholder: 'Type "/" for commands...',
-                }),
-                Underline,
-                TaskList,
-                TaskItem.configure({
-                    nested: true,
-                }),
-                Table.configure({
-                    resizable: true,
-                }),
-                TableRow,
-                TableCell,
-                TableHeader,
-                CommentMark,
-                SlashCommands,
-                ...(ydoc
-                    ? [
-                        Collaboration.configure({
-                            document: ydoc,
-                        }),
-                        CollaborationCursor.configure({
-                            provider,
-                            user: {
-                                name: currentUserName,
-                                color: "#" + Math.floor(Math.random() * 16777215).toString(16),
-                            },
-                        }),
-                    ]
-                    : []),
-            ],
+            immediatelyRender: false,
+            extensions,
             editable: canEdit,
             editorProps: {
                 attributes: {
@@ -134,7 +162,7 @@ export function NotionEditor({
                 },
             },
         },
-        [ydoc, provider, canEdit]
+        [extensions, canEdit]
     );
 
     // Handle comment click in editor
@@ -174,9 +202,9 @@ export function NotionEditor({
         // Create thread
         const newThread: CommentThread = {
             threadId,
-            userId: currentUserId,
-            userName: currentUserName,
-            userAvatar: currentUserAvatar,
+            userId: currentUser.id,
+            userName: currentUser.name,
+            userAvatar: currentUser.avatar,
             content: "", // Will be filled by user
             replies: [],
             resolved: false,
@@ -196,7 +224,7 @@ export function NotionEditor({
             // Remove mark if cancelled
             editor.chain().focus().unsetComment(threadId).run();
         }
-    }, [editor, currentUserId, currentUserName, currentUserAvatar, addThread]);
+    }, [editor, currentUser, addThread]);
 
     // Resolve thread handler
     const handleResolveThread = useCallback(
@@ -207,11 +235,11 @@ export function NotionEditor({
             // Update thread
             updateThread(threadId, {
                 resolved: true,
-                resolvedBy: currentUserId,
+                resolvedBy: currentUser.id,
                 resolvedAt: new Date().toISOString(),
             });
         },
-        [editor, updateThread, currentUserId]
+        [editor, updateThread, currentUser.id]
     );
 
     // Delete thread handler
@@ -234,9 +262,9 @@ export function NotionEditor({
 
             const newReply = {
                 replyId: uuidv4(),
-                userId: currentUserId,
-                userName: currentUserName,
-                userAvatar: currentUserAvatar,
+                userId: currentUser.id,
+                userName: currentUser.name,
+                userAvatar: currentUser.avatar,
                 content,
                 createdAt: new Date().toISOString(),
             };
@@ -246,7 +274,7 @@ export function NotionEditor({
                 updatedAt: new Date().toISOString(),
             });
         },
-        [threads, updateThread, currentUserId, currentUserName, currentUserAvatar]
+        [threads, updateThread, currentUser]
     );
 
     // Delete reply handler
@@ -268,6 +296,18 @@ export function NotionEditor({
         setShowVersionHistory(true);
         onLoadVersions();
     };
+
+    // Don't render until mounted to avoid hydration issues
+    if (!isMounted) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 dark:border-gray-100 mx-auto mb-4" />
+                    <p className="text-gray-500">Initializing editor...</p>
+                </div>
+            </div>
+        );
+    }
 
     if (!isSynced) {
         return (
@@ -291,14 +331,14 @@ export function NotionEditor({
                     <div className="flex items-center gap-4">
                         {/* Connection status */}
                         <div className="flex items-center gap-2">
-              <span
-                  className={`w-2 h-2 rounded-full ${
-                      isConnected ? "bg-green-500" : "bg-red-500"
-                  }`}
-              />
+                            <span
+                                className={`w-2 h-2 rounded-full ${
+                                    isConnected ? "bg-green-500" : "bg-red-500"
+                                }`}
+                            />
                             <span className="text-sm text-gray-500">
-                {isConnected ? "Connected" : "Disconnected"}
-              </span>
+                                {isConnected ? "Connected" : "Disconnected"}
+                            </span>
                         </div>
 
                         {/* Presence avatars */}
@@ -354,7 +394,7 @@ export function NotionEditor({
                     onDeleteThread={handleDeleteThread}
                     onAddReply={handleAddReply}
                     onDeleteReply={handleDeleteReply}
-                    currentUserId={currentUserId}
+                    currentUserId={currentUser.id}
                     canEdit={canEdit}
                 />
             )}
