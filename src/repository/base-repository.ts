@@ -13,7 +13,6 @@ import { isNil } from "lodash";
 
 const REFRESH_TOKEN_URL = "/api/users/auth/refresh";
 
-// Helper type for the promise queue
 type FailedQueuePromise = {
   resolve: (value: unknown) => void;
   reject: (reason?: any) => void;
@@ -26,76 +25,80 @@ export class BaseRepository extends Repository {
   constructor(baseApiUrl?: string) {
     super(baseApiConfig(baseApiUrl));
 
-    // --- Interceptor Registration ---
+    // FIX 1: Cast inputs and outputs to 'any' to solve the Axios version conflict
     this.http.interceptors.request.use(
-      this.handleRequest,
-      (error) => Promise.reject(error)
+        (config: any) => this.handleRequest(config) as any,
+        (error: any) => Promise.reject(error)
     );
 
     this.http.interceptors.response.use(
-      this.handleResponse,
-      this.handleError.bind(this) // MUST bind this one
+        (response: any) => this.handleResponse(response) as any,
+        (error: any) => this.handleError(error)
     );
   }
 
-  // --- Request Interceptor Method ---
+  // Use 'any' here to be safe, or keep InternalAxiosRequestConfig if imported correctly
   private handleRequest(
-    config: InternalAxiosRequestConfig
+      config: InternalAxiosRequestConfig
   ): InternalAxiosRequestConfig {
-    const token = localStorage.getItem("accessToken");
-    if (token) {
-      config.headers["Authorization"] = `Bearer ${token}`;
+    // 1. Check if we are in the browser (Client Side)
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("accessToken");
+      const userId = localStorage.getItem("userId");
+
+      // 2. Inject headers safely
+      if (token) {
+        config.headers["Authorization"] = `Bearer ${token}`;
+      }
+      if (userId) {
+        config.headers["X-User-Id"] = userId;
+      }
     }
     return config;
   }
 
-  // --- Response Interceptor Method ---
   private handleResponse(response: AxiosResponse): AxiosResponse {
     return response;
   }
 
-  // --- Error Interceptor Method (Refactored) ---
   private async handleError(error: AxiosError) {
-    const originalRequest = error.config as AxiosRequestConfig;
+    // Cast strict types to 'any' to avoid conflict
+    const originalRequest = error.config as any;
 
-    // --- Handle 401 Unauthorized ---
     if (
-      error.response?.status === 401 &&
-      originalRequest &&
-      originalRequest.url !== REFRESH_TOKEN_URL
+        error.response?.status === 401 &&
+        originalRequest &&
+        originalRequest.url !== REFRESH_TOKEN_URL
     ) {
       if (BaseRepository.isRefreshing) {
-        // --- THIS BLOCK HANDLES ALL QUEUED REQUESTS (Request 2, 3, etc.) ---
         return new Promise((resolve, reject) => {
           BaseRepository.failedQueue.push({ resolve, reject });
         })
-          .then(async () => { // <--- FIX #1: Make this block async
-            // --- FIX IS HERE ---
-            const newAccessToken = localStorage.getItem("accessToken");
-            const clonedQueuedRequest = {
-              ...originalRequest,
-              signal: undefined, // remove aborted signal
-              headers: {
-                ...originalRequest.headers,
-                Authorization: `Bearer ${newAccessToken}`,
-              },
-            };
+            .then(async () => {
+              const newAccessToken = localStorage.getItem("accessToken");
 
-            // --- FIX #2: Convert observable to promise ---
-            const retryObservable = this.http.request(clonedQueuedRequest);
-            return await firstValueFrom(retryObservable); // Await the result
-          })
-          .catch((err) => {
-            return Promise.reject(err);
-          });
+              // Clone request with new token
+              const clonedQueuedRequest = {
+                ...originalRequest,
+                signal: undefined,
+                headers: {
+                  ...originalRequest.headers,
+                  Authorization: `Bearer ${newAccessToken}`,
+                },
+              };
+
+              // Force cast to bypass library mismatch
+              const retryObservable = this.http.request(clonedQueuedRequest as any);
+              return await firstValueFrom(retryObservable);
+            })
+            .catch((err) => {
+              return Promise.reject(err);
+            });
       }
 
-      // --- THIS BLOCK HANDLES THE FIRST FAILED REQUEST ---
       BaseRepository.isRefreshing = true;
-
       let newAccessToken: string;
 
-      // --- Block 1: Try to refresh the token ---
       try {
         const refreshToken = localStorage.getItem("refreshToken");
         if (!refreshToken) {
@@ -103,13 +106,13 @@ export class BaseRepository extends Repository {
         }
 
         const refreshObservable = this.http.post(
-          REFRESH_TOKEN_URL,
-          { refreshToken: refreshToken },
-          { baseURL: "http://localhost:8080" } // Override the baseURL
+            REFRESH_TOKEN_URL,
+            { refreshToken: refreshToken },
+            { baseURL: "http://localhost:8080" }
         );
 
         const refreshResponse = await firstValueFrom(refreshObservable);
-        newAccessToken = refreshResponse?.data?.data; // Adjust as needed
+        newAccessToken = refreshResponse?.data?.data;
 
         if (!newAccessToken) {
           throw new Error("Invalid refresh response: No new token found.");
@@ -117,35 +120,31 @@ export class BaseRepository extends Repository {
 
         localStorage.setItem("accessToken", newAccessToken);
       } catch (refreshError: any) {
-        // --- Block 1 FAILED: Refresh token is invalid ---
         BaseRepository.processFailedQueue(refreshError);
         this.handleLogout();
         BaseRepository.isRefreshing = false;
         return Promise.reject(refreshError);
       }
 
-      // --- Refresh Succeeded ---
       BaseRepository.processFailedQueue(null);
 
-      // --- Block 2: Try to retry the *original* request (Request 1) ---
       try {
         const clonedRequest = {
           ...originalRequest,
-          signal: undefined, // remove aborted signal
+          signal: undefined,
           headers: {
             ...originalRequest.headers,
             Authorization: `Bearer ${newAccessToken}`,
           },
         };
-                
-        const retryObseravable = this.http.request(clonedRequest);
+
+        // Force cast to bypass library mismatch
+        const retryObseravable = this.http.request(clonedRequest as any);
         const retryResponse = await firstValueFrom(retryObseravable);
 
         BaseRepository.isRefreshing = false;
-        return retryResponse; // Original request succeeded!
-
+        return retryResponse;
       } catch (retryError: any) {
-        // --- Block 2 FAILED ---
         BaseRepository.isRefreshing = false;
         if ((retryError as AxiosError).response?.status === 401) {
           this.handleLogout();
@@ -154,7 +153,6 @@ export class BaseRepository extends Repository {
       }
     }
 
-    // --- Handle other non-401 errors ---
     if (error.response?.status !== 401) {
       switch (error?.code) {
         case "ECONNABORTED":
@@ -177,8 +175,6 @@ export class BaseRepository extends Repository {
     return Promise.reject(error);
   }
 
-  // --- Helper Methods ---
-
   private static processFailedQueue(error: any) {
     while (this.failedQueue.length) {
       const promise = this.failedQueue.shift();
@@ -199,4 +195,3 @@ export class BaseRepository extends Repository {
     toast.error("Your session has expired. Please log in again.");
   }
 }
-
