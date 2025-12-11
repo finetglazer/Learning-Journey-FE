@@ -37,10 +37,10 @@ class DocumentRepository extends BaseRepository {
     /**
      * Get document details (for opening editor)
      */
-    getDocumentDetails(nodeId: number): Observable<BaseResponse<NotionDocDTO>> {
+    getDocumentDetails(nodeId: number): Observable<NotionDocDTO> {
         return this.http
             .get<BaseResponse<NotionDocDTO>>(`/api/pm/files/${nodeId}`)
-            .pipe(map((response) => response.data));
+            .pipe(map((response) => response.data.data)); // This returns NotionDocDTO
     }
 
     /**

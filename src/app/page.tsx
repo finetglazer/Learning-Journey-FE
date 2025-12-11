@@ -62,6 +62,7 @@ export default function RootPage() {
   // [3]: Conifrm Delete Project Modal
   const [modalStates, setModalStates] = useState([false, false, false, false]);
   const [teamProjects, setTeamProjects] = useState<Project[]>([]);
+  const [avatarUrl, setAvatarUrl] = useState("");
 
   const { setSleepHours, setLoadingPage, darkBg, setDarkBg, } = useContext<AppContextProps>(AppContext);
   const calendarContextValues = useCalendarHooks();
@@ -369,9 +370,18 @@ export default function RootPage() {
     }
   }, [isModalOpen]);
 
+  // === ADD THIS NEW USE EFFECT ===
+  useEffect(() => {
+    // This runs only in the browser, so it is safe!
+    const savedAvatar = localStorage.getItem("avatarUrl");
+    if (savedAvatar) {
+      setAvatarUrl(savedAvatar);
+    }
+  }, []);
+
   return (
     <TeamProjectContext.Provider value={useTeamProjectHooks(currentSelectedProject)}>
-      <CalendarContext.Provider value={calendarContextValues}>
+      <CalendarContext.Provider value={calendarContextValues as any}>
         <div className="relative">
           {darkBg && (
             <div
@@ -386,7 +396,9 @@ export default function RootPage() {
 
           {/* --- Headerbar --- */}
           <HeaderBar
-            avatarUrl={localStorage.getItem("avatarUrl") || ""}
+            // avatarUrl={localStorage.getItem("avatarUrl") || ""}
+              avatarUrl={avatarUrl}
+
             onSettingsClick={() => setCurrentView("settings")}
           />
 
