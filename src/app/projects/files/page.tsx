@@ -5,12 +5,13 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { firstValueFrom } from "rxjs";
 import dynamic from "next/dynamic";
 import { useCollaborativeEditor } from "@/hooks/use-collaborative-editor";
+import { useParams } from "next/navigation";
 import { documentRepository } from "@/repository/document-repository";
 import { NotionDocDTO, DocVersionDTO } from "@/model/document";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, FileText } from "lucide-react";
 import { toast } from "sonner";
-import {useRef} from "react"
+import {useRef} from "react";
 
 // Dynamically import the editor with SSR disabled
 const NotionEditor = dynamic(
@@ -29,6 +30,10 @@ const NotionEditor = dynamic(
 );
 
 export default function DocumentPage() {
+    // ✅ 2. Get the ID safely using the hook
+    // Make sure your folder is named [fileId]. If it is [id], change this to params.id
+    const params = useParams();
+    const fileId = params.fileId as string;
     const searchParams = useSearchParams();
     const router = useRouter();
 
@@ -120,22 +125,29 @@ export default function DocumentPage() {
         },
     });
 
-    // Load version history
-    const handleLoadVersions = useCallback(async () => {
-        if (!nodeId) return;
-        try {
-            setIsLoadingVersions(true);
-            const versionList = await firstValueFrom(
-                documentRepository.getVersionHistory(nodeId)
-            );
-            setVersions(versionList);
-        } catch (err) {
-            console.error("Failed to load versions:", err);
-            toast.error("Failed to load version history");
-        } finally {
-            setIsLoadingVersions(false);
+    // ✅ 3. Update the load function to use 'document.storageReference'
+    const handleLoadVersions = () => {
+        // Fix: Use the storageReference from the loaded document instead of params
+        const storageRef = document?.storageReference;
+
+        if (!storageRef) {
+            console.error("No storage reference found");
+            return;
         }
-    }, [nodeId]);
+
+        setIsLoadingVersions(true);
+
+        documentRepository.getSnapshotList(storageRef).subscribe({
+            next: (data) => {
+                setVersions(data); // Update the list
+                setIsLoadingVersions(false);
+            },
+            error: (err) => {
+                console.error("Failed to load history:", err);
+                setIsLoadingVersions(false);
+            }
+        });
+    };
 
     // Restore version
     const handleRestoreVersion = useCallback(
