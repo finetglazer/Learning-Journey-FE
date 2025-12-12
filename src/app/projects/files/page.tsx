@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useSearchParams, useRouter } from "next/navigation"; // CHANGED: useSearchParams
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { firstValueFrom } from "rxjs";
-import dynamic from "next/dynamic"; // ADDED: dynamic import
+import dynamic from "next/dynamic";
 import { useCollaborativeEditor } from "@/hooks/use-collaborative-editor";
 import { documentRepository } from "@/repository/document-repository";
 import { NotionDocDTO, DocVersionDTO } from "@/model/document";
@@ -11,35 +11,64 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, FileText } from "lucide-react";
 import { toast } from "sonner";
 
-// FIX HYDRATION ERROR: Dynamically import the editor with SSR disabled
+// Dynamically import the editor with SSR disabled
 const NotionEditor = dynamic(
     () => import("@/components/core/notion-editor/editor").then((mod) => mod.NotionEditor),
-    { ssr: false, loading: () => <div className="p-8">Loading editor...</div> }
+    {
+        ssr: false,
+        loading: () => (
+            <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100 mx-auto mb-2" />
+                    <p className="text-gray-500">Loading editor...</p>
+                </div>
+            </div>
+        )
+    }
 );
 
 export default function DocumentPage() {
-    const searchParams = useSearchParams(); // CHANGED
+    const searchParams = useSearchParams();
     const router = useRouter();
 
-    // FIX ID READING: Read from ?id=23
     const nodeId = Number(searchParams.get("id"));
-
-    // Note: If you have projectId in the URL query too, read it similarly
-    // const projectId = Number(searchParams.get("projectId"));
 
     const [document, setDocument] = useState<NotionDocDTO | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isMounted, setIsMounted] = useState(false);
 
     // Version history state
     const [versions, setVersions] = useState<DocVersionDTO[]>([]);
     const [isLoadingVersions, setIsLoadingVersions] = useState(false);
     const [isRestoringVersion, setIsRestoringVersion] = useState(false);
 
+    // Set mounted state
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    // 1. Prepare Current User Data (Memoized to prevent color flickering)
+    const currentUser = useMemo(() => {
+        if (!isMounted) return null;
+
+        // Random color generator for the avatar border/cursor
+        const colors = ["#f87171", "#fb923c", "#fbbf24", "#a3e635", "#34d399", "#22d3ee", "#818cf8", "#e879f9"];
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+
+        console.log(localStorage.getItem("avatarUrl"));
+        return {
+            name: localStorage.getItem("displayName") || "Anonymous",
+            avatar: localStorage.getItem("avatarUrl") || "",
+            color: randomColor,
+            // Assuming userId is stored, otherwise fallback to random
+            id: localStorage.getItem("userId") || `guest-${Math.random().toString(36).substr(2, 9)}`,
+        };
+    }, [isMounted]);
+
     // Load document details
     useEffect(() => {
         const loadDocument = async () => {
-            // FIX: Don't run if nodeId is 0 or NaN
             if (!nodeId || isNaN(nodeId)) {
                 setIsLoading(false);
                 setError("Invalid Document ID");
@@ -53,7 +82,6 @@ export default function DocumentPage() {
                 const doc = await firstValueFrom(
                     documentRepository.getDocumentDetails(nodeId)
                 );
-
                 setDocument(doc);
             } catch (err: any) {
                 console.error("Failed to load document:", err);
@@ -80,8 +108,9 @@ export default function DocumentPage() {
         deleteThread,
     } = useCollaborativeEditor({
         storageRef: document?.storageReference || "",
+        // ✅ PASS THE USER HERE (This property needs to be added to your hook)
+        user: currentUser,
         onError: (error) => {
-            // Only show toast if it's a real error, not just initial disconnect
             if (error.message !== "No access token found") {
                 toast.error(`Connection error: ${error.message}`);
             }
@@ -129,7 +158,19 @@ export default function DocumentPage() {
 
     const canEdit = document?.role === "OWNER" || document?.role === "MEMBER";
 
-    // --- RENDER STATES ---
+    // Check if editor is ready
+    const isEditorReady = !!(provider && ydoc && document?.storageReference);
+
+    if (!isMounted) {
+        return (
+            <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 dark:border-gray-100 mx-auto mb-4" />
+                    <p className="text-gray-500">Initializing...</p>
+                </div>
+            </div>
+        );
+    }
 
     if (isLoading) {
         return (
@@ -162,27 +203,9 @@ export default function DocumentPage() {
 
     return (
         <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-            {/* Document header */}
-            <header className="flex items-center gap-4 px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-                <Button variant="ghost" size="sm" onClick={() => router.back()}>
-                    <ArrowLeft className="h-4 w-4" />
-                </Button>
-
-                <div className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-gray-500" />
-                    <h1 className="font-semibold text-lg">{document.name}</h1>
-                </div>
-
-                {!canEdit && (
-                    <span className="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
-                        View only
-                    </span>
-                )}
-            </header>
-
             {/* Editor */}
             <div className="flex-1 overflow-hidden">
-                {document.storageReference ? (
+                {isEditorReady ? (
                     <NotionEditor
                         provider={provider}
                         ydoc={ydoc}
@@ -199,10 +222,23 @@ export default function DocumentPage() {
                         onLoadVersions={handleLoadVersions}
                         onRestoreVersion={handleRestoreVersion}
                         isRestoringVersion={isRestoringVersion}
+
+                        documentTitle={document.name}
+                        createdBy={document.createdBy}
+                        createdAt={document.createdAt}
+
+                        onTitleChange={(newTitle) => {
+                            setDocument(prev => prev ? { ...prev, name: newTitle } : null);
+                        }}
+
+                        onBack={() => router.back()}
                     />
                 ) : (
                     <div className="flex items-center justify-center h-full">
-                        <p className="text-gray-500">Document not initialized</p>
+                        <div className="text-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100 mx-auto mb-2" />
+                            <p className="text-gray-500">Connecting to collaboration server...</p>
+                        </div>
                     </div>
                 )}
             </div>

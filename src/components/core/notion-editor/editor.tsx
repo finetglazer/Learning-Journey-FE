@@ -1,35 +1,37 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Underline from "@tiptap/extension-underline";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
-import {Table} from "@tiptap/extension-table";
+import { Table } from "@tiptap/extension-table";
 import TableRow from "@tiptap/extension-table-row";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
 import Collaboration from "@tiptap/extension-collaboration";
-import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
 import { HocuspocusProvider } from "@hocuspocus/provider";
 import * as Y from "yjs";
-
+import BubbleMenuExtension from "@tiptap/extension-bubble-menu";
 import { CommentMark } from "./extensions/comment-mark";
 import { SlashCommands } from "./extensions/slash-commands";
-import { Toolbar } from "./toolbar";
+import { EditorBubbleMenu } from "./bubble-menu";
 import { CommentSidebar } from "./comment-sidebar";
 import { PresenceAvatars } from "./presence-avatars";
 import { VersionHistoryDialog } from "./version-history-dialog";
 import { CommentThread, DocVersionDTO, AwarenessUser } from "@/model/document";
 import { Button } from "@/components/ui/button";
-import { History, PanelRightClose, PanelRight } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { ArrowLeft, User, Calendar } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
+import { format } from "date-fns";
 
 interface NotionEditorProps {
-    provider: HocuspocusProvider | null;
-    ydoc: Y.Doc | null;
+    provider: HocuspocusProvider;
+    ydoc: Y.Doc;
     isConnected: boolean;
     isSynced: boolean;
     awarenessUsers: AwarenessUser[];
@@ -43,6 +45,11 @@ interface NotionEditorProps {
     onLoadVersions: () => void;
     onRestoreVersion: (versionId: number) => void;
     isRestoringVersion: boolean;
+    documentTitle?: string;
+    onTitleChange?: (title: string) => void;
+    createdBy?: string;
+    createdAt?: string;
+    onBack?: () => void;
 }
 
 export function NotionEditor({
@@ -61,130 +68,137 @@ export function NotionEditor({
                                  onLoadVersions,
                                  onRestoreVersion,
                                  isRestoringVersion,
+                                 documentTitle = "",
+                                 onTitleChange,
+                                 createdBy = "Jane Doe",
+                                 createdAt = new Date().toISOString(),
+                                 onBack,
                              }: NotionEditorProps) {
     const [showComments, setShowComments] = useState(true);
     const [showVersionHistory, setShowVersionHistory] = useState(false);
     const [selectedThreadId, setSelectedThreadId] = useState<string>();
+    const [isMounted, setIsMounted] = useState(false);
+    const [title, setTitle] = useState(documentTitle);
 
-    // === FIX STARTS HERE ===
-    // 1. Initialize with default values (safe for Server Side)
     const [currentUser, setCurrentUser] = useState({
         id: "",
         name: "Anonymous",
-        avatar: ""
+        avatar: "",
     });
 
-    // 2. Read LocalStorage ONLY on the Client Side (after mount)
     useEffect(() => {
-        if (typeof window !== "undefined") {
-            setCurrentUser({
-                id: localStorage.getItem("userId") || "",
-                name: localStorage.getItem("displayName") || "Anonymous",
-                avatar: localStorage.getItem("avatarUrl") || ""
-            });
-        }
+        setIsMounted(true);
+        const userId = localStorage.getItem("userId") || "";
+        const displayName = localStorage.getItem("displayName") || "Anonymous";
+        const avatarUrl = localStorage.getItem("avatarUrl") || "";
+
+        setCurrentUser({
+            id: userId,
+            name: displayName,
+            avatar: avatarUrl,
+        });
     }, []);
 
-    const currentUserId = localStorage.getItem("userId") || "";
-    const currentUserName = localStorage.getItem("displayName") || "Anonymous";
-    const currentUserAvatar = localStorage.getItem("avatarUrl") || "";
+    useEffect(() => {
+        setTitle(documentTitle);
+    }, [documentTitle]);
+
+    const extensions = useMemo(
+        () => [
+            StarterKit.configure({
+                history: false,
+            } as any),
+            Placeholder.configure({
+                placeholder: 'Type "/" for commands...',
+            }),
+            Underline,
+            TaskList,
+            TaskItem.configure({
+                nested: true,
+            }),
+            Table.configure({
+                resizable: true,
+            }),
+            TableRow,
+            TableCell,
+            TableHeader,
+            CommentMark,
+            SlashCommands,
+            BubbleMenuExtension,
+            Collaboration.configure({
+                document: ydoc,
+            }),
+        ],
+        [ydoc]
+    );
 
     const editor = useEditor(
         {
-            extensions: [
-                StarterKit.configure({
-                    history: false,
-                } as any),
-                Placeholder.configure({
-                    placeholder: 'Type "/" for commands...',
-                }),
-                Underline,
-                TaskList,
-                TaskItem.configure({
-                    nested: true,
-                }),
-                Table.configure({
-                    resizable: true,
-                }),
-                TableRow,
-                TableCell,
-                TableHeader,
-                CommentMark,
-                SlashCommands,
-                ...(ydoc
-                    ? [
-                        Collaboration.configure({
-                            document: ydoc,
-                        }),
-                        CollaborationCursor.configure({
-                            provider,
-                            user: {
-                                name: currentUserName,
-                                color: "#" + Math.floor(Math.random() * 16777215).toString(16),
-                            },
-                        }),
-                    ]
-                    : []),
-            ],
+            immediatelyRender: false,
+            extensions,
             editable: canEdit,
             editorProps: {
                 attributes: {
-                    class:
-                        "prose prose-sm sm:prose lg:prose-lg xl:prose-xl dark:prose-invert focus:outline-none max-w-none min-h-[500px] px-8 py-4",
+                    // Padding is handled by the parent container now
+                    class: "prose prose-lg dark:prose-invert focus:outline-none max-w-none min-h-[500px]",
                 },
             },
         },
-        [ydoc, provider, canEdit]
+        [extensions, canEdit]
     );
 
-    // Handle comment click in editor
+    // Handle comment click
     useEffect(() => {
-        if (!editor) return;
+        if (!editor || !editor.view || editor.isDestroyed) return;
 
-        const handleClick = (event: MouseEvent) => {
-            const target = event.target as HTMLElement;
-            const commentElement = target.closest("[data-thread-id]");
+        try {
+            const editorElement = editor.view.dom;
+            if (!editorElement) return;
 
-            if (commentElement) {
-                const threadId = commentElement.getAttribute("data-thread-id");
-                if (threadId) {
-                    setSelectedThreadId(threadId);
-                    setShowComments(true);
+            const handleClick = (event: MouseEvent) => {
+                const target = event.target as HTMLElement;
+                const commentElement = target.closest("[data-thread-id]");
+
+                if (commentElement) {
+                    const threadId = commentElement.getAttribute("data-thread-id");
+                    if (threadId) {
+                        setSelectedThreadId(threadId);
+                        setShowComments(true);
+                    }
                 }
-            }
-        };
+            };
 
-        const editorElement = editor.view.dom;
-        editorElement.addEventListener("click", handleClick);
+            editorElement.addEventListener("click", handleClick);
 
-        return () => {
-            editorElement.removeEventListener("click", handleClick);
-        };
+            return () => {
+                if (editorElement) {
+                    editorElement.removeEventListener("click", handleClick);
+                }
+            };
+        } catch (error) {
+            console.warn("Editor view not ready for click handler:", error);
+            return;
+        }
     }, [editor]);
 
-    // Add comment handler
     const handleAddComment = useCallback(() => {
         if (!editor || editor.state.selection.empty) return;
 
         const threadId = uuidv4();
-
-        // Apply comment mark to selection
         editor.chain().focus().setComment(threadId).run();
 
-        // Create thread
         const newThread: CommentThread = {
             threadId,
-            userId: currentUserId,
-            userName: currentUserName,
-            userAvatar: currentUserAvatar,
-            content: "", // Will be filled by user
+            userId: currentUser.id,
+            userName: currentUser.name,
+            userAvatar: currentUser.avatar,
+            content: "",
             replies: [],
             resolved: false,
             orphaned: false,
             createdAt: new Date().toISOString(),
         };
 
-        // Open prompt for comment content
         const content = window.prompt("Add your comment:");
 
         if (content) {
@@ -193,40 +207,30 @@ export function NotionEditor({
             setSelectedThreadId(threadId);
             setShowComments(true);
         } else {
-            // Remove mark if cancelled
             editor.chain().focus().unsetComment(threadId).run();
         }
-    }, [editor, currentUserId, currentUserName, currentUserAvatar, addThread]);
+    }, [editor, currentUser, addThread]);
 
-    // Resolve thread handler
     const handleResolveThread = useCallback(
         (threadId: string) => {
-            // Remove mark from editor
             editor?.chain().focus().unsetComment(threadId).run();
-
-            // Update thread
             updateThread(threadId, {
                 resolved: true,
-                resolvedBy: currentUserId,
+                resolvedBy: currentUser.id,
                 resolvedAt: new Date().toISOString(),
             });
         },
-        [editor, updateThread, currentUserId]
+        [editor, updateThread, currentUser.id]
     );
 
-    // Delete thread handler
     const handleDeleteThread = useCallback(
         (threadId: string) => {
-            // Remove mark from editor
             editor?.chain().focus().unsetComment(threadId).run();
-
-            // Delete thread
             deleteThread(threadId);
         },
         [editor, deleteThread]
     );
 
-    // Add reply handler
     const handleAddReply = useCallback(
         (threadId: string, content: string) => {
             const thread = threads.find((t) => t.threadId === threadId);
@@ -234,9 +238,9 @@ export function NotionEditor({
 
             const newReply = {
                 replyId: uuidv4(),
-                userId: currentUserId,
-                userName: currentUserName,
-                userAvatar: currentUserAvatar,
+                userId: currentUser.id,
+                userName: currentUser.name,
+                userAvatar: currentUser.avatar,
                 content,
                 createdAt: new Date().toISOString(),
             };
@@ -246,10 +250,9 @@ export function NotionEditor({
                 updatedAt: new Date().toISOString(),
             });
         },
-        [threads, updateThread, currentUserId, currentUserName, currentUserAvatar]
+        [threads, updateThread, currentUser]
     );
 
-    // Delete reply handler
     const handleDeleteReply = useCallback(
         (threadId: string, replyId: string) => {
             const thread = threads.find((t) => t.threadId === threadId);
@@ -263,11 +266,26 @@ export function NotionEditor({
         [threads, updateThread]
     );
 
-    // Open version history
     const handleOpenVersionHistory = () => {
         setShowVersionHistory(true);
         onLoadVersions();
     };
+
+    const handleTitleChange = (newTitle: string) => {
+        setTitle(newTitle);
+        onTitleChange?.(newTitle);
+    };
+
+    if (!isMounted) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 dark:border-gray-100 mx-auto mb-4" />
+                    <p className="text-gray-500">Initializing editor...</p>
+                </div>
+            </div>
+        );
+    }
 
     if (!isSynced) {
         return (
@@ -284,67 +302,102 @@ export function NotionEditor({
 
     return (
         <div className="flex h-full">
-            {/* Main editor area */}
-            <div className="flex-1 flex flex-col overflow-hidden">
-                {/* Header */}
-                <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-                    <div className="flex items-center gap-4">
-                        {/* Connection status */}
-                        <div className="flex items-center gap-2">
-              <span
-                  className={`w-2 h-2 rounded-full ${
-                      isConnected ? "bg-green-500" : "bg-red-500"
-                  }`}
-              />
-                            <span className="text-sm text-gray-500">
-                {isConnected ? "Connected" : "Disconnected"}
-              </span>
-                        </div>
+            <div className="flex-1 flex flex-col h-full overflow-hidden bg-white dark:bg-gray-900">
+                {/* Top Navigation Bar - Removed borders */}
+                {/* Top Navigation Bar */}
+                <div className="flex items-center justify-between w-full sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm py-3 border-none">
 
-                        {/* Presence avatars */}
-                        <PresenceAvatars users={awarenessUsers} />
+                    {/* --- LEFT SIDE WRAPPER --- */}
+                    <div className="pl-7">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={onBack}
+                            className="hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500"
+                        >
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        {/* Version history button */}
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleOpenVersionHistory}
-                        >
-                            <History className="h-4 w-4 mr-2" />
-                            History
-                        </Button>
-
-                        {/* Toggle comments sidebar */}
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setShowComments(!showComments)}
-                        >
-                            {showComments ? (
-                                <PanelRightClose className="h-4 w-4" />
-                            ) : (
-                                <PanelRight className="h-4 w-4" />
-                            )}
-                        </Button>
+                    {/* --- RIGHT SIDE WRAPPER --- */}
+                    {/* 👇 Adjust 'pr-8' to move the Avatars closer/further from the right edge */}
+                    <div className="flex items-center gap-2 pr-10">
+                        <PresenceAvatars users={awarenessUsers} />
                     </div>
                 </div>
 
-                {/* Toolbar */}
-                <Toolbar
-                    editor={editor}
-                    onAddComment={handleAddComment}
-                    canEdit={canEdit}
-                />
+                {/* Main Scrollable Content Area */}
+                <div className="flex-1 overflow-y-auto">
+                    {/* Centered Container for Alignment */}
+                    <div className="max-w-3xl mx-auto px-12 py-12">
 
-                {/* Editor content */}
-                <div className="flex-1 overflow-auto bg-white dark:bg-gray-900">
-                    <EditorContent editor={editor} />
+                        {/* 1. Header Section */}
+                        <div className="group mb-8">
+                            {/* H1-style Title Input - USING NATIVE INPUT TO FIX SIZE & BORDER */}
+                            <input
+                                type="text"
+                                value={title}
+                                onChange={(e) => handleTitleChange(e.target.value)}
+                                placeholder="Untitled"
+                                className="w-full text-5xl font-bold border-none outline-none bg-transparent placeholder:text-gray-300 dark:placeholder:text-gray-700 text-gray-900 dark:text-gray-100 p-0"
+                                disabled={!canEdit}
+                                autoComplete="off"
+                            />
+
+                            {/* Metadata */}
+                            <div className="mt-6 space-y-2 text-sm text-gray-500 dark:text-gray-400">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2 min-w-[100px]">
+                                        <User className="h-4 w-4 opacity-70" />
+                                        <span className="text-gray-400">Created by</span>
+                                    </div>
+                                    <span className="font-medium text-gray-700 dark:text-gray-300">{createdBy}</span>
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2 min-w-[100px]">
+                                        <Calendar className="h-4 w-4 opacity-70" />
+                                        <span className="text-gray-400">Created at</span>
+                                    </div>
+                                    <span className="font-medium text-gray-700 dark:text-gray-300">
+                                        {format(new Date(createdAt), "d MMM, yyyy")}
+                                    </span>
+                                </div>
+
+                                <div className="flex items-center gap-3 pt-1">
+                                    {/*<div className="min-w-[100px]"></div> /!* Spacer for alignment *!/*/}
+                                    <div className="flex items-center gap-2">
+                                        <Checkbox
+                                            id="show-comment"
+                                            checked={showComments}
+                                            onCheckedChange={(checked) => setShowComments(checked as boolean)}
+                                        />
+                                        <Label htmlFor="show-comment" className="cursor-pointer text-gray-500 font-normal">
+                                            Show comment
+                                        </Label>
+                                    </div>
+                                </div>
+                            </div>
+                            {/* ✅ NEW: Full-width Divider Line */}
+                            <div className="mt-6 border-b border-gray-200 dark:border-gray-800 w-full" />
+                        </div>
+
+                        {/* 2. Bubble Menu */}
+                        {editor && (
+                            <EditorBubbleMenu
+                                editor={editor}
+                                onAddComment={handleAddComment}
+                            />
+                        )}
+
+                        {/* 3. Editor Content */}
+                        <EditorContent editor={editor} />
+
+                    </div>
                 </div>
             </div>
 
-            {/* Comments sidebar */}
+            {/* Sidebars (Comments / Version History) */}
             {showComments && (
                 <CommentSidebar
                     threads={threads}
@@ -354,12 +407,11 @@ export function NotionEditor({
                     onDeleteThread={handleDeleteThread}
                     onAddReply={handleAddReply}
                     onDeleteReply={handleDeleteReply}
-                    currentUserId={currentUserId}
+                    currentUserId={currentUser.id}
                     canEdit={canEdit}
                 />
             )}
 
-            {/* Version history dialog */}
             <VersionHistoryDialog
                 open={showVersionHistory}
                 onOpenChange={setShowVersionHistory}

@@ -9,17 +9,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
     CheckCircle,
     MessageCircle,
-    MoreHorizontal,
-    Reply,
+    Edit2,
     Trash2,
     X,
 } from "lucide-react";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 
@@ -184,58 +177,55 @@ function ThreadCard({
             )}
             onClick={onSelect}
         >
-            {/* Thread header */}
-            <div className="flex items-start gap-2 mb-2">
-                <Avatar className="h-6 w-6">
+            {/* Thread header - Simplified design */}
+            <div className="flex items-start gap-3 mb-2">
+                <Avatar className="h-8 w-8 flex-shrink-0">
                     <AvatarImage src={thread.userAvatar} />
                     <AvatarFallback className="text-xs">
                         {thread.userName.charAt(0)}
                     </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-            <span className="text-sm font-medium truncate">
-              {thread.userName}
-            </span>
-                        <span className="text-xs text-gray-500">
-              {formatDistanceToNow(new Date(thread.createdAt), {
-                  addSuffix: true,
-              })}
-            </span>
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {thread.userName}
                     </div>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                        {thread.content}
+                    </p>
                 </div>
 
-                {/* Actions menu */}
+                {/* Action buttons */}
                 {canEdit && !thread.resolved && (
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                                <MoreHorizontal className="h-4 w-4" />
+                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0"
+                            onClick={onResolve}
+                        >
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0"
+                            onClick={onDelete}
+                        >
+                            <Edit2 className="h-4 w-4 text-gray-600" />
+                        </Button>
+                        {isOwner && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0"
+                                onClick={onDelete}
+                            >
+                                <Trash2 className="h-4 w-4 text-red-600" />
                             </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={onResolve}>
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                Resolve
-                            </DropdownMenuItem>
-                            {isOwner && (
-                                <DropdownMenuItem
-                                    onClick={onDelete}
-                                    className="text-red-600 dark:text-red-400"
-                                >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                </DropdownMenuItem>
-                            )}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                        )}
+                    </div>
                 )}
             </div>
-
-            {/* Thread content */}
-            <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
-                {thread.content}
-            </p>
 
             {/* Status badges */}
             {(thread.resolved || thread.orphaned) && (
@@ -293,9 +283,8 @@ function ThreadCard({
                             variant="ghost"
                             size="sm"
                             onClick={onStartReply}
-                            className="text-gray-500"
+                            className="text-gray-500 text-xs"
                         >
-                            <Reply className="h-4 w-4 mr-1" />
                             Reply
                         </Button>
                     )}
@@ -315,35 +304,30 @@ function ReplyCard({ reply, canDelete, onDelete }: ReplyCardProps) {
     return (
         <div className="group">
             <div className="flex items-start gap-2">
-                <Avatar className="h-5 w-5">
+                <Avatar className="h-6 w-6 flex-shrink-0">
                     <AvatarImage src={reply.userAvatar} />
                     <AvatarFallback className="text-xs">
                         {reply.userName.charAt(0)}
                     </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium">{reply.userName}</span>
-                        <span className="text-xs text-gray-500">
-              {formatDistanceToNow(new Date(reply.createdAt), {
-                  addSuffix: true,
-              })}
-            </span>
-                        {canDelete && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={onDelete}
-                                className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100"
-                            >
-                                <X className="h-3 w-3" />
-                            </Button>
-                        )}
+                    <div className="text-xs font-medium text-gray-900 dark:text-gray-100">
+                        {reply.userName}
                     </div>
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mt-0.5">
                         {reply.content}
                     </p>
                 </div>
+                {canDelete && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={onDelete}
+                        className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
+                    >
+                        <X className="h-3 w-3" />
+                    </Button>
+                )}
             </div>
         </div>
     );

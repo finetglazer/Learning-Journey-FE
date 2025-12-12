@@ -60,6 +60,7 @@ export interface NotionDocDTO {
     role: "OWNER" | "MEMBER";
     createdAt: string;
     updatedAt: string;
+    createdBy: string;
 }
 
 // Version history

@@ -5,8 +5,18 @@ import { HocuspocusProvider } from "@hocuspocus/provider";
 import * as Y from "yjs";
 import { AwarenessUser, CommentThread } from "@/model/document";
 
+// ✅ 1. Define the User interface
+interface CollaborativeUser {
+    name: string;
+    avatar: string;
+    color: string;
+    id: string;
+}
+
 interface UseCollaborativeEditorOptions {
     storageRef: string;
+    // ✅ 2. Add user to options
+    user: CollaborativeUser | null;
     onSynced?: () => void;
     onDisconnect?: () => void;
     onError?: (error: Error) => void;
@@ -25,27 +35,21 @@ interface UseCollaborativeEditorReturn {
     deleteThread: (threadId: string) => void;
 }
 
-// Generate random color for user cursor
-function getRandomColor(): string {
-    const colors = [
-        "#FF6B6B",
-        "#4ECDC4",
-        "#45B7D1",
-        "#96CEB4",
-        "#FFEAA7",
-        "#DDA0DD",
-        "#98D8C8",
-        "#F7DC6F",
-        "#BB8FCE",
-        "#85C1E9",
-    ];
-    return colors[Math.floor(Math.random() * colors.length)];
-}
-
 export function useCollaborativeEditor(
     options: UseCollaborativeEditorOptions
 ): UseCollaborativeEditorReturn {
-    const { storageRef, onSynced, onDisconnect, onError } = options;
+    // ✅ 3. Destructure user
+    const { storageRef, user, onSynced, onDisconnect, onError } = options;
+
+    const onSyncedRef = useRef(onSynced);
+    const onDisconnectRef = useRef(onDisconnect);
+    const onErrorRef = useRef(onError);
+
+    useEffect(() => {
+        onSyncedRef.current = onSynced;
+        onDisconnectRef.current = onDisconnect;
+        onErrorRef.current = onError;
+    }, [onSynced, onDisconnect, onError]);
 
     const [provider, setProvider] = useState<HocuspocusProvider | null>(null);
     const [ydoc, setYdoc] = useState<Y.Doc | null>(null);
@@ -54,25 +58,38 @@ export function useCollaborativeEditor(
     const [awarenessUsers, setAwarenessUsers] = useState<AwarenessUser[]>([]);
     const [threads, setThreadsState] = useState<CommentThread[]>([]);
 
-    const userColorRef = useRef(getRandomColor());
+    const providerRef = useRef<HocuspocusProvider | null>(null);
+    const docRef = useRef<Y.Doc | null>(null);
 
-    // Initialize connection
+    // ✅ 4. New Effect: Update awareness whenever the 'user' or 'provider' changes
     useEffect(() => {
-        if (!storageRef) return;
+        const currentProvider = providerRef.current;
+        console.log("Updating awareness for user:", user);
+        if (currentProvider && user) {
+            // ✅ Fix: Add '?.' before setLocalStateField
+            currentProvider.awareness?.setLocalStateField("user", {
+                id: user.id,
+                name: user.name,
+                avatar: user.avatar,
+                color: user.color,
+            });
+        }
+    }, [user, provider]);
+
+    useEffect(() => {
+        if (!storageRef || typeof window === "undefined") return;
 
         const token = localStorage.getItem("accessToken");
-        const userId = localStorage.getItem("userId") || "";
-        const userName = localStorage.getItem("displayName") || "Anonymous";
-        const userAvatar = localStorage.getItem("avatarUrl") || "";
 
         if (!token) {
-            onError?.(new Error("No access token found"));
+            onErrorRef.current?.(new Error("No access token found"));
             return;
         }
 
         const doc = new Y.Doc();
-        const hocuspocusUrl =
-            process.env.NEXT_PUBLIC_HOCUSPOCUS_URL || "ws://localhost:1234";
+        docRef.current = doc;
+
+        const hocuspocusUrl = process.env.NEXT_PUBLIC_HOCUSPOCUS_URL || "ws://localhost:1234";
 
         const hocuspocusProvider = new HocuspocusProvider({
             url: hocuspocusUrl,
@@ -87,39 +104,38 @@ export function useCollaborativeEditor(
                 if (state) {
                     console.log("Document synced");
                     setIsSynced(true);
-
-                    // Load threads from Y.Doc
                     const threadsMap = doc.getMap("threads");
                     const loadedThreads = Array.from(threadsMap.values()) as CommentThread[];
                     setThreadsState(loadedThreads);
-
-                    onSynced?.();
+                    onSyncedRef.current?.();
                 }
             },
             onDisconnect: () => {
                 console.log("Disconnected from Hocuspocus");
                 setIsConnected(false);
                 setIsSynced(false);
-                onDisconnect?.();
+                onDisconnectRef.current?.();
             },
             onAuthenticationFailed: ({ reason }: { reason: string }) => {
                 console.error("Authentication failed:", reason);
-                onError?.(new Error(reason));
+                onErrorRef.current?.(new Error(reason));
             },
         });
 
-        // --- SAFE AWARENESS HANDLING ---
+        providerRef.current = hocuspocusProvider;
+
         const awareness = hocuspocusProvider.awareness;
 
-        // Define the handler logic
+        // Listen for other users joining/leaving
         const awarenessChangeHandler = () => {
-            if (!awareness) return; // Double safety check inside handler
-
+            if (!awareness) return;
             const states = awareness.getStates();
             const users: AwarenessUser[] = [];
 
+            console.log("Awareness states changed:", states);
+
             states.forEach((state: any, clientId: number) => {
-                if (state.user && clientId !== awareness.clientID) {
+                if (state.user) {
                     users.push({
                         id: state.user.id,
                         name: state.user.name,
@@ -129,23 +145,24 @@ export function useCollaborativeEditor(
                     });
                 }
             });
-
             setAwarenessUsers(users);
         };
 
-        // Only attach if awareness exists (Fixes TS18047)
         if (awareness) {
-            awareness.setLocalStateField("user", {
-                id: userId,
-                name: userName,
-                avatar: userAvatar,
-                color: userColorRef.current,
-            });
-
+            // Register the listener
             awareness.on("change", awarenessChangeHandler);
+
+            // ✅ 5. Set Initial State immediately if user is already available
+            if (user) {
+                awareness.setLocalStateField("user", {
+                    id: user.id,
+                    name: user.name,
+                    avatar: user.avatar,
+                    color: user.color,
+                });
+            }
         }
 
-        // Listen for thread changes
         const threadsMap = doc.getMap("threads");
         const threadsObserver = () => {
             const updatedThreads = Array.from(threadsMap.values()) as CommentThread[];
@@ -156,83 +173,58 @@ export function useCollaborativeEditor(
         setProvider(hocuspocusProvider);
         setYdoc(doc);
 
-        // Cleanup
         return () => {
             if (awareness) {
                 awareness.off("change", awarenessChangeHandler);
             }
             threadsMap.unobserve(threadsObserver);
+
             hocuspocusProvider.destroy();
             doc.destroy();
+
+            providerRef.current = null;
+            docRef.current = null;
+
             setProvider(null);
             setYdoc(null);
             setIsConnected(false);
             setIsSynced(false);
         };
-    }, [storageRef, onSynced, onDisconnect, onError]);
+    }, [storageRef]); // Removed user from dependency to avoid reconnecting on user update
 
-    // Thread management functions
-    const setThreads = useCallback(
-        (newThreads: CommentThread[]) => {
-            if (!ydoc) return;
+    const setThreads = useCallback((newThreads: CommentThread[]) => {
+        const doc = docRef.current;
+        if (!doc) return;
+        const threadsMap = doc.getMap("threads");
+        doc.transact(() => {
+            threadsMap.forEach((_, key) => threadsMap.delete(key));
+            newThreads.forEach((thread) => threadsMap.set(thread.threadId, thread));
+        });
+    }, []);
 
-            const threadsMap = ydoc.getMap("threads");
-            ydoc.transact(() => {
-                // Clear existing
-                threadsMap.forEach((_, key) => threadsMap.delete(key));
-                // Add new
-                newThreads.forEach((thread) => {
-                    threadsMap.set(thread.threadId, thread);
-                });
-            });
-        },
-        [ydoc]
-    );
+    const addThread = useCallback((thread: CommentThread) => {
+        const doc = docRef.current;
+        if (!doc) return;
+        const threadsMap = doc.getMap("threads");
+        threadsMap.set(thread.threadId, thread);
+    }, []);
 
-    const addThread = useCallback(
-        (thread: CommentThread) => {
-            if (!ydoc) return;
+    const updateThread = useCallback((threadId: string, updates: Partial<CommentThread>) => {
+        const doc = docRef.current;
+        if (!doc) return;
+        const threadsMap = doc.getMap("threads");
+        const existing = threadsMap.get(threadId) as CommentThread | undefined;
+        if (existing) {
+            threadsMap.set(threadId, { ...existing, ...updates });
+        }
+    }, []);
 
-            const threadsMap = ydoc.getMap("threads");
-            threadsMap.set(thread.threadId, thread);
-        },
-        [ydoc]
-    );
+    const deleteThread = useCallback((threadId: string) => {
+        const doc = docRef.current;
+        if (!doc) return;
+        const threadsMap = doc.getMap("threads");
+        threadsMap.delete(threadId);
+    }, []);
 
-    const updateThread = useCallback(
-        (threadId: string, updates: Partial<CommentThread>) => {
-            if (!ydoc) return;
-
-            const threadsMap = ydoc.getMap("threads");
-            const existing = threadsMap.get(threadId) as CommentThread | undefined;
-
-            if (existing) {
-                threadsMap.set(threadId, { ...existing, ...updates });
-            }
-        },
-        [ydoc]
-    );
-
-    const deleteThread = useCallback(
-        (threadId: string) => {
-            if (!ydoc) return;
-
-            const threadsMap = ydoc.getMap("threads");
-            threadsMap.delete(threadId);
-        },
-        [ydoc]
-    );
-
-    return {
-        provider,
-        ydoc,
-        isConnected,
-        isSynced,
-        awarenessUsers,
-        threads,
-        setThreads,
-        addThread,
-        updateThread,
-        deleteThread,
-    };
+    return { provider, ydoc, isConnected, isSynced, awarenessUsers, threads, setThreads, addThread, updateThread, deleteThread };
 }
