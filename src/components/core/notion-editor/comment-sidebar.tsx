@@ -169,7 +169,8 @@ function ThreadCard({
     return (
         <div
             className={cn(
-                "rounded-lg border p-3 cursor-pointer transition-colors",
+                // ✅ ADD 'group' class here
+                "rounded-lg border p-3 cursor-pointer transition-colors group relative",
                 isSelected
                     ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
                     : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50",
@@ -177,7 +178,7 @@ function ThreadCard({
             )}
             onClick={onSelect}
         >
-            {/* Thread header - Simplified design */}
+            {/* Thread header */}
             <div className="flex items-start gap-3 mb-2">
                 <Avatar className="h-8 w-8 flex-shrink-0">
                     <AvatarImage src={thread.userAvatar} />
@@ -186,45 +187,55 @@ function ThreadCard({
                     </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {thread.userName}
+                    <div className="flex items-center justify-between">
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {thread.userName}
+                        </div>
+                        {/* ✅ MOVED ACTIONS HERE & ADDED HOVER CLASSES */}
+                        {canEdit && !thread.resolved && (
+                            <div
+                                className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
+                                    onClick={onResolve}
+                                    title="Resolve"
+                                >
+                                    <CheckCircle className="h-4 w-4 text-green-600" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
+                                    onClick={onDelete}
+                                    title="Edit"
+                                >
+                                    <Edit2 className="h-3.5 w-3.5 text-gray-500" />
+                                </Button>
+                                {isOwner && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 w-6 p-0 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
+                                        onClick={onDelete}
+                                        title="Delete"
+                                    >
+                                        <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                                    </Button>
+                                )}
+                            </div>
+                        )}
                     </div>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
+
+
+                    {/* ✅ FIX: Added 'break-all' to force long strings to wrap */}
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mt-1 break-words break-all whitespace-pre-wrap">
                         {thread.content}
                     </p>
                 </div>
-
-                {/* Action buttons */}
-                {canEdit && !thread.resolved && (
-                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0"
-                            onClick={onResolve}
-                        >
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0"
-                            onClick={onDelete}
-                        >
-                            <Edit2 className="h-4 w-4 text-gray-600" />
-                        </Button>
-                        {isOwner && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 w-7 p-0"
-                                onClick={onDelete}
-                            >
-                                <Trash2 className="h-4 w-4 text-red-600" />
-                            </Button>
-                        )}
-                    </div>
-                )}
             </div>
 
             {/* Status badges */}
@@ -314,7 +325,8 @@ function ReplyCard({ reply, canDelete, onDelete }: ReplyCardProps) {
                     <div className="text-xs font-medium text-gray-900 dark:text-gray-100">
                         {reply.userName}
                     </div>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 mt-0.5">
+                    {/* ✅ FIX: Added 'break-all' here too */}
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mt-0.5 break-words break-all whitespace-pre-wrap">
                         {reply.content}
                     </p>
                 </div>
