@@ -82,6 +82,12 @@ class DocumentRepository extends BaseRepository {
             )
             .pipe(map((response) => response.data));
     }
+
+    updateDocument(nodeId: number, data: { name?: string }): Observable<BaseResponse<NotionDocDTO>> {
+        return this.http
+            .patch<BaseResponse<NotionDocDTO>>(`/api/pm/files/${nodeId}`, data)
+            .pipe(map((response) => response.data));
+    }
 }
 
 export const documentRepository = new DocumentRepository();

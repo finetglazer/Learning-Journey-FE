@@ -10,6 +10,7 @@ import { NotionDocDTO, DocVersionDTO } from "@/model/document";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, FileText } from "lucide-react";
 import { toast } from "sonner";
+import {useRef} from "react"
 
 // Dynamically import the editor with SSR disabled
 const NotionEditor = dynamic(
@@ -30,6 +31,8 @@ const NotionEditor = dynamic(
 export default function DocumentPage() {
     const searchParams = useSearchParams();
     const router = useRouter();
+
+    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const nodeId = Number(searchParams.get("id"));
 
@@ -228,7 +231,25 @@ export default function DocumentPage() {
                         createdAt={document.createdAt}
 
                         onTitleChange={(newTitle) => {
+                            // A. Update UI immediately (so it feels fast)
                             setDocument(prev => prev ? { ...prev, name: newTitle } : null);
+
+                            // B. Clear any pending save
+                            if (saveTimeoutRef.current) {
+                                clearTimeout(saveTimeoutRef.current);
+                            }
+
+                            // C. Start a new timer (Save after 0.8 seconds of silence)
+                            saveTimeoutRef.current = setTimeout(() => {
+                                if (!nodeId) return;
+
+                                console.log("Saving new title to database:", newTitle);
+
+                                documentRepository.updateDocument(nodeId, { name: newTitle }).subscribe({
+                                    next: () => console.log("Title saved successfully!"),
+                                    error: (err) => toast.error("Failed to save title")
+                                });
+                            }, 800);
                         }}
 
                         onBack={() => router.back()}
