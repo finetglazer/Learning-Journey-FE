@@ -1,13 +1,13 @@
 import { DropdownItem } from "@/components/core/dropdown/type";
-import { PASSWORD_GOOD_LENGTH, PASSWORD_MINIMUM_LENGTH, PASSWORD_REGEX, TIME_STR_REGEX, timezoneGroups } from "@/const/consts";
+import { PASSWORD_GOOD_LENGTH, PASSWORD_MINIMUM_LENGTH, PASSWORD_REGEX, TIME_STR_REGEX, TIMEZONE_GROUPS } from "@/const/consts";
 import { FieldError } from "@/model/field-error";
-import { ProjectGroup, TimelineItem, UserTaskItem } from "@/model/project-management";
+import { ProjectGroup, TimelineItem } from "@/model/project-management";
 import { Task, UnscheduledMonthData } from "@/model/task";
-import { clsx, type ClassValue } from "clsx"
-import { addWeeks, endOfMonth, endOfWeek, format, isBefore, isSameDay, roundToNearestHours, startOfMonth, startOfWeek } from "date-fns";
+import { clsx, type ClassValue } from "clsx";
+import { addWeeks, endOfMonth, endOfWeek, format, isBefore, isSameDay, startOfMonth, startOfWeek } from "date-fns";
 import dayjs, { Dayjs } from "dayjs";
 import { isEqual, isNil } from "lodash";
-import { twMerge } from "tailwind-merge"
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -571,7 +571,7 @@ export const getWeekStartTimeEndTime = (week: string, currentDate: Dayjs) => {
 
 export const findTimezone = (utc: string) => {
   let res = { label: "(UTC+00:00) London, Dublin, Lisbon", value: "Europe/London", utc: "UTC+00:00" };
-  timezoneGroups.forEach(group => group.zones.forEach(zone => {
+  TIMEZONE_GROUPS.forEach(group => group.zones.forEach(zone => {
     if (zone.utc === utc) {
       res = zone;
     }
@@ -754,4 +754,16 @@ export const findRecursive = (items: TimelineItem[], timelineItemId: string): Ti
   };
 
   return res;
+};
+
+export const getFileIcon = (extension: string) => {
+    switch (extension?.toLowerCase()) {
+        case 'pdf': return 'i-pdf.png';
+        case 'xls': case 'xlsx': return 'i-xls.png';
+        case 'jpg': case 'jpeg': case 'png': return 'i-jpg.png';
+        case 'doc': case 'docx': return 'i-doc.png';
+        case 'zip': case 'rar': return 'i-zip.png';
+        case 'txt': return 'i-txt.png';
+        default: return 'i-file.png';
+    }
 };

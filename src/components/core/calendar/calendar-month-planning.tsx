@@ -27,7 +27,6 @@ import {
     MonthPlanningEvent,
     UnscheduledTask
 } from "@/model/task";
-import { calendarRepository } from "@/repository/calendar-repository";
 import { isNil } from "lodash";
 import { useContext, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -43,6 +42,7 @@ import {
 } from "./calendar-context";
 import { DayTasksPopover } from "./day-tasks-popover";
 import { RoutineEditor } from "./routine-editor";
+import { AppContext, AppContextProps } from "@/hooks/app-context";
 
 export function CalendarMonthPlanning() {
     const {
@@ -100,6 +100,16 @@ export function CalendarMonthPlanning() {
         }
     };
 
+    const {
+        calendarRepository,
+    } = useContext<AppContextProps>(AppContext);
+
+    const {
+        setMonthPlanId,
+        monthPlanId,
+        calendarId,
+    } = useContext<CalendarContextInterface>(CalendarContext);
+
     const handleCellClick = (type: TaskType, e: React.MouseEvent<HTMLTableDataCellElement>, scrollContainerRef?: any) => {
         let newItem =
             type === "event"
@@ -136,13 +146,12 @@ export function CalendarMonthPlanning() {
         }
         const adjustedPosition = getEditorAdjustedPosition(e.clientX, e.clientY, scrollContainerRef.current);
         setEditorPosition(adjustedPosition);
-        calendarRepository
-            .getBigTask({
-                monthPlanId: localStorage.getItem("monthPlanId"),
-                bigTaskId: bigTask?.id,
-            })
+        calendarRepository?.getBigTask({
+            monthPlanId: monthPlanId || 0,
+            bigTaskId: bigTask?.id,
+        })
             .subscribe({
-                next: (res) => {
+                next: (res: any) => {
                     if (res?.status) {
                         setPopoverState({
                             open: true,
@@ -166,8 +175,8 @@ export function CalendarMonthPlanning() {
     };
 
     const loadMonthPlanningItems = (monthPlanId?: number) => {
-        calendarRepository.getMonthPlaningItems({ monthPlanId }).subscribe({
-            next: (res) => {
+        calendarRepository?.getMonthPlaningItems({ monthPlanId }).subscribe({
+            next: (res: any) => {
                 if (res?.status) {
                     const approvedRoutines = res?.data?.approvedRoutineNames || [];
                     const bigTasks = res?.data?.bigTasks || [];
@@ -187,31 +196,29 @@ export function CalendarMonthPlanning() {
         const year = currentDate.year();
         const month = currentDate.month() + 1;
 
-        const subscription = calendarRepository.getMonthPlanIdByDate({ year, month }).subscribe({
-            next: (res) => {
+        const subscription = calendarRepository?.getMonthPlanIdByDate({ year, month }).subscribe({
+            next: (res: any) => {
                 const success = res?.status;
                 const monthPlanId = res?.data;
                 if (success && monthPlanId) {
-                    localStorage.setItem("monthPlanId", monthPlanId);
+                    setMonthPlanId(monthPlanId);
                     loadMonthPlanningItems(monthPlanId);
                 } else {
-                    // toast.error(res?.msg || res?.message);
-                    localStorage.removeItem("monthPlanId");
                     // If monthPlanId not found, create new monthPlanId
-                    calendarRepository.createMonthPlan({
+                    calendarRepository?.createMonthPlan({
                         year: currentDate.get("year"),
                         month: currentDate.get("month") + 1,
                     }).subscribe({
-                        next: res => {
+                        next: (res: any) => {
                             if (res.status) {
-                                localStorage.setItem("monthPlanId", res?.data?.monthPlanId);
+                                setMonthPlanId(res?.data?.monthPlanId);
                                 loadMonthPlanningItems(res?.data?.monthPlanId);
                             }
                             else {
                                 toast.error(res?.message || res?.msg);
                             }
                         },
-                        error: err => {
+                        error: (err: any) => {
                             const errors = err?.response?.data?.data;
                             const message = err?.response?.data?.msg || err?.response?.data?.message;
                             setAlertMessage({
@@ -223,13 +230,11 @@ export function CalendarMonthPlanning() {
                     });
                 }
             },
-            error: () => {
-                localStorage.removeItem("monthPlanId");
-            },
+            error: () => { },
         });
 
         return () => {
-            subscription.unsubscribe();
+            subscription?.unsubscribe();
         };
     };
 
@@ -238,18 +243,16 @@ export function CalendarMonthPlanning() {
         if (typeof item === "string") {
             const updatedMonthPlanningRoutines = [...monthPlanningRoutines];
             const index = updatedMonthPlanningRoutines.findIndex((r) => r === item);
-            const monthPlanId = localStorage.getItem("monthPlanId");
             updatedMonthPlanningRoutines.splice(index, 1);
-            calendarRepository
-                .updateMonthPlanRoutines(Number(monthPlanId), {
-                    approvedRoutineNames: updatedMonthPlanningRoutines,
-                })
+            calendarRepository?.updateMonthPlanRoutines(monthPlanId || 0, {
+                approvedRoutineNames: updatedMonthPlanningRoutines,
+            })
                 .subscribe({
-                    next: (res) => {
+                    next: (res: any) => {
                         if (res?.status) {
                             setEditingItem(null);
                             setEditingTask(null);
-                            loadMonthPlanningItems(Number(monthPlanId));
+                            loadMonthPlanningItems(monthPlanId || 0);
                             toast.success(res?.msg || res?.message);
                         }
                         else {
@@ -262,36 +265,34 @@ export function CalendarMonthPlanning() {
         }
         // For big task
         else if ((item as MonthPlanningBigTask)?.estimatedStartDate) {
-            const monthPlanId = localStorage.getItem("monthPlanId");
-            calendarRepository.deleteBigTask({
-                monthPlanId: monthPlanId,
+            calendarRepository?.deleteBigTask({
+                monthPlanId: monthPlanId || 0,
                 bigTaskId: item?.id,
             }).subscribe({
-                next: res => {
+                next: (res: any) => {
                     const success = res?.status;
                     if (success) {
                         toast.success(res?.message || res?.msg);
                         setEditingItem(null);
                         setEditingTask(null);
-                        loadMonthPlanningItems(Number(monthPlanId));
+                        loadMonthPlanningItems(monthPlanId || 0);
                     }
                     else {
                         toast.error(res?.msg || res?.message);
                     }
                 },
-                error: err => { },
+                error: (err: any) => { },
             });
             return;
         }
 
         // For event & unscheduled task
-        calendarRepository.deleteCalendarItem(item?.id as number).subscribe({
-            next: (res) => {
+        calendarRepository?.deleteCalendarItem(item?.id as number).subscribe({
+            next: (res: any) => {
                 if (res?.status) {
-                    const monthPlanId = localStorage.getItem("monthPlanId");
                     toast.success(res?.msg || res?.message);
                     setEditingItem(null);
-                    loadMonthPlanningItems(Number(monthPlanId));
+                    loadMonthPlanningItems(monthPlanId || 0);
                 } else toast.error(res?.msg || res?.message);
             },
             error: () => { },
@@ -309,8 +310,8 @@ export function CalendarMonthPlanning() {
 
         if (typeof task === "object" && task !== null) {
             if (typeof taskId === "number" && (task as MonthPlanningEvent).specificDate) {
-                calendarRepository.getCalendarItem({ itemId: taskId }).subscribe({
-                    next: (res) => {
+                calendarRepository?.getCalendarItem({ itemId: taskId }).subscribe({
+                    next: (res: any) => {
                         if (res?.status) {
                             setEditingTask({
                                 ...res?.data,
@@ -332,12 +333,12 @@ export function CalendarMonthPlanning() {
                 return;
             }
             else if (typeof taskId === "number" && (task as MonthPlanningBigTask).estimatedStartDate) {
-                calendarRepository.getBigTask({
-                    monthPlanId: localStorage.getItem("monthPlanId"),
+                calendarRepository?.getBigTask({
+                    monthPlanId: monthPlanId || 0,
                     bigTaskId: taskId,
                 })
                     .subscribe({
-                        next: res => {
+                        next: (res: any) => {
                             const success = res?.status;
                             if (success) {
                                 setEditingItem({
@@ -353,7 +354,7 @@ export function CalendarMonthPlanning() {
                                 toast.error(res?.msg || res?.message);
                             }
                         },
-                        error: err => { }
+                        error: (err: any) => { }
                     });
             }
             return;
@@ -381,17 +382,16 @@ export function CalendarMonthPlanning() {
         else {
             newMonthPlanningRoutines[index] = newName as string;
         }
-        const monthPlanId = localStorage.getItem("monthPlanId");
-        calendarRepository.updateRoutineList({
-            monthPlanId,
+        calendarRepository?.updateRoutineList({
+            monthPlanId: monthPlanId || 0,
         }, {
             approvedRoutineNames: newMonthPlanningRoutines,
         }).subscribe({
-            next: res => {
+            next: (res: any) => {
                 const success = res?.status;
                 if (success) {
                     toast.success(res?.msg || res?.message);
-                    loadMonthPlanningItems(Number(monthPlanId));
+                    loadMonthPlanningItems(monthPlanId || 0);
                     setEditingItem(null);
                     setEditingTask(null);
                     setOpenRoutineEditor(false);
@@ -404,7 +404,7 @@ export function CalendarMonthPlanning() {
                     });
                 }
             },
-            error: err => {
+            error: (err: any) => {
                 const errors = err?.response?.data?.data;
                 const message = err?.response?.data?.msg || err?.response?.data?.message;
                 setAlertMessage({
@@ -425,8 +425,11 @@ export function CalendarMonthPlanning() {
             isInitialMount.current = false;
             return;
         }
+        if (!calendarRepository) {
+            return;
+        }
         getMonthPlanId();
-    }, [currentDate]);
+    }, [currentDate, calendarRepository]);
 
     useEffect(() => {
         const newBigTaskStyles: Record<number, any> = {};
@@ -736,7 +739,7 @@ export function CalendarMonthPlanning() {
                             setEditingItem(null);
                             setEditingTask(null);
                         }}
-                        handleReload={() => loadMonthPlanningItems(Number(localStorage.getItem("monthPlanId")))}
+                        handleReload={() => loadMonthPlanningItems(monthPlanId || 0)}
                         style={{ top: editorPosition.y, left: editorPosition.x }}
                         onDelete={() => onDeleteItem((editingTask || editingItem as any))}
                     />

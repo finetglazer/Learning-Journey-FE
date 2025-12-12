@@ -2,13 +2,13 @@
 
 import { Button } from "@/components/ui/button";
 import { FetchedUser, Project, ProjectMembershipRole, TeamMember } from "@/model/project-management";
-import { projectRepository } from "@/repository/project-repository";
 import { X } from "lucide-react";
 import { useCallback, useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AlertMessage, AlertModal } from "../alert-modal/alert-modal";
 import { TeamProjectContext, TeamProjectContextProps } from "../sidebar/pages/project/team-project-context";
 import { cn } from "@/lib/utils";
+import { AppContext, AppContextProps } from "@/hooks/app-context";
 
 // --- 1. Debounce Hook ---
 /**
@@ -101,7 +101,14 @@ export const InviteMembersModal = ({
         selectedProject,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
+    const {
+        projectRepository,
+    } = useContext<AppContextProps>(AppContext);
+
     const handleUpdateCustomRoleName = useCallback((name: string) => {
+        if (!projectRepository) {
+            return;
+        }
         projectRepository.updateMemberProject({
             projectId: selectedProject?.id,
             targetUserId: teamMembers.find(member => member.userId === editingUserId)?.userId,
@@ -138,9 +145,13 @@ export const InviteMembersModal = ({
         teamMembers,
         setEditingUserId,
         getTeamMembers,
+        projectRepository,
     ]);
 
     useEffect(() => {
+        if (!projectRepository) {
+            return;
+        }
         if (debouncedSearchQuery) {
             projectRepository.findUsersByEmail({
                 email: inviteEmail,
@@ -165,10 +176,13 @@ export const InviteMembersModal = ({
             setSearchResults([]);
             setIsDropdownOpen(false);
         }
-    }, [debouncedSearchQuery]); // Re-run if query or members list changes
+    }, [debouncedSearchQuery, projectRepository]);
 
     const handleInvite = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        if (!projectRepository) {
+            return;
+        }
         if (inviteEmail) {
             projectRepository.addMemberToProject({
                 projectId: currentSelectedProject?.id,
@@ -203,6 +217,9 @@ export const InviteMembersModal = ({
     };
 
     const handleRemoveMember = (memberToRemove: TeamMember) => {
+        if (!projectRepository) {
+            return;
+        }
         projectRepository.removeMemberFromProject({
             projectId: currentSelectedProject?.id,
             targetUserId: memberToRemove?.userId,

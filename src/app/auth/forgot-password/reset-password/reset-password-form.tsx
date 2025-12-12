@@ -6,7 +6,6 @@ import { FORGOT_PASSWORD_EMAIL_INPUT_ROUTE, SIGN_IN_ROUTE } from "@/const/routes
 import { AppContext, AppContextProps } from "@/hooks/app-context";
 import AuthFormLayout from "@/layout/auth-form-layout";
 import { ResetPasswordModel } from "@/model/reset-password-model";
-import { authRepository } from "@/repository/auth-repository";
 import { formService } from "@/service/form-service";
 import { LockIcon } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -16,6 +15,7 @@ export default function ResetPasswordForm() {
     const router = useRouter();
 
     const {
+        authRepository,
         setLoadingPage,
     } = useContext<AppContextProps>(AppContext);
 
@@ -26,7 +26,7 @@ export default function ResetPasswordForm() {
         onSubmitForm,
     } = formService.useForm(
         ResetPasswordModel,
-        authRepository.resetPassword,
+        authRepository?.resetPassword,
         () => {
             router.push(SIGN_IN_ROUTE);
             setLoadingPage(true);

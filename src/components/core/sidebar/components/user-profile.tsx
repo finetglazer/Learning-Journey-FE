@@ -4,22 +4,15 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Tooltip } from "antd";
 import { PanelLeft, User } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useContext } from "react";
+import { AppContext, AppContextProps } from "@/hooks/app-context";
 
 export const UserProfile = ({ isCollapsed = false, onToggleCollapse }: { isCollapsed: boolean, onToggleCollapse: (e: any) => void }) => {
-    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-    const [displayName, setDisplayName] = useState<string | null>(null);
-    const [email, setEmail] = useState<string | null>(null);
-
-    useEffect(() => {
-        setAvatarUrl(localStorage.getItem("avatarUrl"));
-        setDisplayName(localStorage.getItem("displayName"));
-        setEmail(localStorage.getItem("email"));
-    }, [
-        localStorage.getItem("avatarUrl"),
-        localStorage.getItem("displayName"),
-        localStorage.getItem("email"),
-    ]);
+    const {
+        avatarUrl,
+        displayName,
+        email,
+    } = useContext<AppContextProps>(AppContext);
 
     return (
         <div className={cn(

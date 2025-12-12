@@ -5,7 +5,6 @@ import { OtpEmailInputLayout } from "@/layout/otp-email-input-layout";
 import "./page.css";
 import { formService } from "@/service/form-service";
 import { EmailVerificationModel } from "@/model/email-verification-model";
-import { authRepository } from "@/repository/auth-repository";
 import { SIGN_IN_ROUTE, SIGN_UP_BASE_ROUTE } from "@/const/routes-const";
 import { useRouter } from "next/navigation";
 import { useContext, useState } from "react";
@@ -17,6 +16,7 @@ export default function EmailVerificationPage() {
 
     const {
         setLoadingPage,
+        authRepository,
     } = useContext<AppContextProps>(AppContext);
 
     const {
@@ -26,7 +26,7 @@ export default function EmailVerificationPage() {
         onSubmitForm,
     } = formService.useForm(
         EmailVerificationModel,
-        authRepository.verifyOtp,
+        authRepository?.verifyOtp,
         () => {
             router.push(SIGN_IN_ROUTE);
             setLoadingPage(true);

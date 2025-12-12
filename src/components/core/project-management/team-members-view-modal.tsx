@@ -6,7 +6,7 @@ import { X } from 'lucide-react';
 import React, { useCallback, useContext, useState } from 'react';
 import { EditingRoleInput } from './invite-members-modal';
 import { cn } from '@/lib/utils';
-import { projectRepository } from '@/repository/project-repository';
+import { AppContext, AppContextProps } from '@/hooks/app-context';
 import { TeamProjectContext, TeamProjectContextProps } from '../sidebar/pages/project/team-project-context';
 import { AlertMessage, AlertModal } from '../alert-modal/alert-modal';
 import { toast } from 'sonner';
@@ -29,14 +29,21 @@ export const TeamMembersViewModal = ({
         getTeamMembers,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
+    const {
+        projectRepository,
+    } = useContext<AppContextProps>(AppContext);
+
     const handleUpdateCustomRoleName = useCallback((name: string) => {
+        if (!projectRepository) {
+            return;
+        }
         projectRepository.updateMemberProject({
             projectId: selectedProject?.id,
             targetUserId: teamMembers.find(member => member.userId === editingUserId)?.userId,
         }, {
             customRoleName: name,
         }).subscribe({
-            next: res => {
+            next: (res: any) => {
                 if (res?.status) {
                     toast.success(res?.message || res?.msg);
                     setEditingUserId(null);
@@ -50,7 +57,7 @@ export const TeamMembersViewModal = ({
                     });
                 }
             },
-            error: err => {
+            error: (err: any) => {
                 const errors = err?.response?.data?.data;
                 const message = err?.response?.data?.msg || err?.response?.data?.message;
                 setAlertMessage({
@@ -66,6 +73,7 @@ export const TeamMembersViewModal = ({
         teamMembers,
         setEditingUserId,
         getTeamMembers,
+        projectRepository,
     ]);
 
     return (

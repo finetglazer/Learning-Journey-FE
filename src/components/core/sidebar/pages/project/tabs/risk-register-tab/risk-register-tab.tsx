@@ -14,7 +14,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { getRiskLevelLabel, ProjectMembershipRole, RiskAssignee, RiskItem, RiskLevel } from "@/model/project-management";
-import { projectRepository } from "@/repository/project-repository";
+import { AppContext, AppContextProps } from "@/hooks/app-context";
 import { debounce } from "lodash";
 import { Plus, Search } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -51,6 +51,10 @@ export default function RiskRegisterTab({
         members,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
+    const {
+        projectRepository,
+    } = useContext<AppContextProps>(AppContext);
+
     // 🆕 RBAC Check
     const canEdit = currentMember?.role === ProjectMembershipRole.OWNER;
 
@@ -59,6 +63,7 @@ export default function RiskRegisterTab({
     const pageSizeUrlParam = Number(urlParams.get("pageSize")) || 20;
 
     const getRiskItems = useCallback((useCustomPageSize?: boolean, customPageSize?: number) => {
+        if (!projectRepository) return;
         const subscription = projectRepository.getRisks({
             projectId: selectedProject?.id as number,
             page: currentPage,
@@ -106,6 +111,7 @@ export default function RiskRegisterTab({
         currentPage,
         isMyRisk,
         currentMember,
+        projectRepository,
     ]);
 
     const debouncedFetch = useMemo(() => {
@@ -113,6 +119,7 @@ export default function RiskRegisterTab({
     }, [getRiskItems]);
 
     const handleCreateRiskItem = useCallback((newRisk: Partial<RiskItem>) => {
+        if (!projectRepository) return;
         projectRepository.createRisk({
             projectId: selectedProject?.id as number,
         }, {
@@ -147,9 +154,11 @@ export default function RiskRegisterTab({
             });
     }, [
         selectedProject,
+        projectRepository,
     ]);
 
     const handleUpdateRiskItem = useCallback((risk: RiskItem) => {
+        if (!projectRepository) return;
         setLoadingRiskId(risk.id);
 
         projectRepository.updateRisk({
@@ -195,6 +204,7 @@ export default function RiskRegisterTab({
             })
     }, [
         selectedProject,
+        projectRepository,
     ]);
 
     const handleUpdateRiskAssignees = useCallback((assignees: RiskAssignee[]) => {

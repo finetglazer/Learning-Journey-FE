@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useContext } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -27,7 +27,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, User, Calendar } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
+
 import { format } from "date-fns";
+import { AppContext, AppContextProps } from "@/hooks/app-context";
 
 interface NotionEditorProps {
     provider: HocuspocusProvider;
@@ -53,27 +55,27 @@ interface NotionEditorProps {
 }
 
 export function NotionEditor({
-                                 provider,
-                                 ydoc,
-                                 isConnected,
-                                 isSynced,
-                                 awarenessUsers,
-                                 threads,
-                                 addThread,
-                                 updateThread,
-                                 deleteThread,
-                                 canEdit,
-                                 versions,
-                                 isLoadingVersions,
-                                 onLoadVersions,
-                                 onRestoreVersion,
-                                 isRestoringVersion,
-                                 documentTitle = "",
-                                 onTitleChange,
-                                 createdBy = "Jane Doe",
-                                 createdAt = new Date().toISOString(),
-                                 onBack,
-                             }: NotionEditorProps) {
+    provider,
+    ydoc,
+    isConnected,
+    isSynced,
+    awarenessUsers,
+    threads,
+    addThread,
+    updateThread,
+    deleteThread,
+    canEdit,
+    versions,
+    isLoadingVersions,
+    onLoadVersions,
+    onRestoreVersion,
+    isRestoringVersion,
+    documentTitle = "",
+    onTitleChange,
+    createdBy = "Jane Doe",
+    createdAt = new Date().toISOString(),
+    onBack,
+}: NotionEditorProps) {
     const [showComments, setShowComments] = useState(true);
     const [showVersionHistory, setShowVersionHistory] = useState(false);
     const [selectedThreadId, setSelectedThreadId] = useState<string>();
@@ -86,18 +88,21 @@ export function NotionEditor({
         avatar: "",
     });
 
+    const {
+        userId,
+        displayName,
+        avatarUrl,
+    } = useContext<AppContextProps>(AppContext);
+
     useEffect(() => {
         setIsMounted(true);
-        const userId = localStorage.getItem("userId") || "";
-        const displayName = localStorage.getItem("displayName") || "Anonymous";
-        const avatarUrl = localStorage.getItem("avatarUrl") || "";
 
         setCurrentUser({
-            id: userId,
-            name: displayName,
-            avatar: avatarUrl,
+            id: String(userId || ""),
+            name: displayName || "Anonymous",
+            avatar: avatarUrl || "",
         });
-    }, []);
+    }, [userId, displayName, avatarUrl]);
 
     useEffect(() => {
         setTitle(documentTitle);

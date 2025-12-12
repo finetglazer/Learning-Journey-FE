@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangle, ArrowLeft, Loader2, XCircle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState, useContext } from "react";
-import { projectRepository } from "@/repository/project-repository";
 import { ROOT_ROUTE } from "@/const/routes-const";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
 
@@ -22,6 +21,7 @@ function InvitationDeclineContent() {
     const searchParams = useSearchParams();
     const {
         setLoadingPage,
+        projectRepository,
     } = useContext<AppContextProps>(AppContext);
 
     // 'loading': Processing the decline
@@ -33,6 +33,9 @@ function InvitationDeclineContent() {
     const [message, setMessage] = useState("Processing your request...");
 
     useEffect(() => {
+        if (!projectRepository) {
+            return;
+        }
         const token = searchParams.get("token");
         const projectId = Number(searchParams.get("projectId"));
 
@@ -62,7 +65,7 @@ function InvitationDeclineContent() {
             },
         });
 
-    }, [searchParams]); // Run once when searchParams are available
+    }, [searchParams, projectRepository]);
 
     const handleGoHome = () => {
         setLoadingPage(true);

@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { ProjectTimelineType } from '@/model/project-management';
+import { isEqual } from 'lodash';
 import { ChevronDown } from 'lucide-react';
 
 // Helper to parse "YYYY-MM-DD" (since your API returns this format)
@@ -160,10 +161,12 @@ export function ProjectTimeline({ data }: ProjectTimelineProps) {
                                 }}
                             >
                                 {/* Custom Flag Icon */}
-                                <div className="relative flex items-end h-12 -mt-5">
-                                    <div className="w-px h-full bg-gray-600"></div> {/* Stick */}
-                                    <div className="absolute top-0 left-0 w-4 h-3 bg-gray-600"></div> {/* Rect */}
-                                </div>
+                                {!isEqual(marker.type, 'current') && (
+                                    <div className="relative flex items-end h-12 -mt-5">
+                                        <div className="w-px h-full bg-gray-600"></div> {/* Stick */}
+                                        <div className="absolute top-0 left-0 w-4 h-3 bg-gray-600"></div> {/* Rect */}
+                                    </div>
+                                )}
                             </div>
                         );
                     })}

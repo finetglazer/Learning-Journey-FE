@@ -12,11 +12,13 @@ interface BaseResponse<T> {
     status: number;
     msg: string;
     data: T;
-}
+};
 
-class DocumentRepository extends BaseRepository {
-    constructor() {
-        super();
+const BASE_API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+export class DocumentRepository extends BaseRepository {
+    constructor(userId: number) {
+        super(userId, BASE_API_URL);
     }
 
     /**
@@ -84,4 +86,4 @@ class DocumentRepository extends BaseRepository {
     }
 }
 
-export const documentRepository = new DocumentRepository();
+export const documentRepositoryCons = (userId: number) => new DocumentRepository(userId);

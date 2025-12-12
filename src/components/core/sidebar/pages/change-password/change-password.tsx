@@ -1,11 +1,16 @@
 import { IntegratedButton } from "@/components/core/button/integrated-button";
 import { IntegratedInput } from "@/components/core/input/integrated-input";
+import { AppContext, AppContextProps } from "@/hooks/app-context";
 import { ChangePasswordModel } from "@/model/change-password-model";
-import { authRepository } from "@/repository/auth-repository";
 import { formService } from "@/service/form-service";
 import { LockIcon } from "lucide-react";
+import { useContext } from "react";
 
 export default function ChangePasswordPage() {
+    const {
+        authRepository,
+    } = useContext<AppContextProps>(AppContext);
+
     const {
         model,
         loading,
@@ -13,7 +18,7 @@ export default function ChangePasswordPage() {
         onSubmitForm,
     } = formService.useForm(
         ChangePasswordModel,
-        authRepository.changePassword,
+        authRepository?.changePassword,
     );
 
     const inputs = [

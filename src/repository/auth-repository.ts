@@ -11,8 +11,8 @@ const API_RESET_PASSWORD = "/reset-password";
 const API_RESET_PASSWORD_SEND_EMAIL = "/forgot-password";
 
 export class AuthRepository extends BaseRepository {
-    constructor() {
-        super(BASE_API_URL);
+    constructor(userId: number) {
+        super(userId, BASE_API_URL);
     };
 
     public signIn = (form?: Model): Observable<any> => {
@@ -22,9 +22,6 @@ export class AuthRepository extends BaseRepository {
                 if (data) {
                     localStorage.setItem("accessToken", data.accessToken);
                     localStorage.setItem("refreshToken", data.refreshToken);
-                    localStorage.setItem("userId", data?.user?.id);
-                    localStorage.setItem("displayName", data?.user?.displayName);
-                    localStorage.setItem("email", data?.user?.email);
                 }
                 return res?.data;
             }));
@@ -60,4 +57,4 @@ export class AuthRepository extends BaseRepository {
     };
 };
 
-export const authRepository = new AuthRepository();
+export const authRepositoryCons = (userId: number) => new AuthRepository(userId);

@@ -68,11 +68,12 @@ export const CalendarDayView = () => {
     } = useContext<CalendarContextInterface>(CalendarContext);
 
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+    const headerRef = useRef<HTMLDivElement | null>(null);
 
     return (
         <Card className="w-full h-[100%] mx-auto rounded-xl shadow-lg bg-slate-50/50 p-0">
             {/* ====== Header (Same as before) ====== */}
-            <CardHeader className="grid grid-cols-[auto_1fr_auto] items-center p-4 border-b border-gray-200 bg-slate-100/60 rounded-t-xl">
+            <CardHeader ref={headerRef} className="grid grid-cols-[auto_1fr_auto] items-center p-4 border-gray-200 border-b-0 bg-slate-100/60 rounded-t-xl">
                 <div className="text-sm font-semibold text-slate-600 whitespace-nowrap">
                     Private calendar / <span className="text-slate-800">Day View</span>
                 </div>
@@ -176,6 +177,7 @@ export const CalendarDayView = () => {
                         <CollapsibleUnscheduledPanel
                             unscheduledMonthData={unscheduledMonthData}
                             position={panelPosition}
+                            headerRef={headerRef}
                             handleRemoveUnscheduledRoutine={handleDeleteUnscheduledRoutine}
                             handleRemoveUnscheduledSubTask={handleDeleteUnscheduledTask}
                             onUnscheduledTaskTitleChange={onChangeUnscheduledTaskTitle}
@@ -185,8 +187,10 @@ export const CalendarDayView = () => {
                             selectedTaskId={selectedTaskId}
                             selectedRoutineId={selectedRoutineId}
                         />
-                        
-                        <CollapsibleUnscheduledBufferListPanel />
+
+                        <CollapsibleUnscheduledBufferListPanel 
+                            headerRef={headerRef}
+                        />
 
                         <DragOverlay>
                             {/* For scheduled items */}
@@ -194,7 +198,7 @@ export const CalendarDayView = () => {
                                 getDraggableTaskOverlay()
                             ) : null}
                             {isPanelDragging && (
-                                <PanelDragOverlay 
+                                <PanelDragOverlay
                                     type={"unscheduled-task-panel"}
                                 />
                             )}
@@ -230,23 +234,21 @@ export const CalendarDayView = () => {
                         <div className="w-full h-0.5 bg-orange-500"></div>
                         <div className="w-2.5 h-2.5 bg-orange-500 rounded-full -mr-[5px]"></div>
                     </div>
-                    {editingTask && (
-                        <TaskEditor
-                            key={editingTask?.id || "none"}
-                            task={{ ...editingTask, type: (editingTask?.type || "").toLowerCase() }}
-                            setAlertMessage={setAlertMessage}
-                            onClose={() => {
-                                setEditingTask(null);
-                                setSelectedTaskId(null);
-                            }}
-                            style={{ top: editorPosition.y, left: editorPosition.x }}
-                            handleReload={handleReload}
-                            onDelete={() => onDeleteCalendarItem(editingTask?.id)}
-                            setSelectedTaskId={setSelectedTaskId}
-                            setSelectedRoutineId={setSelectedRoutineId}
-                            setEditingTask={setEditingTask}
-                        />
-                    )}
+                    <TaskEditor
+                        key={editingTask?.id || "none"}
+                        open={!!editingTask}
+                        task={{ ...editingTask, type: (editingTask?.type || "").toLowerCase() }}
+                        setAlertMessage={setAlertMessage}
+                        onClose={() => {
+                            setEditingTask(null);
+                            setSelectedTaskId(null);
+                        }}
+                        style={{ top: editorPosition.y, left: editorPosition.x }}
+                        handleReload={handleReload}
+                        onDelete={() => onDeleteCalendarItem(editingTask?.id)}
+                        setSelectedTaskId={setSelectedTaskId}
+                        setSelectedRoutineId={setSelectedRoutineId}
+                        setEditingTask={setEditingTask} />
                 </div>
                 {alertMessage && (
                     <AlertModal

@@ -238,3 +238,23 @@ export interface ProjectDependency {
     fromId: number;
     toId: number;
 };
+
+export type NodeType = 'STATIC_FILE' | 'FOLDER' | 'NOTION_DOC';
+
+/**
+ * Represents a file or folder node in the project management system.
+ * Corresponds to the PM_FileNode JPA entity.
+ */
+export interface FileNode {
+    nodeId: number;
+    projectId: number;
+    parentNodeId: number | null;
+    name: string;
+    type: NodeType;
+    extension: string | null;
+    sizeBytes: number | null;
+    storageReference: string | null;
+    createdByUserId: number | null;
+    createdAt: string;
+    updatedAt: string;
+};

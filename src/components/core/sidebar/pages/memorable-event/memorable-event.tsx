@@ -3,12 +3,12 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toDayJs } from "@/lib/utils";
-import { calendarRepository } from "@/repository/calendar-repository";
 import { Plus, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { DayMonthPicker } from "./day-month-picker";
 import { AlertMessage, AlertModal } from "@/components/core/alert-modal/alert-modal";
+import { AppContextProps, AppContext } from "@/hooks/app-context";
 
 export interface MemorableEvent {
     date: string; // e.g., "25/12"
@@ -19,8 +19,12 @@ export const MemorableEvents = () => {
     const [events, setEvents] = useState<MemorableEvent[]>([]);
     const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
 
+    const {
+        calendarRepository,
+    } = useContext<AppContextProps>(AppContext);
+
     const getMemorableEvents = () => {
-        calendarRepository.getMemorableEvents().subscribe({
+        calendarRepository?.getMemorableEvents().subscribe({
             next: res => {
                 if (res?.status) {
                     const events = (res?.data?.events || []).map((event: any) => {
@@ -43,7 +47,7 @@ export const MemorableEvents = () => {
     };
 
     const updateMemorableEvents = () => {
-        calendarRepository.updateMemorableEvents({
+        calendarRepository?.updateMemorableEvents({
             events: [...events].map((event: MemorableEvent) => {
                 const day = Number(event.date.split("/")[0]);
                 const month = Number(event.date.split("/")[1]);
@@ -81,8 +85,11 @@ export const MemorableEvents = () => {
     };
 
     useEffect(() => {
+        if (!calendarRepository) {
+            return;
+        }
         getMemorableEvents();
-    }, []);
+    }, [calendarRepository]);
 
     const handleEventChange = (
         index: number,

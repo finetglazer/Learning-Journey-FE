@@ -5,11 +5,12 @@ import TeamMembersViewModal from "@/components/core/project-management/team-memb
 import { Project } from "@/model/project-management";
 import { useContext } from "react";
 import { ListTab } from "./tabs/list-tab/list-tab";
-import { TaskboardTab } from "./tabs/task-board-tab/task-board-tab";
-import { TeamProjectContext, TeamProjectContextProps, TeamProjectTab } from "./team-project-context";
-import { SummaryTab } from "./tabs/summary-tab/summary-tab";
 import RiskRegisterTab from "./tabs/risk-register-tab/risk-register-tab";
-import { GanttTimelineBoard, MOCK_GANTT_DATA, VIEW_END_DATE, VIEW_START_DATE, WEEK_HEADERS } from "./tabs/timeline-tab/timeline-tab";
+import { SharedSourceTab } from "./tabs/shared-source/shared-source-tab";
+import { SummaryTab } from "./tabs/summary-tab/summary-tab";
+import { TaskboardTab } from "./tabs/task-board-tab/task-board-tab";
+import { GanttTimelineBoard } from "./tabs/timeline-tab/timeline-tab";
+import { TeamProjectContext, TeamProjectContextProps, TeamProjectTab } from "./team-project-context";
 
 export interface TeamProjectPageProps {
     currentSelectedProject: Project | null;
@@ -56,6 +57,10 @@ export const TeamProjectPage = ({
 
             {tab === TeamProjectTab.TIMELINE && (
                 <GanttTimelineBoard />
+            )}
+
+            {tab === TeamProjectTab.SHARED_SOURCE && (
+                <SharedSourceTab />
             )}
 
             {tab === TeamProjectTab.RISK_REGISTER && (

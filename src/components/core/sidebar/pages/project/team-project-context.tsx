@@ -2,7 +2,6 @@
 
 import { AppContext, AppContextProps } from "@/hooks/app-context";
 import { PM_Deliverable, Project, ProjectDependency, ProjectMembershipRole, ProjectTimelineStructure, ReorderType, TeamMember, TimelineItem } from "@/model/project-management"; // Added PM_Phase, PM_Task for type clarity
-import { projectRepository } from "@/repository/project-repository";
 import { createContext, Dispatch, SetStateAction, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { finalize } from "rxjs";
 import { toast } from "sonner";
@@ -111,9 +110,11 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
     );
     const {
         email,
+        projectRepository,
     } = useContext<AppContextProps>(AppContext);
 
     const getProjectStructure = useCallback((searchWithParam?: boolean, searchParam?: string) => {
+        if (!projectRepository) return () => { };
         const subscription = projectRepository.getProjectStructure({
             projectId: currentSelectedProject?.id,
             search: searchWithParam ? searchParam || "" : search || "",
@@ -187,9 +188,10 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         return () => {
             subscription.unsubscribe();
         };
-    }, [currentSelectedProject, setIsReordering, search, setExpandedDeliverables, setExpandedPhases]);
+    }, [currentSelectedProject, setIsReordering, search, setExpandedDeliverables, setExpandedPhases, projectRepository]);
 
     const getTeamMembers = useCallback(() => {
+        if (!projectRepository) return;
         const subscription = projectRepository.getTeamMembers({
             projectId: currentSelectedProject?.id
         }).subscribe({
@@ -212,9 +214,10 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         return () => {
             subscription.unsubscribe();
         };
-    }, [currentSelectedProject, setMembers, setCurrentMember, email]);
+    }, [currentSelectedProject, setMembers, setCurrentMember, email, projectRepository]);
 
     const getItemDependencies = useCallback((item: TimelineItem) => {
+        if (!projectRepository) return () => { };
         const subscription = projectRepository.getDependencies({
             projectId: currentSelectedProject?.id as number,
             itemId: item.id,
@@ -237,9 +240,11 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         }
     }, [
         currentSelectedProject,
+        projectRepository,
     ]);
 
     const handleReorderList = useCallback((orderedIds: number[], parentId: number, type: ReorderType) => {
+        if (!projectRepository) return;
         setIsReordering(true);
         const subscription = projectRepository.reorderList({
             projectId: currentSelectedProject?.id,
@@ -268,7 +273,7 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         return () => {
             subscription.unsubscribe();
         };
-    }, [selectedProject, setIsReordering]);
+    }, [selectedProject, setIsReordering, projectRepository, getProjectStructure]);
 
     const isInitialMount = useRef(true);
 

@@ -1,15 +1,14 @@
 import { baseApiConfig } from "@/config/base-api-config";
-import { Repository } from "react-3layer-common";
-import { toast } from "sonner";
+import { SIGN_IN_ROUTE } from "@/const/routes-const";
 import {
   AxiosError,
-  AxiosRequestConfig,
   AxiosResponse,
-  InternalAxiosRequestConfig,
+  InternalAxiosRequestConfig
 } from "axios";
-import { SIGN_IN_ROUTE } from "@/const/routes-const";
-import { firstValueFrom } from "rxjs";
 import { isNil } from "lodash";
+import { Repository } from "react-3layer-common";
+import { firstValueFrom } from "rxjs";
+import { toast } from "sonner";
 
 const REFRESH_TOKEN_URL = "/api/users/auth/refresh";
 
@@ -21,9 +20,12 @@ type FailedQueuePromise = {
 export class BaseRepository extends Repository {
   private static isRefreshing = false;
   private static failedQueue: FailedQueuePromise[] = [];
+  private userId: number;
 
-  constructor(baseApiUrl?: string) {
+  constructor(userId: number, baseApiUrl?: string) {
     super(baseApiConfig(baseApiUrl));
+
+    this.userId = userId;
 
     // FIX 1: Cast inputs and outputs to 'any' to solve the Axios version conflict
     this.http.interceptors.request.use(
@@ -44,14 +46,13 @@ export class BaseRepository extends Repository {
     // 1. Check if we are in the browser (Client Side)
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("accessToken");
-      const userId = localStorage.getItem("userId");
 
       // 2. Inject headers safely
       if (token) {
         config.headers["Authorization"] = `Bearer ${token}`;
       }
-      if (userId) {
-        config.headers["X-User-Id"] = userId;
+      if (this.userId) {
+        config.headers["X-User-Id"] = this.userId;
       }
     }
     return config;

@@ -4,8 +4,8 @@ import { BaseRepository } from "./base-repository";
 const BASE_API_URL = process.env.NEXT_PUBLIC_API_URL + "/pm/projects";
 
 export class ProjectRepository extends BaseRepository {
-    constructor() {
-        super(BASE_API_URL);
+    constructor(userId: number) {
+        super(userId, BASE_API_URL);
     };
 
     public getProjects = (): Observable<any> => {
@@ -364,4 +364,4 @@ export class ProjectRepository extends BaseRepository {
     };
 };
 
-export const projectRepository = new ProjectRepository();
+export const projectRepositoryCons = (userId: number) => new ProjectRepository(userId);

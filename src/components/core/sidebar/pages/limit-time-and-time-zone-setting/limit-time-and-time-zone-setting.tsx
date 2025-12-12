@@ -1,41 +1,40 @@
 "use client";
 
+import { AlertMessage, AlertModal } from "@/components/core/alert-modal/alert-modal";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { AppContext, AppContextProps } from "@/hooks/app-context";
 import { findTimezone } from "@/lib/utils";
 import { CheckedState } from "@radix-ui/react-checkbox";
 import { Plus, X } from "lucide-react";
-import { useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { settingsRepository } from "@/repository/settings-repository";
-import { TimezonePicker } from "./components/time-zone-picker";
 import { TimePicker } from "./components/time-picker";
-import { AlertMessage, AlertModal } from "@/components/core/alert-modal/alert-modal";
-import { AppContext, AppContextProps } from "@/hooks/app-context";
+import { TimezonePicker } from "./components/time-zone-picker";
+import { TIMEZONE_GROUPS } from "@/const/consts";
 
 export const LimitTimeAndTimeZone = () => {
     const [timeLimitOn, setTimeLimitOn] = useState<CheckedState>(false);
     const [taskLimit, setTaskLimit] = useState<number>(8);
     const [routineLimit, setRoutineLimit] = useState<number>(15);
-    const [timezone, setTimezone] = useState({ label: "(UTC+00:00) London, Dublin, Lisbon", value: "Europe/London", utc: "UTC+00:00" });
     const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
+    // Init as GMT+07:00: Ho Chi Minh City    
+    const [timeZone, setTimeZone] = useState<{ label: string; value: string; utc: string; }>(TIMEZONE_GROUPS[2].zones[3]);
 
     const {
         sleepHours,
         setSleepHours,
+        settingsRepository,
+        setTimeZone: setOriginalTimeZone,
+        timezone: originalTimeZone,
+        taskLimitHours,
+        routineLimitHours,
+        dailyLimitsEnabled,
     } = useContext<AppContextProps>(AppContext);
 
-    useEffect(() => {
-        setTaskLimit(Number(localStorage.getItem("taskLimitHours")) || 8);
-        setRoutineLimit(Number(localStorage.getItem("routineLimitHours")) || 15);
-        setTimeLimitOn(localStorage.getItem("dailyLimitsEnabled") === "1" ? true : false);
-    }, [
-        localStorage.getItem("taskLimitHours"),
-        localStorage.getItem("routineLimitHours"),
-        localStorage.getItem("dailyLimitsEnabled"),
-    ]);
+    const getUserConstraintsAndTimeZoneSettings = useCallback(() => {
+        if (!settingsRepository) return;
 
-    const getUserConstraintsAndTimeZoneSettings = () => {
         // --- Get Sleep Hours ---
         settingsRepository.getSleepHours().subscribe({
             next: res => {
@@ -61,14 +60,12 @@ export const LimitTimeAndTimeZone = () => {
                 else {
                     const timezone = res?.data?.timezone;   // "UTC+00:00 UTC", "UTC+07:00 Asia/Ho_Chi_Minh"
                     const utc = timezone.split(" ")[0];
-                    setTimezone(findTimezone(utc));
-                    // Save metrics to local storage
-                    localStorage.setItem("timezone", timezone);
+                    setOriginalTimeZone(findTimezone(utc));
                 }
             },
             error: err => { },
         });
-    };
+    }, [settingsRepository, setSleepHours]);
 
     /**
      * Updates the start or end time for a specific sleep hour entry.
@@ -98,6 +95,7 @@ export const LimitTimeAndTimeZone = () => {
      * Saves the current sleep hours state to the backend.
      */
     const handleSaveSleepHours = () => {
+        if (!settingsRepository) return;
         settingsRepository.updateSleepHours({
             sleepHours: [...sleepHours],
         }).subscribe({
@@ -125,6 +123,7 @@ export const LimitTimeAndTimeZone = () => {
      * Saves the time limit settings.
      */
     const handleSaveTimeLimits = () => {
+        if (!settingsRepository) return;
         settingsRepository.updateDailyLimits({
             enabled: timeLimitOn,
             limits: {
@@ -160,7 +159,8 @@ export const LimitTimeAndTimeZone = () => {
      * Saves the timezone
      */
     const handleSaveTimezone = () => {
-        settingsRepository.updateTimeZone({ timezone: timezone.value }).subscribe({
+        if (!settingsRepository || !timeZone) return;
+        settingsRepository.updateTimeZone({ timezone: timeZone.value }).subscribe({
             next: res => {
                 if (res.status) {
                     toast.success(res.message || res.msg);
@@ -182,7 +182,23 @@ export const LimitTimeAndTimeZone = () => {
 
     useEffect(() => {
         getUserConstraintsAndTimeZoneSettings();
-    }, []);
+    }, [getUserConstraintsAndTimeZoneSettings]);
+
+    useEffect(() => {
+        setTaskLimit(taskLimitHours || 8);
+        setRoutineLimit(routineLimitHours || 15);
+        setTimeLimitOn(dailyLimitsEnabled);
+    }, [
+        taskLimitHours,
+        routineLimitHours,
+        dailyLimitsEnabled,
+    ]);
+
+    useEffect(() => {
+        if (!originalTimeZone) return;
+        setTimeZone(originalTimeZone);
+    }, [originalTimeZone]);
+
 
     return (
         <div className="p-10 max-w-3xl mx-auto h-full overflow-y-auto ml-0">
@@ -279,7 +295,7 @@ export const LimitTimeAndTimeZone = () => {
 
             <h2 className="text-lg font-semibold text-gray-800 mb-6">Time zone</h2>
             <div className="w-full max-w-md mb-6">
-                <TimezonePicker initTimeZone={timezone} onChange={setTimezone} />
+                <TimezonePicker initTimeZone={timeZone} onChange={setTimeZone} />
             </div>
 
             <Button

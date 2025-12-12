@@ -2,16 +2,13 @@ import { AppContext, AppContextProps } from "@/hooks/app-context";
 import { dayJsToISOString, getBigTask, getDetails, getEditorAdjustedPosition, getMondayOfThisWeek, getMonthName, getPercentageHeight, getProjectTaskById, getRoutineById, getTaskById, initCalendarMap, reId, timeToFractionalHours, toDayJs, uuid4 } from "@/lib/utils";
 import { ProjectGroup, UserTaskItem } from "@/model/project-management";
 import { Task, UnscheduledBigTask, UnscheduledMonthData, UnscheduledRoutine, UnscheduledTask } from "@/model/task";
-import { calendarRepository } from "@/repository/calendar-repository";
-import { projectRepository } from "@/repository/project-repository";
 import { DragEndEvent, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import dayjs, { Dayjs } from "dayjs";
 import { isNil } from "lodash";
-import React, { createContext, Dispatch, SetStateAction, useContext, useEffect, useState } from "react";
+import React, { createContext, Dispatch, RefObject, SetStateAction, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { finalize } from "rxjs";
 import { toast } from "sonner";
 import { AlertMessage } from "../alert-modal/alert-modal";
-import { TeamProjectContext, TeamProjectContextProps } from "../sidebar/pages/project/team-project-context";
 import { DraggableTask } from "./draggable-task";
 
 export interface CalendarContextInterface {
@@ -55,6 +52,7 @@ export interface CalendarContextInterface {
     onPreviousDateRangeNavigatorClick: () => void;
     onNextDateRangeNavigatorClick: () => void;
     handleGoToToday: () => void;
+    sidebarRef: RefObject<HTMLDivElement | null>;
     alertMessage: AlertMessage | null;
     setAlertMessage: Dispatch<SetStateAction<AlertMessage | null>>;
     onChangeUnscheduledTaskTitle: (taskId: string, newTitle: string) => void;
@@ -68,6 +66,10 @@ export interface CalendarContextInterface {
         x: number;
         y: number;
     }>>;
+    monthPlanId: number | null;
+    setMonthPlanId: Dispatch<SetStateAction<number | null>>;
+    calendarId: number | null;
+    setCalendarId: Dispatch<SetStateAction<number | null>>;
     getSleepBlocks: () => {
         top: string;
         height: string;
@@ -127,6 +129,7 @@ export const CalendarContext = createContext<CalendarContextInterface>({
     currentDate: dayjs(),
     setCurrentDate: () => { },
     tasksStyle: {},
+    sidebarRef: null as any,
     calendarMap: {},
     projectGroups: [],
     setProjectGroups: () => { },
@@ -146,6 +149,10 @@ export const CalendarContext = createContext<CalendarContextInterface>({
     activeUnscheduledRoutine: undefined,
     CELL_HEIGHT: 4.6,
     hours: [],
+    monthPlanId: null,
+    setMonthPlanId: () => { },
+    calendarId: null,
+    setCalendarId: () => { },
     sleepStartTime: "22:00",
     sleepEndTime: "06:00",
     topPosition: "0",
@@ -225,11 +232,25 @@ export const useCalendarHooks = () => {
     const [projectGroups, setProjectGroups] = useState<ProjectGroup[]>([]);
     const [activeDragId, setActiveDragId] = useState<string | null>(null);
     const [editorPosition, setEditorPosition] = useState({ x: 0, y: 0 });
-    const [panelPosition, setPanelPosition] = useState({ x: 20, y: 100 });
-    const [panelBufferListPosition, setPanelBufferListPosition] = useState({ x: 20, y: 100 });
+    const [panelPosition, setPanelPosition] = useState({
+        x: window.visualViewport ? window.visualViewport.pageLeft + window.visualViewport.width / 2 : 20,
+        y: window.visualViewport ? window.visualViewport.pageTop + window.visualViewport.height / 3 : 100,
+    });
+    const [panelBufferListPosition, setPanelBufferListPosition] = useState({
+        x: window.visualViewport ? window.visualViewport.pageLeft + window.visualViewport.width / 3 : 20,
+        y: window.visualViewport ? window.visualViewport.pageTop + window.visualViewport.height / 3 : 100,
+    });
     const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
+    const [monthPlanId, setMonthPlanId] = useState<number | null>(null);
+    const [calendarId, setCalendarId] = useState<number | null>(null);
 
     const [unscheduledMonthData, setUnscheduledMonthData] = useState<UnscheduledMonthData[]>([]);
+    const sidebarRef = useRef<HTMLDivElement | null>(null);
+
+    const {
+        calendarRepository,
+        projectRepository,
+    } = useContext<AppContextProps>(AppContext);
 
     const CELL_HEIGHT = 4.57; // rem;
     const now = dayjs();
@@ -239,10 +260,6 @@ export const useCalendarHooks = () => {
     const hours = Array.from({ length: 24 }, (_, i) =>
         i.toString().padStart(2, "0")
     ); // 00 to 23
-
-    const {
-        selectedProject,
-    } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -396,28 +413,13 @@ export const useCalendarHooks = () => {
 
     }, [currentMondayTime, updatedTasks]);
 
-    useEffect(() => {
-        if (currentView !== 'month-planning') {
-            handleReload();
-        }
 
-        setCurrentMondayTime(getMondayOfThisWeek(currentDate));
-        setSelectedTaskId(null);
-        setSelectedRoutineId(null);
-        setEditingTask(null);
-        setDraggingScheduledTaskId(null);
-        setDraggingUnscheduledRoutineId(null);
-        setDraggingUnscheduledRoutineId(null);
-    }, [
-        currentView,
-        currentDate,
-    ]);
 
     // console.log("updatedTasks", updatedTasks);
     // console.log("calendarMap", calendarMap)
     // console.log("tasksStyle", tasksStyle);
 
-    const getRequestView = () => {
+    const getRequestView = useCallback(() => {
         switch (currentView.toLowerCase()) {
             case "day":
                 return "DAY";
@@ -428,8 +430,10 @@ export const useCalendarHooks = () => {
                 return "MONTH";
             case "year":
                 return "YEAR";
+            default:
+                return "WEEK";
         }
-    };
+    }, [currentView]);
 
     // For EDITING unscheduled and scheduled task
     const [selectedTaskId, setSelectedTaskId] = useState<string | number | null>(null);
@@ -453,13 +457,13 @@ export const useCalendarHooks = () => {
         sleepHours, // Using the new sleepHours array: {startTime: "HH:mm", endTime: "HH:mm"}[]
     } = useContext<AppContextProps>(AppContext);
 
-    const handleReload = () => {
-        calendarRepository.getScheduledItems({
+    const handleReload = useCallback(() => {
+        calendarRepository?.getScheduledItems({
             view: getRequestView(),
             date: currentDate.format('YYYY-MM-DD'),
-            calendarId: Number(localStorage.getItem("calendarId")),
+            calendarId: calendarId || 0,
         }).subscribe({
-            next: res => {
+            next: (res: any) => {
                 const newUpdatedTasks = (res?.data?.items || []).map((item: any) => {
                     const { createdAt, updatedAt, ...restItem } = item;
                     return {
@@ -473,11 +477,33 @@ export const useCalendarHooks = () => {
                 });
                 setUpdatedTasks([...newUpdatedTasks]);
             },
-            error: err => {
+            error: (err: any) => {
                 console.log("Error occurs while fetching scheduled items", err);
             }
         });
-    };
+    }, [calendarRepository, currentDate, getRequestView, calendarId]);
+
+    useEffect(() => {
+        if (!calendarRepository) {
+            return;
+        }
+        if (currentView !== 'month-planning') {
+            handleReload();
+        }
+
+        setCurrentMondayTime(getMondayOfThisWeek(currentDate));
+        setSelectedTaskId(null);
+        setSelectedRoutineId(null);
+        setEditingTask(null);
+        setDraggingScheduledTaskId(null);
+        setDraggingUnscheduledRoutineId(null);
+        setDraggingUnscheduledTaskId(null);
+    }, [
+        currentView,
+        currentDate,
+        calendarRepository,
+        handleReload,
+    ]);
 
     /**
      * Generates an array of sleep block style objects (top, height)
@@ -520,9 +546,9 @@ export const useCalendarHooks = () => {
         setEditorPosition(adjustedPosition);
 
         // Call get calendar item detail API
-        calendarRepository.getCalendarItem({ itemId: taskId })
+        calendarRepository?.getCalendarItem({ itemId: taskId })
             .subscribe({
-                next: res => {
+                next: (res: any) => {
                     const success = res?.status;
                     if (success) {
                         setSelectedTaskId(taskId);
@@ -540,7 +566,7 @@ export const useCalendarHooks = () => {
                         });
                     }
                 },
-                error: err => { }
+                error: (err: any) => { }
             });
     };
 
@@ -580,9 +606,9 @@ export const useCalendarHooks = () => {
 
     const onDeleteCalendarItem = (itemId?: number | string | null, wouldGetUnscheduledItems?: boolean) => {
         // itemId could only be number
-        calendarRepository.deleteCalendarItem(itemId as number)
+        calendarRepository?.deleteCalendarItem(itemId as number)
             .subscribe({
-                next: res => {
+                next: (res: any) => {
                     const success = res?.status;
                     if (success) {
                         toast.success(res?.msg || res?.message);
@@ -605,7 +631,7 @@ export const useCalendarHooks = () => {
                         }
                     }
                 },
-                error: err => {
+                error: (err: any) => {
                     if (wouldGetUnscheduledItems) {
                         getUnscheduledItems();
                     }
@@ -690,12 +716,12 @@ export const useCalendarHooks = () => {
     };
 
     const updateRoutineList = (monthPlanId: number, newRoutineList: string[], wouldGetUnscheduledItems?: boolean) => {
-        calendarRepository.updateRoutineList({
+        calendarRepository?.updateRoutineList({
             monthPlanId,
         }, {
             approvedRoutineNames: newRoutineList,
         }).subscribe({
-            next: res => {
+            next: (res: any) => {
                 const success = res?.status;
                 if (success) {
                     toast.success(res?.msg || res?.message);
@@ -716,7 +742,7 @@ export const useCalendarHooks = () => {
                     }
                 }
             },
-            error: err => {
+            error: (err: any) => {
                 const errors = err?.response?.data?.data;
                 const message = err?.response?.data?.msg || err?.response?.data?.message;
                 setAlertMessage({
@@ -774,9 +800,9 @@ export const useCalendarHooks = () => {
     };
 
     const getNewCalendarItem = (itemId: number, isNew?: boolean) => {
-        calendarRepository.getCalendarItem({ itemId: itemId })
+        calendarRepository?.getCalendarItem({ itemId: itemId })
             .subscribe({
-                next: res => {
+                next: (res: any) => {
                     const success = res?.status;
                     const updatedCalendarItem: Task = res?.data;
                     if (success) {
@@ -823,7 +849,7 @@ export const useCalendarHooks = () => {
                     setDraggingUnscheduledRoutineId(null);
                     setDraggingScheduledTaskId(null);
                 },
-                error: err => {
+                error: (err: any) => {
                     setDraggingUnscheduledTaskId(null);
                     setDraggingUnscheduledRoutineId(null);
                     setDraggingScheduledTaskId(null);
@@ -854,9 +880,9 @@ export const useCalendarHooks = () => {
     };
 
     const getUnscheduledItems = () => {
-        calendarRepository.getUnscheduledItems()
+        calendarRepository?.getUnscheduledItems()
             .subscribe({
-                next: res => {
+                next: (res: any) => {
                     const updatedUnscheduledMonthData: UnscheduledMonthData[] = (res?.data?.data?.monthGroups || []).map((monthGroup: any) => ({
                         ...monthGroup,
                         unscheduledBigTasks: (monthGroup?.unscheduledTasks || []).map((unscheduledTask: UnscheduledBigTask) => ({
@@ -877,15 +903,15 @@ export const useCalendarHooks = () => {
 
                     setUnscheduledMonthData?.(updatedUnscheduledMonthData);
                 },
-                error: err => {
+                error: (err: any) => {
                     console.log("Error occurs while fetching unscheduled items", err);
                 }
             });
     };
 
     const getUserProjectTasks = () => {
-        projectRepository.getUserProjectTasks().subscribe({
-            next: res => {
+        projectRepository?.getUserProjectTasks().subscribe({
+            next: (res: any) => {
                 if (res?.status) {
                     setProjectGroups(res?.data?.projects || []);
                 }
@@ -893,7 +919,7 @@ export const useCalendarHooks = () => {
                     toast.error(res?.msg || res?.message);
                 }
             },
-            error: err => { },
+            error: (err: any) => { },
         });
     };
 
@@ -949,12 +975,12 @@ export const useCalendarHooks = () => {
             // Temporarily update updatedTasks
             setUpdatedTasks([...updatedTasks, newTask]);
 
-            calendarRepository.createCalendarItem(
+            calendarRepository?.createCalendarItem(
                 {
                     ...newTask,
                     type: (newTask?.type as string).toUpperCase(),
                     name: newTask?.name,
-                    calendarId: Number(localStorage.getItem("calendarId")),
+                    calendarId: calendarId || 0,
                     timeSlot: {
                         startTime: newTask?.startTime,
                         endTime: newTask?.endTime,
@@ -966,7 +992,7 @@ export const useCalendarHooks = () => {
                     handleReload();
                 }))
                 .subscribe({
-                    next: res => {
+                    next: (res: any) => {
                         const success = res?.status;
                         if (success) { }
                         else {
@@ -977,7 +1003,7 @@ export const useCalendarHooks = () => {
                             });
                         }
                     },
-                    error: err => {
+                    error: (err: any) => {
                         const errors = err?.response?.data?.data;
                         const message = err?.response?.data?.msg || err?.response?.data?.message;
                         setAlertMessage({
@@ -1012,14 +1038,14 @@ export const useCalendarHooks = () => {
             // Temporarily remove unscheduled task
             handleRemoveUnscheduledTask(draggingUnscheduledTaskId, unscheduledTask?.parentBigTaskId as number);
 
-            calendarRepository.updateCalendarItem(
+            calendarRepository?.updateCalendarItem(
                 draggingUnscheduledTaskId as number,
                 {
                     ...newTask,
                     type: (newTask?.type as string).toUpperCase(),
                     name: newTask?.name,
-                    calendarId: Number(localStorage.getItem("calendarId")),
-                    monthPlanId: Number(localStorage.getItem("monthPlanId")),
+                    calendarId: calendarId || 0,
+                    monthPlanId: monthPlanId || 0,
                     timeSlot: {
                         startTime: newTask?.startTime,
                         endTime: newTask?.endTime,
@@ -1029,7 +1055,7 @@ export const useCalendarHooks = () => {
                         parentBigTaskId: newTask?.parentBigTaskId,
                     },
                 }).subscribe({
-                    next: res => {
+                    next: (res: any) => {
                         const itemId = res?.data;
                         const success = res?.status;
                         if (success) {
@@ -1047,7 +1073,7 @@ export const useCalendarHooks = () => {
                             getUnscheduledItems();
                         }
                     },
-                    error: err => {
+                    error: (err: any) => {
                         setDraggingUnscheduledTaskId(null);
                         handleReload();
                         getUnscheduledItems();
@@ -1081,13 +1107,13 @@ export const useCalendarHooks = () => {
             // Temporarily remove unscheduled task
             handleRemoveUnscheduledRoutine(draggingUnscheduledRoutineId);
 
-            calendarRepository.createCalendarItem(
+            calendarRepository?.createCalendarItem(
                 {
                     ...newRoutine,
                     type: (newRoutine?.type as string).toUpperCase(),
                     name: newRoutine?.name,
-                    calendarId: Number(localStorage.getItem("calendarId")),
-                    monthPlanId: Number(localStorage.getItem("monthPlanId")),
+                    calendarId: calendarId || 0,
+                    monthPlanId: monthPlanId || 0,
                     timeSlot: {
                         startTime: newRoutine?.startTime,
                         endTime: newRoutine?.endTime,
@@ -1096,7 +1122,7 @@ export const useCalendarHooks = () => {
                         pattern: newRoutine.pattern,
                     },
                 }).subscribe({
-                    next: res => {
+                    next: (res: any) => {
                         const itemId = res?.data?.itemId;
                         const success = res?.status;
                         if (success) {
@@ -1114,7 +1140,7 @@ export const useCalendarHooks = () => {
                             getUnscheduledItems();
                         }
                     },
-                    error: err => {
+                    error: (err: any) => {
                         setDraggingUnscheduledRoutineId(null);
                         handleReload();
                         getUnscheduledItems();
@@ -1143,20 +1169,20 @@ export const useCalendarHooks = () => {
             startTime: droppedCellId,
             endTime: dayJsToISOString(newEndTime),
         } as Task]);
-        calendarRepository.updateCalendarItem(
+        calendarRepository?.updateCalendarItem(
             scheduledItem?.id as number,
             {
                 ...scheduledItem,
                 type: (scheduledItem?.type as string).toUpperCase(),
                 name: scheduledItem?.name,
-                calendarId: Number(localStorage.getItem("calendarId")),
+                calendarId: calendarId || 0,
                 timeSlot: {
                     startTime: droppedCellId,
                     endTime: dayJsToISOString(newEndTime),
                 },
                 ...getDetails(scheduledItem as Task),
             }).subscribe({
-                next: res => {
+                next: (res: any) => {
                     const itemId = res?.data;
                     const success = res?.status;
                     if (success) {
@@ -1172,7 +1198,7 @@ export const useCalendarHooks = () => {
                         handleReload();
                     }
                 },
-                error: err => {
+                error: (err: any) => {
                     setDraggingScheduledTaskId(null);
                     handleReload();
                 },
@@ -1203,6 +1229,7 @@ export const useCalendarHooks = () => {
         CELL_HEIGHT,
         hours,
         sensors,
+        sidebarRef,
         onRemoveDraggableTask,
         currentMondayTime,
         setCurrentMondayTime,
@@ -1249,6 +1276,10 @@ export const useCalendarHooks = () => {
         handleDeleteUnscheduledTask,
         handleDeleteUnscheduledRoutine,
         updateBigTask,
+        monthPlanId,
+        setMonthPlanId,
+        calendarId,
+        setCalendarId,
     };
 };
 

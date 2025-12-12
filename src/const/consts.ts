@@ -59,7 +59,7 @@ export const SUBTASK_OUTSIDE_BIGTASK_TIME_RANGE_WARNING: AlertMessage = {
     title: "Your picked time for task is conflict with the big time task range",
 };
 
-export const timezoneGroups = [
+export const TIMEZONE_GROUPS = [
     {
         group: "Americas",
         zones: [

@@ -4,8 +4,8 @@ import { BaseRepository } from "./base-repository";
 const BASE_API_URL = process.env.NEXT_PUBLIC_API_URL + "/users/profile";
 
 export class UserRepository extends BaseRepository {
-    constructor() {
-        super(BASE_API_URL);
+    constructor(userId: number) {
+        super(userId, BASE_API_URL);
     };
 
     public getProfile = (): Observable<any> => {
@@ -23,4 +23,4 @@ export class UserRepository extends BaseRepository {
     };
 };
 
-export const userRepository = new UserRepository();
+export const userRepositoryCons = (userId: number) => new UserRepository(userId);

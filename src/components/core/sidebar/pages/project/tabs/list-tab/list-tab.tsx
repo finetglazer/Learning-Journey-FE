@@ -6,7 +6,7 @@ import { PM_DraggableItemData } from "@/components/core/project-management/type"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PM_Phase, PM_Task, ProjectMembershipRole, ReorderType } from "@/model/project-management";
-import { projectRepository } from "@/repository/project-repository";
+import { AppContext, AppContextProps } from "@/hooks/app-context";
 import { closestCenter, DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Check, Plus, Search, X } from "lucide-react";
@@ -47,6 +47,10 @@ export const ListTab = ({ }: ListTabProps) => {
         setIsNavigatingFromTaskBoard,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
+    const {
+        projectRepository,
+    } = useContext<AppContextProps>(AppContext);
+
     // RBAC Check
     const canEditStructure = currentMember?.role === ProjectMembershipRole.OWNER;
 
@@ -63,6 +67,7 @@ export const ListTab = ({ }: ListTabProps) => {
     // Deliverable handlers
 
     const handleAddDeliverable = useCallback((name: string) => {
+        if (!projectRepository) return;
         projectRepository.createDeliverable({
             projectId: selectedProject?.id,
         }, {
@@ -92,9 +97,10 @@ export const ListTab = ({ }: ListTabProps) => {
                 });
             },
         });
-    }, [selectedProject]);
+    }, [selectedProject, projectRepository]);
 
     const handleUpdateDeliverable = useCallback((deliverableId: number, name: string) => {
+        if (!projectRepository) return;
         projectRepository.updateDeliverable({
             projectId: selectedProject?.id,
             deliverableId: deliverableId,
@@ -124,30 +130,32 @@ export const ListTab = ({ }: ListTabProps) => {
                 });
             },
         });
-    }, [selectedProject]);
+    }, [selectedProject, projectRepository]);
 
     const handleDeleteDeliverable = useCallback((deliverableId: number) => {
+        if (!projectRepository) return;
         projectRepository.deleteDeliverable({
             projectId: selectedProject?.id,
             deliverableId: deliverableId,
         })
-        .pipe(finalize(() => {
-            getProjectStructure();
-        }))
-        .subscribe({
-            next: res => {
-                if (res?.status) {
-                    toast.success(res?.message || res?.msg);
-                }
-                else {
-                    toast.error(res?.message || res?.msg);
-                }
-            },
-            error: err => { },
-        });
-    }, [selectedProject]);
+            .pipe(finalize(() => {
+                getProjectStructure();
+            }))
+            .subscribe({
+                next: res => {
+                    if (res?.status) {
+                        toast.success(res?.message || res?.msg);
+                    }
+                    else {
+                        toast.error(res?.message || res?.msg);
+                    }
+                },
+                error: err => { },
+            });
+    }, [selectedProject, projectRepository]);
 
     const handleAddPhase = useCallback((deliverableId: number, name: string) => {
+        if (!projectRepository) return;
         projectRepository.createPhase({
             projectId: selectedProject?.id,
             deliverableId: deliverableId,
@@ -177,9 +185,10 @@ export const ListTab = ({ }: ListTabProps) => {
                 });
             },
         });
-    }, [selectedProject]);
+    }, [selectedProject, projectRepository]);
 
     const handleUpdatePhase = useCallback((phaseId: number, name: string) => {
+        if (!projectRepository) return;
         projectRepository.updatePhase({
             projectId: selectedProject?.id,
             phaseId: phaseId,
@@ -209,9 +218,10 @@ export const ListTab = ({ }: ListTabProps) => {
                 });
             },
         });
-    }, [selectedProject]);
+    }, [selectedProject, projectRepository]);
 
     const handleDeletePhase = useCallback((phaseId: number) => {
+        if (!projectRepository) return;
         projectRepository.deletePhase({
             projectId: selectedProject?.id,
             phaseId: phaseId,
@@ -227,10 +237,11 @@ export const ListTab = ({ }: ListTabProps) => {
             },
             error: err => { },
         });
-    }, [selectedProject]);
+    }, [selectedProject, projectRepository]);
 
     // Task handlers
     const handleAddTask = useCallback((phaseId: number, name: string) => {
+        if (!projectRepository) return;
         projectRepository.createTask({
             projectId: selectedProject?.id,
             phaseId: phaseId,
@@ -260,9 +271,10 @@ export const ListTab = ({ }: ListTabProps) => {
                 });
             },
         });
-    }, [selectedProject]);
+    }, [selectedProject, projectRepository]);
 
     const handleUpdateTask = useCallback((taskId: number, updatedTask: any) => {
+        if (!projectRepository) return;
         projectRepository.updateTask({
             projectId: selectedProject?.id,
             taskId: taskId,
@@ -297,9 +309,10 @@ export const ListTab = ({ }: ListTabProps) => {
                 });
             },
         });
-    }, [selectedProject]);
+    }, [selectedProject, projectRepository]);
 
     const handleDeleteTask = useCallback((taskId: number) => {
+        if (!projectRepository) return;
         projectRepository.deletePhase({
             projectId: selectedProject?.id,
             taskId: taskId,
@@ -315,7 +328,7 @@ export const ListTab = ({ }: ListTabProps) => {
             },
             error: err => { },
         });
-    }, [selectedProject]);
+    }, [selectedProject, projectRepository]);
 
     const handleTogglePhase = useCallback((id: string) => {
         setExpandedPhases(prev => {
@@ -571,7 +584,7 @@ export const ListTab = ({ }: ListTabProps) => {
                     </div>
                 )}
                 {((!deliverables || !deliverables.length) && !fetching) ? (
-                    <EmptyData 
+                    <EmptyData
                         title="No deliverables found"
                         message={!search ? "You haven't added any deliverables yet. Add one to get started." : `No items found with "${search}"`}
                     />

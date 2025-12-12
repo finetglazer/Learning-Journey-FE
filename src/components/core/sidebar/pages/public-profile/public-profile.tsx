@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useContext } from 'react';
 import { User, Pencil } from 'lucide-react';
-import { userRepository } from '@/repository/user-repository';
 import { toast } from 'sonner';
 import { AlertMessage, AlertModal } from '@/components/core/alert-modal/alert-modal';
 import { toDayJs } from '@/lib/utils';
+import { AppContext, AppContextProps } from '@/hooks/app-context';
 
 const Button = ({ children, className, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
     <button
@@ -33,7 +33,7 @@ const Label = ({ children, ...props }: React.LabelHTMLAttributes<HTMLLabelElemen
 );
 
 export const PublicProfile = () => {
-    const [name, setName] = useState("Trần Mạnh Hùng");
+    const [name, setName] = useState("");
     const [dob, setDob] = useState("");
     const [profilePic, setProfilePic] = useState<string | null>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -46,6 +46,13 @@ export const PublicProfile = () => {
         // Trigger the hidden file input
         fileInputRef.current?.click();
     };
+
+    const {
+        userRepository,
+        setDisplayName,
+        setAvatarUrl,
+        setEmail,
+    } = useContext<AppContextProps>(AppContext);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -61,14 +68,17 @@ export const PublicProfile = () => {
     };
 
     const getProfile = () => {
-        userRepository.getProfile().subscribe({
+        userRepository?.getProfile().subscribe({
             next: res => {
                 if (res?.status) {
                     const name = res?.data?.name;
                     const dateOfBirth = res?.data?.dateOfBirth;
                     const avatarUrl = res?.data?.avatarUrl;
-                    localStorage.setItem("displayName", name);
-                    localStorage.setItem("avatarUrl", avatarUrl);
+                    const email = res?.data?.email;
+
+                    setDisplayName(name);
+                    setAvatarUrl(avatarUrl);
+                    setEmail(email);
 
                     setName(name);
                     setDob(toDayJs(dateOfBirth, 0).format("DD/MM/YYYY"));
@@ -87,7 +97,7 @@ export const PublicProfile = () => {
         formData.append('name', name);
         formData.append('dateOfBirth', dob);
         formData.append('avatar', selectedFile as File);
-        userRepository.updateProfile(formData).subscribe({
+        userRepository?.updateProfile(formData).subscribe({
             next: res => {
                 if (res?.status) {
                     toast.success(res?.message || res?.msg);

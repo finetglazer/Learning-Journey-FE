@@ -4,18 +4,20 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn, uuid4 } from "@/lib/utils";
 import { UnscheduledBigTask, UnscheduledMonthData, UnscheduledRoutine, UnscheduledTask } from "@/model/task";
-import { calendarRepository } from "@/repository/calendar-repository";
 import { useDraggable } from "@dnd-kit/core";
 import { AnimatePresence, motion } from "framer-motion";
 import {
     ClipboardList,
     X
 } from "lucide-react";
-import { Dispatch, SetStateAction, useEffect, useMemo, useState } from "react";
+import { Dispatch, RefObject, SetStateAction, useContext, useEffect, useMemo, useState } from "react";
 import { UnscheduledItemsForMonth } from "./unscheduled-items-for-month";
+import { CalendarContext, CalendarContextInterface } from "./calendar-context";
+import { AppContext, AppContextProps } from "@/hooks/app-context";
 
 export interface CollapsibleUnscheduledPanelProps {
     position: { x: number, y: number };
+    headerRef: RefObject<HTMLDivElement | null>;
     unscheduledMonthData?: UnscheduledMonthData[];
     handleRemoveUnscheduledRoutine?: (unscheduledRoutineId: string | number) => void;
     handleRemoveUnscheduledSubTask?: (unscheduledSubtaskId: string | number, bigTaskId: number) => void;
@@ -30,6 +32,7 @@ export interface CollapsibleUnscheduledPanelProps {
 export function CollapsibleUnscheduledPanel({
     unscheduledMonthData,
     position,
+    headerRef,
     onUnscheduledTaskTitleChange,
     handleRemoveUnscheduledSubTask,
     handleRemoveUnscheduledRoutine,
@@ -40,9 +43,16 @@ export function CollapsibleUnscheduledPanel({
     selectedRoutineId,
 }: CollapsibleUnscheduledPanelProps) {
     const [isCollapsed, setIsCollapsed] = useState(false);
+    const [bounds, setBounds] = useState({ minX: 0, minY: 0, maxX: window.innerWidth, maxY: window.innerHeight });
     const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
         id: 'draggable-panel',
     });
+    const PANEL_WIDTH = 350;
+    const COLLAPSED_SIZE = 64;
+
+    const {
+        sidebarRef,
+    } = useContext<CalendarContextInterface>(CalendarContext);
 
     // --- 2. Memoize the expensive list rendering ---
     // This content will now only be recalculated if the data or handlers change,
@@ -70,11 +80,18 @@ export function CollapsibleUnscheduledPanel({
         onUnscheduledTaskTitleChange,
     ]);
 
+    const {
+        calendarRepository,
+    } = useContext<AppContextProps>(AppContext);
+
     useEffect(() => {
+        if (!calendarRepository) {
+            return;
+        }
         // Get all unscheduled items, attach IDs for each unscheduled task and unscheduled routine
-        const subscription = calendarRepository.getUnscheduledItems()
+        const subscription = calendarRepository?.getUnscheduledItems()
             .subscribe({
-                next: res => {
+                next: (res: any) => {
                     const updatedUnscheduledMonthData: UnscheduledMonthData[] = (res?.data?.data?.monthGroups || []).map((monthGroup: any) => ({
                         ...monthGroup,
                         unscheduledBigTasks: (monthGroup?.unscheduledTasks || []).map((unscheduledTask: UnscheduledBigTask) => ({
@@ -95,15 +112,15 @@ export function CollapsibleUnscheduledPanel({
 
                     setUnscheduledMonthData?.(updatedUnscheduledMonthData);
                 },
-                error: err => {
+                error: (err: any) => {
                     console.log("Error occurs while fetching unscheduled items", err);
                 }
             });
 
         return () => {
-            subscription.unsubscribe();
+            subscription?.unsubscribe();
         }
-    }, []);
+    }, [calendarRepository]);
 
     // Mark items that are being dragged or edited
     useEffect(() => {
@@ -133,10 +150,63 @@ export function CollapsibleUnscheduledPanel({
         selectedRoutineId,
     ]);
 
+    const getBoundaryCoordinates = (headerRef: any, sidebarRef: any) => {
+        let sidebarRightEdgeX = 0;
+        let headerBottomEdgeY = 0;
+        let viewportWidth = window.innerWidth;
+        let viewportHeight = window.innerHeight;
+
+        if (sidebarRef.current) {
+            const rect = sidebarRef.current.getBoundingClientRect();
+            sidebarRightEdgeX = rect.left + rect.width;
+        }
+        if (headerRef.current) {
+            const rect = headerRef.current.getBoundingClientRect();
+            headerBottomEdgeY = rect.top + rect.height;
+        }
+
+        return {
+            minX: sidebarRightEdgeX,
+            minY: headerBottomEdgeY,
+            maxX: viewportWidth,
+            maxY: viewportHeight,
+        };
+    };
+
+    useEffect(() => {
+        const calculateBounds = () => {
+            const newBounds = getBoundaryCoordinates(headerRef, sidebarRef);
+            setBounds(newBounds);
+        };
+
+        // Calculate initial bounds
+        calculateBounds();
+
+        // Recalculate on window resize
+        window.addEventListener('resize', calculateBounds);
+        return () => {
+            window.removeEventListener('resize', calculateBounds);
+        };
+    }, [headerRef, sidebarRef]);
+
+    const clampedPosition = useMemo(() => {
+        const size = isCollapsed ? COLLAPSED_SIZE : PANEL_WIDTH;
+
+        // Clamp X
+        let newX = Math.max(position.x, bounds.minX);
+        newX = Math.min(newX, bounds.maxX - size);
+
+        // Clamp Y
+        let newY = Math.max(position.y, bounds.minY);
+        newY = Math.min(newY, bounds.maxY - size);
+
+        return { x: newX, y: newY };
+    }, [position, isCollapsed, bounds]);
+
     return (
         <div
             className="absolute"
-            style={{ top: position.y, left: position.x, zIndex: 50 }}
+            style={{ top: clampedPosition.y, left: clampedPosition.x, zIndex: 50 }}
         >
             <AnimatePresence>
                 {isCollapsed ? (

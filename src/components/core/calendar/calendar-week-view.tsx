@@ -83,12 +83,13 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
     } = useContext<CalendarContextInterface>(CalendarContext);
 
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+    const headerRef = useRef<HTMLDivElement | null>(null);
 
     return (
         <>
             <Card className="w-full h-full mx-auto rounded-xl shadow-lg bg-slate-50/50 p-0">
                 {/* ====== Header (Same as before) ====== */}
-                <CardHeader className="grid grid-cols-[auto_1fr_auto] items-center p-4 border-b border-gray-200 bg-slate-100/60 rounded-t-xl">
+                <CardHeader ref={headerRef} className="grid grid-cols-[auto_1fr_auto] items-center p-4 border-b-0 border-gray-200 bg-slate-100/60 rounded-t-xl">
                     <div className="text-sm font-semibold text-slate-600 whitespace-nowrap">
                         Private calendar / <span className="text-slate-800">Week View</span>
                     </div>
@@ -251,6 +252,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                             <CollapsibleUnscheduledPanel
                                 unscheduledMonthData={unscheduledMonthData}
                                 position={panelPosition}
+                                headerRef={headerRef}
                                 handleRemoveUnscheduledSubTask={handleRemoveUnscheduledSubTask as any}
                                 onUnscheduledTaskTitleChange={onChangeUnscheduledTaskTitle}
                                 setUnscheduledMonthData={setUnscheduledMonthData}
@@ -260,7 +262,9 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                 selectedRoutineId={selectedRoutineId}
                             />
 
-                            <CollapsibleUnscheduledBufferListPanel />
+                            <CollapsibleUnscheduledBufferListPanel
+                                headerRef={headerRef}
+                            />
 
                             <DragOverlay>
                                 {/* For scheduled items */}

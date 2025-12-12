@@ -10,24 +10,31 @@ import {
     Users,
     X
 } from "lucide-react";
-import { useContext, useMemo, useState } from "react";
+import { RefObject, useContext, useEffect, useMemo, useState } from "react";
 import { CalendarContext, CalendarContextInterface } from "./calendar-context";
 import { BufferList } from "./buffer-list";
 
-export interface CollapsibleUnscheduledBufferListPanelProps { };
+export interface CollapsibleUnscheduledBufferListPanelProps {
+    headerRef: RefObject<HTMLDivElement | null>;
+};
 
 export function CollapsibleUnscheduledBufferListPanel({
+    headerRef,
 }: CollapsibleUnscheduledBufferListPanelProps) {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [showAllTasks, setShowAllTasks] = useState(false);
+    const [bounds, setBounds] = useState({ minX: 0, minY: 0, maxX: window.innerWidth, maxY: window.innerHeight });
 
     const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
         id: 'draggable-panel-buffer-list',
     });
+    const PANEL_WIDTH = 350;
+    const COLLAPSED_SIZE = 64;
 
     const {
         projectGroups,
         panelBufferListPosition: position,
+        sidebarRef,
     } = useContext<CalendarContextInterface>(CalendarContext);
 
     const memoizedPanelContent = useMemo(() => {
@@ -41,10 +48,63 @@ export function CollapsibleUnscheduledBufferListPanel({
         showAllTasks,
     ]);
 
+    const getBoundaryCoordinates = (headerRef: any, sidebarRef: any) => {
+        let sidebarRightEdgeX = 0;
+        let headerBottomEdgeY = 0;
+        let viewportWidth = window.innerWidth;
+        let viewportHeight = window.innerHeight;
+
+        if (sidebarRef.current) {
+            const rect = sidebarRef.current.getBoundingClientRect();
+            sidebarRightEdgeX = rect.left + rect.width;
+        }
+        if (headerRef.current) {
+            const rect = headerRef.current.getBoundingClientRect();
+            headerBottomEdgeY = rect.top + rect.height;
+        }
+
+        return {
+            minX: sidebarRightEdgeX,
+            minY: headerBottomEdgeY,
+            maxX: viewportWidth,
+            maxY: viewportHeight,
+        };
+    };
+
+    useEffect(() => {
+        const calculateBounds = () => {
+            const newBounds = getBoundaryCoordinates(headerRef, sidebarRef);
+            setBounds(newBounds);
+        };
+
+        // Calculate initial bounds
+        calculateBounds();
+
+        // Recalculate on window resize
+        window.addEventListener('resize', calculateBounds);
+        return () => {
+            window.removeEventListener('resize', calculateBounds);
+        };
+    }, [headerRef, sidebarRef]);
+
+    const clampedPosition = useMemo(() => {
+        const size = isCollapsed ? COLLAPSED_SIZE : PANEL_WIDTH;
+
+        // Clamp X
+        let newX = Math.max(position.x, bounds.minX);
+        newX = Math.min(newX, bounds.maxX - size);
+
+        // Clamp Y
+        let newY = Math.max(position.y, bounds.minY);
+        newY = Math.min(newY, bounds.maxY - size);
+
+        return { x: newX, y: newY };
+    }, [position, isCollapsed, bounds]);
+
     return (
         <div
             className="absolute"
-            style={{ top: position.y, left: position.x, zIndex: 50 }}
+            style={{ top: clampedPosition.y, left: clampedPosition.x, zIndex: 50 }}
         >
             <AnimatePresence>
                 {isCollapsed ? (

@@ -10,9 +10,9 @@ const API_DAILY_LIMITS = "/daily-limits";
 const API_TIMEZONE = "/timezone";
 
 export class SettingsRepository extends BaseRepository {
-    constructor() {
+    constructor(userId: number) {
         // 2. Initialize with the Calendar URL as the default
-        super(CALENDAR_BASE_URL);
+        super(userId, CALENDAR_BASE_URL);
     }
 
     // --------------------------
@@ -62,4 +62,4 @@ export class SettingsRepository extends BaseRepository {
     };
 }
 
-export const settingsRepository = new SettingsRepository();
+export const settingsRepositoryCons = (userId: number) => new SettingsRepository(userId);

@@ -7,7 +7,6 @@ import { SIGN_IN_ROUTE, SIGN_UP_EMAIL_VERIFICATION_ROUTE } from "@/const/routes-
 import { AppContext, AppContextProps } from "@/hooks/app-context";
 import AuthFormLayout from "@/layout/auth-form-layout";
 import { SignUpModel } from "@/model/sign-up-model";
-import { authRepository } from "@/repository/auth-repository";
 import { formService } from "@/service/form-service";
 import { LockIcon, MailIcon, UserIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -18,6 +17,7 @@ export default function SignUpPage() {
 
     const {
         setLoadingPage,
+        authRepository,
     } = useContext<AppContextProps>(AppContext);
 
     const {
@@ -27,7 +27,7 @@ export default function SignUpPage() {
         onSubmitForm,
     } = formService.useForm(
         SignUpModel,
-        authRepository.signUp,
+        authRepository?.signUp,
         () => {
             router.push(SIGN_UP_EMAIL_VERIFICATION_ROUTE);
             setLoadingPage(true);

@@ -2,7 +2,6 @@
 
 import { Input } from '@/components/ui/input';
 import { PM_Task, TaskPriority, TaskStatus } from '@/model/project-management';
-import { projectRepository } from '@/repository/project-repository';
 import { closestCorners, DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { debounce } from 'lodash';
 import { Search } from 'lucide-react';
@@ -15,6 +14,7 @@ import TaskCard from './kanban-task-card';
 import { KanbanColumnsType, KanbanColumnType } from './type';
 import SpinnerLoader from '../loader/spinner-loader';
 import { EmptyData } from './empty-data';
+import { AppContext, AppContextProps } from '@/hooks/app-context';
 
 export interface KanbanBoardProps {
 };
@@ -40,6 +40,10 @@ const KanbanBoard: React.FC<KanbanBoardProps> = () => {
         selectedProject,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
+        const {
+            projectRepository,
+        } = useContext<AppContextProps>(AppContext);
+
     const findColumn = useCallback((id: string) => {
         if (columns && Object.keys(columns).includes(id)) {
             return id as TaskStatus;
@@ -52,6 +56,9 @@ const KanbanBoard: React.FC<KanbanBoardProps> = () => {
     }, [columns]);
 
     const handleSaveTaskStatusOnly = useCallback((taskId: number, updatedStatus: TaskStatus) => {
+        if (!projectRepository) {
+            return;
+        }
         const subscription = projectRepository.updateTaskStatusOnly({
             projectId: selectedProject?.id,
             taskId: taskId,
@@ -75,7 +82,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = () => {
         return () => {
             subscription.unsubscribe();
         };
-    }, [selectedProject, activeTask, getProjectStructure]);
+    }, [selectedProject, activeTask, getProjectStructure, projectRepository]);
 
     const handleDragStart = useCallback((event: any) => {
         const task: PM_Task = event.active.data.current.task;
@@ -144,6 +151,9 @@ const KanbanBoard: React.FC<KanbanBoardProps> = () => {
     );
 
     const fetchTasks = useCallback(() => {
+        if (!projectRepository) {
+            return;
+        }
         if (!selectedProject?.id) {
             setTasks([]);
             return () => { };
@@ -184,7 +194,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = () => {
         return () => {
             subscription.unsubscribe();
         };
-    }, [selectedProject, searchQuery, showMyTasks, setTasks]);
+    }, [selectedProject, searchQuery, showMyTasks, setTasks, projectRepository]);
 
 
     // --- 2. Create the Debounced Wrapper ---

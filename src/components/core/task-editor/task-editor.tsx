@@ -16,7 +16,6 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn, dayJsToISOString, getDetails, isoToHHMM, isoToStandardTime, toDayJs, uuid4 } from "@/lib/utils"
 import { MonthPlanningBigTask, MonthPlanningEvent, Task, UnscheduledTask } from "@/model/task"
-import { calendarRepository } from "@/repository/calendar-repository"
 import { formService } from "@/service/form-service"
 import { isNil } from "lodash"
 import {
@@ -27,7 +26,7 @@ import {
     Plus,
     Trash2
 } from "lucide-react"
-import { CSSProperties, Dispatch, SetStateAction, useEffect, useState } from "react"
+import { CSSProperties, Dispatch, SetStateAction, useContext, useEffect, useState } from "react"
 import { toast } from "sonner"
 import { AlertMessage } from "../alert-modal/alert-modal"
 import { DateTimePicker } from "../date-time-picker/date-time-picker"
@@ -35,6 +34,8 @@ import { RecurringPatterns } from "./recurring-patterns"
 import { SubTaskList } from "./sortable-subtask"
 import { TaskStatusDropdown } from "./task-status-dropdown"
 import { TaskType, TaskTypeDropdown, typeConfig } from "./task-type-dropdown"
+import { AppContext, AppContextProps } from "@/hooks/app-context"
+import { CalendarContext } from "../calendar/calendar-context";
 
 export interface TaskEditorProps {
     open: boolean;
@@ -85,20 +86,32 @@ export const TaskEditor = ({
         { ...getInitialModel(), ...task } as any,
     );
 
+    const {
+        calendarRepository,
+    } = useContext<AppContextProps>(AppContext);
+
+    const {
+        calendarId,
+        monthPlanId,
+    } = useContext(CalendarContext);
+
     useEffect(() => {
         setModel({ ...getInitialModel(), ...task } as any);
     }, [task]);
 
     const handleAddSubtask = () => {
         updateModel(model?.type === "big-task" ? "subtasks" : "steps",
-            model?.type === "big-task" ? [...(model?.subtasks || []), new Task] : [...(model?.steps || []), { id: uuid4() } as TaskStep]
+            model?.type === "big-task" ? [...(model?.subtasks || []), new Task] : [...(model?.steps || []), { id: uuid4() }]
         );
     };
     // For currentView !== 'month-planning' or model is an instance of Task
     const onSaveEditingTask = () => {
         // Update case
+        if (!calendarRepository) {
+            return;
+        }
         if (!isNil(model?.id)) {
-            calendarRepository.updateCalendarItem(
+            calendarRepository?.updateCalendarItem(
                 model.id as number,
                 {
                     ...model,
@@ -132,8 +145,8 @@ export const TaskEditor = ({
             return;
         }
         // Create case
-        calendarRepository.createCalendarItem({
-            calendarId: Number(localStorage.getItem("calendarId")),
+        calendarRepository?.createCalendarItem({
+            calendarId: calendarId || 0,
             type: ((model as Task)?.type || "").toUpperCase(),
             name: (model as Task)?.name,
             note: (model as Task)?.note,
@@ -177,12 +190,15 @@ export const TaskEditor = ({
 
     // For currentView === 'month-planning' && model != Task
     const onSaveEditingItem = () => {
+        if (!calendarRepository) {
+            return;
+        }
         // Update if model?.id is not null
         if ((model as any)?.id) {
             // If model is MonthPlanningBigTask
             if (model?.estimatedStartDate) {
-                calendarRepository.updateBigTask({
-                    monthPlanId: localStorage.getItem("monthPlanId"),
+                calendarRepository?.updateBigTask({
+                    monthPlanId: monthPlanId || 0,
                     bigTaskId: model?.id,
                 }, {
                     name: model?.name,
@@ -221,8 +237,8 @@ export const TaskEditor = ({
             }
             // Else
             else {
-                calendarRepository.updateUnscheduledTask({
-                    monthPlanId: localStorage.getItem("monthPlanId"),
+                calendarRepository?.updateUnscheduledTask({
+                    monthPlanId: monthPlanId || 0,
                     bigTaskId: (model as any)?.bigTaskId,
                     unscheduledTaskId: (model as any)?.id,
                 }, {
@@ -254,10 +270,10 @@ export const TaskEditor = ({
         else {
             // If create event
             if (model?.specificDate) {
-                calendarRepository.createMonthPlanningEvent({
-                    monthPlanId: localStorage.getItem("monthPlanId"),
+                calendarRepository?.createMonthPlanningEvent({
+                    monthPlanId: monthPlanId || 0,
                 }, {
-                    calendarId: Number(localStorage.getItem("calendarId")),
+                    calendarId: calendarId || 0,
                     name: model?.name,
                     note: model?.note,
                     specificDate: toDayJs(model?.specificDate).format("YYYY-MM-DD"),
@@ -295,8 +311,8 @@ export const TaskEditor = ({
             }
             // If create big task
             if (model?.estimatedStartDate) {
-                calendarRepository.createBigTask({
-                    monthPlanId: localStorage.getItem("monthPlanId"),
+                calendarRepository?.createBigTask({
+                    monthPlanId: monthPlanId || 0,
                 }, {
                     name: model?.name,
                     description: model?.note,
@@ -335,8 +351,8 @@ export const TaskEditor = ({
             }
             // If create unscheduled task
             else {
-                calendarRepository.createUnscheduledTask({
-                    monthPlanId: localStorage.getItem("monthPlanId"),
+                calendarRepository?.createUnscheduledTask({
+                    monthPlanId: monthPlanId || 0,
                     bigTaskId: model?.parentBigTaskId,
                 }, {
                     name: model?.name,

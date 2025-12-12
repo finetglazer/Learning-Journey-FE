@@ -1,11 +1,11 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { projectRepository } from '@/repository/project-repository';
 import { X } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { AlertMessage, AlertModal } from '../alert-modal/alert-modal';
 import { toast } from 'sonner';
+import { AppContext, AppContextProps } from '@/hooks/app-context';
 
 type CreateProjectModalProps = {
     onClose: () => void;
@@ -22,8 +22,18 @@ export const CreateProjectModal = ({ onClose, handleReload }: CreateProjectModal
         role: 'Owner',
     });
 
+    const {
+        projectRepository,
+        displayName,
+        email,
+        avatarUrl,
+    } = useContext<AppContextProps>(AppContext);
+
     const createProject = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        if (!projectRepository) {
+            return;
+        }
         projectRepository.createProject({
             name: projectName,
         }).subscribe({
@@ -54,16 +64,13 @@ export const CreateProjectModal = ({ onClose, handleReload }: CreateProjectModal
     };
 
     useEffect(() => {
-        const name = localStorage.getItem('displayName');
-        const email = localStorage.getItem('email');
-        const avatarUrl = localStorage.getItem('avatarUrl');
         setOwnerInfo({
-            name: name || '...',
+            name: displayName || '...',
             email: email || '...',
             avatarUrl: avatarUrl || 'https://placehold.co/40x40/E0E0E0/707070?text=..',
             role: 'Owner',
         });
-    }, []);
+    }, [displayName, email, avatarUrl]);
 
     return (
         <div className="

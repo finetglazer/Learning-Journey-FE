@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangle, ArrowRight, Check, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useContext, useEffect, useState } from "react";
-import { projectRepository } from "@/repository/project-repository";
 import { ROOT_ROUTE } from "@/const/routes-const";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
 
@@ -22,6 +21,7 @@ function InvitationAcceptContent() {
     const searchParams = useSearchParams();
     const {
         setLoadingPage,
+        projectRepository,
     } = useContext<AppContextProps>(AppContext);
     
     const [status, setStatus] = useState<"loading" | "success" | "error">(
@@ -30,6 +30,9 @@ function InvitationAcceptContent() {
     const [message, setMessage] = useState("Validating your invitation...");
 
     useEffect(() => {
+        if (!projectRepository) {
+            return;
+        }
         const token = searchParams.get("token");
         const projectId = Number(searchParams.get("projectId"));
 
@@ -58,7 +61,7 @@ function InvitationAcceptContent() {
                 },
             });
 
-    }, [searchParams]); // Run once when searchParams are available
+    }, [searchParams, projectRepository]);
 
     const handleGoHome = () => {
         setLoadingPage(true);

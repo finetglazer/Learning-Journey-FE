@@ -8,17 +8,19 @@ import { FORGOT_PASSWORD_EMAIL_INPUT_ROUTE, GOOGLE_OAUTH2_ROUTE, ROOT_ROUTE, SIG
 import { AppContext, AppContextProps } from "@/hooks/app-context";
 import AuthFormLayout from "@/layout/auth-form-layout";
 import { SignInModel } from "@/model/sign-in-model";
-import { authRepository } from "@/repository/auth-repository";
 import { formService } from "@/service/form-service";
 import { LockIcon, UserIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useContext } from "react";
+import Cookies from "js-cookie";
+
 export default function SignInPage() {
     const router = useRouter();
 
     const {
         setLoadingPage,
-        setEmail,
+        setUserId,
+        authRepository,
     } = useContext<AppContextProps>(AppContext);
 
     const {
@@ -28,10 +30,11 @@ export default function SignInPage() {
         onSubmitForm,
     } = formService.useForm(
         SignInModel,
-        authRepository.signIn,
-        () => {
+        authRepository?.signIn,
+        (data) => {
+            Cookies.set("userId", String(data?.user?.id), { expires: 7, secure: true, sameSite: 'strict' });
             router.push(ROOT_ROUTE);
-            setEmail(model.email as string);
+            setUserId(data?.user?.id as number);
             setLoadingPage(true);
         }
     );

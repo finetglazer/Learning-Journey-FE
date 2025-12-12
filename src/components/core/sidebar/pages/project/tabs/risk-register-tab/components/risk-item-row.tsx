@@ -10,10 +10,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn, getScoreDetails } from "@/lib/utils";
 import { Project, RiskItem, TeamMember } from "@/model/project-management";
 import { Edit, Loader2, RotateCcw, Trash2, UserPlus, X } from "lucide-react";
-import { Dispatch, memo, SetStateAction } from "react";
+import { Dispatch, memo, SetStateAction, useContext } from "react";
 import { RiskLevelDropdown } from "./risk-level-dropdown";
 import { toast } from "sonner";
-import { projectRepository } from "@/repository/project-repository";
+import { AppContext, AppContextProps } from "@/hooks/app-context";
 import { finalize } from "rxjs";
 import { AlertMessage } from "@/components/core/alert-modal/alert-modal";
 import { Input } from "@/components/ui/input";
@@ -74,6 +74,10 @@ export const RiskItemRow = memo(({
     selectedProject,
     setAlertMessage,
 }: RiskItemRowProps) => {
+    const {
+        projectRepository,
+    } = useContext<AppContextProps>(AppContext);
+
     const hasRiskItemChanged = (current: RiskItem, original: RiskItem): boolean => {
         return (
             current.probability !== original.probability ||
@@ -114,6 +118,7 @@ export const RiskItemRow = memo(({
     };
 
     const handleDeleteRiskItem = (riskId: number) => {
+        if (!projectRepository) return;
         projectRepository.deleteRisk({
             projectId: selectedProject?.id as number,
             riskId,

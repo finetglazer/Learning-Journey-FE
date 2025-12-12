@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { PM_Task, PM_TaskAssignee, ProjectMembershipRole, TaskPriority, TaskStatus, TeamMember } from '@/model/project-management';
-import { projectRepository } from '@/repository/project-repository';
+import { AppContext, AppContextProps } from '@/hooks/app-context';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Check, Circle, MoreHorizontal, RotateCcw, UserPlus, X } from 'lucide-react';
@@ -64,7 +64,11 @@ function PM_TaskItemBase({ task, onUpdateTask, onDeleteTask }: TaskItemProps) {
         selectedProject,
         getProjectStructure, // Used for mandatory refresh after mutation/delete
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
-    
+
+    const {
+        projectRepository,
+    } = useContext<AppContextProps>(AppContext);
+
     // 🆕 RBAC CHECK: Determine permissions
     const isOwner = currentMember?.role === ProjectMembershipRole.OWNER;
     const canEditFull = isOwner;
@@ -92,7 +96,7 @@ function PM_TaskItemBase({ task, onUpdateTask, onDeleteTask }: TaskItemProps) {
     // 🛠️ SPECIAL HANDLER: Status Only API Call
     // ----------------------------------------------------------------------
     const handleSaveTaskStatusOnly = useCallback(() => {
-        if (draft.status === task.status) return;
+        if (draft.status === task.status || !projectRepository) return;
 
         const subscription = projectRepository.updateTaskStatusOnly({
             projectId: selectedProject?.id,
@@ -117,7 +121,7 @@ function PM_TaskItemBase({ task, onUpdateTask, onDeleteTask }: TaskItemProps) {
         return () => {
             subscription.unsubscribe();
         };
-    }, [draft.status, selectedProject, task, getProjectStructure]);
+    }, [draft.status, selectedProject, task, getProjectStructure, projectRepository]);
 
 
     // ----------------------------------------------------------------------

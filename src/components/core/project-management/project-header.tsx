@@ -144,7 +144,7 @@ export const ProjectHeader = ({
                     <TabsList className="bg-transparen p-0 h-auto gap-2.5">
                         {/* Summary */}
                         <TabsTrigger
-                            value="summary"
+                            value={TeamProjectTab.SUMMARY}
                             className="py-2.5 px-3 cursor-pointer rounded-md text-gray-500 data-[state=active]:text-blue-600 data-[state=active]:font-medium data-[state=active]:bg-blue-50"
                         >
                             <Globe2 className="h-4 w-4 mr-2" />
@@ -153,7 +153,7 @@ export const ProjectHeader = ({
 
                         {/* List */}
                         <TabsTrigger
-                            value="list"
+                            value={TeamProjectTab.LIST}
                             className="py-2.5 px-3 cursor-pointer rounded-md text-gray-500 data-[state=active]:text-blue-600 data-[state=active]:font-medium data-[state=active]:bg-blue-50"
                         >
                             <List className="h-4 w-4 mr-2" />
@@ -165,7 +165,7 @@ export const ProjectHeader = ({
 
                         {/* Task board (Active) */}
                         <TabsTrigger
-                            value="task_board"
+                            value={TeamProjectTab.TASK_BOARD}
                             className="py-2.5 px-3 cursor-pointer rounded-md text-gray-500 data-[state=active]:text-blue-600 data-[state=active]:font-medium data-[state=active]:bg-blue-50"
                         >
                             <KanbanSquare className="h-4 w-4 mr-2" />
@@ -177,16 +177,16 @@ export const ProjectHeader = ({
 
                         {/* Timeline */}
                         <TabsTrigger
-                            value="timeline"
+                            value={TeamProjectTab.TIMELINE}
                             className="py-2.5 px-3 cursor-pointer rounded-md text-gray-500 data-[state=active]:text-blue-600 data-[state=active]:font-medium data-[state=active]:bg-blue-50"
                         >
                             <GanttChartSquare className="h-4 w-4 mr-2" />
                             Timeline
                         </TabsTrigger>
 
-                        {/* Shared file */}
+                        {/* Shared source */}
                         <TabsTrigger
-                            value="shared_file"
+                            value={TeamProjectTab.SHARED_SOURCE}
                             className="py-2.5 px-3 cursor-pointer rounded-md text-gray-500 data-[state=active]:text-blue-600 data-[state=active]:font-medium data-[state=active]:bg-blue-50"
                         >
                             <Files className="h-4 w-4 mr-2" />
@@ -195,7 +195,7 @@ export const ProjectHeader = ({
 
                         {/* Risk register */}
                         <TabsTrigger
-                            value="risk_register"
+                            value={TeamProjectTab.RISK_REGISTER}
                             className="py-2.5 px-3 cursor-pointer rounded-md text-gray-500 data-[state=active]:text-blue-600 data-[state=active]:font-medium data-[state=active]:bg-blue-50"
                         >
                             <ShieldAlert className="h-4 w-4 mr-2" />

@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useContext, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { firstValueFrom } from "rxjs";
 import dynamic from "next/dynamic";
 import { useCollaborativeEditor } from "@/hooks/use-collaborative-editor";
-import { documentRepository } from "@/repository/document-repository";
 import { NotionDocDTO, DocVersionDTO } from "@/model/document";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { AppContextProps, AppContext } from "@/hooks/app-context";
 
 // Dynamically import the editor with SSR disabled
 const NotionEditor = dynamic(
@@ -31,6 +31,11 @@ export default function DocumentPage() {
     const searchParams = useSearchParams();
     const router = useRouter();
 
+    const {
+        documentRepository,
+    } = useContext<AppContextProps>(AppContext);
+
+    // FIX ID READING: Read from ?id=23
     const nodeId = Number(searchParams.get("id"));
 
     const [document, setDocument] = useState<NotionDocDTO | null>(null);
@@ -42,6 +47,12 @@ export default function DocumentPage() {
     const [versions, setVersions] = useState<DocVersionDTO[]>([]);
     const [isLoadingVersions, setIsLoadingVersions] = useState(false);
     const [isRestoringVersion, setIsRestoringVersion] = useState(false);
+
+    const {
+        displayName,
+        avatarUrl,
+        userId,
+    } = useContext<AppContextProps>(AppContext);
 
     // Set mounted state
     useEffect(() => {
@@ -56,18 +67,20 @@ export default function DocumentPage() {
         const colors = ["#f87171", "#fb923c", "#fbbf24", "#a3e635", "#34d399", "#22d3ee", "#818cf8", "#e879f9"];
         const randomColor = colors[Math.floor(Math.random() * colors.length)];
 
-        console.log(localStorage.getItem("avatarUrl"));
         return {
-            name: localStorage.getItem("displayName") || "Anonymous",
-            avatar: localStorage.getItem("avatarUrl") || "",
+            name: displayName || "Anonymous",
+            avatar: avatarUrl || "",
             color: randomColor,
             // Assuming userId is stored, otherwise fallback to random
-            id: localStorage.getItem("userId") || `guest-${Math.random().toString(36).substr(2, 9)}`,
+            id: userId || `guest-${Math.random().toString(36).substr(2, 9)}`,
         };
-    }, [isMounted]);
+    }, [isMounted, displayName, avatarUrl, userId]);
 
     // Load document details
     useEffect(() => {
+        if (!documentRepository) {
+            return;
+        }
         const loadDocument = async () => {
             if (!nodeId || isNaN(nodeId)) {
                 setIsLoading(false);
@@ -93,7 +106,7 @@ export default function DocumentPage() {
         };
 
         loadDocument();
-    }, [nodeId]);
+    }, [nodeId, documentRepository]);
 
     // Initialize collaborative editor
     const {
@@ -119,7 +132,7 @@ export default function DocumentPage() {
 
     // Load version history
     const handleLoadVersions = useCallback(async () => {
-        if (!nodeId) return;
+        if (!nodeId || !documentRepository) return;
         try {
             setIsLoadingVersions(true);
             const versionList = await firstValueFrom(
@@ -132,12 +145,12 @@ export default function DocumentPage() {
         } finally {
             setIsLoadingVersions(false);
         }
-    }, [nodeId]);
+    }, [nodeId, documentRepository]);
 
     // Restore version
     const handleRestoreVersion = useCallback(
         async (versionId: number) => {
-            if (!nodeId) return;
+            if (!nodeId || !documentRepository) return;
             try {
                 setIsRestoringVersion(true);
                 await firstValueFrom(
@@ -153,7 +166,7 @@ export default function DocumentPage() {
                 setIsRestoringVersion(false);
             }
         },
-        [nodeId]
+        [nodeId, documentRepository]
     );
 
     const canEdit = document?.role === "OWNER" || document?.role === "MEMBER";

@@ -1,7 +1,7 @@
 "use client";
 
 import { ActiveRiskSummary, DeliverableProgress, ProjectTimelineType, TaskStats, TeammateWorkload } from "@/model/project-management";
-import { projectRepository } from "@/repository/project-repository";
+import { AppContext, AppContextProps } from "@/hooks/app-context";
 import { isNil } from "lodash";
 import { useCallback, useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -28,7 +28,12 @@ export const SummaryTab = ({ }: SummaryTabProps) => {
         selectedProject,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
+    const {
+        projectRepository,
+    } = useContext<AppContextProps>(AppContext);
+
     const getTaskStats = useCallback(() => {
+        if (!projectRepository) return;
         projectRepository.getTaskStats({
             projectId: selectedProject?.id as number,
         }).subscribe({
@@ -47,9 +52,11 @@ export const SummaryTab = ({ }: SummaryTabProps) => {
         });
     }, [
         selectedProject,
+        projectRepository,
     ]);
 
     const getProjectTimeline = useCallback(() => {
+        if (!projectRepository) return;
         projectRepository.getProjectTimeline({
             projectId: selectedProject?.id as number,
         }).subscribe({
@@ -65,9 +72,11 @@ export const SummaryTab = ({ }: SummaryTabProps) => {
         });
     }, [
         selectedProject,
+        projectRepository,
     ]);
 
     const getActiveRiskSummary = useCallback(() => {
+        if (!projectRepository) return;
         projectRepository.getActiveRisks({
             projectId: selectedProject?.id as number,
         }).subscribe({
@@ -83,9 +92,11 @@ export const SummaryTab = ({ }: SummaryTabProps) => {
         });
     }, [
         selectedProject,
+        projectRepository,
     ]);
 
     const getDeliverableProgress = useCallback(() => {
+        if (!projectRepository) return;
         projectRepository.getDeliverableProgress({
             projectId: selectedProject?.id as number,
         }).subscribe({
@@ -101,9 +112,11 @@ export const SummaryTab = ({ }: SummaryTabProps) => {
         });
     }, [
         selectedProject,
+        projectRepository,
     ]);
 
     const getTeammateWorkload = useCallback(() => {
+        if (!projectRepository) return;
         projectRepository.getTeammateWorkload({
             projectId: selectedProject?.id as number,
         }).subscribe({
@@ -119,6 +132,7 @@ export const SummaryTab = ({ }: SummaryTabProps) => {
         });
     }, [
         selectedProject,
+        projectRepository,
     ]);
 
     // Get metrics

@@ -5,12 +5,15 @@ import { AppContext, AppContextProps } from "@/hooks/app-context";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useContext, useEffect } from "react";
+import Cookies from "js-cookie";
 
 export default function AuthSuccess() {
     const router = useRouter();
 
     const {
         setEmail,
+        setUserId,
+        setDisplayName,
     } = useContext<AppContextProps>(AppContext);
 
     useEffect(() => {
@@ -23,10 +26,11 @@ export default function AuthSuccess() {
         if (token) {
             localStorage.setItem("accessToken", token);
             localStorage.setItem("refreshToken", refreshToken as string);
-            localStorage.setItem("userId", userId as string);
-            localStorage.setItem("displayName", displayName as string);
-            localStorage.setItem("email", email as string);
             
+            Cookies.set("userId", String(userId), { expires: 7, secure: true, sameSite: 'strict' });
+            
+            setUserId(Number(userId));
+            setDisplayName(displayName as string);
             setEmail(email as string);
             setTimeout(() => router.push(ROOT_ROUTE), 1200);
         }

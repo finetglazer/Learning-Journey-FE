@@ -2,8 +2,6 @@
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Task } from "@/model/task";
-import { calendarRepository } from "@/repository/calendar-repository";
-import dayjs from "dayjs";
 import { useContext, useEffect, useRef, useState } from "react";
 import { AlertModal } from "../alert-modal/alert-modal";
 import { RoundedButton } from "../button/rounded-button";
@@ -14,6 +12,7 @@ import { CalendarContext, CalendarContextInterface } from "./calendar-context";
 import { Month } from "./calendar-year-view-each-month";
 import { toast } from "sonner";
 import { isTaskOnDay } from "@/lib/utils";
+import { AppContext, AppContextProps } from "@/hooks/app-context";
 
 export function CalendarYearView() {
     const {
@@ -35,6 +34,7 @@ export function CalendarYearView() {
         editorPosition,
         onDeleteCalendarItem,
         setSelectedRoutineId,
+        calendarId,
     } = useContext<CalendarContextInterface>(CalendarContext);
 
     const [selectedDay, setSelectedDay] = useState<Date>(currentDate.toDate());
@@ -43,12 +43,19 @@ export function CalendarYearView() {
 
     const scrollContainerRef = useRef(null);
 
+    const {
+        calendarRepository,
+    } = useContext<AppContextProps>(AppContext);
+
     // Fetch all scheduled tasks, events, routines in a year
     useEffect(() => {
-        calendarRepository.getScheduledItems({
+        if (!calendarRepository) {
+            return;
+        }
+        calendarRepository?.getScheduledItems({
             view: 'YEAR',
             date: currentDate.format('YYYY-MM-DD'),
-            calendarId: Number(localStorage.getItem("calendarId")),
+            calendarId: calendarId || 0,
         }).subscribe({
             next: res => {
                 if (res?.status) {
@@ -71,7 +78,7 @@ export function CalendarYearView() {
             },
             error: err => { },
         });
-    }, [currentDate]);
+    }, [currentDate, calendarRepository, calendarId]);
 
     useEffect(() => {
         setSelectedDay(currentDate.toDate());
@@ -93,14 +100,14 @@ export function CalendarYearView() {
     return (
         <Card className="w-full h-full mx-auto rounded-xl shadow-lg bg-white p-0">
             {/* ====== Header Controls ====== */}
-            <CardHeader className="grid grid-cols-[auto_1fr_auto] items-center p-4 border-b border-gray-200 bg-slate-100/60 rounded-t-xl">
+            <CardHeader className="grid grid-cols-[auto_1fr_auto] items-center p-4 border-b-0 border-gray-200 bg-slate-100/60 rounded-t-xl">
                 <div className="text-sm font-semibold text-slate-600 whitespace-nowrap">
                     Private calendar / <span className="text-slate-800">Day View</span>
                 </div>
                 {/* Centered Controls */}
                 <div className="flex items-center justify-center gap-4">
                     <RoundedButton label="Today" id="calendar-today-btn" onClick={handleGoToToday} />
-                    <DateRangeNavigator 
+                    <DateRangeNavigator
                         dateRangeLabel={generateDateRangeLabel()}
                         onNextClick={onNextDateRangeNavigatorClick}
                         onPreviousClick={onPreviousDateRangeNavigatorClick}
@@ -141,6 +148,7 @@ export function CalendarYearView() {
                 )}
                 {editingTask && (
                     <TaskEditor
+                        open={!!editingTask}
                         key={editingTask?.id || "none"}
                         task={{ ...editingTask, type: (editingTask?.type || "").toLowerCase() }}
                         setAlertMessage={setAlertMessage}

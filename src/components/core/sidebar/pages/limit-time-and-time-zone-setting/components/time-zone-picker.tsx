@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { timezoneGroups } from "@/const/consts";
+import { TIMEZONE_GROUPS } from "@/const/consts";
 import { cn, findTimezone } from "@/lib/utils";
 import { Check, ChevronDown } from "lucide-react";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
@@ -46,7 +46,7 @@ export const TimezonePicker = ({ initTimeZone, onChange }: TimezonePickerProps) 
                     align="start"
                 >
                     <div className="max-h-60 overflow-y-auto">
-                        {timezoneGroups.map((group: {group: string, zones: TimeZone[]}) => (
+                        {TIMEZONE_GROUPS.map((group: {group: string, zones: TimeZone[]}) => (
                             <div key={group.group} className="mt-2">
                                 <div className="px-3 py-1 text-xs font-semibold text-gray-500 uppercase">
                                     {group.group}

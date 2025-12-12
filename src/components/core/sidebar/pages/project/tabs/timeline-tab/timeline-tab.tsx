@@ -7,9 +7,9 @@ import { EmptyData } from "@/components/core/project-management/empty-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AppContext, AppContextProps } from "@/hooks/app-context";
 import { calculateBarPosition, cn, dateToDayJs, findRecursive, getDaysDiff, getId, getOrthogonalPath, toDayJs } from "@/lib/utils";
 import { ProjectDependency, ProjectMembershipRole, ProjectTimelineStructure, TimelineItem, TimelineMilestone } from '@/model/project-management';
-import { projectRepository } from "@/repository/project-repository";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { debounce, isEqual, isNil } from "lodash";
@@ -74,6 +74,10 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         setExpandedPhases: setListTabExpandedPhases,
         currentMember,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
+
+    const {
+        projectRepository,
+    } = useContext<AppContextProps>(AppContext);
 
     const totalViewDays = 365;
 
@@ -145,6 +149,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         setDependencies(updatedDependencies);
         setSelectedItem(target);
 
+        if (!projectRepository) return;
         const subscription = projectRepository.createDependency({
             projectId: selectedProject?.id as number,
         }, {
@@ -231,6 +236,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         updatedDependencies.splice(deleteDependencyIndex, 1);
         setDependencies(updatedDependencies);
 
+        if (!projectRepository) return;
         const subscription = projectRepository.deleteDependency({
             projectId: selectedProject?.id as number,
         }, {

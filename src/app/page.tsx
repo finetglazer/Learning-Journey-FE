@@ -5,8 +5,6 @@ import ChangePasswordPage from "@/components/core/sidebar/pages/change-password/
 import { LimitTimeAndTimeZone } from "@/components/core/sidebar/pages/limit-time-and-time-zone-setting/limit-time-and-time-zone-setting";
 import { SettingsPanel } from "@/components/core/sidebar/settings-panel";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
-import { userRepository } from "@/repository/user-repository";
-import { settingsRepository } from "@/repository/settings-repository";
 import {
   AppWindow,
   Bell,
@@ -32,7 +30,7 @@ import {
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { CalendarContext, useCalendarHooks } from "@/components/core/calendar/calendar-context";
+import { CalendarContext, CalendarContextInterface, useCalendarHooks } from "@/components/core/calendar/calendar-context";
 import { CalendarDayView } from "@/components/core/calendar/calendar-day-view";
 import { CalendarMonthPlanning } from "@/components/core/calendar/calendar-month-planning";
 import { CalendarMonthView } from "@/components/core/calendar/calendar-month-view";
@@ -47,8 +45,6 @@ import { TeamProjectSection } from "@/components/core/sidebar/sections/team-proj
 import { Button } from "@/components/ui/button";
 import { SIGN_IN_ROUTE } from "@/const/routes-const";
 import { Project } from "@/model/project-management";
-import { calendarRepository } from "@/repository/calendar-repository";
-import { projectRepository } from "@/repository/project-repository";
 import { useRouter } from "next/navigation";
 
 export default function RootPage() {
@@ -63,9 +59,30 @@ export default function RootPage() {
   // [3]: Conifrm Delete Project Modal
   const [modalStates, setModalStates] = useState([false, false, false, false]);
   const [teamProjects, setTeamProjects] = useState<Project[]>([]);
-  const [avatarUrl, setAvatarUrl] = useState("");
 
-  const { setSleepHours, setLoadingPage, darkBg, setDarkBg, } = useContext<AppContextProps>(AppContext);
+  const {
+    setSleepHours,
+    setLoadingPage,
+    darkBg,
+    setDarkBg,
+    setAvatarUrl,
+    setDisplayName,
+    setEmail,
+    calendarRepository,
+    userRepository,
+    projectRepository,
+    settingsRepository,
+    avatarUrl,
+    setDailyLimitsEnabled,
+    setTaskLimitHours,
+    setRoutineLimitHours,
+    userId,
+  } = useContext<AppContextProps>(AppContext);
+
+  const {
+    setCalendarId,
+  } = useContext<CalendarContextInterface>(CalendarContext);
+
   const calendarContextValues = useCalendarHooks();
   const isModalOpen = useMemo(() => {
     return modalStates.some(state => state === true);
@@ -91,7 +108,7 @@ export default function RootPage() {
   };
 
   const deleteProject = (projectId: number) => {
-    projectRepository.deleteProject({ projectId }).subscribe({
+    projectRepository?.deleteProject({ projectId }).subscribe({
       next: res => {
         if (res?.status) {
           toast.success(res?.message || res?.msg);
@@ -225,7 +242,7 @@ export default function RootPage() {
   ];
 
   const getProjects = useCallback(() => {
-    projectRepository.getProjects().subscribe({
+    projectRepository?.getProjects().subscribe({
       next: res => {
         if (res?.status) {
           const projects = res?.data?.projects;
@@ -237,35 +254,22 @@ export default function RootPage() {
       },
       error: err => { },
     });
-  }, []);
+  }, [projectRepository]);
 
   // --- Fetch user settings ---
   useEffect(() => {
-    userRepository.getProfile().subscribe({
+    if (!userRepository || !settingsRepository || !calendarRepository || !projectRepository) return;
+
+    userRepository?.getProfile().subscribe({
       next: (res) => {
         if (res?.status) {
-          // ✅ FIX 1: Use res.data, NOT res.data.data
           const userData = res.data;
+          const { name, avatarUrl, email } = userData;
 
-          console.log("Fetched user profile:", userData); // This will now show up!
-
-          const { id, name, avatarUrl, email } = userData;
-
-          // ✅ FIX 2: Check if ID exists before calling toString() to prevent crashes
-          if (id) {
-            localStorage.setItem("userId", id.toString());
-          }
-
-          if (name) localStorage.setItem("displayName", name);
-
-          // Handle avatar
           const finalAvatar = avatarUrl || "";
-          localStorage.setItem("avatarUrl", finalAvatar);
-
-          if (email) localStorage.setItem("email", email);
-
-          // Update Home Page State immediately
           setAvatarUrl(finalAvatar);
+          setEmail(email);
+          setDisplayName(name);
         }
       },
       error: (err) => {
@@ -273,16 +277,16 @@ export default function RootPage() {
       }
     });
 
-    settingsRepository.getDailyLimits().subscribe({
+    settingsRepository?.getDailyLimits().subscribe({
       next: (res) => {
         if (res?.status) {
           const limits = res?.data?.limits;
           if (res?.data?.enabled) {
-            localStorage.setItem("dailyLimitsEnabled", "1");
-            localStorage.setItem("taskLimitHours", limits?.TASK?.hours);
-            localStorage.setItem("routineLimitHours", limits?.ROUTINE?.hours);
+            setDailyLimitsEnabled(true);
+            setTaskLimitHours(limits?.TASK?.hours);
+            setRoutineLimitHours(limits?.ROUTINE?.hours);
           } else {
-            localStorage.setItem("dailyLimitsEnabled", "0");
+            setDailyLimitsEnabled(false);
           }
         } else {
           toast.error(res?.message || res?.msg);
@@ -291,8 +295,8 @@ export default function RootPage() {
       error: () => { },
     });
 
-    settingsRepository.getSleepHours().subscribe({
-      next: (res) => {
+    settingsRepository?.getSleepHours().subscribe({
+      next: (res: any) => {
         if (!res?.status) {
           toast.error(res?.message || res?.msg);
         } else {
@@ -303,7 +307,7 @@ export default function RootPage() {
     });
 
     // Get monthPlanId
-    // calendarRepository.getMonthPlanIdByDate({ year: currentDate.get("year"), month: currentDate.get("month") + 1 }).subscribe({
+    // calendarRepository?.getMonthPlanIdByDate({ year: currentDate.get("year"), month: currentDate.get("month") + 1 }).subscribe({
     //   next: (res) => {
     //     const success = res?.status;
     //     const monthPlanId = res?.data;
@@ -314,7 +318,7 @@ export default function RootPage() {
     //       // toast.error(res?.msg || res?.message);
     //       localStorage.removeItem("monthPlanId");
     //       // If monthPlanId not found, create new monthPlanId
-    //       calendarRepository.createMonthPlan({
+    //       calendarRepository?.createMonthPlan({
     //         year: currentDate.get("year"),
     //         month: currentDate.get("month") + 1,
     //       }).subscribe({
@@ -344,18 +348,17 @@ export default function RootPage() {
     // });
 
     // Get calendarId
-    calendarRepository.getCalendars().subscribe({
+    calendarRepository?.getCalendars().subscribe({
       next: res => {
         if (res?.status) {
           const calendars = res?.data?.calendars || [];
           if (!calendars.length) {
             // If there are no calendars, create 1
-            const userId = Number(localStorage.getItem("userId"));
-            calendarRepository.createCalendar(userId).subscribe({
+            calendarRepository?.createCalendar(userId).subscribe({
               next: res => {
                 if (res?.status) {
                   if (res?.data) {
-                    localStorage.setItem("calendarId", res?.data);
+                    setCalendarId(res?.data);
                   }
                 }
                 else {
@@ -366,22 +369,47 @@ export default function RootPage() {
             });
           }
           else {
-            localStorage.setItem("calendarId", calendars[0]?.id);
+            setCalendarId(calendars[0]?.id);
           }
         }
         else {
-          localStorage.removeItem("calendarId");
           toast.error(res?.msg || res?.message);
         }
       },
-      error: err => {
-        localStorage.removeItem("calendarId");
-      },
+      error: err => { },
     });
 
     // Get team projects
     getProjects();
-  }, []);
+
+    // Get user profile
+    const subscription = userRepository?.getProfile().subscribe({
+      next: res => {
+        if (res?.status) {
+          const userDisplayName = res?.data?.name;
+          const userAvatarUrl = res?.data?.avatarUrl;
+          const userEmail = res?.data?.email;
+
+          setDisplayName(userDisplayName);
+          setAvatarUrl(userAvatarUrl);
+          setEmail(userEmail);
+        }
+        else {
+          toast.error(res?.message || res?.msg);
+        }
+      },
+      error: err => { },
+    });
+    return () => {
+      subscription?.unsubscribe();
+    }
+  }, [
+    calendarRepository,
+    projectRepository,
+    userRepository,
+    settingsRepository,
+    userId,
+  ]);
 
   // Close all modals when selecting other project
   useEffect(() => {
@@ -403,14 +431,6 @@ export default function RootPage() {
     }
   }, [isModalOpen]);
 
-  // === ADD THIS NEW USE EFFECT ===
-  useEffect(() => {
-    // This runs only in the browser, so it is safe!
-    const savedAvatar = localStorage.getItem("avatarUrl");
-    if (savedAvatar) {
-      setAvatarUrl(savedAvatar);
-    }
-  }, []);
 
   return (
     <TeamProjectContext.Provider value={useTeamProjectHooks(currentSelectedProject)}>
@@ -429,8 +449,7 @@ export default function RootPage() {
 
           {/* --- Headerbar --- */}
           <HeaderBar
-            // avatarUrl={localStorage.getItem("avatarUrl") || ""}
-              avatarUrl={avatarUrl}
+            avatarUrl={avatarUrl}
 
             onSettingsClick={() => setCurrentView("settings")}
           />
@@ -438,6 +457,7 @@ export default function RootPage() {
           <div className="flex">
             {/* --- Sidebar --- */}
             <div
+              ref={calendarContextValues.sidebarRef}
               className={`transition-all duration-300 ease-in-out ${isSidebarCollapse ? "w-[80px]" : "w-[250px]"
                 } h-auto bg-gray-50 border-r border-gray-200 shadow-md`}
               onClick={() => {

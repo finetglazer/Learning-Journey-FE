@@ -81,11 +81,11 @@ export function UnscheduledTaskItem({ task, bigTask, onRemove, onTitleChange, dr
                 {bigTaskStartDate && bigTaskEndDate && (
                     <>
                         <div className={cn("flex h-7 w-7 items-center justify-center rounded-lg bg-[#E62E7B] text-white text-sm sm:text-base font-bold")}>
-                            {toDayJs(bigTask?.estimatedStartDate).get("date").toString().padStart(2)}
+                            {toDayJs(bigTask?.estimatedStartDate, 0).get("date").toString().padStart(2)}
                         </div>
                         <span>-</span>
                         <div className={cn("flex h-7 w-7 items-center justify-center rounded-lg bg-[#E62E7B] text-white text-sm sm:text-base font-bold")}>
-                            {toDayJs(bigTask?.estimatedEndDate).get("date").toString().padStart(2)}
+                            {toDayJs(bigTask?.estimatedEndDate, 0).get("date").toString().padStart(2)}
                         </div>
                     </>
                 )}

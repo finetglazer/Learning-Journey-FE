@@ -9,7 +9,7 @@ export const formService = {
     useForm<T extends Model>(
         modelClass: new () => T,
         onSubmit?: (form?: Model) => Observable<any>,
-        callbackFn?: () => void,
+        callbackFn?: (data?: any) => void,
         initModel?: T,
     ) {
         const [model, setModel] = useState<T>(initModel || new modelClass);
@@ -43,7 +43,7 @@ export const formService = {
                                 toast.success(res?.message);
                             }
                             if (typeof callbackFn === "function") {
-                                callbackFn();
+                                callbackFn(res?.data);
                             }
                         }
                         else if (!res?.status) {

@@ -24,8 +24,8 @@ const API_GET_MEMORABLE_EVENTS = "/memorable-events";
 const API_UPDATE_MEMORABLE_EVENTS = "/memorable-events";
 
 export class CalendarRepository extends BaseRepository {
-    constructor() {
-        super(BASE_API_URL);
+    constructor(userId: number) {
+        super(userId, BASE_API_URL);
     };
 
     public getUnscheduledItems = (): Observable<any> => {
@@ -158,4 +158,4 @@ export class CalendarRepository extends BaseRepository {
     };
 };
 
-export const calendarRepository = new CalendarRepository();
+export const calendarRepositoryCons = (userId: number) => new CalendarRepository(userId);
