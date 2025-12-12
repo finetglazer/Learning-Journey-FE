@@ -5,8 +5,18 @@ import { HocuspocusProvider } from "@hocuspocus/provider";
 import * as Y from "yjs";
 import { AwarenessUser, CommentThread } from "@/model/document";
 
+// ✅ 1. Define the User interface
+interface CollaborativeUser {
+    name: string;
+    avatar: string;
+    color: string;
+    id: string;
+}
+
 interface UseCollaborativeEditorOptions {
     storageRef: string;
+    // ✅ 2. Add user to options
+    user: CollaborativeUser | null;
     onSynced?: () => void;
     onDisconnect?: () => void;
     onError?: (error: Error) => void;
@@ -25,21 +35,12 @@ interface UseCollaborativeEditorReturn {
     deleteThread: (threadId: string) => void;
 }
 
-function getStableColor(userId: string): string {
-    const colors = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#DDA0DD", "#98D8C8", "#F7DC6F", "#BB8FCE", "#85C1E9"];
-    let hash = 0;
-    for (let i = 0; i < userId.length; i++) {
-        hash = userId.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return colors[Math.abs(hash) % colors.length];
-}
-
 export function useCollaborativeEditor(
     options: UseCollaborativeEditorOptions
 ): UseCollaborativeEditorReturn {
-    const { storageRef, onSynced, onDisconnect, onError } = options;
+    // ✅ 3. Destructure user
+    const { storageRef, user, onSynced, onDisconnect, onError } = options;
 
-    // Use refs for callbacks to avoid infinite loops
     const onSyncedRef = useRef(onSynced);
     const onDisconnectRef = useRef(onDisconnect);
     const onErrorRef = useRef(onError);
@@ -60,19 +61,25 @@ export function useCollaborativeEditor(
     const providerRef = useRef<HocuspocusProvider | null>(null);
     const docRef = useRef<Y.Doc | null>(null);
 
+    // ✅ 4. New Effect: Update awareness whenever the 'user' or 'provider' changes
+    useEffect(() => {
+        const currentProvider = providerRef.current;
+        console.log("Updating awareness for user:", user);
+        if (currentProvider && user) {
+            // ✅ Fix: Add '?.' before setLocalStateField
+            currentProvider.awareness?.setLocalStateField("user", {
+                id: user.id,
+                name: user.name,
+                avatar: user.avatar,
+                color: user.color,
+            });
+        }
+    }, [user, provider]);
+
     useEffect(() => {
         if (!storageRef || typeof window === "undefined") return;
 
         const token = localStorage.getItem("accessToken");
-        console.log("[Client Debug] Token being sent:", token); // <--- Add this
-
-        if (!token) {
-            onErrorRef.current?.(new Error("No access token found"));
-            return;
-        }
-        const userId = localStorage.getItem("userId") || "";
-        const userName = localStorage.getItem("displayName") || "Anonymous";
-        const userAvatar = localStorage.getItem("avatarUrl") || "";
 
         if (!token) {
             onErrorRef.current?.(new Error("No access token found"));
@@ -118,14 +125,17 @@ export function useCollaborativeEditor(
         providerRef.current = hocuspocusProvider;
 
         const awareness = hocuspocusProvider.awareness;
-        const userColor = getStableColor(userId || "anonymous");
 
+        // Listen for other users joining/leaving
         const awarenessChangeHandler = () => {
             if (!awareness) return;
             const states = awareness.getStates();
             const users: AwarenessUser[] = [];
+
+            console.log("Awareness states changed:", states);
+
             states.forEach((state: any, clientId: number) => {
-                if (state.user && clientId !== awareness.clientID) {
+                if (state.user) {
                     users.push({
                         id: state.user.id,
                         name: state.user.name,
@@ -139,13 +149,18 @@ export function useCollaborativeEditor(
         };
 
         if (awareness) {
-            awareness.setLocalStateField("user", {
-                id: userId,
-                name: userName,
-                avatar: userAvatar,
-                color: userColor,
-            });
+            // Register the listener
             awareness.on("change", awarenessChangeHandler);
+
+            // ✅ 5. Set Initial State immediately if user is already available
+            if (user) {
+                awareness.setLocalStateField("user", {
+                    id: user.id,
+                    name: user.name,
+                    avatar: user.avatar,
+                    color: user.color,
+                });
+            }
         }
 
         const threadsMap = doc.getMap("threads");
@@ -175,7 +190,7 @@ export function useCollaborativeEditor(
             setIsConnected(false);
             setIsSynced(false);
         };
-    }, [storageRef]); // Only depend on storageRef
+    }, [storageRef]); // Removed user from dependency to avoid reconnecting on user update
 
     const setThreads = useCallback((newThreads: CommentThread[]) => {
         const doc = docRef.current;

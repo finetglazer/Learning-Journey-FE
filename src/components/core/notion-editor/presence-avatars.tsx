@@ -19,6 +19,7 @@ export function PresenceAvatars({ users, maxVisible = 5 }: PresenceAvatarsProps)
     const remainingCount = users.length - maxVisible;
 
     if (users.length === 0) return null;
+    console.log(users);
 
     return (
         <TooltipProvider>

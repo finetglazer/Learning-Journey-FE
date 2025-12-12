@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { firstValueFrom } from "rxjs";
 import dynamic from "next/dynamic";
@@ -48,6 +48,23 @@ export default function DocumentPage() {
         setIsMounted(true);
     }, []);
 
+    // 1. Prepare Current User Data (Memoized to prevent color flickering)
+    const currentUser = useMemo(() => {
+        if (!isMounted) return null;
+
+        // Random color generator for the avatar border/cursor
+        const colors = ["#f87171", "#fb923c", "#fbbf24", "#a3e635", "#34d399", "#22d3ee", "#818cf8", "#e879f9"];
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+
+        return {
+            name: localStorage.getItem("displayName") || "Anonymous",
+            avatar: localStorage.getItem("avatarUrl") || "",
+            color: randomColor,
+            // Assuming userId is stored, otherwise fallback to random
+            id: localStorage.getItem("userId") || `guest-${Math.random().toString(36).substr(2, 9)}`,
+        };
+    }, [isMounted]);
+
     // Load document details
     useEffect(() => {
         const loadDocument = async () => {
@@ -64,9 +81,6 @@ export default function DocumentPage() {
                 const doc = await firstValueFrom(
                     documentRepository.getDocumentDetails(nodeId)
                 );
-
-                console.log("🚀 REAL DATA FROM API:", doc);
-
                 setDocument(doc);
             } catch (err: any) {
                 console.error("Failed to load document:", err);
@@ -80,7 +94,7 @@ export default function DocumentPage() {
         loadDocument();
     }, [nodeId]);
 
-    // Initialize collaborative editor only when document is loaded
+    // Initialize collaborative editor
     const {
         provider,
         ydoc,
@@ -93,6 +107,8 @@ export default function DocumentPage() {
         deleteThread,
     } = useCollaborativeEditor({
         storageRef: document?.storageReference || "",
+        // ✅ PASS THE USER HERE (This property needs to be added to your hook)
+        user: currentUser,
         onError: (error) => {
             if (error.message !== "No access token found") {
                 toast.error(`Connection error: ${error.message}`);
@@ -141,12 +157,9 @@ export default function DocumentPage() {
 
     const canEdit = document?.role === "OWNER" || document?.role === "MEMBER";
 
-    // Check if editor is ready - provider and ydoc must both be non-null
+    // Check if editor is ready
     const isEditorReady = !!(provider && ydoc && document?.storageReference);
 
-    // --- RENDER STATES ---
-
-    // Don't render anything meaningful until mounted (avoids hydration issues)
     if (!isMounted) {
         return (
             <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -189,24 +202,6 @@ export default function DocumentPage() {
 
     return (
         <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-            {/* Document header */}
-            {/*<header className="flex items-center gap-4 px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">*/}
-            {/*    <Button variant="ghost" size="sm" onClick={() => router.back()}>*/}
-            {/*        <ArrowLeft className="h-4 w-4" />*/}
-            {/*    </Button>*/}
-
-            {/*    <div className="flex items-center gap-2">*/}
-            {/*        <FileText className="h-5 w-5 text-gray-500" />*/}
-            {/*        <h1 className="font-semibold text-lg">{document.name}</h1>*/}
-            {/*    </div>*/}
-
-            {/*    {!canEdit && (*/}
-            {/*        <span className="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">*/}
-            {/*            View only*/}
-            {/*        </span>*/}
-            {/*    )}*/}
-            {/*</header>*/}
-
             {/* Editor */}
             <div className="flex-1 overflow-hidden">
                 {isEditorReady ? (
@@ -227,12 +222,10 @@ export default function DocumentPage() {
                         onRestoreVersion={handleRestoreVersion}
                         isRestoringVersion={isRestoringVersion}
 
-                        // ✅ NEW: Connect Real Data Here
-                        documentTitle={document.name}          // Maps 'name' from API to title
-                        createdBy={document.createdBy}         // Maps 'createdBy' from API
-                        createdAt={document.createdAt}         // Maps 'createdAt' from API
+                        documentTitle={document.name}
+                        createdBy={document.createdBy}
+                        createdAt={document.createdAt}
 
-                        // ✅ Optional: Allow local editing of the title
                         onTitleChange={(newTitle) => {
                             setDocument(prev => prev ? { ...prev, name: newTitle } : null);
                         }}

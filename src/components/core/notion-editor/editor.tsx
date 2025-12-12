@@ -23,10 +23,9 @@ import { PresenceAvatars } from "./presence-avatars";
 import { VersionHistoryDialog } from "./version-history-dialog";
 import { CommentThread, DocVersionDTO, AwarenessUser } from "@/model/document";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, History, User, Calendar } from "lucide-react";
+import { ArrowLeft, User, Calendar } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { format } from "date-fns";
 
@@ -87,7 +86,6 @@ export function NotionEditor({
         avatar: "",
     });
 
-    // Read localStorage and set mounted state
     useEffect(() => {
         setIsMounted(true);
         const userId = localStorage.getItem("userId") || "";
@@ -101,12 +99,10 @@ export function NotionEditor({
         });
     }, []);
 
-    // Sync title with prop
     useEffect(() => {
         setTitle(documentTitle);
     }, [documentTitle]);
 
-    // Extensions without CollaborationCursor
     const extensions = useMemo(
         () => [
             StarterKit.configure({
@@ -143,15 +139,15 @@ export function NotionEditor({
             editable: canEdit,
             editorProps: {
                 attributes: {
-                    class:
-                        "prose prose-sm sm:prose lg:prose-lg xl:prose-xl dark:prose-invert focus:outline-none max-w-none min-h-[500px] px-8 py-4",
+                    // Padding is handled by the parent container now
+                    class: "prose prose-lg dark:prose-invert focus:outline-none max-w-none min-h-[500px]",
                 },
             },
         },
         [extensions, canEdit]
     );
 
-    // Handle comment click in editor
+    // Handle comment click
     useEffect(() => {
         if (!editor || !editor.view || editor.isDestroyed) return;
 
@@ -306,14 +302,14 @@ export function NotionEditor({
 
     return (
         <div className="flex h-full">
-            <div className="flex-1 flex flex-col overflow-hidden">
-                {/* Top Bar - Back button and Avatars only */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+            <div className="flex-1 flex flex-col h-full overflow-hidden bg-white dark:bg-gray-900">
+                {/* Top Navigation Bar - Removed borders */}
+                <div className="flex items-center justify-between px-4 py-3 sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
                     <Button
                         variant="ghost"
                         size="sm"
                         onClick={onBack}
-                        className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                        className="hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500"
                     >
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
@@ -323,58 +319,78 @@ export function NotionEditor({
                     </div>
                 </div>
 
-                {/* Document Metadata Section */}
-                <div className="px-8 py-6 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-                    <Input
-                        type="text"
-                        value={title}
-                        onChange={(e) => handleTitleChange(e.target.value)}
-                        placeholder="<Title>"
-                        className="text-3xl font-bold border-none px-0 focus-visible:ring-0 focus-visible:ring-offset-0 mb-4"
-                        disabled={!canEdit}
-                    />
+                {/* Main Scrollable Content Area */}
+                <div className="flex-1 overflow-y-auto">
+                    {/* Centered Container for Alignment */}
+                    <div className="max-w-3xl mx-auto px-12 py-12">
 
-                    <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                        <div className="flex items-center gap-2">
-                            <User className="h-4 w-4" />
-                            <span className="font-medium">Created by</span>
-                            <span>{createdBy}</span>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4" />
-                            <span className="font-medium">Created at</span>
-                            <span>{format(new Date(createdAt), "d MMM, yyyy")}</span>
-                        </div>
-
-                        <div className="flex items-center gap-2 pt-2">
-                            <Checkbox
-                                id="show-comment"
-                                checked={showComments}
-                                onCheckedChange={(checked) => setShowComments(checked as boolean)}
+                        {/* 1. Header Section */}
+                        <div className="group mb-8">
+                            {/* H1-style Title Input - USING NATIVE INPUT TO FIX SIZE & BORDER */}
+                            <input
+                                type="text"
+                                value={title}
+                                onChange={(e) => handleTitleChange(e.target.value)}
+                                placeholder="Untitled"
+                                className="w-full text-5xl font-bold border-none outline-none bg-transparent placeholder:text-gray-300 dark:placeholder:text-gray-700 text-gray-900 dark:text-gray-100 p-0"
+                                disabled={!canEdit}
+                                autoComplete="off"
                             />
-                            <Label htmlFor="show-comment" className="cursor-pointer">
-                                Show comment
-                            </Label>
+
+                            {/* Metadata */}
+                            <div className="mt-6 space-y-2 text-sm text-gray-500 dark:text-gray-400">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2 min-w-[100px]">
+                                        <User className="h-4 w-4 opacity-70" />
+                                        <span className="text-gray-400">Created by</span>
+                                    </div>
+                                    <span className="font-medium text-gray-700 dark:text-gray-300">{createdBy}</span>
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2 min-w-[100px]">
+                                        <Calendar className="h-4 w-4 opacity-70" />
+                                        <span className="text-gray-400">Created at</span>
+                                    </div>
+                                    <span className="font-medium text-gray-700 dark:text-gray-300">
+                                        {format(new Date(createdAt), "d MMM, yyyy")}
+                                    </span>
+                                </div>
+
+                                <div className="flex items-center gap-3 pt-1">
+                                    {/*<div className="min-w-[100px]"></div> /!* Spacer for alignment *!/*/}
+                                    <div className="flex items-center gap-2">
+                                        <Checkbox
+                                            id="show-comment"
+                                            checked={showComments}
+                                            onCheckedChange={(checked) => setShowComments(checked as boolean)}
+                                        />
+                                        <Label htmlFor="show-comment" className="cursor-pointer text-gray-500 font-normal">
+                                            Show comment
+                                        </Label>
+                                    </div>
+                                </div>
+                            </div>
+                            {/* ✅ NEW: Full-width Divider Line */}
+                            <div className="mt-6 border-b border-gray-200 dark:border-gray-800 w-full" />
                         </div>
+
+                        {/* 2. Bubble Menu */}
+                        {editor && (
+                            <EditorBubbleMenu
+                                editor={editor}
+                                onAddComment={handleAddComment}
+                            />
+                        )}
+
+                        {/* 3. Editor Content */}
+                        <EditorContent editor={editor} />
+
                     </div>
-                </div>
-
-                {/* Bubble Menu */}
-                {editor && (
-                    <EditorBubbleMenu
-                        editor={editor}
-                        onAddComment={handleAddComment}
-                    />
-                )}
-
-                {/* Editor Content */}
-                <div className="flex-1 overflow-auto bg-white dark:bg-gray-900">
-                    <EditorContent editor={editor} />
                 </div>
             </div>
 
-            {/* Comment Sidebar */}
+            {/* Sidebars (Comments / Version History) */}
             {showComments && (
                 <CommentSidebar
                     threads={threads}
@@ -389,7 +405,6 @@ export function NotionEditor({
                 />
             )}
 
-            {/* Version History Dialog */}
             <VersionHistoryDialog
                 open={showVersionHistory}
                 onOpenChange={setShowVersionHistory}
