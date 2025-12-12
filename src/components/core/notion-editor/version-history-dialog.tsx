@@ -47,7 +47,7 @@ const reasonLabels: Record<string, { label: string; icon: React.ReactNode }> = {
 export function VersionHistoryDialog({
                                          open,
                                          onOpenChange,
-                                         versions,
+                                         versions = [],
                                          isLoading,
                                          onRestore,
                                          isRestoring,

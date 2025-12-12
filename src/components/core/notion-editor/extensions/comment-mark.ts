@@ -16,6 +16,9 @@ declare module "@tiptap/core" {
 export const CommentMark = Mark.create<CommentMarkOptions>({
     name: "comment",
 
+    // ✅ FIX: This line stops the highlight from expanding when you type next to it!
+    inclusive: false,
+
     addOptions() {
         return {
             HTMLAttributes: {},

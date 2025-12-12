@@ -84,6 +84,21 @@ export class DocumentRepository extends BaseRepository {
             )
             .pipe(map((response) => response.data));
     }
+
+    updateDocument(nodeId: number, data: { name?: string }): Observable<BaseResponse<NotionDocDTO>> {
+        return this.http
+            .patch<BaseResponse<NotionDocDTO>>(`/api/pm/files/${nodeId}`, data)
+            .pipe(map((response) => response.data));
+    }
+
+    getSnapshotList(storageRef: string): Observable<any[]> {
+        return this.http
+            .get<BaseResponse<any[]>>(`/api/document/${storageRef}/snapshots`)
+            .pipe(map((response) => {
+                // Axios response -> Body (BaseResponse) -> Data field (The List)
+                return response.data.data || [];
+            }));
+    }
 }
 
 export const documentRepositoryCons = (userId: number) => new DocumentRepository(userId);

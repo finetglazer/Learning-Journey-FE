@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback, useContext, useMemo } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useEffect, useState, useCallback, useContext, useMemo, useRef } from "react";
+import { useSearchParams, useRouter, useParams } from "next/navigation";
 import { firstValueFrom } from "rxjs";
 import dynamic from "next/dynamic";
 import { useCollaborativeEditor } from "@/hooks/use-collaborative-editor";
@@ -28,6 +28,10 @@ const NotionEditor = dynamic(
 );
 
 export default function DocumentPage() {
+    // ✅ 2. Get the ID safely using the hook
+    // Make sure your folder is named [fileId]. If it is [id], change this to params.id
+    const params = useParams();
+    const fileId = params.fileId as string;
     const searchParams = useSearchParams();
     const router = useRouter();
 
@@ -36,6 +40,8 @@ export default function DocumentPage() {
     } = useContext<AppContextProps>(AppContext);
 
     // FIX ID READING: Read from ?id=23
+    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
     const nodeId = Number(searchParams.get("id"));
 
     const [document, setDocument] = useState<NotionDocDTO | null>(null);
@@ -130,22 +136,29 @@ export default function DocumentPage() {
         },
     });
 
-    // Load version history
-    const handleLoadVersions = useCallback(async () => {
-        if (!nodeId || !documentRepository) return;
-        try {
-            setIsLoadingVersions(true);
-            const versionList = await firstValueFrom(
-                documentRepository.getVersionHistory(nodeId)
-            );
-            setVersions(versionList);
-        } catch (err) {
-            console.error("Failed to load versions:", err);
-            toast.error("Failed to load version history");
-        } finally {
-            setIsLoadingVersions(false);
+    // ✅ 3. Update the load function to use 'document.storageReference'
+    const handleLoadVersions = () => {
+        // Fix: Use the storageReference from the loaded document instead of params
+        const storageRef = document?.storageReference;
+
+        if (!storageRef) {
+            console.error("No storage reference found");
+            return;
         }
-    }, [nodeId, documentRepository]);
+
+        setIsLoadingVersions(true);
+
+        documentRepository?.getSnapshotList(storageRef).subscribe({
+            next: (data) => {
+                setVersions(data); // Update the list
+                setIsLoadingVersions(false);
+            },
+            error: (err) => {
+                console.error("Failed to load history:", err);
+                setIsLoadingVersions(false);
+            }
+        });
+    };
 
     // Restore version
     const handleRestoreVersion = useCallback(
@@ -241,7 +254,25 @@ export default function DocumentPage() {
                         createdAt={document.createdAt}
 
                         onTitleChange={(newTitle) => {
+                            // A. Update UI immediately (so it feels fast)
                             setDocument(prev => prev ? { ...prev, name: newTitle } : null);
+
+                            // B. Clear any pending save
+                            if (saveTimeoutRef.current) {
+                                clearTimeout(saveTimeoutRef.current);
+                            }
+
+                            // C. Start a new timer (Save after 0.8 seconds of silence)
+                            saveTimeoutRef.current = setTimeout(() => {
+                                if (!nodeId) return;
+
+                                console.log("Saving new title to database:", newTitle);
+
+                                documentRepository?.updateDocument(nodeId, { name: newTitle }).subscribe({
+                                    next: () => console.log("Title saved successfully!"),
+                                    error: (err) => toast.error("Failed to save title")
+                                });
+                            }, 800);
                         }}
 
                         onBack={() => router.back()}
