@@ -5,6 +5,7 @@ import ChangePasswordPage from "@/components/core/sidebar/pages/change-password/
 import { LimitTimeAndTimeZone } from "@/components/core/sidebar/pages/limit-time-and-time-zone-setting/limit-time-and-time-zone-setting";
 import { SettingsPanel } from "@/components/core/sidebar/settings-panel";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
+import { userRepository } from "@/repository/user-repository";
 import { settingsRepository } from "@/repository/settings-repository";
 import {
   AppWindow,
@@ -240,6 +241,38 @@ export default function RootPage() {
 
   // --- Fetch user settings ---
   useEffect(() => {
+    userRepository.getProfile().subscribe({
+      next: (res) => {
+        if (res?.status) {
+          // ✅ FIX 1: Use res.data, NOT res.data.data
+          const userData = res.data;
+
+          console.log("Fetched user profile:", userData); // This will now show up!
+
+          const { id, name, avatarUrl, email } = userData;
+
+          // ✅ FIX 2: Check if ID exists before calling toString() to prevent crashes
+          if (id) {
+            localStorage.setItem("userId", id.toString());
+          }
+
+          if (name) localStorage.setItem("displayName", name);
+
+          // Handle avatar
+          const finalAvatar = avatarUrl || "";
+          localStorage.setItem("avatarUrl", finalAvatar);
+
+          if (email) localStorage.setItem("email", email);
+
+          // Update Home Page State immediately
+          setAvatarUrl(finalAvatar);
+        }
+      },
+      error: (err) => {
+        console.error("Failed to fetch user profile", err);
+      }
+    });
+
     settingsRepository.getDailyLimits().subscribe({
       next: (res) => {
         if (res?.status) {

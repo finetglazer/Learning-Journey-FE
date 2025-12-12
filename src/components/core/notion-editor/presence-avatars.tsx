@@ -60,11 +60,16 @@ export function PresenceAvatars({ users, maxVisible = 5 }: PresenceAvatarsProps)
                 {remainingCount > 0 && (
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Avatar className="h-8 w-8 border-2 border-gray-300 cursor-pointer">
-                                <AvatarFallback className="bg-gray-200 text-gray-600 text-xs">
-                                    +{remainingCount}
-                                </AvatarFallback>
-                            </Avatar>
+                            <div
+                                className="relative transition-transform hover:scale-110"
+                                style={{ zIndex: maxVisible }} // Ensure it sits on top
+                            >
+                                <Avatar className="h-9 w-9 border-2 border-white dark:border-gray-900 cursor-pointer">
+                                    <AvatarFallback className="bg-gray-100 text-gray-600 text-xs font-bold dark:bg-gray-800 dark:text-gray-300">
+                                        +{remainingCount}
+                                    </AvatarFallback>
+                                </Avatar>
+                            </div>
                         </TooltipTrigger>
                         <TooltipContent>
                             <div className="space-y-1">

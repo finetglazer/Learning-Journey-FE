@@ -56,6 +56,7 @@ export default function DocumentPage() {
         const colors = ["#f87171", "#fb923c", "#fbbf24", "#a3e635", "#34d399", "#22d3ee", "#818cf8", "#e879f9"];
         const randomColor = colors[Math.floor(Math.random() * colors.length)];
 
+        console.log(localStorage.getItem("avatarUrl"));
         return {
             name: localStorage.getItem("displayName") || "Anonymous",
             avatar: localStorage.getItem("avatarUrl") || "",

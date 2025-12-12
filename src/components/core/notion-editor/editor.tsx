@@ -304,17 +304,24 @@ export function NotionEditor({
         <div className="flex h-full">
             <div className="flex-1 flex flex-col h-full overflow-hidden bg-white dark:bg-gray-900">
                 {/* Top Navigation Bar - Removed borders */}
-                <div className="flex items-center justify-between px-4 py-3 sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={onBack}
-                        className="hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500"
-                    >
-                        <ArrowLeft className="h-5 w-5" />
-                    </Button>
+                {/* Top Navigation Bar */}
+                <div className="flex items-center justify-between w-full sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm py-3 border-none">
 
-                    <div className="flex items-center gap-2">
+                    {/* --- LEFT SIDE WRAPPER --- */}
+                    <div className="pl-7">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={onBack}
+                            className="hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500"
+                        >
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                    </div>
+
+                    {/* --- RIGHT SIDE WRAPPER --- */}
+                    {/* 👇 Adjust 'pr-8' to move the Avatars closer/further from the right edge */}
+                    <div className="flex items-center gap-2 pr-10">
                         <PresenceAvatars users={awarenessUsers} />
                     </div>
                 </div>
