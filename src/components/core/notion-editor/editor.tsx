@@ -23,7 +23,11 @@ import { PresenceAvatars } from "./presence-avatars";
 import { VersionHistoryDialog } from "./version-history-dialog";
 import { CommentThread, DocVersionDTO, AwarenessUser } from "@/model/document";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, User, Calendar, MessageSquare, Clock, ArrowUp } from "lucide-react";import { v4 as uuidv4 } from "uuid";
+import {
+    ArrowLeft, User, Calendar, MessageSquare, Clock, ArrowUp,
+    CheckCircle, Edit2, Trash2 // <--- Add these
+} from "lucide-react";
+import { v4 as uuidv4 } from "uuid";
 import { format } from "date-fns";
 import {cn} from "@/lib/utils";
 
@@ -73,6 +77,10 @@ export function NotionEditor({
                                  createdAt = new Date().toISOString(),
                                  onBack,
                              }: NotionEditorProps) {
+    // ... existing states ...
+    const [editingThreadId, setEditingThreadId] = useState<string | null>(null);
+    const [editText, setEditText] = useState("");
+    const rightGutterRef = useRef<HTMLDivElement>(null); // ✅ Add this ref
     const [threadPositions, setThreadPositions] = useState<Record<string, number>>({});
     const commentFormRef = useRef<HTMLDivElement>(null);
     const [commentFormTop, setCommentFormTop] = useState(0); // Y-position for the form
@@ -203,25 +211,20 @@ export function NotionEditor({
     }, [editor]);
 
     const handleAddComment = useCallback(() => {
-        if (!editor || editor.state.selection.empty) return;
+        if (!editor || editor.state.selection.empty || !rightGutterRef.current) return;
 
-        // 1. Calculate the position of the selection
+        // 1. Get Selection Position
         const { from } = editor.state.selection;
         const startPos = editor.view.coordsAtPos(from);
 
-        // Get the editor's bounding box to calculate relative position
-        const editorDom = editor.view.dom;
-        const editorRect = editorDom.getBoundingClientRect();
+        // 2. Get Gutter Position
+        const gutterRect = rightGutterRef.current.getBoundingClientRect();
 
-        // Calculate 'top' relative to the editor container
-        // We adjust by window.scrollY if needed, but since our container scrolls,
-        // we might need to rely on the relative offset.
-        // For now, let's use a simplified relative calculation:
-        const relativeTop = startPos.top - editorRect.top + editorDom.offsetTop;
+        // 3. Calculate Relative Top
+        const relativeTop = startPos.top - gutterRect.top;
 
-        setCommentFormTop(relativeTop); // Save the position
+        setCommentFormTop(relativeTop);
         setIsCommenting(true);
-        // setShowSidebar(true); // Don't open sidebar yet, we want the gutter form
     }, [editor]);
 
     const submitComment = () => {
@@ -320,48 +323,66 @@ export function NotionEditor({
     };
 
     // ✅ NEW: Enhanced Positioning & Collision Logic
+    // ✅ IMPROVED: Precise visual alignment & "Text Order" sorting
     const updateCommentPositions = useCallback(() => {
-        if (!editor) return;
+        if (!editor || !rightGutterRef.current) return;
 
         const editorDom = editor.view.dom;
-        const editorRect = editorDom.getBoundingClientRect();
-        const rawPositions: { threadId: string; top: number }[] = [];
+        const gutterRect = rightGutterRef.current.getBoundingClientRect(); // Get Gutter screen position
 
-        // 1. Calculate ideal positions
+        const rawPositions: { threadId: string; top: number; left: number; createdAt: string }[] = [];
+
+        // 1. Calculate positions relative to the Gutter's top edge
         threads.forEach((thread) => {
             if (thread.resolved) return;
+
+            // Find the highlight in the text
             const element = editorDom.querySelector(`span[data-thread-id="${thread.threadId}"]`);
             if (element) {
                 const rect = element.getBoundingClientRect();
-                // Simple relative calculation
-                const relativeTop = rect.top - editorRect.top + editorDom.offsetTop;
-                rawPositions.push({ threadId: thread.threadId, top: relativeTop });
+
+                // Pure visual math: (Text Screen Y) - (Gutter Screen Y)
+                const relativeTop = rect.top - gutterRect.top;
+
+                rawPositions.push({
+                    threadId: thread.threadId,
+                    top: relativeTop,
+                    left: rect.left, // Store left position for sorting
+                    createdAt: thread.createdAt
+                });
             }
         });
 
-        // 2. Sort by vertical position (text order)
-        rawPositions.sort((a, b) => a.top - b.top);
+        // 2. Sort by "Reading Order" (Top -> Bottom, then Left -> Right)
+        rawPositions.sort((a, b) => {
+            // If they are on the roughly same line (within 5px), sort by Left position
+            if (Math.abs(a.top - b.top) < 5) {
+                return a.left - b.left;
+            }
+            // Otherwise sort by vertical position
+            return a.top - b.top;
+        });
 
         // 3. Prevent Overlap (Stacking Logic)
         const finalPositions: Record<string, number> = {};
-        let lastBottom = -1;
-        const CARD_HEIGHT_ESTIMATE = 100; // Estimated height of a card + gap (adjust if needed)
+        let lastBottom = -9999;
+        const CARD_HEIGHT_ESTIMATE = 80; // Estimated height of a card + gap
 
         rawPositions.forEach((pos) => {
             let actualTop = pos.top;
 
-            // If this card would overlap with the previous one, push it down
-            if (actualTop < lastBottom) {
-                actualTop = lastBottom + 10; // 10px gap between stacked cards
+            // If overlapping with previous card, push down
+            if (actualTop < lastBottom + 10) {
+                actualTop = lastBottom + 6;
             }
 
             finalPositions[pos.threadId] = actualTop;
-            // Update the "floor" for the next card
             lastBottom = actualTop + CARD_HEIGHT_ESTIMATE;
         });
 
         setThreadPositions(finalPositions);
     }, [editor, threads]);
+
 
     // Update positions whenever the document changes or selection updates
     useEffect(() => {
@@ -525,9 +546,11 @@ export function NotionEditor({
                             <EditorContent editor={editor} />
                         </div>
 
-                        {/* 3. The Right Gutter (Reserved Space for Comments) */}
-                        {/* ✅ FIX: Changed 'pt-12' to just 'relative' to align 0-to-0 with the editor */}
-                        <div className="hidden xl:block w-[300px] shrink-0 pr-6 relative">
+                        {/* 3. The Right Gutter */}
+                        <div
+                            ref={rightGutterRef} // ✅ Attach it here
+                            className="hidden xl:block w-[300px] shrink-0 pr-6 relative"
+                        >
 
                             {/* Render the form ONLY if isCommenting is true */}
                             {/* A. The "Add Comment" Form (Existing Code) */}
@@ -563,39 +586,136 @@ export function NotionEditor({
 
                             {/* Unresolved Comment Cards */}
                             {!isCommenting && !showSidebar && Object.keys(threadPositions).length > 0 &&
-                                // ✅ FIX: Sort threads by position so they render top-to-bottom
                                 threads
                                     .filter(t => !t.resolved && threadPositions[t.threadId] !== undefined)
                                     .sort((a, b) => threadPositions[a.threadId] - threadPositions[b.threadId])
-                                    .map((thread) => (
-                                        <div
-                                            key={thread.threadId}
-                                            onClick={() => { setSelectedThreadId(thread.threadId); setShowSidebar(true); }}
-                                            className="absolute left-0 w-full p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm cursor-pointer hover:shadow-md transition-all z-10"
-                                            style={{ top: `${threadPositions[thread.threadId]}px` }}
-                                        >
-                                            <div className="flex items-start gap-2">
-                                                <div className="h-6 w-6 rounded-full overflow-hidden shrink-0 border border-gray-200">
-                                                    <img src={thread.userAvatar} className="h-full w-full object-cover" />
-                                                </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="flex items-center justify-between">
-                                                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                                        {thread.userName}
-                                                    </span>
-                                                        <span className="text-[10px] text-gray-400">
-                                                        {format(new Date(thread.createdAt), "MMM d")}
-                                                    </span>
-                                                    </div>
-                                                    <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mt-0.5">
-                                                        {thread.content}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))
-                            }
+                                    .map((thread) => {
+                                        const isEditing = editingThreadId === thread.threadId;
 
+                                        return (
+                                            <div
+                                                key={thread.threadId}
+                                                // Removed onClick to prevent side effects
+                                                className={cn(
+                                                    "absolute left-0 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm transition-all group z-10",
+                                                    isEditing ? "p-1 ring-2 ring-blue-500 z-20" : "p-3 cursor-pointer hover:shadow-md"
+                                                )}
+                                                style={{ top: `${threadPositions[thread.threadId]}px` }}
+                                                onClick={() => {
+                                                    if (!isEditing) {
+                                                        setSelectedThreadId(thread.threadId);
+                                                        // setShowSidebar(true);
+                                                    }
+                                                }}
+                                            >
+                                                {/* ✅ REQUIREMENT: Reuse Simple Form for Editing */}
+                                                {isEditing ? (
+                                                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                                        <input
+                                                            className="flex-1 p-2 text-sm bg-transparent border-none outline-none placeholder:text-gray-400 text-gray-900 dark:text-gray-100"
+                                                            value={editText}
+                                                            onChange={(e) => setEditText(e.target.value)}
+                                                            autoFocus
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === "Enter") {
+                                                                    updateThread(thread.threadId, { content: editText, updatedAt: new Date().toISOString() });
+                                                                    setEditingThreadId(null);
+                                                                } else if (e.key === "Escape") {
+                                                                    setEditingThreadId(null);
+                                                                }
+                                                            }}
+                                                        />
+                                                        <Button
+                                                            size="icon"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                updateThread(thread.threadId, { content: editText, updatedAt: new Date().toISOString() });
+                                                                setEditingThreadId(null);
+                                                            }}
+                                                            disabled={!editText.trim()}
+                                                            className="h-8 w-8 rounded-full bg-black hover:bg-gray-800 text-white shrink-0"
+                                                        >
+                                                            <ArrowUp className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    /* Normal View */
+                                                    <div className="flex items-start gap-2">
+                                                        {/* Avatar */}
+                                                        <div className="h-6 w-6 rounded-full overflow-hidden shrink-0 border border-gray-200 mt-0.5">
+                                                            <img src={thread.userAvatar} alt={thread.userName} className="h-full w-full object-cover" />
+                                                        </div>
+
+                                                        {/* Content Container */}
+                                                        <div className="min-w-0 flex-1 relative">
+                                                            {/* Header */}
+                                                            <div className="flex items-center justify-between mb-0.5">
+                                                                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate pr-2">
+                                                                    {thread.userName}
+                                                                </span>
+                                                                <span className="text-[10px] text-gray-400">
+                                                                    {format(new Date(thread.createdAt), "MMM d")}
+                                                                </span>
+                                                            </div>
+
+                                                            {/* Content */}
+                                                            <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 break-words">
+                                                                {thread.content}
+                                                            </p>
+
+                                                            {/* Hover Buttons */}
+                                                            <div className="hidden group-hover:flex absolute right-0 top-[-2px] bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-600 rounded-md p-0.5 z-20 gap-0.5">
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-6 w-6 hover:bg-green-100 text-green-600"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleResolveThread(thread.threadId);
+                                                                    }}
+                                                                    title="Resolve"
+                                                                >
+                                                                    <CheckCircle className="h-3.5 w-3.5" />
+                                                                </Button>
+
+                                                                {/* Check ownership safely by converting both to strings */}
+                                                                {String(thread.userId) === String(currentUser.id) && (
+                                                                    <>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="icon"
+                                                                            className="h-6 w-6 hover:bg-blue-100 text-blue-500"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setEditingThreadId(thread.threadId);
+                                                                                setEditText(thread.content);
+                                                                            }}
+                                                                            title="Edit"
+                                                                        >
+                                                                            <Edit2 className="h-3.5 w-3.5" />
+                                                                        </Button>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="icon"
+                                                                            className="h-6 w-6 hover:bg-red-100 text-red-500"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleDeleteThread(thread.threadId);
+                                                                            }}
+                                                                            title="Delete"
+                                                                        >
+                                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                                        </Button>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })
+                            }
                         </div>
 
                     </div>
