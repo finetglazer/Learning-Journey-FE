@@ -223,7 +223,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
     };
 
     const handleDeleteDependency = useCallback(() => {
-        if (!dependencyBeingHovered) {
+        if (!projectRepository || !dependencyBeingHovered) {
             return;
         }
 
@@ -236,7 +236,6 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         updatedDependencies.splice(deleteDependencyIndex, 1);
         setDependencies(updatedDependencies);
 
-        if (!projectRepository) return;
         const subscription = projectRepository.deleteDependency({
             projectId: selectedProject?.id as number,
         }, {
@@ -261,7 +260,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         return () => {
             subscription.unsubscribe();
         }
-    }, [selectedProject, dependencyBeingHovered, dependencies]);
+    }, [selectedProject, dependencyBeingHovered, dependencies, projectRepository]);
 
     const initUpdateTimelineItemsBody = (item: TimelineItem, body: TimelineItem[]) => {
         const originalItem = originalItemsMap.get(getId(item.type, item.id));
@@ -282,7 +281,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
     };
 
     const handleUpdateTimelineDates = useCallback(() => {
-        if (!unsavedTimelineItem) {
+        if (!unsavedTimelineItem || !projectRepository) {
             return;
         }
 
@@ -319,6 +318,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                         toast.success(res?.message || res?.msg);
                         setGanttBarOffset(null);
                         setUnsavedTimelineItem(null);
+                        setSelectedItem(null);
                         getProjectTimeline();
                     }
                     else {
@@ -343,7 +343,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         return () => {
             subscription.unsubscribe();
         }
-    }, [selectedProject, timelineStructure, ganttBarOffset]);
+    }, [selectedProject, timelineStructure, ganttBarOffset, projectRepository]);
 
     const relatedIds = useMemo(() => {
         // If nothing is selected, the set is empty (logic handled in render)
@@ -375,6 +375,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
     }, [selectedItem, dependencies]);
 
     const handleCreateNewMilestone = useCallback((name: string, date: string) => {
+        if (!projectRepository) return;
         const subscription = projectRepository.createMilestone({
             projectId: selectedProject?.id as number,
         }, {
@@ -409,9 +410,10 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         return () => {
             subscription.unsubscribe();
         }
-    }, [selectedProject]);
+    }, [selectedProject, projectRepository]);
 
     const handleUpdateMilestone = useCallback((milestone: TimelineMilestone) => {
+        if (!projectRepository) return;
         const subscription = projectRepository.updateMilestone({
             projectId: selectedProject?.id as number,
             milestoneId: milestone.id,
@@ -446,9 +448,10 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         return () => {
             subscription.unsubscribe();
         }
-    }, [selectedProject]);
+    }, [selectedProject, projectRepository]);
 
     const handleDeleteMilestone = useCallback(() => {
+        if (!projectRepository) return;
         const subscription = projectRepository.deleteMilestone({
             projectId: selectedProject?.id as number,
             milestoneId: selectedMilestone?.id as number,
@@ -475,10 +478,11 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
     }, [
         selectedProject,
         selectedMilestone,
+        projectRepository,
     ]);
 
     const handleCreateTimelineItem = useCallback(() => {
-        if (!ghostBar || !selectedProject) {
+        if (!ghostBar || !selectedProject || !projectRepository) {
             return;
         }
         setGhostBar(null);
@@ -511,10 +515,11 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
     }, [
         selectedProject,
         ghostBar,
+        projectRepository,
     ]);
 
     const handleDeleteTimeline = useCallback(() => {
-        if (!selectedItem || !selectedProject) {
+        if (!selectedItem || !selectedProject || !projectRepository) {
             return;
         }
 
@@ -546,6 +551,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
     }, [
         selectedProject,
         selectedItem,
+        projectRepository,
     ]);
 
     const jumpToToday = () => {
@@ -820,6 +826,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
     };
 
     const getProjectTimeline = useCallback(() => {
+        if (!projectRepository) return;
         const subscription = projectRepository.getTimelineStructure({
             projectId: selectedProject?.id as number,
         }, {
@@ -844,7 +851,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         return () => {
             subscription.unsubscribe();
         };
-    }, [selectedProject, search]);
+    }, [selectedProject, search, projectRepository]);
 
     const debouncedFetchTimeline = useMemo(
         () => debounce(getProjectTimeline, 100),
