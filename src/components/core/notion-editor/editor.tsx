@@ -47,7 +47,7 @@ interface NotionEditorProps {
     versions: DocVersionDTO[];
     isLoadingVersions: boolean;
     onLoadVersions: () => void;
-    onRestoreVersion: (versionId: number) => void;
+    onRestoreVersion: (versionId: string) => void;
     isRestoringVersion: boolean;
     documentTitle?: string;
     onTitleChange?: (title: string) => void;

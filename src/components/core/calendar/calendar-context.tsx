@@ -768,7 +768,8 @@ export const useCalendarHooks = () => {
         if (!updatedMonthDataItem) {
             return undefined;
         }
-        let unscheduledRoutineIndex = (updatedMonthDataItem?.unscheduledRoutines || []).findIndex((routine: any) => routine?.id === unscheduledRoutineId);
+        const unscheduledRoutineIndex = (updatedMonthDataItem?.unscheduledRoutines || []).findIndex((routine: any) => routine?.id === unscheduledRoutineId);
+
         if (unscheduledRoutineIndex === -1) {
             return undefined;
         }

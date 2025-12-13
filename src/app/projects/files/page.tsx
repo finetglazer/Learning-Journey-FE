@@ -11,6 +11,7 @@ import { ArrowLeft, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { AppContextProps, AppContext } from "@/hooks/app-context";
 
+
 // Dynamically import the editor with SSR disabled
 const NotionEditor = dynamic(
     () => import("@/components/core/notion-editor/editor").then((mod) => mod.NotionEditor),
@@ -37,6 +38,12 @@ export default function DocumentPage() {
 
     const {
         documentRepository,
+        userRepository, // Get repo from context (contains auth token)
+        displayName,
+        setDisplayName, // Needed to update UI
+        avatarUrl,
+        setAvatarUrl,   // Needed to update UI
+        userId,
     } = useContext<AppContextProps>(AppContext);
 
     // FIX ID READING: Read from ?id=23
@@ -53,32 +60,25 @@ export default function DocumentPage() {
     const [versions, setVersions] = useState<DocVersionDTO[]>([]);
     const [isLoadingVersions, setIsLoadingVersions] = useState(false);
     const [isRestoringVersion, setIsRestoringVersion] = useState(false);
-
-    const {
-        displayName,
-        avatarUrl,
-        userId,
-    } = useContext<AppContextProps>(AppContext);
+    const [isRestoring, setIsRestoring] = useState(false);
 
     // Set mounted state
     useEffect(() => {
         setIsMounted(true);
     }, []);
 
-    // 1. Prepare Current User Data (Memoized to prevent color flickering)
+    // ✅ STEP 3: Update currentUser to use fresh context values
     const currentUser = useMemo(() => {
         if (!isMounted) return null;
 
-        // Random color generator for the avatar border/cursor
         const colors = ["#f87171", "#fb923c", "#fbbf24", "#a3e635", "#34d399", "#22d3ee", "#818cf8", "#e879f9"];
         const randomColor = colors[Math.floor(Math.random() * colors.length)];
 
         return {
-            name: displayName || "Anonymous",
-            avatar: avatarUrl || "",
+            name: displayName || "Anonymous", // Updates automatically when setDisplayName is called
+            avatar: avatarUrl || "",          // Updates automatically when setAvatarUrl is called
             color: randomColor,
-            // Assuming userId is stored, otherwise fallback to random
-            id: userId || `guest-${Math.random().toString(36).substr(2, 9)}`,
+            id: userId ? String(userId) : `guest-${Math.random().toString(36).substr(2, 9)}`,
         };
     }, [isMounted, displayName, avatarUrl, userId]);
 
@@ -113,6 +113,39 @@ export default function DocumentPage() {
 
         loadDocument();
     }, [nodeId, documentRepository]);
+
+
+    // ✅ STEP 2: Auto-Fetch User Profile (Debug Version)
+    useEffect(() => {
+        // Only run if we are logged in (userId) but missing display info
+        if (userId && (!displayName || !avatarUrl)) {
+            console.log("Fetching user details for:", userId);
+
+            userRepository?.getProfile().subscribe({
+                next: (res) => {
+                    console.log("[DEBUG] API Response:", res); // 👈 Check this log in Console!
+
+                    // Handle different response structures
+                    // 1. Sometimes response is { status: 1, data: { ... } }
+                    // 2. Sometimes response is just { ... }
+                    const data = res?.data || res;
+
+                    if (data) {
+                        // Check all possible name fields
+                        const name = data.fullName || data.full_name || data.name || data.username || "Unknown User";
+                        const avatar = data.avatar || data.avatarUrl || data.avatar_url || "";
+
+                        console.log("[DEBUG] Setting User:", { name, avatar });
+
+                        // Update Context -> Updates currentUser -> Updates Awareness
+                        setDisplayName(name);
+                        setAvatarUrl(avatar);
+                    }
+                },
+                error: (err) => console.error("Failed to fetch user profile", err)
+            });
+        }
+    }, [userId, displayName, avatarUrl, userRepository, setDisplayName, setAvatarUrl]);
 
     // Initialize collaborative editor
     const {
@@ -161,26 +194,42 @@ export default function DocumentPage() {
     };
 
     // Restore version
-    const handleRestoreVersion = useCallback(
-        async (versionId: number) => {
-            if (!nodeId || !documentRepository) return;
-            try {
-                setIsRestoringVersion(true);
-                await firstValueFrom(
-                    documentRepository.restoreVersion(nodeId, versionId)
-                );
+    // Import provider if available, or just use window reload
 
-                toast.success("Version restored successfully");
-                window.location.reload();
-            } catch (err) {
-                console.error("Failed to restore version:", err);
-                toast.error("Failed to restore version");
-            } finally {
-                setIsRestoringVersion(false);
+    const handleRestoreVersion = useCallback(async (versionId: string) => {
+        if (!nodeId || !documentRepository) return;
+
+        try {
+            setIsRestoring(true);
+
+            // 1. Disconnect Hocuspocus to prevent "Ghost" overwrites
+            if (provider) {
+                provider.disconnect();
             }
-        },
-        [nodeId, documentRepository]
-    );
+
+            // 2. Optional: Wait a moment for the server to register the disconnect
+            // (Helps if Hocuspocus has a debounce on clearing memory)
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // 🛑 FIX: Use firstValueFrom to actually execute the Observable
+            await firstValueFrom(documentRepository.restoreVersion(nodeId, versionId));
+
+            toast.success("Version restored successfully");
+
+            // 3. Reload to clear memory and fetch fresh data from DB
+            window.location.reload();
+
+        } catch (error) {
+            console.error("Failed to restore version:", error);
+            toast.error("Failed to restore version");
+
+            // Reconnect if failed so user isn't stuck
+            if (provider) provider.connect();
+            setIsRestoring(false);
+        }
+    }, [nodeId, documentRepository, provider]);
+
+
 
     const canEdit = document?.role === "OWNER" || document?.role === "MEMBER";
 
