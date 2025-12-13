@@ -5,10 +5,13 @@ import { Input } from "@/components/ui/input";
 import { FileNode } from "@/model/project-management";
 import { Plus, Search } from "lucide-react";
 import { FileExplorerTable } from "./components/file-explorer-table";
+import { useContext, useEffect, useMemo, useState } from "react";
+import { TeamProjectContext, TeamProjectContextProps } from "../../team-project-context";
+import { debounce } from "lodash";
 
 const MOCK_ALL_NODES: FileNode[] = [
     {
-        nodeId: -1, // Use a non-existent ID
+        nodeId: -1,
         projectId: 1,
         parentNodeId: null,
         name: "Shared posts from the community",
@@ -16,7 +19,7 @@ const MOCK_ALL_NODES: FileNode[] = [
         extension: null,
         sizeBytes: null,
         storageReference: null,
-        createdByUserId: -1, // Use a dummy ID
+        createdByUserId: -1,
         createdAt: '2025-12-01T00:00:00Z',
         updatedAt: '2025-12-01T00:00:00Z',
     },
@@ -30,15 +33,35 @@ interface FileExplorerTableProps {
 };
 
 export function SharedSourceTab({ }: FileExplorerTableProps) {
+    const [searchQuery, setSearchQuery] = useState('');
+    const {
+        getFiles,
+    } = useContext<TeamProjectContextProps>(TeamProjectContext);
+
+
+    const debouncedGetFiles = useMemo(
+        () => debounce(getFiles, 100),
+        [getFiles]
+    );
+
+    useEffect(() => {
+        debouncedGetFiles();
+    }, [searchQuery]);
+
     return (
         <div className="w-full h-full bg-slate-50 flex flex-col p-6 font-sans">
             {/* Header: Search and New File Button */}
             <div className="flex justify-between items-center mb-4">
                 <div className="relative w-96">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Search file" className="pl-10 bg-white shadow-sm" />
+                    <Input
+                        placeholder="Search file"
+                        className="pl-10 bg-white shadow-sm"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
                 </div>
-                <Button className="bg-purple-600 hover:bg-purple-700 text-white shadow-md">
+                <Button className="bg-purple-600 hover:bg-purple-700 text-white cursor-pointer shadow-md">
                     <Plus className="mr-2 h-4 w-4" /> New file
                 </Button>
             </div>

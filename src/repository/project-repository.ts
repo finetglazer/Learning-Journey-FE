@@ -362,6 +362,47 @@ export class ProjectRepository extends BaseRepository {
         return this.http.delete(`/${params.projectId}/milestones/${params.milestoneId}`)
             .pipe(map(res => res?.data));
     };
+
+    // FILE & DOCUMENT FUNCTIONS
+
+    public getFiles = (params: { projectId: number | string, parentNodeId?: number | string }): Observable<any> => {
+        const queryParams = new URLSearchParams();
+        if (params.parentNodeId) {
+            queryParams.append("parent_node_id", params.parentNodeId.toString());
+        }
+        return this.http.get(`/${params.projectId}/files?${queryParams.toString()}`)
+            .pipe(map(res => res?.data));
+    };
+
+    public createFolder = (params: { projectId: number | string }, body: any): Observable<any> => {
+        return this.http.post(`/${params.projectId}/files/folder`, body)
+            .pipe(map(res => res?.data));
+    };
+
+    public uploadFile = (params: { projectId: number | string, parentNodeId?: number | string }, file: File): Observable<any> => {
+        const formData = new FormData();
+        formData.append("file", file);
+        if (params.parentNodeId) {
+            formData.append("parent_node_id", params.parentNodeId.toString());
+        }
+        return this.http.post(`/${params.projectId}/files/upload`, formData)
+            .pipe(map(res => res?.data));
+    };
+
+    public deleteFileNode = (params: { projectId: number | string, nodeId: number | string }): Observable<any> => {
+        return this.http.delete(`/${params.projectId}/files/${params.nodeId}`)
+            .pipe(map(res => res?.data));
+    };
+
+    public searchFiles = (params: { projectId: number | string, keyword: string }): Observable<any> => {
+        return this.http.get(`/${params.projectId}/files/search?keyword=${encodeURIComponent(params.keyword)}`)
+            .pipe(map(res => res?.data));
+    };
+
+    public createNotionDocument = (params: { projectId: number | string }, body: any): Observable<any> => {
+        return this.http.post(`/${params.projectId}/files/document`, body)
+            .pipe(map(res => res?.data));
+    };
 };
 
 export const projectRepositoryCons = (userId: number) => new ProjectRepository(userId);

@@ -39,13 +39,14 @@ import { CalendarYearView } from "@/components/core/calendar/calendar-year-view"
 import { HeaderBar } from "@/components/core/header-bar/header-bar";
 import { MemorableEvents } from "@/components/core/sidebar/pages/memorable-event/memorable-event";
 import { TeamProjectPage } from "@/components/core/sidebar/pages/project/team-project";
-import { TeamProjectContext, useTeamProjectHooks } from "@/components/core/sidebar/pages/project/team-project-context";
+import { TeamProjectContext, TeamProjectContextProps, useTeamProjectHooks } from "@/components/core/sidebar/pages/project/team-project-context";
 import { PublicProfile } from "@/components/core/sidebar/pages/public-profile/public-profile";
 import { TeamProjectSection } from "@/components/core/sidebar/sections/team-project-section";
 import { Button } from "@/components/ui/button";
 import { SIGN_IN_ROUTE } from "@/const/routes-const";
-import { Project } from "@/model/project-management";
+import { Project, ProjectMembershipRole } from "@/model/project-management";
 import { useRouter } from "next/navigation";
+import { isEqual } from "lodash";
 
 export default function RootPage() {
   const router = useRouter();
@@ -147,29 +148,11 @@ export default function RootPage() {
           id: `project-${project?.id}`,
           label: project?.name,
           icon: <Users size={16} />,
-          actionIcon: <MoreHorizontal size={16} />,
           onClick: (e: any) => {
             e.stopPropagation();
             setActiveItem(`project-${project?.id}`);
             setCurrentSelectedProject(project);
           },
-          menu: [
-            // {
-            //   icon: (
-            //     <div
-            //       className="cursor-pointer text-red-500"
-            //     >
-            //       Delete
-            //     </div>
-            //   ),
-            //   onClick: (e: any) => {
-            //     e.stopPropagation();
-            //     updateModalStates(3, true);
-            //     setActiveItem(`project-${project?.id}`);
-            //     setCurrentSelectedProject(project);
-            //   }
-            // }
-          ],
         }
       })
     },
@@ -258,7 +241,7 @@ export default function RootPage() {
 
   // --- Fetch user settings ---
   useEffect(() => {
-    if (!userRepository || !settingsRepository || !calendarRepository || !projectRepository) return;
+    if (!userRepository || !settingsRepository || !calendarRepository || !projectRepository || !userId) return;
 
     userRepository?.getProfile().subscribe({
       next: (res) => {

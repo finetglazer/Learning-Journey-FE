@@ -79,7 +79,7 @@ export const TeamMembersViewModal = ({
     return (
         // 4. Add relative class
         <div className="
-            w-full absolute top-[25%] left-[30%] max-w-[600px] p-8 bg-white rounded-2xl shadow-2xl z-[9999]
+            w-full absolute top-[20%] left-[25%] max-w-[600px] p-8 bg-white rounded-2xl shadow-2xl z-[9999]
             animate-in fade-in slide-in-from-top-10 duration-500 ease-out
         ">
 
