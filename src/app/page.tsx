@@ -331,36 +331,40 @@ export default function RootPage() {
     // });
 
     // Get calendarId
-    calendarRepository?.getCalendars().subscribe({
-      next: res => {
-        if (res?.status) {
-          const calendars = res?.data?.calendars || [];
-          if (!calendars.length) {
-            // If there are no calendars, create 1
-            calendarRepository?.createCalendar(userId).subscribe({
-              next: res => {
-                if (res?.status) {
-                  if (res?.data) {
-                    setCalendarId(res?.data);
+    // ✅ FIX: Check if userId exists before using it
+    if (userId) {
+      calendarRepository?.getCalendars().subscribe({
+        next: res => {
+          if (res?.status) {
+            const calendars = res?.data?.calendars || [];
+            if (!calendars.length) {
+              // If there are no calendars, create 1
+              // Now TS knows userId is a number here
+              calendarRepository?.createCalendar(userId).subscribe({
+                next: res => {
+                  if (res?.status) {
+                    if (res?.data) {
+                      setCalendarId(res?.data);
+                    }
                   }
-                }
-                else {
-                  toast.error(res?.msg || res?.message);
-                }
-              },
-              error: err => { }
-            });
+                  else {
+                    toast.error(res?.msg || res?.message);
+                  }
+                },
+                error: err => { }
+              });
+            }
+            else {
+              setCalendarId(calendars[0]?.id);
+            }
           }
           else {
-            setCalendarId(calendars[0]?.id);
+            toast.error(res?.msg || res?.message);
           }
-        }
-        else {
-          toast.error(res?.msg || res?.message);
-        }
-      },
-      error: err => { },
-    });
+        },
+        error: err => { },
+      });
+    }
 
     // Get team projects
     getProjects();

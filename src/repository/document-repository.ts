@@ -30,7 +30,7 @@ export class DocumentRepository extends BaseRepository {
     ): Observable<BaseResponse<NotionDocDTO>> {
         return this.http
             .post<BaseResponse<NotionDocDTO>>(
-                `/api/pm/projects/${projectId}/files/document`,
+                `/pm/projects/${projectId}/files/document`,
                 request
             )
             .pipe(map((response) => response.data));
@@ -41,7 +41,7 @@ export class DocumentRepository extends BaseRepository {
      */
     getDocumentDetails(nodeId: number): Observable<NotionDocDTO> {
         return this.http
-            .get<BaseResponse<NotionDocDTO>>(`/api/pm/files/${nodeId}`)
+            .get<BaseResponse<NotionDocDTO>>(`/pm/files/${nodeId}`)
             .pipe(map((response) => response.data.data)); // This returns NotionDocDTO
     }
 
@@ -51,7 +51,7 @@ export class DocumentRepository extends BaseRepository {
     getVersionHistory(nodeId: number): Observable<DocVersionDTO[]> {
         return this.http
             .get<BaseResponse<{ versions: DocVersionDTO[] }>>(
-                `/api/pm/files/${nodeId}/history`
+                `/pm/files/${nodeId}/history`
             )
             // OLD (Error):
             // .pipe(map((response) => response.data.versions));
@@ -62,10 +62,11 @@ export class DocumentRepository extends BaseRepository {
     /**
      * Restore a specific version
      */
-    restoreVersion(nodeId: number, versionId: number): Observable<void> {
+    // ✅ FIX: Change versionId type to string
+    restoreVersion(nodeId: number, versionId: string): Observable<void> {
         return this.http
             .post<BaseResponse<void>>(
-                `/api/pm/files/${nodeId}/history/${versionId}/restore`,
+                `/pm/files/${nodeId}/history/${versionId}/restore`,
                 {}
             )
             .pipe(map(() => undefined));
@@ -80,20 +81,20 @@ export class DocumentRepository extends BaseRepository {
     ): Observable<BaseResponse<DocumentDTO>> {
         return this.http
             .get<BaseResponse<DocumentDTO>>(
-                `/api/pm/files/${nodeId}/snapshots/${snapshotRef}`
+                `/pm/files/${nodeId}/snapshots/${snapshotRef}`
             )
             .pipe(map((response) => response.data));
     }
 
     updateDocument(nodeId: number, data: { name?: string }): Observable<BaseResponse<NotionDocDTO>> {
         return this.http
-            .patch<BaseResponse<NotionDocDTO>>(`/api/pm/files/${nodeId}`, data)
+            .patch<BaseResponse<NotionDocDTO>>(`/pm/files/${nodeId}`, data)
             .pipe(map((response) => response.data));
     }
 
     getSnapshotList(storageRef: string): Observable<any[]> {
         return this.http
-            .get<BaseResponse<any[]>>(`/api/document/${storageRef}/snapshots`)
+            .get<BaseResponse<any[]>>(`/document/${storageRef}/snapshots`)
             .pipe(map((response) => {
                 // Axios response -> Body (BaseResponse) -> Data field (The List)
                 return response.data.data || [];

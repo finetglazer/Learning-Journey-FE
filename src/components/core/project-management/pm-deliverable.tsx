@@ -183,14 +183,14 @@ function PM_DeliverableItemBase({
                     onClick={handleToggle}
                     className="p-1 mr-2 rounded-full hover:bg-gray-200"
                 >
-                    {(deliverable.phases && deliverable.phases.length > 0) && (
+
                         <ChevronDown
                             className={cn(
                                 "h-4 w-4 transition-transform duration-200",
                                 isExpanded ? "rotate-0" : "-rotate-90"
                             )}
                         />
-                    )}
+
                 </button>
 
                 {/* Deliverable Title / Input Field */}

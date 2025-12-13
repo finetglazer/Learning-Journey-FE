@@ -233,12 +233,12 @@ export const useCalendarHooks = () => {
     const [activeDragId, setActiveDragId] = useState<string | null>(null);
     const [editorPosition, setEditorPosition] = useState({ x: 0, y: 0 });
     const [panelPosition, setPanelPosition] = useState({
-        x: window.visualViewport ? window.visualViewport.pageLeft + window.visualViewport.width / 2 : 20,
-        y: window.visualViewport ? window.visualViewport.pageTop + window.visualViewport.height / 3 : 100,
+        x: window?.visualViewport ? window.visualViewport.pageLeft + window.visualViewport.width / 2 : 20,
+        y: window?.visualViewport ? window.visualViewport.pageTop + window.visualViewport.height / 3 : 100,
     });
     const [panelBufferListPosition, setPanelBufferListPosition] = useState({
-        x: window.visualViewport ? window.visualViewport.pageLeft + window.visualViewport.width / 3 : 20,
-        y: window.visualViewport ? window.visualViewport.pageTop + window.visualViewport.height / 3 : 100,
+        x: window?.visualViewport ? window.visualViewport.pageLeft + window.visualViewport.width / 3 : 20,
+        y: window?.visualViewport ? window.visualViewport.pageTop + window.visualViewport.height / 3 : 100,
     });
     const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
     const [monthPlanId, setMonthPlanId] = useState<number | null>(null);
@@ -768,7 +768,8 @@ export const useCalendarHooks = () => {
         if (!updatedMonthDataItem) {
             return undefined;
         }
-        let unscheduledRoutineIndex = (updatedMonthDataItem?.unscheduledRoutines || []).findIndex((routine: any) => routine?.id === unscheduledRoutineId);
+        const unscheduledRoutineIndex = (updatedMonthDataItem?.unscheduledRoutines || []).findIndex((routine: any) => routine?.id === unscheduledRoutineId);
+
         if (unscheduledRoutineIndex === -1) {
             return undefined;
         }

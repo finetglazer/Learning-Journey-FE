@@ -4,8 +4,8 @@ import { useState } from "react";
 import { CommentThread, CommentReply } from "@/model/document";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { CommentActionButtons } from "./comment-actions";
 import {
     CheckCircle,
     MessageCircle,
@@ -21,6 +21,7 @@ interface CommentSidebarProps {
     selectedThreadId?: string;
     onSelectThread: (threadId: string) => void;
     onResolveThread: (threadId: string) => void;
+    onReopenThread: (threadId: string) => void; // ✅ NEW
     onDeleteThread: (threadId: string) => void;
     onAddReply: (threadId: string, content: string) => void;
     onDeleteReply: (threadId: string, replyId: string) => void;
@@ -33,27 +34,19 @@ export function CommentSidebar({
                                    selectedThreadId,
                                    onSelectThread,
                                    onResolveThread,
+                                   onReopenThread, // ✅ NEW
                                    onDeleteThread,
                                    onAddReply,
                                    onDeleteReply,
                                    currentUserId,
                                    canEdit = true,
                                }: CommentSidebarProps) {
-    const [replyingTo, setReplyingTo] = useState<string | null>(null);
-    const [replyContent, setReplyContent] = useState("");
     const [showResolved, setShowResolved] = useState(false);
 
     const activeThreads = threads.filter((t) => !t.resolved && !t.orphaned);
     const resolvedThreads = threads.filter((t) => t.resolved || t.orphaned);
 
     const displayedThreads = showResolved ? resolvedThreads : activeThreads;
-
-    const handleSubmitReply = (threadId: string) => {
-        if (!replyContent.trim()) return;
-        onAddReply(threadId, replyContent.trim());
-        setReplyContent("");
-        setReplyingTo(null);
-    };
 
     return (
         <div className="w-80 border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col h-full">
@@ -107,16 +100,9 @@ export function CommentSidebar({
                                 isSelected={selectedThreadId === thread.threadId}
                                 onSelect={() => onSelectThread(thread.threadId)}
                                 onResolve={() => onResolveThread(thread.threadId)}
+                                onReopen={() => onReopenThread(thread.threadId)}
                                 onDelete={() => onDeleteThread(thread.threadId)}
-                                isReplyingTo={replyingTo === thread.threadId}
-                                onStartReply={() => setReplyingTo(thread.threadId)}
-                                onCancelReply={() => {
-                                    setReplyingTo(null);
-                                    setReplyContent("");
-                                }}
-                                replyContent={replyContent}
-                                onReplyContentChange={setReplyContent}
-                                onSubmitReply={() => handleSubmitReply(thread.threadId)}
+                                onAddReply={(content) => onAddReply(thread.threadId, content)}  // ✅ UNCOMMENT THIS
                                 onDeleteReply={(replyId) =>
                                     onDeleteReply(thread.threadId, replyId)
                                 }
@@ -136,13 +122,9 @@ interface ThreadCardProps {
     isSelected: boolean;
     onSelect: () => void;
     onResolve: () => void;
+    onReopen: () => void;
     onDelete: () => void;
-    isReplyingTo: boolean;
-    onStartReply: () => void;
-    onCancelReply: () => void;
-    replyContent: string;
-    onReplyContentChange: (content: string) => void;
-    onSubmitReply: () => void;
+    onAddReply: (content: string) => void;  // ✅ ADD THIS
     onDeleteReply: (replyId: string) => void;
     currentUserId: string;
     canEdit: boolean;
@@ -153,18 +135,24 @@ function ThreadCard({
                         isSelected,
                         onSelect,
                         onResolve,
+                        onReopen,
                         onDelete,
-                        isReplyingTo,
-                        onStartReply,
-                        onCancelReply,
-                        replyContent,
-                        onReplyContentChange,
-                        onSubmitReply,
+                        onAddReply,  // ✅ ADD THIS
                         onDeleteReply,
                         currentUserId,
                         canEdit,
                     }: ThreadCardProps) {
     const isOwner = thread.userId === currentUserId;
+    const [isReplying, setIsReplying] = useState(false);  // ✅ ADD THIS
+    const [replyContent, setReplyContent] = useState("");  // ✅ ADD THIS
+
+    const handleSubmitReply = () => {  // ✅ ADD THIS
+        if (replyContent.trim()) {
+            onAddReply(replyContent.trim());
+            setReplyContent("");
+            setIsReplying(false);
+        }
+    };
 
     return (
         <div
@@ -192,42 +180,16 @@ function ThreadCard({
                             {thread.userName}
                         </div>
                         {/* ✅ MOVED ACTIONS HERE & ADDED HOVER CLASSES */}
-                        {canEdit && !thread.resolved && (
-                            <div
-                                className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-6 w-6 p-0 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
-                                    onClick={onResolve}
-                                    title="Resolve"
-                                >
-                                    <CheckCircle className="h-4 w-4 text-green-600" />
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-6 w-6 p-0 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
-                                    onClick={onDelete}
-                                    title="Edit"
-                                >
-                                    <Edit2 className="h-3.5 w-3.5 text-gray-500" />
-                                </Button>
-                                {isOwner && (
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 w-6 p-0 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full"
-                                        onClick={onDelete}
-                                        title="Delete"
-                                    >
-                                        <Trash2 className="h-3.5 w-3.5 text-red-500" />
-                                    </Button>
-                                )}
-                            </div>
-                        )}
+                        <CommentActionButtons
+                            isOwner={isOwner}
+                            isResolved={thread.resolved}
+                            canEditDoc={canEdit}
+                            onResolve={onResolve}
+                            onReopen={onReopen}
+                            onReply={() => setIsReplying(true)}  // ✅ ADD THIS
+                            onDelete={onDelete}
+                            variant="sidebar"
+                        />
                     </div>
 
 
@@ -254,6 +216,46 @@ function ThreadCard({
                 </div>
             )}
 
+            {/* ✅ ADD REPLY INPUT */}
+            {isReplying && (
+                <div className="mt-3 space-y-2">
+                    <textarea
+                        autoFocus
+                        value={replyContent}
+                        onChange={(e) => setReplyContent(e.target.value)}
+                        placeholder="Reply..."
+                        className="w-full text-sm p-2 border border-gray-300 dark:border-gray-600 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        rows={2}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSubmitReply();
+                            }
+                        }}
+                    />
+                    <div className="flex justify-end gap-2">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                                setIsReplying(false);
+                                setReplyContent("");
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            size="sm"
+                            onClick={handleSubmitReply}
+                            disabled={!replyContent.trim()}
+                        >
+                            Reply
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+
             {/* Replies */}
             {thread.replies.length > 0 && (
                 <div className="mt-3 space-y-2 border-l-2 border-gray-200 dark:border-gray-600 pl-3">
@@ -265,40 +267,6 @@ function ThreadCard({
                             onDelete={() => onDeleteReply(reply.replyId)}
                         />
                     ))}
-                </div>
-            )}
-
-            {/* Reply form */}
-            {!thread.resolved && !thread.orphaned && canEdit && (
-                <div className="mt-3" onClick={(e) => e.stopPropagation()}>
-                    {isReplyingTo ? (
-                        <div className="space-y-2">
-                            <Textarea
-                                value={replyContent}
-                                onChange={(e) => onReplyContentChange(e.target.value)}
-                                placeholder="Write a reply..."
-                                className="min-h-[60px] text-sm"
-                                autoFocus
-                            />
-                            <div className="flex gap-2">
-                                <Button size="sm" onClick={onSubmitReply}>
-                                    Reply
-                                </Button>
-                                <Button size="sm" variant="outline" onClick={onCancelReply}>
-                                    Cancel
-                                </Button>
-                            </div>
-                        </div>
-                    ) : (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={onStartReply}
-                            className="text-gray-500 text-xs"
-                        >
-                            Reply
-                        </Button>
-                    )}
                 </div>
             )}
         </div>

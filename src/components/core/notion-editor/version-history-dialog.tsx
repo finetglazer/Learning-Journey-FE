@@ -21,7 +21,7 @@ interface VersionHistoryDialogProps {
     onOpenChange: (open: boolean) => void;
     versions: DocVersionDTO[];
     isLoading?: boolean;
-    onRestore: (versionId: number) => void;
+    onRestore: (versionId: string) => void;
     isRestoring?: boolean;
 }
 
@@ -52,11 +52,11 @@ export function VersionHistoryDialog({
                                          onRestore,
                                          isRestoring,
                                      }: VersionHistoryDialogProps) {
-    const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
+    const [selectedVersion, setSelectedVersion] = useState<string | null>(null);
 
     const handleRestore = () => {
         if (selectedVersion !== null) {
-            onRestore(selectedVersion);
+            onRestore(selectedVersion); // Now passes a string as expected
         }
     };
 
@@ -91,24 +91,38 @@ export function VersionHistoryDialog({
                         <ScrollArea className="h-[400px] pr-4">
                             <div className="space-y-2">
                                 {versions.map((version, index) => {
+                                    console.log(`Version ${version.versionNumber}:`, version.snapshotRef);
                                     const reasonInfo = reasonLabels[version.reason] || {
                                         label: version.reason,
                                         icon: <Clock className="h-3 w-3" />,
                                     };
 
+                                    const isValid = !!version.snapshotRef;
+
                                     return (
                                         <div
-                                            key={version.versionId}
-                                            onClick={() => setSelectedVersion(version.versionId)}
+                                            key={version.snapshotRef || index}
+                                            onClick={() => {
+                                                if (isValid) {
+                                                    setSelectedVersion(version.snapshotRef);
+                                                }
+                                            }}
                                             className={cn(
-                                                "p-3 rounded-lg border cursor-pointer transition-colors",
-                                                selectedVersion === version.versionId
-                                                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                                                    : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                                                "p-3 rounded-lg border transition-colors",
+                                                // 1. Handle Selection State
+                                                (isValid && selectedVersion === version.snapshotRef)
+                                                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 cursor-pointer"
+                                                    : "border-gray-200 dark:border-gray-700",
+
+                                                // 2. Handle Valid/Invalid State
+                                                isValid
+                                                    ? "hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
+                                                    : "opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800"
                                             )}
                                         >
                                             <div className="flex items-start justify-between">
                                                 <div className="flex items-center gap-3">
+                                                    {/* Avatar remains the same */}
                                                     <Avatar className="h-8 w-8">
                                                         <AvatarImage src={version.createdByAvatar} />
                                                         <AvatarFallback>
@@ -117,33 +131,35 @@ export function VersionHistoryDialog({
                                                             )}
                                                         </AvatarFallback>
                                                     </Avatar>
+                                                    {/* ✅ CHANGED: Main Content Area */}
                                                     <div>
+                                                        {/* 1. Show Time as the main "Title" */}
                                                         <div className="flex items-center gap-2">
-                              <span className="font-medium">
-                                Version {version.versionNumber}
-                              </span>
+                                                            <span className="font-medium text-gray-900 dark:text-gray-100">
+                                                                {format(new Date(version.createdAt), "MMM d, h:mm a")}
+                                                            </span>
+
+                                                            {/* Optional: Keep 'Latest' badge if you want */}
                                                             {index === 0 && (
-                                                                <span className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                                  Latest
-                                </span>
+                                                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-medium">
+                                                                    Current
+                                                                </span>
                                                             )}
                                                         </div>
+                                                        {/* 2. Show User Name as subtitle */}
                                                         <p className="text-sm text-gray-500">
                                                             {version.createdByName || "Unknown user"}
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <div className="text-right">
-                                                    <div className="flex items-center gap-1 text-xs text-gray-500">
+
+
+                                                {/* Right Side: Reason / Icon */}
+                                                <div className="text-right flex items-center h-full">
+                                                    <div className="flex items-center gap-1.5 text-xs text-gray-400 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded-full">
                                                         {reasonInfo.icon}
-                                                        {reasonInfo.label}
+                                                        <span>{reasonInfo.label}</span>
                                                     </div>
-                                                    <p className="text-xs text-gray-400 mt-1">
-                                                        {format(
-                                                            new Date(version.createdAt),
-                                                            "MMM d, yyyy h:mm a"
-                                                        )}
-                                                    </p>
                                                 </div>
                                             </div>
                                         </div>
