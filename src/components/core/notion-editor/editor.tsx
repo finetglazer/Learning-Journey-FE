@@ -25,13 +25,14 @@ import { CommentThread, DocVersionDTO, AwarenessUser } from "@/model/document";
 import { Button } from "@/components/ui/button";
 import {
     ArrowLeft, User, Calendar, MessageSquare, Clock, ArrowUp,
-    CheckCircle, Edit2, Trash2 // <--- Add these
+    CheckCircle, Edit2, Trash2, RotateCcw // <--- Add these
 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 
 import { format } from "date-fns";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
 import {cn} from "@/lib/utils";
+import { CommentActionButtons } from "./comment-actions";
 
 interface NotionEditorProps {
     provider: HocuspocusProvider;
@@ -272,6 +273,19 @@ export function NotionEditor({
         },
         [editor, updateThread, currentUser.id]
     );
+
+    const handleReopenThread = useCallback((threadId: string) => {
+        if (!editor || !canEdit) return;
+
+        updateThread(threadId, {
+            resolved: false,
+            resolvedBy: undefined,
+            resolvedAt: undefined,
+        });
+
+        // Note: We don't re-add the highlight since the text might have changed
+        // User will need to select text again to re-apply comment
+    }, [editor, canEdit, updateThread]);
 
     const handleDeleteThread = useCallback(
         (threadId: string) => {
@@ -668,49 +682,66 @@ export function NotionEditor({
                                                             </p>
 
                                                             {/* Hover Buttons */}
+                                                            {/* Hover Buttons */}
                                                             <div className="hidden group-hover:flex absolute right-0 top-[-2px] bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-600 rounded-md p-0.5 z-20 gap-0.5">
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="h-6 w-6 hover:bg-green-100 text-green-600"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleResolveThread(thread.threadId);
-                                                                    }}
-                                                                    title="Resolve"
-                                                                >
-                                                                    <CheckCircle className="h-3.5 w-3.5" />
-                                                                </Button>
+                                                                {!thread.resolved && (
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-6 w-6 hover:bg-green-100 text-green-600"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleResolveThread(thread.threadId);
+                                                                        }}
+                                                                        title="Resolve"
+                                                                    >
+                                                                        <CheckCircle className="h-3.5 w-3.5" />
+                                                                    </Button>
+                                                                )}
+                                                                {thread.resolved && (
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-6 w-6 hover:bg-blue-100 text-blue-500"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleReopenThread(thread.threadId);
+                                                                        }}
+                                                                        title="Reopen"
+                                                                    >
+                                                                        <RotateCcw className="h-3.5 w-3.5" />
+                                                                    </Button>
+                                                                )}
 
                                                                 {/* Check ownership safely by converting both to strings */}
+                                                                {String(thread.userId) === String(currentUser.id) && !thread.resolved && (
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-6 w-6 hover:bg-blue-100 text-blue-500"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setEditingThreadId(thread.threadId);
+                                                                            setEditText(thread.content);
+                                                                        }}
+                                                                        title="Edit"
+                                                                    >
+                                                                        <Edit2 className="h-3.5 w-3.5" />
+                                                                    </Button>
+                                                                )}
                                                                 {String(thread.userId) === String(currentUser.id) && (
-                                                                    <>
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            size="icon"
-                                                                            className="h-6 w-6 hover:bg-blue-100 text-blue-500"
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                setEditingThreadId(thread.threadId);
-                                                                                setEditText(thread.content);
-                                                                            }}
-                                                                            title="Edit"
-                                                                        >
-                                                                            <Edit2 className="h-3.5 w-3.5" />
-                                                                        </Button>
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            size="icon"
-                                                                            className="h-6 w-6 hover:bg-red-100 text-red-500"
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                handleDeleteThread(thread.threadId);
-                                                                            }}
-                                                                            title="Delete"
-                                                                        >
-                                                                            <Trash2 className="h-3.5 w-3.5" />
-                                                                        </Button>
-                                                                    </>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-6 w-6 hover:bg-red-100 text-red-500"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleDeleteThread(thread.threadId);
+                                                                        }}
+                                                                        title="Delete"
+                                                                    >
+                                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                                    </Button>
                                                                 )}
                                                             </div>
                                                         </div>
@@ -734,7 +765,8 @@ export function NotionEditor({
                     onSelectThread={setSelectedThreadId}
                     onResolveThread={handleResolveThread}
                     onDeleteThread={handleDeleteThread}
-                    onAddReply={handleAddReply}
+                    onReopenThread={handleReopenThread}
+                    // onAddReply={handleAddReply}
                     onDeleteReply={handleDeleteReply}
                     currentUserId={currentUser.id}
                     canEdit={canEdit}
