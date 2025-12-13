@@ -263,7 +263,7 @@ export const InviteMembersModal = ({
         <>
             {/* --- Modal Card --- */}
             <div className="
-                w-full max-w-[640px] absolute top-[25%] left-[30%] p-8 bg-white rounded-2xl shadow-2xl z-[9999]
+                w-full max-w-[640px] absolute top-[12%] left-[25%] p-8 bg-white rounded-2xl shadow-2xl z-[9999]
                 animate-in fade-in slide-in-from-top-10 duration-500 ease-out
             ">
 

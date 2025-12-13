@@ -1,7 +1,7 @@
 "use client";
 
 import { AppContext, AppContextProps } from "@/hooks/app-context";
-import { PM_Deliverable, Project, ProjectDependency, ProjectMembershipRole, ProjectTimelineStructure, ReorderType, TeamMember, TimelineItem } from "@/model/project-management"; // Added PM_Phase, PM_Task for type clarity
+import { FileNode, PM_Deliverable, Project, ProjectDependency, ProjectMembershipRole, ProjectTimelineStructure, ReorderType, TeamMember, TimelineItem } from "@/model/project-management"; // Added PM_Phase, PM_Task for type clarity
 import { createContext, Dispatch, SetStateAction, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { finalize } from "rxjs";
 import { toast } from "sonner";
@@ -27,6 +27,9 @@ export interface TeamProjectContextProps {
     overallLoading: boolean;
     setOverallLoading: Dispatch<SetStateAction<boolean>>;
 
+    getFiles: () => void;
+    files: FileNode[];
+    setFiles: Dispatch<SetStateAction<FileNode[]>>;
     getTeamMembers: () => void;
     members: TeamMember[];
     setMembers: Dispatch<SetStateAction<TeamMember[]>>;
@@ -66,6 +69,9 @@ export const TeamProjectContext = createContext<TeamProjectContextProps>({
     getTeamMembers: () => { },
     overallLoading: false,
     setOverallLoading: () => { },
+    getFiles: () => { },
+    files: [],
+    setFiles: () => { },
     members: [],
     setMembers: () => { },
     currentMember: null,
@@ -96,6 +102,7 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
     const [isNavigatingFromTaskBoard, setIsNavigatingFromTaskBoard] = useState<boolean>(false);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [members, setMembers] = useState<TeamMember[]>([]);
+    const [files, setFiles] = useState<FileNode[]>([]);
     const [currentMember, setCurrentMember] = useState<TeamMember | null>(null);
     const [deliverables, setDeliverables] = useState<PM_Deliverable[]>([]);
     const [isReordering, setIsReordering] = useState<boolean>(false);
@@ -114,7 +121,7 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
     } = useContext<AppContextProps>(AppContext);
 
     const getProjectStructure = useCallback((searchWithParam?: boolean, searchParam?: string) => {
-        if (!projectRepository) return () => { };
+        if (!projectRepository || !currentSelectedProject) return () => { };
         const subscription = projectRepository.getProjectStructure({
             projectId: currentSelectedProject?.id,
             search: searchWithParam ? searchParam || "" : search || "",
@@ -191,7 +198,7 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
     }, [currentSelectedProject, setIsReordering, search, setExpandedDeliverables, setExpandedPhases, projectRepository]);
 
     const getTeamMembers = useCallback(() => {
-        if (!projectRepository) return;
+        if (!projectRepository || !currentSelectedProject) return;
         const subscription = projectRepository.getTeamMembers({
             projectId: currentSelectedProject?.id
         }).subscribe({
@@ -217,7 +224,7 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
     }, [currentSelectedProject, setMembers, setCurrentMember, email, projectRepository]);
 
     const getItemDependencies = useCallback((item: TimelineItem) => {
-        if (!projectRepository) return () => { };
+        if (!projectRepository || !currentSelectedProject) return () => { };
         const subscription = projectRepository.getDependencies({
             projectId: currentSelectedProject?.id as number,
             itemId: item.id,
@@ -241,6 +248,53 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
     }, [
         currentSelectedProject,
         projectRepository,
+    ]);
+
+    const getFiles = useCallback(() => {
+        if (!projectRepository || !currentSelectedProject) {
+            return;
+        }
+        const DEFAULT_FILE: FileNode = {
+            nodeId: -1,
+            projectId: 1,
+            parentNodeId: null,
+            name: "Shared posts from the community",
+            type: 'FOLDER',
+            extension: null,
+            sizeBytes: null,
+            storageReference: null,
+            createdByUserId: -1,
+            createdAt: '2025-12-01T00:00:00Z',
+            updatedAt: '2025-12-01T00:00:00Z',
+        };
+        const subscription = projectRepository.getFiles({
+            projectId: currentSelectedProject?.id,
+        })
+            .subscribe({
+                next: res => {
+                    if (res?.status) {
+                        const updatedFiles = [
+                            DEFAULT_FILE,
+                            ...res?.data || [],
+                        ];
+                        setFiles(updatedFiles);
+                    }
+                    else {
+                        toast.error(res?.msg || res?.message);
+                        setFiles([DEFAULT_FILE]);
+                    }
+                },
+                error: err => {
+                    setFiles([DEFAULT_FILE]);
+                },
+            });
+
+        return () => {
+            subscription.unsubscribe();
+        }
+    }, [
+        currentSelectedProject,
+        projectRepository
     ]);
 
     const handleReorderList = useCallback((orderedIds: number[], parentId: number, type: ReorderType) => {
@@ -323,6 +377,9 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         setIsReordering,
         selectedProject,
         setSelectedProject,
+        files,
+        setFiles,
+        getFiles,
         getTeamMembers,
         getItemDependencies,
         dependencies,
