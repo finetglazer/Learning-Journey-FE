@@ -23,7 +23,7 @@ interface CommentSidebarProps {
     onResolveThread: (threadId: string) => void;
     onReopenThread: (threadId: string) => void; // ✅ NEW
     onDeleteThread: (threadId: string) => void;
-    // onAddReply: (threadId: string, content: string) => void;
+    onAddReply: (threadId: string, content: string) => void;
     onDeleteReply: (threadId: string, replyId: string) => void;
     currentUserId: string;
     canEdit?: boolean;
@@ -36,7 +36,7 @@ export function CommentSidebar({
                                    onResolveThread,
                                    onReopenThread, // ✅ NEW
                                    onDeleteThread,
-                                   // onAddReply,
+                                   onAddReply,
                                    onDeleteReply,
                                    currentUserId,
                                    canEdit = true,
@@ -100,8 +100,9 @@ export function CommentSidebar({
                                 isSelected={selectedThreadId === thread.threadId}
                                 onSelect={() => onSelectThread(thread.threadId)}
                                 onResolve={() => onResolveThread(thread.threadId)}
-                                onReopen={() => onReopenThread(thread.threadId)} // ✅ NEW
+                                onReopen={() => onReopenThread(thread.threadId)}
                                 onDelete={() => onDeleteThread(thread.threadId)}
+                                onAddReply={(content) => onAddReply(thread.threadId, content)}  // ✅ UNCOMMENT THIS
                                 onDeleteReply={(replyId) =>
                                     onDeleteReply(thread.threadId, replyId)
                                 }
@@ -121,8 +122,9 @@ interface ThreadCardProps {
     isSelected: boolean;
     onSelect: () => void;
     onResolve: () => void;
-    onReopen: () => void; // ✅ NEW
+    onReopen: () => void;
     onDelete: () => void;
+    onAddReply: (content: string) => void;  // ✅ ADD THIS
     onDeleteReply: (replyId: string) => void;
     currentUserId: string;
     canEdit: boolean;
@@ -133,13 +135,24 @@ function ThreadCard({
                         isSelected,
                         onSelect,
                         onResolve,
-                        onReopen, // ✅ NEW
+                        onReopen,
                         onDelete,
+                        onAddReply,  // ✅ ADD THIS
                         onDeleteReply,
                         currentUserId,
                         canEdit,
                     }: ThreadCardProps) {
     const isOwner = thread.userId === currentUserId;
+    const [isReplying, setIsReplying] = useState(false);  // ✅ ADD THIS
+    const [replyContent, setReplyContent] = useState("");  // ✅ ADD THIS
+
+    const handleSubmitReply = () => {  // ✅ ADD THIS
+        if (replyContent.trim()) {
+            onAddReply(replyContent.trim());
+            setReplyContent("");
+            setIsReplying(false);
+        }
+    };
 
     return (
         <div
@@ -173,6 +186,7 @@ function ThreadCard({
                             canEditDoc={canEdit}
                             onResolve={onResolve}
                             onReopen={onReopen}
+                            onReply={() => setIsReplying(true)}  // ✅ ADD THIS
                             onDelete={onDelete}
                             variant="sidebar"
                         />
@@ -201,6 +215,46 @@ function ThreadCard({
                     )}
                 </div>
             )}
+
+            {/* ✅ ADD REPLY INPUT */}
+            {isReplying && (
+                <div className="mt-3 space-y-2">
+                    <textarea
+                        autoFocus
+                        value={replyContent}
+                        onChange={(e) => setReplyContent(e.target.value)}
+                        placeholder="Reply..."
+                        className="w-full text-sm p-2 border border-gray-300 dark:border-gray-600 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        rows={2}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSubmitReply();
+                            }
+                        }}
+                    />
+                    <div className="flex justify-end gap-2">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                                setIsReplying(false);
+                                setReplyContent("");
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            size="sm"
+                            onClick={handleSubmitReply}
+                            disabled={!replyContent.trim()}
+                        >
+                            Reply
+                        </Button>
+                    </div>
+                </div>
+            )}
+
 
             {/* Replies */}
             {thread.replies.length > 0 && (

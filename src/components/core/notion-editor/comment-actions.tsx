@@ -1,21 +1,20 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Edit2, Trash2, X, RotateCcw } from "lucide-react";
+import {CheckCircle, Edit2, Trash2, X, RotateCcw, MessageCircle} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface CommentActionButtonsProps {
-    isOwner: boolean;       // Is the current user the creator?
-    isResolved?: boolean;   // Is the thread already resolved?
-    canEditDoc: boolean;    // Does user have general "Member/Owner" rights?
+    isOwner: boolean;
+    isResolved?: boolean;
+    canEditDoc: boolean;
 
-    // Actions
     onResolve?: () => void;
     onReopen?: () => void;
     onEdit?: () => void;
     onDelete: () => void;
+    onReply?: () => void;  // ✅ ADD THIS
 
-    // Styling
     variant?: "sidebar" | "floating" | "reply";
 }
 
@@ -27,6 +26,7 @@ export function CommentActionButtons({
                                          onReopen,
                                          onEdit,
                                          onDelete,
+                                         onReply,  // ✅ ADD THIS
                                          variant = "sidebar"
                                      }: CommentActionButtonsProps) {
     // 1. If user is read-only, show nothing
@@ -50,6 +50,15 @@ export function CommentActionButtons({
                     icon={<RotateCcw className="h-3.5 w-3.5 text-blue-600" />}
                     onClick={onReopen}
                     label="Reopen"
+                />
+            )}
+
+            {/* ✅ ADD REPLY: Visible ONLY to Non-Creators */}
+            {!isOwner && !isResolved && onReply && (
+                <ActionButton
+                    icon={<MessageCircle className="h-3.5 w-3.5 text-blue-500" />}
+                    onClick={onReply}
+                    label="Reply"
                 />
             )}
 

@@ -93,6 +93,8 @@ export function NotionEditor({
     const [selectedThreadId, setSelectedThreadId] = useState<string>();
     const [isMounted, setIsMounted] = useState(false);
     const [title, setTitle] = useState(documentTitle);
+    const [replyingToThreadId, setReplyingToThreadId] = useState<string | null>(null);  // ✅ ADD THIS
+    const [replyText, setReplyText] = useState("");  // ✅ ADD THIS
 
     const [currentUser, setCurrentUser] = useState({
         id: "",
@@ -330,18 +332,6 @@ export function NotionEditor({
         [threads, updateThread]
     );
 
-    const handleOpenVersionHistory = () => {
-        setShowVersionHistory(true);
-        onLoadVersions();
-    };
-
-    const handleTitleChange = (newTitle: string) => {
-        setTitle(newTitle);
-        onTitleChange?.(newTitle);
-    };
-
-    // ✅ NEW: Enhanced Positioning & Collision Logic
-    // ✅ IMPROVED: Precise visual alignment & "Text Order" sorting
     const updateCommentPositions = useCallback(() => {
         if (!editor || !rightGutterRef.current) return;
 
@@ -382,9 +372,9 @@ export function NotionEditor({
         });
 
         // 3. Prevent Overlap (Stacking Logic)
+        // 3. Prevent Overlap (Dynamic Height Calculation)
         const finalPositions: Record<string, number> = {};
         let lastBottom = -9999;
-        const CARD_HEIGHT_ESTIMATE = 80; // Estimated height of a card + gap
 
         rawPositions.forEach((pos) => {
             let actualTop = pos.top;
@@ -395,24 +385,62 @@ export function NotionEditor({
             }
 
             finalPositions[pos.threadId] = actualTop;
-            lastBottom = actualTop + CARD_HEIGHT_ESTIMATE;
+
+            // ✅ Calculate actual card height dynamically
+            const thread = threads.find(t => t.threadId === pos.threadId);
+            if (thread) {
+                const baseHeight = 80; // Base card height
+                const replyHeight = thread.replies.length * 60; // ~60px per reply
+                const formHeight = replyingToThreadId === pos.threadId ? 120 : 0; // Reply form height
+                const totalHeight = baseHeight + replyHeight + formHeight;
+
+                lastBottom = actualTop + totalHeight;
+            } else {
+                lastBottom = actualTop + 80; // Fallback
+            }
         });
 
         setThreadPositions(finalPositions);
     }, [editor, threads]);
+
+    const handleSubmitFloatingReply = useCallback((threadId: string) => {
+        if (!replyText.trim()) {
+            setReplyingToThreadId(null);
+            setReplyText("");
+            return;
+        }
+
+        handleAddReply(threadId, replyText.trim());
+        setReplyText("");
+        setReplyingToThreadId(null);
+
+        // Recalculate positions after adding reply
+        setTimeout(updateCommentPositions, 100);
+    }, [replyText, handleAddReply, updateCommentPositions]);
+
+    const handleOpenVersionHistory = () => {
+        setShowVersionHistory(true);
+        onLoadVersions();
+    };
+
+    const handleTitleChange = (newTitle: string) => {
+        setTitle(newTitle);
+        onTitleChange?.(newTitle);
+    };
+
+    // ✅ NEW: Enhanced Positioning & Collision Logic
+    // ✅ IMPROVED: Precise visual alignment & "Text Order" sorting
+
 
 
     // Update positions whenever the document changes or selection updates
     useEffect(() => {
         if (!editor) return;
 
-        // Initial calculation
         setTimeout(updateCommentPositions, 100);
 
         editor.on("update", updateCommentPositions);
         editor.on("selectionUpdate", updateCommentPositions);
-
-        // Also update on window resize
         window.addEventListener("resize", updateCommentPositions);
 
         return () => {
@@ -420,7 +448,7 @@ export function NotionEditor({
             editor.off("selectionUpdate", updateCommentPositions);
             window.removeEventListener("resize", updateCommentPositions);
         };
-    }, [editor, updateCommentPositions]);
+    }, [editor, updateCommentPositions, replyingToThreadId, threads.length]);  // ✅ ADD THESE DEPENDENCIES
 
     if (!isMounted) {
         return (
@@ -613,7 +641,6 @@ export function NotionEditor({
                                         return (
                                             <div
                                                 key={thread.threadId}
-                                                // Removed onClick to prevent side effects
                                                 className={cn(
                                                     "absolute left-0 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm transition-all group z-10",
                                                     isEditing ? "p-1 ring-2 ring-blue-500 z-20" : "p-3 cursor-pointer hover:shadow-md"
@@ -622,11 +649,10 @@ export function NotionEditor({
                                                 onClick={() => {
                                                     if (!isEditing) {
                                                         setSelectedThreadId(thread.threadId);
-                                                        // setShowSidebar(true);
                                                     }
                                                 }}
                                             >
-                                                {/* ✅ REQUIREMENT: Reuse Simple Form for Editing */}
+                                                {/* ✅ Editing Mode */}
                                                 {isEditing ? (
                                                     <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                                         <input
@@ -657,94 +683,123 @@ export function NotionEditor({
                                                         </Button>
                                                     </div>
                                                 ) : (
-                                                    /* Normal View */
-                                                    <div className="flex items-start gap-2">
-                                                        {/* Avatar */}
-                                                        <div className="h-6 w-6 rounded-full overflow-hidden shrink-0 border border-gray-200 mt-0.5">
-                                                            <img src={thread.userAvatar} alt={thread.userName} className="h-full w-full object-cover" />
-                                                        </div>
-
-                                                        {/* Content Container */}
-                                                        <div className="min-w-0 flex-1 relative">
-                                                            {/* Header */}
-                                                            <div className="flex items-center justify-between mb-0.5">
-                                                                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate pr-2">
-                                                                    {thread.userName}
-                                                                </span>
-                                                                <span className="text-[10px] text-gray-400">
-                                                                    {format(new Date(thread.createdAt), "MMM d")}
-                                                                </span>
+                                                    /* ✅ Normal View */
+                                                    <div className="space-y-3">
+                                                        {/* Main Comment */}
+                                                        <div className="flex items-start gap-2">
+                                                            <div className="h-6 w-6 rounded-full overflow-hidden shrink-0 border border-gray-200 mt-0.5">
+                                                                <img src={thread.userAvatar} alt={thread.userName} className="h-full w-full object-cover" />
                                                             </div>
 
-                                                            {/* Content */}
-                                                            <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 break-words">
-                                                                {thread.content}
-                                                            </p>
+                                                            <div className="min-w-0 flex-1 relative">
+                                                                <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate pr-2">
+                            {thread.userName}
+                        </span>
+                                                                </div>
 
-                                                            {/* Hover Buttons */}
-                                                            {/* Hover Buttons */}
-                                                            <div className="hidden group-hover:flex absolute right-0 top-[-2px] bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-600 rounded-md p-0.5 z-20 gap-0.5">
-                                                                {!thread.resolved && (
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        className="h-6 w-6 hover:bg-green-100 text-green-600"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            handleResolveThread(thread.threadId);
-                                                                        }}
-                                                                        title="Resolve"
-                                                                    >
-                                                                        <CheckCircle className="h-3.5 w-3.5" />
-                                                                    </Button>
-                                                                )}
-                                                                {thread.resolved && (
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        className="h-6 w-6 hover:bg-blue-100 text-blue-500"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            handleReopenThread(thread.threadId);
-                                                                        }}
-                                                                        title="Reopen"
-                                                                    >
-                                                                        <RotateCcw className="h-3.5 w-3.5" />
-                                                                    </Button>
-                                                                )}
+                                                                <p className="text-sm text-gray-600 dark:text-gray-400 break-words">
+                                                                    {thread.content}
+                                                                </p>
 
-                                                                {/* Check ownership safely by converting both to strings */}
-                                                                {String(thread.userId) === String(currentUser.id) && !thread.resolved && (
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        className="h-6 w-6 hover:bg-blue-100 text-blue-500"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            setEditingThreadId(thread.threadId);
-                                                                            setEditText(thread.content);
-                                                                        }}
-                                                                        title="Edit"
-                                                                    >
-                                                                        <Edit2 className="h-3.5 w-3.5" />
-                                                                    </Button>
-                                                                )}
-                                                                {String(thread.userId) === String(currentUser.id) && (
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        className="h-6 w-6 hover:bg-red-100 text-red-500"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            handleDeleteThread(thread.threadId);
-                                                                        }}
-                                                                        title="Delete"
-                                                                    >
-                                                                        <Trash2 className="h-3.5 w-3.5" />
-                                                                    </Button>
-                                                                )}
+                                                                {/* Timestamp + Hover Buttons */}
+                                                                <div className="absolute right-0 top-[-2px]">
+                                                                    <span className="group-hover:hidden text-[10px] text-gray-400 bg-white dark:bg-gray-800 px-1 rounded">
+                                                                        {format(new Date(thread.createdAt), "MMM d")}
+                                                                    </span>
+
+                                                                    <div className="hidden group-hover:block bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-600 rounded-md p-0.5 z-20">
+                                                                        <CommentActionButtons
+                                                                            isOwner={String(thread.userId) === String(currentUser.id)}
+                                                                            isResolved={thread.resolved}
+                                                                            canEditDoc={canEdit}
+                                                                            onResolve={() => handleResolveThread(thread.threadId)}
+                                                                            onReopen={() => handleReopenThread(thread.threadId)}
+                                                                            onReply={() => setReplyingToThreadId(thread.threadId)}
+                                                                            onEdit={() => {
+                                                                                setEditingThreadId(thread.threadId);
+                                                                                setEditText(thread.content);
+                                                                            }}
+                                                                            onDelete={() => handleDeleteThread(thread.threadId)}
+                                                                            variant="floating"
+                                                                        />
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         </div>
+
+                                                        {/* ✅ Existing Replies */}
+                                                        {thread.replies.length > 0 && (
+                                                            <div className="space-y-2 pl-8 border-l-2 border-gray-200 dark:border-gray-600">
+                                                                {thread.replies.map((reply) => (
+                                                                    <div key={reply.replyId} className="flex items-start gap-2 group/reply">
+                                                                        <div className="h-5 w-5 rounded-full overflow-hidden shrink-0 border border-gray-200">
+                                                                            <img src={reply.userAvatar} alt={reply.userName} className="h-full w-full object-cover" />
+                                                                        </div>
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <div className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                                                                                {reply.userName}
+                                                                            </div>
+                                                                            <p className="text-sm text-gray-600 dark:text-gray-400 break-words">
+                                                                                {reply.content}
+                                                                            </p>
+                                                                        </div>
+                                                                        {String(reply.userId) === String(currentUser.id) && (
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="sm"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    handleDeleteReply(thread.threadId, reply.replyId);
+                                                                                }}
+                                                                                className="h-6 w-6 p-0 opacity-0 group-hover/reply:opacity-100"
+                                                                            >
+                                                                                <Trash2 className="h-3 w-3" />
+                                                                            </Button>
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+
+                                                        {/* ✅ Reply Form */}
+                                                        {replyingToThreadId === thread.threadId && (
+                                                            <div className="pl-8 space-y-2" onClick={(e) => e.stopPropagation()}>
+                    <textarea
+                        autoFocus
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        placeholder="Reply..."
+                        className="w-full text-sm p-2 border border-gray-300 dark:border-gray-600 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        rows={2}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSubmitFloatingReply(thread.threadId);
+                            }
+                        }}
+                    />
+                                                                <div className="flex justify-end gap-2">
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        onClick={() => {
+                                                                            setReplyingToThreadId(null);
+                                                                            setReplyText("");
+                                                                        }}
+                                                                    >
+                                                                        Cancel
+                                                                    </Button>
+                                                                    <Button
+                                                                        size="sm"
+                                                                        onClick={() => handleSubmitFloatingReply(thread.threadId)}
+                                                                        disabled={!replyText.trim()}
+                                                                    >
+                                                                        Reply
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>
@@ -766,7 +821,7 @@ export function NotionEditor({
                     onResolveThread={handleResolveThread}
                     onDeleteThread={handleDeleteThread}
                     onReopenThread={handleReopenThread}
-                    // onAddReply={handleAddReply}
+                    onAddReply={handleAddReply}
                     onDeleteReply={handleDeleteReply}
                     currentUserId={currentUser.id}
                     canEdit={canEdit}

@@ -179,14 +179,14 @@ function PM_PhaseItemBase({
                         onClick={handleToggle}
                         className="p-1 mr-2 rounded-full hover:bg-gray-100"
                     >
-                        {(phase.tasks && phase.tasks.length > 0) && (
+
                             <ChevronDown
                                 className={cn(
                                     "h-4 w-4 transition-transform duration-200",
                                     isExpanded ? "rotate-0" : "-rotate-90"
                                 )}
                             />
-                        )}
+
                     </button>
                 )}
 
