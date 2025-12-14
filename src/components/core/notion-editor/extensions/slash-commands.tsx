@@ -2,7 +2,7 @@ import { Extension } from "@tiptap/core";
 import { ReactRenderer } from "@tiptap/react";
 import Suggestion, { SuggestionOptions } from "@tiptap/suggestion";
 import tippy, { Instance as TippyInstance } from "tippy.js";
-import React, { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import React, { forwardRef, useEffect, useImperativeHandle, useState, useRef } from "react";
 import {
     Heading1,
     Heading2,
@@ -19,6 +19,7 @@ import {
     FileText,
     ChevronDown,
 } from "lucide-react";
+
 
 interface CommandItem {
     title: string;
@@ -222,6 +223,28 @@ const CommandList = forwardRef<CommandListRef, CommandListProps>(
             setSelectedIndex(0);
         }, [props.items]);
 
+        // 1. Create a ref for the scroll container
+        const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+        // 2. Add this effect to auto-scroll when selection changes
+        useEffect(() => {
+            const container = scrollContainerRef.current;
+            if (!container) return;
+
+            // Find the currently selected item using the data attribute we will add below
+            const selectedItem = container.querySelector(`[data-selected="true"]`) as HTMLElement;
+
+            if (selectedItem) {
+                // "nearest" ensures it only scrolls if the item is out of view
+                // and minimizes unnecessary movement
+                selectedItem.scrollIntoView({
+                    block: "nearest",
+                    behavior: "smooth", // Optional: remove this line for instant scrolling
+                });
+            }
+        }, [selectedIndex]);
+
+
         useImperativeHandle(ref, () => ({
             onKeyDown: ({ event }) => {
                 if (event.key === "ArrowUp") {
@@ -251,7 +274,10 @@ const CommandList = forwardRef<CommandListRef, CommandListProps>(
         let currentIndex = 0;
 
         return (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden w-80 max-h-96 overflow-y-auto">
+            <div
+                ref={scrollContainerRef}
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden w-80 max-h-96 overflow-y-auto"
+            >
                 {props.items.map((group, groupIndex) => (
                     <div key={group.title}>
                         <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900">
@@ -259,13 +285,16 @@ const CommandList = forwardRef<CommandListRef, CommandListProps>(
                         </div>
                         {group.items.map((item) => {
                             const itemIndex = currentIndex++;
+                            const isSelected = itemIndex === selectedIndex; // Helper variable
                             return (
                                 <button
                                     key={item.title}
                                     onClick={() => props.command(item)}
+                                    // ✅ ADDED data-selected attribute here
+                                    data-selected={isSelected}
                                     className={`flex items-center gap-3 w-full px-3 py-2.5 text-left hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                                        itemIndex === selectedIndex
-                                            ? "bg-gray-100 dark:bg-gray-700"
+                                        isSelected
+                                            ? "bg-gray-100 dark:bg-gray-700" // Highlight style
                                             : ""
                                     }`}
                                 >

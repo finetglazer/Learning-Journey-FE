@@ -377,10 +377,11 @@ export function NotionEditor({
     );
 
     const updateCommentPositions = useCallback(() => {
-        if (!editor || !rightGutterRef.current) return;
+        // ✅ FIX: Added stricter checks to prevent "view is not available" error
+        if (!editor || !editor.view || editor.isDestroyed || !rightGutterRef.current) return;
 
         const editorDom = editor.view.dom;
-        const gutterRect = rightGutterRef.current.getBoundingClientRect(); // Get Gutter screen position
+        const gutterRect = rightGutterRef.current.getBoundingClientRect();
 
         const rawPositions: { threadId: string; top: number; left: number; createdAt: string }[] = [];
 
@@ -399,53 +400,48 @@ export function NotionEditor({
                 rawPositions.push({
                     threadId: thread.threadId,
                     top: relativeTop,
-                    left: rect.left, // Store left position for sorting
+                    left: rect.left,
                     createdAt: thread.createdAt
                 });
             }
         });
 
-        // 2. Sort by "Reading Order" (Top -> Bottom, then Left -> Right)
+        // 2. Sort by "Reading Order"
         rawPositions.sort((a, b) => {
-            // If they are on the roughly same line (within 5px), sort by Left position
             if (Math.abs(a.top - b.top) < 5) {
                 return a.left - b.left;
             }
-            // Otherwise sort by vertical position
             return a.top - b.top;
         });
 
-        // 3. Prevent Overlap (Stacking Logic)
-        // 3. Prevent Overlap (Dynamic Height Calculation)
+        // 3. Prevent Overlap
         const finalPositions: Record<string, number> = {};
         let lastBottom = -9999;
 
         rawPositions.forEach((pos) => {
             let actualTop = pos.top;
 
-            // If overlapping with previous card, push down
             if (actualTop < lastBottom + 10) {
                 actualTop = lastBottom + 6;
             }
 
             finalPositions[pos.threadId] = actualTop;
 
-            // ✅ Calculate actual card height dynamically
             const thread = threads.find(t => t.threadId === pos.threadId);
             if (thread) {
-                const baseHeight = 80; // Base card height
-                const replyHeight = thread.replies.length * 60; // ~60px per reply
-                const formHeight = replyingToThreadId === pos.threadId ? 120 : 0; // Reply form height
+                const baseHeight = 80;
+                const replyHeight = thread.replies.length * 60;
+                const formHeight = replyingToThreadId === pos.threadId ? 120 : 0;
                 const totalHeight = baseHeight + replyHeight + formHeight;
 
                 lastBottom = actualTop + totalHeight;
             } else {
-                lastBottom = actualTop + 80; // Fallback
+                lastBottom = actualTop + 80;
             }
         });
 
         setThreadPositions(finalPositions);
-    }, [editor, threads]);
+    }, [editor, threads, replyingToThreadId]); // ✅ Added 'replyingToThreadId' to dependencies
 
     const handleSubmitFloatingReply = useCallback((threadId: string) => {
         if (!replyText.trim()) {
