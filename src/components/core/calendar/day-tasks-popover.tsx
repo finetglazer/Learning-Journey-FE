@@ -68,14 +68,16 @@ export function DayTasksPopover({
                     <Button
                         onClick={(e) => {
                             e.stopPropagation();
-                            setPopoverState((prev: any) => ({
-                                ...prev,
-                                open: false,
-                                id: null,
-                                tasks: [],
-                                bigTaskId: null,
-                                type: null,
-                            }));
+                            setPopoverState((prev: any) => {
+                                return {
+                                    ...prev,
+                                    open: false,
+                                    id: null,
+                                    tasks: [],
+                                    bigTaskId: null,
+                                    type: null,
+                                };
+                            });
                         }}
                         className="ml-2 text-gray-400 hover:text-gray-700 hover:bg-transparent bg-transparent transition-colors cursor-pointer"
                     >
@@ -130,7 +132,7 @@ export function DayTasksPopover({
                                             setEditingMonthPlanItem?.(task);
                                             if (typeof task === "string") setOpenRoutineEditor?.(true);
                                             setEditingTask?.(null);
-                                        }   
+                                        }
                                         else if (type === 'month-planning') {
                                             setEditingMonthPlanItem?.(task as UnscheduledTask);
                                             setEditingTask?.(null);
@@ -155,7 +157,7 @@ export function DayTasksPopover({
                                         />
                                         <span className="truncate">{typeof task === "string" ? task : task?.name}</span>
                                         {((task as any)?.type || "").toLowerCase() === "project_work" && (
-                                            <Users 
+                                            <Users
                                                 size={16}
                                             />
                                         )}

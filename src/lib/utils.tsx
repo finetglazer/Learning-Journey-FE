@@ -1,7 +1,8 @@
+import React from "react";
 import { DropdownItem } from "@/components/core/dropdown/type";
 import { PASSWORD_GOOD_LENGTH, PASSWORD_MINIMUM_LENGTH, PASSWORD_REGEX, TIME_STR_REGEX, TIMEZONE_GROUPS } from "@/const/consts";
 import { FieldError } from "@/model/field-error";
-import { ProjectGroup, TimelineItem } from "@/model/project-management";
+import { NodeType, ProjectGroup, TimelineItem } from "@/model/project-management";
 import { Task, UnscheduledMonthData } from "@/model/task";
 import { clsx, type ClassValue } from "clsx";
 import { addWeeks, endOfMonth, endOfWeek, format, isBefore, isSameDay, startOfMonth, startOfWeek } from "date-fns";
@@ -756,14 +757,52 @@ export const findRecursive = (items: TimelineItem[], timelineItemId: string): Ti
   return res;
 };
 
-export const getFileIcon = (extension: string) => {
-    switch (extension?.toLowerCase()) {
-        case 'pdf': return 'i-pdf.png';
-        case 'xls': case 'xlsx': return 'i-xls.png';
-        case 'jpg': case 'jpeg': case 'png': return 'i-jpg.png';
-        case 'doc': case 'docx': return 'i-doc.png';
-        case 'zip': case 'rar': return 'i-zip.png';
-        case 'txt': return 'i-txt.png';
-        default: return 'i-file.png';
+export const getFileIcon = (extension: string | null, type: NodeType, size: number = 30, className?: string): React.ReactNode => {
+  const getIconPath = (ext: string): string => {
+    if (type === 'FOLDER') {
+      return '/folder.png';
     }
+    if (type === 'SHARED_FOLDER') {
+      return '/shared-folder.png';
+    }
+    if (type === 'NOTION_DOC') {
+      return '/note.png';
+    }
+    switch (ext?.toLowerCase()) {
+      case 'pdf':
+        return '/pdf.png';
+      case 'xls':
+      case 'xlsx':
+        return '/xls.png';
+      case 'jpg':
+      case 'jpeg':
+        return '/jpg.png';
+      case 'png':
+        return '/png.png';
+      case 'doc':
+      case 'docx':
+        return '/doc.png';
+      case 'zip':
+        return '/zip.png';
+      case 'rar':
+        return '/rar.png';
+      case 'txt':
+        return '/txt.png';
+      case 'ppt':
+      case 'pptx':
+        return '/ppt.png';
+      default:
+        return '/file.svg';
+    }
+  };
+
+  return (
+    <img
+      src={getIconPath(extension || "")}
+      alt={`${extension || 'file'} icon`}
+      width={size}
+      height={size}
+      className={className}
+    />
+  );
 };

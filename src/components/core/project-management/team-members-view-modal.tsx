@@ -27,6 +27,7 @@ export const TeamMembersViewModal = ({
         selectedProject,
         members: teamMembers,
         getTeamMembers,
+        currentMember,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
     const {
@@ -79,7 +80,7 @@ export const TeamMembersViewModal = ({
     return (
         // 4. Add relative class
         <div className="
-            w-full absolute top-[20%] left-[25%] max-w-[600px] p-8 bg-white rounded-2xl shadow-2xl z-[9999]
+            w-full absolute top-[15%] left-[25%] max-w-[600px] p-8 bg-white rounded-2xl shadow-2xl z-[9999]
             animate-in fade-in slide-in-from-top-10 duration-500 ease-out
         ">
 
@@ -142,6 +143,9 @@ export const TeamMembersViewModal = ({
                             <div
                                 className="text-sm truncate pr-2"
                                 onDoubleClick={() => {
+                                    if (currentMember?.role !== ProjectMembershipRole.OWNER) {
+                                        return;
+                                    }
                                     if (member?.role !== ProjectMembershipRole.OWNER) {
                                         setEditingUserId(member.userId);
                                     }
@@ -158,6 +162,7 @@ export const TeamMembersViewModal = ({
                                         className={cn("text-sm truncate text-center w-full",
                                             { "cursor-pointer text-blue-600 hover:text-blue-800": member?.role !== ProjectMembershipRole.OWNER },
                                             { "cursor-not-allowed text-gray-500": member?.role === ProjectMembershipRole.OWNER },
+                                            { "cursor-default": currentMember?.role !== ProjectMembershipRole.OWNER },
                                         )}
                                         disabled={member.role === ProjectMembershipRole.OWNER}
                                         title={member.role === ProjectMembershipRole.OWNER ? 'Owner role cannot be customized' : 'Double click to customize role name'}

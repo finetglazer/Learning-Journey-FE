@@ -100,3 +100,13 @@ export const TIMEZONE_GROUPS = [
     },
 ];
 
+export const FILE_EXTENSION = [
+    'doc',
+    'txt',
+    'pdf',
+    'ppt',
+    'rar',
+    'zip',
+    'jpg',
+    'png',
+];

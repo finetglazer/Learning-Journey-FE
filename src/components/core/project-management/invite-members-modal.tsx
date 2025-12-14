@@ -99,6 +99,7 @@ export const InviteMembersModal = ({
 
     const {
         selectedProject,
+        currentMember,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
     const {
@@ -375,6 +376,9 @@ export const InviteMembersModal = ({
                                     <div
                                         className="text-sm truncate pr-2"
                                         onDoubleClick={() => {
+                                            if (currentMember?.role !== ProjectMembershipRole.OWNER) {
+                                                return;
+                                            }
                                             if (member?.role !== ProjectMembershipRole.OWNER) {
                                                 setEditingUserId(member.userId);
                                             }
@@ -391,6 +395,7 @@ export const InviteMembersModal = ({
                                                 className={cn("text-sm truncate text-center w-full",
                                                     { "cursor-pointer text-blue-600 hover:text-blue-800": member?.role !== ProjectMembershipRole.OWNER },
                                                     { "cursor-not-allowed text-gray-500": member?.role === ProjectMembershipRole.OWNER },
+                                                    { "cursor-default": currentMember?.role !== ProjectMembershipRole.OWNER }
                                                 )}
                                                 disabled={member.role === ProjectMembershipRole.OWNER}
                                                 title={member.role === ProjectMembershipRole.OWNER ? 'Owner role cannot be customized' : 'Double click to customize role name'}
@@ -409,7 +414,7 @@ export const InviteMembersModal = ({
 
                                     {/* Column 3: Remove Button (Fixed width for alignment) */}
                                     <div className="flex justify-end">
-                                        {member.role !== ProjectMembershipRole.OWNER ? (
+                                        {(member.role !== ProjectMembershipRole.OWNER && currentMember?.role === ProjectMembershipRole.OWNER) ? (
                                             <button
                                                 onClick={() => onRemoveClick(member)}
                                                 className="text-gray-400 hover:text-red-500"

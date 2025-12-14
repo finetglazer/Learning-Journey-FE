@@ -112,14 +112,12 @@ export const ProjectHeader = ({
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
-                                {role === ProjectMembershipRole.OWNER && (
-                                    <DropdownMenuItem
-                                        className="cursor-pointer"
-                                        onClick={() => updateModalStates(1, true)}
-                                    >
-                                        Invite members
-                                    </DropdownMenuItem>
-                                )}
+                                <DropdownMenuItem
+                                    className="cursor-pointer"
+                                    onClick={() => updateModalStates(1, true)}
+                                >
+                                    Invite members
+                                </DropdownMenuItem>
                                 <DropdownMenuItem
                                     className="cursor-pointer"
                                     onClick={() => updateModalStates(2, true)}

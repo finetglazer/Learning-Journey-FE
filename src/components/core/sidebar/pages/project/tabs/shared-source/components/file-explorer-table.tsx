@@ -20,9 +20,11 @@ export const FileExplorerTable = ({
 
     const visibleNodes = useMemo(() => {
         return allNodes
-            .filter(node => node.parentNodeId === currentFolderId)
+            .filter(node => !currentFolderId || node.parentNodeId === currentFolderId)
             .sort((a, b) => {
                 // Folders always come first
+                if (a.type === 'SHARED_FOLDER') return -1;
+                if (b.type === 'SHARED_FOLDER') return 1;
                 if (a.type === 'FOLDER' && b.type !== 'FOLDER') return -1;
                 if (a.type !== 'FOLDER' && b.type === 'FOLDER') return 1;
                 // Then sort alphabetically

@@ -34,19 +34,28 @@ interface FileExplorerTableProps {
 
 export function SharedSourceTab({ }: FileExplorerTableProps) {
     const [searchQuery, setSearchQuery] = useState('');
+    const [files, setFiles] = useState<FileNode[]>([]);
     const {
         getFiles,
+        files: originalFiles,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
 
-    const debouncedGetFiles = useMemo(
-        () => debounce(getFiles, 100),
-        [getFiles]
-    );
+    const debouncedGetFiles = useMemo(() => {
+        return debounce(() => getFiles(searchQuery), 100);
+    }, [getFiles, searchQuery]);
 
     useEffect(() => {
         debouncedGetFiles();
-    }, [searchQuery]);
+
+        return () => {
+            debouncedGetFiles.cancel();
+        };
+    }, [searchQuery, debouncedGetFiles]);
+
+    useEffect(() => {
+        setFiles(originalFiles);
+    }, [originalFiles]);
 
     return (
         <div className="w-full h-full bg-slate-50 flex flex-col p-6 font-sans">
@@ -67,7 +76,7 @@ export function SharedSourceTab({ }: FileExplorerTableProps) {
             </div>
 
             <FileExplorerTable
-                allNodes={MOCK_ALL_NODES}
+                allNodes={files}
             />
         </div>
     );

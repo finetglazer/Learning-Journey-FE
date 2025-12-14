@@ -233,12 +233,12 @@ export const useCalendarHooks = () => {
     const [activeDragId, setActiveDragId] = useState<string | null>(null);
     const [editorPosition, setEditorPosition] = useState({ x: 0, y: 0 });
     const [panelPosition, setPanelPosition] = useState({
-        x: window?.visualViewport ? window.visualViewport.pageLeft + window.visualViewport.width / 2 : 20,
-        y: window?.visualViewport ? window.visualViewport.pageTop + window.visualViewport.height / 3 : 100,
+        x: window?.visualViewport ? window.visualViewport.pageLeft + window.visualViewport.width / 2 + 250 : 20,
+        y: window?.visualViewport ? window.visualViewport.pageTop + window.visualViewport.height - 250 : 100,
     });
     const [panelBufferListPosition, setPanelBufferListPosition] = useState({
-        x: window?.visualViewport ? window.visualViewport.pageLeft + window.visualViewport.width / 3 : 20,
-        y: window?.visualViewport ? window.visualViewport.pageTop + window.visualViewport.height / 3 : 100,
+        x: window?.visualViewport ? window.visualViewport.pageLeft + window.visualViewport.width / 3 + 250 : 20,
+        y: window?.visualViewport ? window.visualViewport.pageTop + window.visualViewport.height - 250 : 100,
     });
     const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
     const [monthPlanId, setMonthPlanId] = useState<number | null>(null);
@@ -252,11 +252,11 @@ export const useCalendarHooks = () => {
         projectRepository,
     } = useContext<AppContextProps>(AppContext);
 
-    const CELL_HEIGHT = 4.57; // rem;
+    const CELL_HEIGHT = 4.57;
     const now = dayjs();
     const hoursNow = now.hour();
     const minutesNow = now.minute();
-    const topPosition = `calc(${(hoursNow + minutesNow / 60) * CELL_HEIGHT}rem - 0.25rem)`; // offset for dot size
+    const topPosition = `calc(${(hoursNow + minutesNow / 60) * CELL_HEIGHT}rem - 0.25rem)`;
     const hours = Array.from({ length: 24 }, (_, i) =>
         i.toString().padStart(2, "0")
     ); // 00 to 23

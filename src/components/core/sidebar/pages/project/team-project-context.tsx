@@ -27,7 +27,7 @@ export interface TeamProjectContextProps {
     overallLoading: boolean;
     setOverallLoading: Dispatch<SetStateAction<boolean>>;
 
-    getFiles: () => void;
+    getFiles: (search?: string) => (() => void) | undefined;
     files: FileNode[];
     setFiles: Dispatch<SetStateAction<FileNode[]>>;
     getTeamMembers: () => void;
@@ -69,7 +69,7 @@ export const TeamProjectContext = createContext<TeamProjectContextProps>({
     getTeamMembers: () => { },
     overallLoading: false,
     setOverallLoading: () => { },
-    getFiles: () => { },
+    getFiles: () => () => { },
     files: [],
     setFiles: () => { },
     members: [],
@@ -250,7 +250,7 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         projectRepository,
     ]);
 
-    const getFiles = useCallback(() => {
+    const getFiles = useCallback((search?: string) => {
         if (!projectRepository || !currentSelectedProject) {
             return;
         }
@@ -259,7 +259,7 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
             projectId: 1,
             parentNodeId: null,
             name: "Shared posts from the community",
-            type: 'FOLDER',
+            type: 'SHARED_FOLDER',
             extension: null,
             sizeBytes: null,
             storageReference: null,
@@ -269,6 +269,7 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         };
         const subscription = projectRepository.getFiles({
             projectId: currentSelectedProject?.id,
+            // search: search || "",
         })
             .subscribe({
                 next: res => {

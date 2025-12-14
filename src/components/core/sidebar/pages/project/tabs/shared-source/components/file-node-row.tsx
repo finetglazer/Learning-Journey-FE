@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { cn, getFileIcon } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { getFileIcon } from "@/lib/utils";
 import { FileNode } from "@/model/project-management";
 import { isEqual } from "lodash";
 import { Folder, FolderHeart, MinusCircle } from "lucide-react";
@@ -35,15 +36,7 @@ export const FileNodeRow = ({
                     isSticky ? "font-semibold text-gray-700" : ""
                 )}
             >
-                {(isFolder && isEqual(node.nodeId, -1)) && (
-                    <FolderHeart className={cn("h-4 w-4", isSticky ? "text-gray-500" : "text-blue-500")} />
-                )} 
-                {(isFolder && !isEqual(node.nodeId, -1)) && (
-                    <Folder className={cn("h-4 w-4", isSticky ? "text-gray-500" : "text-blue-500")} />
-                )}
-                {(!isFolder) && (
-                    <img src={`/icons/${getFileIcon(node.extension || '')}`} alt={`${node.extension} icon`} className="h-4 w-4" />
-                )}
+                {getFileIcon(node.extension || '', node.type)}
                 <span className={cn("text-gray-800 truncate", isFolder && "font-medium")}>
                     {node.name}
                 </span>

@@ -1,8 +1,9 @@
+import { Button } from '@/components/ui/button';
 import { CALENDAR_VIEW_OPTIONS } from '@/const/consts';
 import { cn, isoToHHMM, toDayJs } from '@/lib/utils';
 import { MonthPlanningBigTask, MonthPlanningEvent, Task } from '@/model/task';
 import { Tooltip } from 'antd';
-import { Bookmark, Save, Trash2 } from 'lucide-react';
+import { Bookmark, Trash2 } from 'lucide-react';
 import React, { CSSProperties, Dispatch, SetStateAction, useEffect, useState } from 'react';
 
 export interface BaseTaskProps {
@@ -124,17 +125,17 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                                 handleCancelEdit?.();
                             }
                         }}
-                        onClick={(e) => e.stopPropagation()} // Stop click from propagating
+                        onClick={(e) => e.stopPropagation()}
                     />
-                    <div className="flex">
-                        <button onClick={() => {
-                            updateRoutineList?.(task as string, routineNewName)
-                        }} className="cursor-pointer text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-100" aria-label="Save">
-                            <Save size={20} />
-                        </button>
-                        <button onClick={() => updateRoutineList?.(task as string, "")} className="cursor-pointer text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100" aria-label="Delete">
-                            <Trash2 size={20} />
-                        </button>
+                    <div className="flex gap-3">
+                        <Button onClick={() => {
+                            updateRoutineList?.(task as string, routineNewName);
+                        }} className="bg-green-300 hover:bg-green-400 text-green-800 rounded-full px-5 text-sm font-semibold cursor-pointer" aria-label="Save">
+                            Save
+                        </Button>
+                        <Button onClick={() => updateRoutineList?.(task as string, "")} className="cursor-pointer rounded-full text-red-600 hover:text-white px-5 hover:bg-red-500 bg-red-100" aria-label="Delete">
+                            Delete
+                        </Button>
                         <button className="cursor-pointer ml-3 text-cyan-950" onClick={() => {
                             handleCancelEdit?.();
                         }}>Cancel</button>

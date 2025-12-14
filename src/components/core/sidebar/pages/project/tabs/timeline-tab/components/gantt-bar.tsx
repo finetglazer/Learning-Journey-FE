@@ -115,7 +115,10 @@ const GanttBar = ({
         viewStartDate,
         totalViewDays,
     ]);
-
+// if (getId(item.type, item.id) === "del-18") {
+//     console.log("parentStart", parentStartDate)
+//     console.log("parentEnd", parentEndDate)
+// }
     // --- Math Helper ---
     const calculateDuration = (s: string, e: string) => toDayJs(e).diff(toDayJs(s), 'day') + 1;
     const duration = calculateDuration(localStartDate, localEndDate);
@@ -133,7 +136,6 @@ const GanttBar = ({
             validEnd = toDayJs(parentEndDate, 0);
             if (mode === 'move') validStart = validEnd.subtract(initialDurationDays, 'day');
         }
-
         return { validStart, validEnd };
     };
 
@@ -142,13 +144,13 @@ const GanttBar = ({
         limits: { start: dayjs.Dayjs | null, end: dayjs.Dayjs | null }
     ) => {
         children.forEach(child => {
-            const cStart = toDayJs(child.startDate, 0);
-            const cEnd = toDayJs(child.endDate, 0);
+            const cStart = child.startDate ? toDayJs(child.startDate, 0) : undefined;
+            const cEnd = child.endDate ? toDayJs(child.endDate, 0) : undefined;
 
-            if (!limits.start || cStart.isBefore(limits.start)) {
+            if (cStart && (!limits.start || cStart.isBefore(limits.start))) {
                 limits.start = cStart;
             }
-            if (!limits.end || cEnd.isAfter(limits.end)) {
+            if (cEnd && (!limits.end || cEnd.isAfter(limits.end))) {
                 limits.end = cEnd;
             }
 
