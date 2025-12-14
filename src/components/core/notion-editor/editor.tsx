@@ -128,7 +128,51 @@ export function NotionEditor({
                 history: false,
             } as any),
             Placeholder.configure({
-                placeholder: 'Type "/" for commands...',
+                includeChildren: true,
+                showOnlyCurrent: true,
+                placeholder: ({ node }) => {
+                    // Headings
+                    if (node.type.name === "heading") {
+                        const level = node.attrs.level;
+                        return `Heading ${level}`;
+                    }
+
+                    // Lists
+                    if (node.type.name === "bulletList") {
+                        return "List";
+                    }
+
+                    if (node.type.name === "orderedList") {
+                        return "Numbered list";
+                    }
+
+                    if (node.type.name === "taskList" || node.type.name === "taskItem") {
+                        return "To-do list";
+                    }
+
+                    // Quote/Callout
+                    if (node.type.name === "blockquote") {
+                        return "Empty quote";
+                    }
+
+                    // Code Block
+                    if (node.type.name === "codeBlock") {
+                        return "Enter code...";
+                    }
+
+                    // Table
+                    if (node.type.name === "table") {
+                        return "Empty table";
+                    }
+
+                    // Table Cell
+                    if (node.type.name === "tableCell" || node.type.name === "tableHeader") {
+                        return "";
+                    }
+
+                    // Default (Paragraph)
+                    return "Write, press '/' for commands...";
+                },
             }),
             Underline,
             TaskList,
