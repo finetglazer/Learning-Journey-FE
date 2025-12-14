@@ -1,8 +1,9 @@
 "use client"
 
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MonthPlanningBigTask, MonthPlanningEvent, UnscheduledTask } from "@/model/task";
-import { Save, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 
 export interface RoutineEditorProps {
@@ -38,14 +39,14 @@ export const RoutineEditor = ({
                         setOpenRoutineEditor?.(false);
                     }
                 }}
-                onClick={(e) => e.stopPropagation()} // Stop click from propagating
+                onClick={(e) => e.stopPropagation()}
             />
             <div className="flex">
-                <button onClick={() => {
+                <Button onClick={() => {
                     updateRoutineList?.(editingItem, routineName);
-                }} className="cursor-pointer text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-100" aria-label="Save">
-                    <Save size={20} />
-                </button>
+                }} className="bg-green-300 hover:bg-green-400 text-green-800 rounded-full px-5 text-sm font-semibold cursor-pointer" aria-label="Save">
+                    Save
+                </Button>
                 {editingItem && (
                     <button onClick={() => updateRoutineList?.(editingItem, "")} className="cursor-pointer text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-100" aria-label="Delete">
                         <Trash2 size={20} />

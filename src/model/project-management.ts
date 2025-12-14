@@ -239,7 +239,7 @@ export interface ProjectDependency {
     toId: number;
 };
 
-export type NodeType = 'STATIC_FILE' | 'FOLDER' | 'NOTION_DOC';
+export type NodeType = 'STATIC_FILE' | 'FOLDER' | 'NOTION_DOC' | 'SHARED_FOLDER';
 
 /**
  * Represents a file or folder node in the project management system.

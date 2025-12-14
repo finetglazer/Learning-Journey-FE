@@ -21,7 +21,7 @@ export interface CollapsibleUnscheduledBufferListPanelProps {
 export function CollapsibleUnscheduledBufferListPanel({
     headerRef,
 }: CollapsibleUnscheduledBufferListPanelProps) {
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(true);
     const [showAllTasks, setShowAllTasks] = useState(false);
     const [bounds, setBounds] = useState({ minX: 0, minY: 0, maxX: window.innerWidth, maxY: window.innerHeight });
 

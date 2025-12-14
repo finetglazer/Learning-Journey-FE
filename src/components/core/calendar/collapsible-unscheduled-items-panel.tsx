@@ -42,7 +42,7 @@ export function CollapsibleUnscheduledPanel({
     selectedTaskId,
     selectedRoutineId,
 }: CollapsibleUnscheduledPanelProps) {
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(true);
     const [bounds, setBounds] = useState({ minX: 0, minY: 0, maxX: window.innerWidth, maxY: window.innerHeight });
     const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
         id: 'draggable-panel',

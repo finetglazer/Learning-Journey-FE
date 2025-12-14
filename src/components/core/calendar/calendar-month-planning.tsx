@@ -71,7 +71,15 @@ export function CalendarMonthPlanning() {
         bigTaskId?: number;
         type?: string;
     }>({ open: false, id: null, tasks: [] });
-    const [weekPopoverState, setWeekPopoverState] = useState<{
+    const [weekBigTaskPopoverState, setWeekBigTaskPopoverState] = useState<{
+        open: boolean;
+        id: string | null; // This will be the week string, e.g., "27 - 2"
+    }>({ open: false, id: null });
+    const [weekRoutinePopoverState, setWeekRoutinePopoverState] = useState<{
+        open: boolean;
+        id: string | null; // This will be the week string, e.g., "27 - 2"
+    }>({ open: false, id: null });
+    const [weekEventPopoverState, setWeekEventPopoverState] = useState<{
         open: boolean;
         id: string | null; // This will be the week string, e.g., "27 - 2"
     }>({ open: false, id: null });
@@ -463,7 +471,12 @@ export function CalendarMonthPlanning() {
                     <RoundedButton label="Today" id="calendar-today-btn" onClick={handleGoToToday} />
                     <DateRangeNavigator
                         dateRangeLabel={generateDateRangeLabel()}
-                        onNextClick={onNextDateRangeNavigatorClick}
+                        onNextClick={() => {
+                            setMonthPlanningBigTasks([]);
+                            setMonthPlanningEvents([]);
+                            setMonthPlanningRoutines([]);
+                            onNextDateRangeNavigatorClick();
+                        }}
                         onPreviousClick={onPreviousDateRangeNavigatorClick}
                         isNextDisabled={currentDate.add(1, 'month').diff(toDayJs(), "month") >= 6}
                         isPreviousDisabled={currentDate.subtract(1, "month").diff(toDayJs(), "month") < 0}
@@ -588,15 +601,9 @@ export function CalendarMonthPlanning() {
 
                                                         {(tasksForCell.length > MAX_VISIBLE_TASKS || (currentType === "big-task" && monthPlanningBigTasks.length > MAX_VISIBLE_TASKS && !index)) && (
                                                             <Popover
-                                                                open={(weekPopoverState.open && weekPopoverState.id === week) || (currentType === "big-task" && weekPopoverState.open)}
-                                                                onOpenChange={(isOpen) => {
-                                                                    setWeekPopoverState({
-                                                                        open: isOpen,
-                                                                        id: isOpen && currentType !== "big-task" ? week : null,
-                                                                    });
-                                                                }}
+                                                                open={currentType === 'event' ? weekEventPopoverState.open : currentType === 'big-task' ? weekBigTaskPopoverState.open : weekRoutinePopoverState.open}
                                                             >
-                                                                <PopoverTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                                                <PopoverTrigger asChild>
                                                                     <div
                                                                         data-popover-trigger="true" // For cell click check
                                                                         className={cn(
@@ -614,8 +621,30 @@ export function CalendarMonthPlanning() {
                                                                                 "w-[0%]": currentType === "big-task" && index > 0
                                                                             }
                                                                         )}
-                                                                        onClick={() => {
+                                                                        onClick={(e) => {
                                                                             // Turn off TaskEditor
+                                                                            e.stopPropagation();
+
+                                                                            switch (currentType) {
+                                                                                case 'event':
+                                                                                    setWeekEventPopoverState({
+                                                                                        open: !weekEventPopoverState.open,
+                                                                                        id: weekEventPopoverState.open ? null : week,
+                                                                                    });
+                                                                                    break;
+                                                                                case 'big-task':
+                                                                                    setWeekBigTaskPopoverState({
+                                                                                        open: !weekBigTaskPopoverState.open,
+                                                                                        id: weekBigTaskPopoverState.open ? null : week,
+                                                                                    });
+                                                                                    break;
+                                                                                case 'routine':
+                                                                                    setWeekRoutinePopoverState({
+                                                                                        open: !weekRoutinePopoverState.open,
+                                                                                        id: weekRoutinePopoverState.open ? null : week,
+                                                                                    });
+                                                                                    break;
+                                                                            }
                                                                             setEditingItem(null);
                                                                             setEditingTask(null);
                                                                         }}
@@ -633,7 +662,7 @@ export function CalendarMonthPlanning() {
                                                                             return t.filter(bigTask => !bigTaskRendered[bigTask.id as number]);
                                                                         })()}
                                                                         scrollContainerRef={scrollContainerRef}
-                                                                        setPopoverState={(weekPopoverState) => setWeekPopoverState(weekPopoverState)}
+                                                                        setPopoverState={currentType === 'event' ? setWeekEventPopoverState : currentType === 'big-task' ? setWeekBigTaskPopoverState : setWeekRoutinePopoverState}
                                                                         currentTaskType={currentType}
                                                                         type="month-planning"
                                                                         setOpenRoutineEditor={setOpenRoutineEditor}
@@ -645,7 +674,9 @@ export function CalendarMonthPlanning() {
                                                                         editorOffset={{ x: 120, y: 0 }}
                                                                         onTaskClick={() => {
                                                                             // Close this popover when a task inside is clicked
-                                                                            setWeekPopoverState({ open: false, id: null });
+                                                                            currentType === 'event' ? setWeekEventPopoverState({ open: false, id: null })
+                                                                                : currentType === 'big-task' ? setWeekBigTaskPopoverState({ open: false, id: null })
+                                                                                    : setWeekRoutinePopoverState({ open: false, id: null });
                                                                         }}
                                                                     />
                                                                 </PopoverContent>
