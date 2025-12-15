@@ -1,22 +1,31 @@
 "use client";
 
+import { EmptyData } from "@/components/core/project-management/empty-data";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FileNode } from "@/model/project-management";
-import { ChevronLeft, Folder, Trash2 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
-import { FileNodeRow } from "./file-node-row";
 import { isEqual } from "lodash";
+import { ChevronLeft } from "lucide-react";
+import { Dispatch, SetStateAction, useCallback, useContext, useMemo } from "react";
+import { FileNodeRow } from "./file-node-row";
+import { SharedSourceContext, SharedSourceContextProps } from "../shared-source-context";
 
 export interface FileExplorerTableProps {
-    allNodes: FileNode[];
+    currentFolderId: number | null;
+    setCurrentFolderId: Dispatch<SetStateAction<number | null>>;
+    setCurrentPath: Dispatch<SetStateAction<FileNode[]>>;
+    currentPath: FileNode[];
 };
 
 export const FileExplorerTable = ({
-    allNodes,
+    currentFolderId,
+    setCurrentFolderId,
+    setCurrentPath,
+    currentPath,
 }: FileExplorerTableProps) => {
-    const [currentFolderId, setCurrentFolderId] = useState<number | null>(null);
-    const [currentPath, setCurrentPath] = useState<FileNode[]>([]);
+    const {
+        files: allNodes,
+    } = useContext<SharedSourceContextProps>(SharedSourceContext);
 
     const visibleNodes = useMemo(() => {
         return allNodes
@@ -54,9 +63,9 @@ export const FileExplorerTable = ({
     }, [currentFolderId, currentPath]);
 
     const handleDeleteNode = useCallback((nodeId: number) => {
-        console.log(`Deleting node ID: ${nodeId}`);
         // Logic to show confirmation modal and call API...
     }, []);
+
     return (
         <>
             {/* Navigation / Back Button */}
@@ -66,12 +75,12 @@ export const FileExplorerTable = ({
                         variant="ghost"
                         size="sm"
                         onClick={handleGoBack}
-                        className="text-blue-600 hover:bg-blue-50"
+                        className="text-blue-600 hover:bg-blue-50 cursor-pointer"
                     >
                         <ChevronLeft className="h-4 w-4 mr-1" /> Back
                     </Button>
-                )
-                }
+                )}
+
                 {/* Breadcrumb could go here */}
                 {
                     currentFolderId !== null && (
@@ -107,7 +116,10 @@ export const FileExplorerTable = ({
                         {visibleNodes.length === 0 && currentFolderId !== null && (
                             <TableRow>
                                 <TableCell colSpan={4} className="text-center text-gray-500 h-20">
-                                    This folder is empty.
+                                    <EmptyData
+                                        title="This folder is empty"
+                                        message="Add files to get started."
+                                    />
                                 </TableCell>
                             </TableRow>
                         )}

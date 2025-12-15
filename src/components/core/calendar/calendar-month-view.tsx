@@ -183,6 +183,7 @@ export function CalendarMonthView() {
                     {editingTask && (
                         <TaskEditor
                             key={editingTask?.id || "none"}
+                            open={!!editingTask}
                             task={{ ...editingTask, type: (editingTask?.type || "").toLowerCase() }}
                             setAlertMessage={setAlertMessage}
                             onClose={() => {

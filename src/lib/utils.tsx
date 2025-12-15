@@ -403,7 +403,7 @@ export const getEditorAdjustedPosition = (
   relativeX = Math.max(parentScrollLeft, relativeX);
   relativeY = Math.max(parentScrollTop, relativeY);
 
-  return { x: relativeX, y: relativeY - 200 };
+  return { x: relativeX, y: relativeY };
 };
 
 export const getWeeksInMonth = (month: number, year?: number) => {

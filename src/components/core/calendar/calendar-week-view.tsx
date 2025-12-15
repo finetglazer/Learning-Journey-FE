@@ -315,6 +315,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                     setEditingTask(null);
                                     setSelectedTaskId(null);
                                 }}
+                                open={!!editingTask}
                                 style={{ top: editorPosition.y, left: editorPosition.x }}
                                 handleReload={handleReload}
                                 onDelete={() => onDeleteCalendarItem(editingTask?.id)}

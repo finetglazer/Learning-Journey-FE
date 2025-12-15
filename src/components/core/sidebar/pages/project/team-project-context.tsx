@@ -27,7 +27,7 @@ export interface TeamProjectContextProps {
     overallLoading: boolean;
     setOverallLoading: Dispatch<SetStateAction<boolean>>;
 
-    getFiles: (search?: string) => (() => void) | undefined;
+    getFiles: (search?: string, parentNodeId?: number | null) => (() => void) | undefined;
     files: FileNode[];
     setFiles: Dispatch<SetStateAction<FileNode[]>>;
     getTeamMembers: () => void;
@@ -250,7 +250,7 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         projectRepository,
     ]);
 
-    const getFiles = useCallback((search?: string) => {
+    const getFiles = useCallback((search?: string, parentNodeId?: number | null) => {
         if (!projectRepository || !currentSelectedProject) {
             return;
         }
@@ -269,7 +269,8 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         };
         const subscription = projectRepository.getFiles({
             projectId: currentSelectedProject?.id,
-            // search: search || "",
+            parentNodeId: parentNodeId,
+            search: search || "",
         })
             .subscribe({
                 next: res => {
