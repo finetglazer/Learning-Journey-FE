@@ -42,6 +42,7 @@ export interface AlertMessage {
     title?: string;
     description?: string | string[];
     proceedAnyway?: () => void;
+    useCancel?: boolean;
 };
 
 export interface AlertModalProps {
@@ -119,7 +120,7 @@ export function AlertModal({
                         onClick={onClose}
                         className={cn("font-semibold cursor-pointer", (config as any)?.secondaryButtonColor || (config as any)?.buttonColor)}
                     >
-                        Okay
+                        {alertMessage?.useCancel ? "Cancel" : "Okay"}
                     </Button>
                     {proceedAnyway && (
                         <Button

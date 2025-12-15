@@ -9,6 +9,7 @@ import { ChevronLeft } from "lucide-react";
 import { Dispatch, SetStateAction, useCallback, useContext, useMemo } from "react";
 import { FileNodeRow } from "./file-node-row";
 import { SharedSourceContext, SharedSourceContextProps } from "../shared-source-context";
+import { AlertModal } from "@/components/core/alert-modal/alert-modal";
 
 export interface FileExplorerTableProps {
     currentFolderId: number | null;
@@ -25,6 +26,8 @@ export const FileExplorerTable = ({
 }: FileExplorerTableProps) => {
     const {
         files: allNodes,
+        alertMessage,
+        setAlertMessage,
     } = useContext<SharedSourceContextProps>(SharedSourceContext);
 
     const visibleNodes = useMemo(() => {
@@ -32,6 +35,8 @@ export const FileExplorerTable = ({
             .filter(node => !currentFolderId || node.parentNodeId === currentFolderId)
             .sort((a, b) => {
                 // Folders always come first
+                if (a.nodeId < 0) return -1;
+                if (b.nodeId < 0) return 1;
                 if (a.type === 'SHARED_FOLDER') return -1;
                 if (b.type === 'SHARED_FOLDER') return 1;
                 if (a.type === 'FOLDER' && b.type !== 'FOLDER') return -1;
@@ -61,10 +66,6 @@ export const FileExplorerTable = ({
             setCurrentPath([]);
         }
     }, [currentFolderId, currentPath]);
-
-    const handleDeleteNode = useCallback((nodeId: number) => {
-        // Logic to show confirmation modal and call API...
-    }, []);
 
     return (
         <>
@@ -108,7 +109,6 @@ export const FileExplorerTable = ({
                                 key={node.nodeId}
                                 node={node}
                                 onOpenFolder={handleOpenFolder}
-                                onDelete={handleDeleteNode}
                                 isSticky={isEqual(node.nodeId, -1)}
                             />
                         ))}
@@ -126,6 +126,13 @@ export const FileExplorerTable = ({
                     </TableBody>
                 </Table>
             </div >
+
+            {alertMessage && (
+                <AlertModal
+                    alertMessage={alertMessage}
+                    onClose={() => setAlertMessage(null)}
+                />
+            )}
         </>
     );
 };

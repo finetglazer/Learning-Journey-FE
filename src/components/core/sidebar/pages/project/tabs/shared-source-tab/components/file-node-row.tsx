@@ -1,47 +1,84 @@
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { cn, getFileIcon } from "@/lib/utils";
-import { FileNode } from "@/model/project-management";
-import { MinusCircle } from "lucide-react";
+import { FileNode, ProjectMembershipRole } from "@/model/project-management";
+import { isEqual } from "lodash";
+import { Loader2, MoreVerticalIcon } from "lucide-react";
 import { useContext } from "react";
+import { TeamProjectContext, TeamProjectContextProps } from "../../../team-project-context";
 import { SharedSourceContext, SharedSourceContextProps } from "../shared-source-context";
 
 export const FileNodeRow = ({
     node,
     onOpenFolder,
-    onDelete,
-    canDelete = true,
     isSticky = false,
 }: {
     node: FileNode,
     onOpenFolder: (node: FileNode) => void,
-    onDelete: (nodeId: number) => void,
-    canDelete?: boolean,
     isSticky?: boolean,
 }) => {
     const isFolder = node.type === 'FOLDER';
+    const isUploading = node.uploadingId !== undefined;
 
     const {
-        onCancelAddFolder,
+        currentMember,
+    } = useContext<TeamProjectContextProps>(TeamProjectContext);
+
+    const {
+        onCancelAddOrEditFolder,
+        onConfirmAddFolder,
         editingFile,
+        setEditingFile,
+        isAddingFolder,
+        onConfirmEditFileName,
+        onConfirmDeleteFile,
+        setAlertMessage,
     } = useContext<SharedSourceContextProps>(SharedSourceContext);
+
+    const menu: any = [
+        {
+            label: 'Delete '.concat(isFolder ? "folder" : "file"),
+            onClick: () => {
+                setAlertMessage({
+                    type: "warning",
+                    title: "Delete " + (isFolder ? "folder" : "file"),
+                    description: "Are you sure you want to delete this " + (isFolder ? "folder" : "file") + "?",
+                    proceedAnyway: () => onConfirmDeleteFile(node.nodeId),
+                    useCancel: true,
+                })
+            },
+            isShow: (isEqual(node.createdByUserId, currentMember?.userId) || isEqual(currentMember?.role, ProjectMembershipRole.OWNER))
+                && !isEqual(node.nodeId, -1),
+        },
+        {
+            label: 'Edit '.concat(isFolder ? "folder" : "file").concat(" name"),
+            onClick: () => setEditingFile(node),
+            isShow: !isEqual(node.nodeId, -1),
+        },
+    ];
 
     return (
         <TableRow
             className={cn(
                 "bg-white border-b border-gray-100 h-12 transition-colors",
                 isSticky ? "sticky top-0 z-10 font-semibold" : "hover:bg-gray-50",
-                isFolder && "cursor-pointer hover:bg-gray-100"
+                isFolder && !isUploading && "cursor-pointer hover:bg-gray-100",
+                isUploading && "opacity-50 pointer-events-none bg-gray-100"
             )}
-            onClick={() => { if (isFolder && !isSticky) onOpenFolder(node); }}
+            onClick={() => { if (isFolder && !isSticky && !isUploading) onOpenFolder(node); }}
         >
             <TableCell
                 className={cn(
-                    "w-1/2 flex items-center gap-3",
+                    "w-1/2 flex items-center gap-3 group",
                     isSticky ? "font-semibold text-gray-700" : ""
                 )}
             >
-                {getFileIcon(node.extension || '', node.type)}
+                {isUploading ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                ) : (
+                    getFileIcon(node.extension || '', node.type)
+                )}
                 {editingFile?.nodeId === node.nodeId ? (
                     <input
                         type="text"
@@ -52,37 +89,63 @@ export const FileNodeRow = ({
                         )}
                         autoFocus
                         onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                isAddingFolder ? onConfirmAddFolder(e.currentTarget.value) : onConfirmEditFileName(e.currentTarget.value);
+                            } else if (e.key === 'Escape') {
+                                e.preventDefault();
+                                onCancelAddOrEditFolder();
+                            }
+                        }}
+                        onBlur={(e) => {
+                            // If the user clicks outside, cancel the add folder
+                            onCancelAddOrEditFolder();
+                        }}
                     />
                 ) : (
-                    <span className={cn("text-gray-800 truncate", isFolder && "font-medium")}>
-                        {node.name}
-                    </span>
+                    <div className="flex items-center gap-2 group mt-1 group">
+                        <span className={cn("text-gray-800 truncate", isFolder && "font-medium", isUploading && "text-gray-400")}>
+                            {node.name}
+                        </span>
+                    </div>
                 )}
             </TableCell>
 
-            <TableCell className="text-gray-500">
+            <TableCell className={cn("text-gray-500", isUploading && "text-gray-300")}>
                 {/* Logic for shared row author */}
                 {isSticky ? "Community" : (node.createdByUserId ? `User ${node.createdByUserId}` : 'N/A')}
             </TableCell>
 
-            <TableCell className="text-gray-500">
+            <TableCell className={cn("text-gray-500", isUploading && "text-gray-300")}>
                 {/* Logic for shared row date */}
                 {isSticky ? "1/12/2025" : (node.updatedAt ? new Date(node.updatedAt).toLocaleDateString() : 'N/A')}
             </TableCell>
 
             <TableCell className="text-right w-16">
-                {canDelete && (
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onDelete(node.nodeId);
-                        }}
-                        className="text-gray-400 hover:text-red-500 cursor-pointer"
-                    >
-                        <MinusCircle className="h-4 w-4" />
-                    </Button>
+                {(!isEqual(node.nodeId, -1) && !isUploading) && (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="hover:text-gray-600 cursor-pointer">
+                                <MoreVerticalIcon className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            {menu.filter((item: any) => item.isShow).map((item: any, index: number) => (
+                                <DropdownMenuItem
+                                    key={index}
+                                    className="cursor-pointer"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        item.onClick();
+                                    }}
+                                    disabled={!item.isShow}
+                                >
+                                    <span className={cn({ "text-red-400": (item.label as string).toLowerCase().includes("delete") })}>{item.label}</span>
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 )}
             </TableCell>
         </TableRow>

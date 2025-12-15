@@ -257,4 +257,5 @@ export interface FileNode {
     createdByUserId: number | null;
     createdAt: string;
     updatedAt: string;
+    uploadingId?: string;
 };

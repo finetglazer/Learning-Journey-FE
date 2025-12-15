@@ -250,12 +250,7 @@ export const CalendarDayView = () => {
                         setSelectedRoutineId={setSelectedRoutineId}
                         setEditingTask={setEditingTask} />
                 </div>
-                {alertMessage && (
-                    <AlertModal
-                        alertMessage={alertMessage}
-                        onClose={() => setAlertMessage(null)}
-                    />
-                )}
+
             </CardContent>
         </Card>
     );

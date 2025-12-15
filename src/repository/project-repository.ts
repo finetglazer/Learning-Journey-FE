@@ -379,12 +379,20 @@ export class ProjectRepository extends BaseRepository {
             .pipe(map(res => res?.data));
     };
 
-    public createFolder = (params: { projectId: number | string }, body: any): Observable<any> => {
+    public createFolder = (params: { projectId: number | string }, body: {
+        name: string,
+        parent_node_id: number | null,
+    }): Observable<any> => {
         return this.http.post(`/${params.projectId}/files/folder`, body)
             .pipe(map(res => res?.data));
     };
 
-    public uploadFile = (params: { projectId: number | string, parentNodeId?: number | string }, file: File): Observable<any> => {
+    public updateTitleDocument = (params: { nodeId: number | string }, body: { name: string }): Observable<any> => {
+        return this.http.post(`/files/${params.nodeId}/update-title`, body)
+            .pipe(map(res => res?.data));
+    };
+
+    public uploadFile = (params: { projectId: number | string, parentNodeId?: number | null }, file: File): Observable<any> => {
         const formData = new FormData();
         formData.append("file", file);
         if (params.parentNodeId) {

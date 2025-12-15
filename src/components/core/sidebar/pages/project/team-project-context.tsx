@@ -269,7 +269,7 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         };
         const subscription = projectRepository.getFiles({
             projectId: currentSelectedProject?.id,
-            parentNodeId: parentNodeId,
+            parentNodeId: parentNodeId || undefined,
             search: search || "",
         })
             .subscribe({
