@@ -141,14 +141,14 @@ const commandGroups: CommandGroup[] = [
                 keywords: ["img", "photo", "picture"],
                 icon: <Image className="w-5 h-5" />,
                 command: ({ editor, range }) => {
-                    // 1. Delete the slash command text immediately
+                    // Delete the slash command text immediately  
                     editor.chain().focus().deleteRange(range).run();
 
-                    // 2. Then prompt the user (so the /image text is gone while they type)
-                    const url = window.prompt("Enter image URL:");
-                    if (url) {
-                        editor.chain().focus().setImage({ src: url }).run();
-                    }
+                    // Dispatch event to open image upload dialog
+                    const event = new CustomEvent('openImageUploadDialog', {
+                        detail: { editor, range }
+                    });
+                    window.dispatchEvent(event);
                 },
             },
             {

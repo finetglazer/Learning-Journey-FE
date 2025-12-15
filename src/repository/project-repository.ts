@@ -408,6 +408,13 @@ export class ProjectRepository extends BaseRepository {
         return this.http.post(`/${params.projectId}/files/document`, body)
             .pipe(map(res => res?.data));
     };
+
+    public uploadEditorImage = (params: { projectId: number | string }, file: File): Observable<any> => {
+        const formData = new FormData();
+        formData.append("file", file);
+        return this.http.post(`/${params.projectId}/editor-images/upload`, formData)
+            .pipe(map(res => res?.data));
+    };
 };
 
 export const projectRepositoryCons = (userId: number) => new ProjectRepository(userId);
