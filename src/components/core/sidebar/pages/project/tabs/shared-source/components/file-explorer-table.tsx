@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FileNode } from "@/model/project-management";
-import { ChevronLeft, Folder, Trash2 } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { FileNodeRow } from "./file-node-row";
 import { isEqual } from "lodash";

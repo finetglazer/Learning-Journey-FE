@@ -3,8 +3,7 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { getFileIcon } from "@/lib/utils";
 import { FileNode } from "@/model/project-management";
-import { isEqual } from "lodash";
-import { Folder, FolderHeart, MinusCircle } from "lucide-react";
+import { MinusCircle } from "lucide-react";
 
 export const FileNodeRow = ({
     node,

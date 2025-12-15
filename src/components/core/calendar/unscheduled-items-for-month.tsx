@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { UnscheduledBigTask, UnscheduledMonthData, UnscheduledRoutine, UnscheduledTask } from "@/model/task";
+import { UnscheduledBigTask, UnscheduledMonthData, UnscheduledTask } from "@/model/task";
 import { ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { UnscheduledRoutineItem } from "./unscheduled-routine-item";

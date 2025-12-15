@@ -119,7 +119,7 @@ export function CalendarMonthPlanning() {
     } = useContext<CalendarContextInterface>(CalendarContext);
 
     const handleCellClick = (type: TaskType, e: React.MouseEvent<HTMLTableDataCellElement>, scrollContainerRef?: any) => {
-        let newItem =
+        const newItem =
             type === "event"
                 ? {
                     ...new MonthPlanningEvent,
@@ -499,8 +499,8 @@ export function CalendarMonthPlanning() {
                         </TableHeader>
                         <TableBody className="relative">
                             {categories.map((category) => {
-                                let bigTaskVisited: Record<number, boolean> = {};
-                                let bigTaskRendered: Record<number, boolean> = {};
+                                const bigTaskVisited: Record<number, boolean> = {};
+                                const bigTaskRendered: Record<number, boolean> = {};
                                 let currentBigTaskIndex = -1;
 
                                 return (
@@ -658,7 +658,7 @@ export function CalendarMonthPlanning() {
                                                                             MAX_VISIBLE_TASKS,
                                                                             tasksForCell.length
                                                                         ) : (() => {
-                                                                            let t = [...monthPlanningBigTasks];
+                                                                            const t = [...monthPlanningBigTasks];
                                                                             return t.filter(bigTask => !bigTaskRendered[bigTask.id as number]);
                                                                         })()}
                                                                         scrollContainerRef={scrollContainerRef}

@@ -4,17 +4,12 @@ import Suggestion, { SuggestionOptions } from "@tiptap/suggestion";
 import tippy, { Instance as TippyInstance } from "tippy.js";
 import React, { forwardRef, useEffect, useImperativeHandle, useState, useRef } from "react";
 import {
-    Heading1,
-    Heading2,
-    Heading3,
     List,
     ListOrdered,
     Quote,
     Code,
     Minus,
-    CheckSquare,
     Image,
-    Table,
     Type,
     FileText,
     ChevronDown,
@@ -132,9 +127,8 @@ const commandGroups: CommandGroup[] = [
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                     </svg>
                 ),
-                // Note: Using blockquote as a fallback for callout since standard Tiptap StarterKit doesn't have a specific Callout node
                 command: ({ editor, range }) => {
-                    editor.chain().focus().deleteRange(range).toggleBlockquote().run();
+                    editor.chain().focus().deleteRange(range).toggleCallout().run();
                 },
             },
         ],
@@ -170,33 +164,14 @@ const commandGroups: CommandGroup[] = [
                 keywords: ["upload", "attachment", "doc"],
                 icon: <FileText className="w-5 h-5" />,
                 command: ({ editor, range }) => {
+                    // Delete the slash command text
                     editor.chain().focus().deleteRange(range).run();
-                    const url = window.prompt("Enter file URL:");
-                    if (url) {
-                        editor
-                            .chain()
-                            .focus()
-                            .insertContent(`<a href="${url}">📎 File</a>`)
-                            .run();
-                    }
-                },
-            },
-        ],
-    },
-    {
-        title: "Database",
-        items: [
-            {
-                title: "Table",
-                keywords: ["grid", "sheet", "rows"],
-                icon: <Table className="w-5 h-5" />,
-                command: ({ editor, range }) => {
-                    editor
-                        .chain()
-                        .focus()
-                        .deleteRange(range)
-                        .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
-                        .run();
+
+                    // Trigger file picker by storing position
+                    const event = new CustomEvent('openFilePicker', {
+                        detail: { editor, range }
+                    });
+                    window.dispatchEvent(event);
                 },
             },
         ],
@@ -292,11 +267,10 @@ const CommandList = forwardRef<CommandListRef, CommandListProps>(
                                     onClick={() => props.command(item)}
                                     // ✅ ADDED data-selected attribute here
                                     data-selected={isSelected}
-                                    className={`flex items-center gap-3 w-full px-3 py-2.5 text-left hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                                        isSelected
-                                            ? "bg-gray-100 dark:bg-gray-700" // Highlight style
-                                            : ""
-                                    }`}
+                                    className={`flex items-center gap-3 w-full px-3 py-2.5 text-left hover:bg-gray-100 dark:hover:bg-gray-700 ${isSelected
+                                        ? "bg-gray-100 dark:bg-gray-700" // Highlight style
+                                        : ""
+                                        }`}
                                 >
                                     <div className="flex items-center justify-center w-8 h-8 text-gray-600 dark:text-gray-400">
                                         {item.icon}
@@ -324,7 +298,6 @@ export const SlashCommands = Extension.create({
             suggestion: {
                 char: "/",
 
-                // ✅ FIXED: Simpler isolation check
                 allow: ({ state, range }: { state: any; range: any }) => {
                     const $pos = state.doc.resolve(range.from);
                     const textContent = $pos.parent.textContent;

@@ -47,7 +47,7 @@ export function ProjectTimeline({ data }: ProjectTimelineProps) {
     // --- Segment 2 & beyond: Milestones after current date ---
     const futureMilestones = sortedMilestones.filter(m => parseDate(m.date) > parseDate(currentDate));
 
-    let segments = [];
+    const segments = [];
     // Add initial blue progress bar
     segments.push({
         widthPercent: currentPercent > 100 ? 100 : currentPercent,

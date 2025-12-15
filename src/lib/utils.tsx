@@ -315,7 +315,7 @@ export const isoToStandardTime = (isoString: string, gmt?: number) => {
 
 export const getRoutineDates = (task: Task, startTime: string, endTime: string) => {
   const currentTime = task.startTime || dayJsToISOString(dayjs());
-  let res = [];
+  const res = [];
   for (let i = toDayJs(maxTime(currentTime, startTime)); i <= toDayJs(endTime); i = i.add(1, "day")) {
     const isoString = dayJsToISOString(i);
     if (startTime <= isoString && (task?.routinePattern || []).includes(i.get("day"))) {

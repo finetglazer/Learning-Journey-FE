@@ -167,8 +167,8 @@ const GanttBar = ({
             getChildLimits(item.children, limits);
         }
 
-        let earliestChildStart = limits.start;
-        let latestChildEnd = limits.end;
+        const earliestChildStart = limits.start;
+        const latestChildEnd = limits.end;
         let validStart = newStart;
         let validEnd = newEnd;
 
@@ -284,7 +284,7 @@ const GanttBar = ({
 
             let constrained = applyConstraints(newStart, newEnd, initialDurationDays, edge);
             if (!isEqual(edge, 'move') && item.children && item.children.length > 0) {
-                let childConstrained = applyConstraintsWhenExpandingOrShrinking(newStart, newEnd);
+                const childConstrained = applyConstraintsWhenExpandingOrShrinking(newStart, newEnd);
                 constrained = {
                     validStart: childConstrained.validStart.isBefore(constrained.validStart) ? childConstrained.validStart : constrained.validStart,
                     validEnd: childConstrained.validEnd.isAfter(constrained.validEnd) ? childConstrained.validEnd : constrained.validEnd,

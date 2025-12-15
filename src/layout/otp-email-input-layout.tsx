@@ -5,7 +5,7 @@ import { Divider } from "@/components/core/divider/divider";
 import { Icon } from "@/components/core/icon/icon";
 import { IntegratedInput } from "@/components/core/input/integrated-input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn, uuid4 } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { InputOTP } from "antd-input-otp";
 import { MailIcon } from "lucide-react";
 import { useRouter } from "next/navigation";

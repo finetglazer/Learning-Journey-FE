@@ -13,7 +13,6 @@ import {
     Flame,
     HelpCircle,
     Loader,
-    Loader2,
     Paperclip,
     SignalHigh,
     SignalLow,

@@ -18,7 +18,6 @@ import {
   Lock,
   LogOut,
   Mail,
-  MoreHorizontal,
   PersonStanding,
   Plus,
   Shield,
@@ -39,14 +38,13 @@ import { CalendarYearView } from "@/components/core/calendar/calendar-year-view"
 import { HeaderBar } from "@/components/core/header-bar/header-bar";
 import { MemorableEvents } from "@/components/core/sidebar/pages/memorable-event/memorable-event";
 import { TeamProjectPage } from "@/components/core/sidebar/pages/project/team-project";
-import { TeamProjectContext, TeamProjectContextProps, useTeamProjectHooks } from "@/components/core/sidebar/pages/project/team-project-context";
+import { TeamProjectContext, useTeamProjectHooks } from "@/components/core/sidebar/pages/project/team-project-context";
 import { PublicProfile } from "@/components/core/sidebar/pages/public-profile/public-profile";
 import { TeamProjectSection } from "@/components/core/sidebar/sections/team-project-section";
 import { Button } from "@/components/ui/button";
 import { SIGN_IN_ROUTE } from "@/const/routes-const";
-import { Project, ProjectMembershipRole } from "@/model/project-management";
+import { Project } from "@/model/project-management";
 import { useRouter } from "next/navigation";
-import { isEqual } from "lodash";
 
 export default function RootPage() {
   const router = useRouter();

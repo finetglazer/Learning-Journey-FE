@@ -1,22 +1,22 @@
 "use client";
 
-import {useEffect, useState, useCallback, useMemo, useRef, useContext} from "react";
+import { useEffect, useState, useCallback, useMemo, useRef, useContext } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Underline from "@tiptap/extension-underline";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
-import { Table } from "@tiptap/extension-table";
-import TableRow from "@tiptap/extension-table-row";
-import TableCell from "@tiptap/extension-table-cell";
-import TableHeader from "@tiptap/extension-table-header";
 import Collaboration from "@tiptap/extension-collaboration";
 import { HocuspocusProvider } from "@hocuspocus/provider";
 import * as Y from "yjs";
 import BubbleMenuExtension from "@tiptap/extension-bubble-menu";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import { common, createLowlight } from "lowlight";
 import { CommentMark } from "./extensions/comment-mark";
 import { SlashCommands } from "./extensions/slash-commands";
+import { Callout } from "./extensions/callout";
+import { FileNode } from "./extensions/file-node";
 import { EditorBubbleMenu } from "./bubble-menu";
 import { CommentSidebar } from "./comment-sidebar";
 import { PresenceAvatars } from "./presence-avatars";
@@ -24,15 +24,15 @@ import { VersionHistoryDialog } from "./version-history-dialog";
 import { CommentThread, DocVersionDTO, AwarenessUser } from "@/model/document";
 import { Button } from "@/components/ui/button";
 import {
-    ArrowLeft, User, Calendar, MessageSquare, Clock, ArrowUp,
-    CheckCircle, Edit2, Trash2, RotateCcw // <--- Add these
+    ArrowLeft, User, Calendar, MessageSquare, Clock, ArrowUp, Trash2 // <--- Add these
 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 
 import { format } from "date-fns";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
-import {cn} from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { CommentActionButtons } from "./comment-actions";
+import { FilePickerWrapper } from "./extensions/file-picker-wrapper";
 
 interface NotionEditorProps {
     provider: HocuspocusProvider;
@@ -55,6 +55,7 @@ interface NotionEditorProps {
     createdBy?: string;
     createdAt?: string;
     onBack?: () => void;
+    projectId?: number | string; // For file picker
 }
 
 export function NotionEditor({
@@ -78,6 +79,7 @@ export function NotionEditor({
     createdBy = "Jane Doe",
     createdAt = new Date().toISOString(),
     onBack,
+    projectId, // Add this
 }: NotionEditorProps) {
     // ... existing states ...
     const [editingThreadId, setEditingThreadId] = useState<string | null>(null);
@@ -92,6 +94,8 @@ export function NotionEditor({
     const [showVersionHistory, setShowVersionHistory] = useState(false);
     const [selectedThreadId, setSelectedThreadId] = useState<string>();
     const [isMounted, setIsMounted] = useState(false);
+    const [containerMounted, setContainerMounted] = useState(false);
+    const editorContainerRef = useRef<HTMLDivElement>(null);
     const [title, setTitle] = useState(documentTitle);
     const [replyingToThreadId, setReplyingToThreadId] = useState<string | null>(null);  // ✅ ADD THIS
     const [replyText, setReplyText] = useState("");  // ✅ ADD THIS
@@ -111,6 +115,13 @@ export function NotionEditor({
     useEffect(() => {
         setIsMounted(true);
 
+        // Set container mounted in next tick to ensure ref is set
+        setTimeout(() => {
+            if (editorContainerRef.current) {
+                setContainerMounted(true);
+            }
+        }, 0);
+
         setCurrentUser({
             id: String(userId || ""),
             name: displayName || "Anonymous",
@@ -122,37 +133,23 @@ export function NotionEditor({
         setTitle(documentTitle);
     }, [documentTitle]);
 
+    // Create lowlight instance for syntax highlighting
+    const lowlight = useMemo(() => createLowlight(common), []);
+
     const extensions = useMemo(
         () => [
             StarterKit.configure({
                 history: false,
+                codeBlock: false, // Disable default codeBlock to use CodeBlockLowlight instead
             } as any),
             Placeholder.configure({
                 includeChildren: true,
                 showOnlyCurrent: true,
-                placeholder: ({ node }) => {
+                placeholder: ({ node, editor }) => {
                     // Headings
                     if (node.type.name === "heading") {
                         const level = node.attrs.level;
                         return `Heading ${level}`;
-                    }
-
-                    // Lists
-                    if (node.type.name === "bulletList") {
-                        return "List";
-                    }
-
-                    if (node.type.name === "orderedList") {
-                        return "Numbered list";
-                    }
-
-                    if (node.type.name === "taskList" || node.type.name === "taskItem") {
-                        return "To-do list";
-                    }
-
-                    // Quote/Callout
-                    if (node.type.name === "blockquote") {
-                        return "Empty quote";
                     }
 
                     // Code Block
@@ -160,18 +157,33 @@ export function NotionEditor({
                         return "Enter code...";
                     }
 
-                    // Table
-                    if (node.type.name === "table") {
-                        return "Empty table";
+                    // Paragraph placeholder
+                    if (node.type.name === "paragraph") {
+                        return "Write, press '/' for commands...";
                     }
 
-                    // Table Cell
-                    if (node.type.name === "tableCell" || node.type.name === "tableHeader") {
+                    // List items - let them have empty placeholders
+                    if (node.type.name === "listItem") {
                         return "";
                     }
 
-                    // Default (Paragraph)
-                    return "Write, press '/' for commands...";
+                    // Blockquote - empty placeholder
+                    if (node.type.name === "blockquote") {
+                        return "";
+                    }
+
+                    // Callout - empty placeholder
+                    if (node.type.name === "callout") {
+                        return "";
+                    }
+
+                    // For task items, show placeholder in the paragraph inside
+                    if (node.type.name === "taskItem") {
+                        return "";
+                    }
+
+                    // Don't show placeholder for container nodes
+                    return "";
                 },
             }),
             Underline,
@@ -179,25 +191,26 @@ export function NotionEditor({
             TaskItem.configure({
                 nested: true,
             }),
-            Table.configure({
-                resizable: true,
-            }),
-            TableRow,
-            TableCell,
-            TableHeader,
             CommentMark,
             SlashCommands,
+            Callout,
+            FileNode,
+            CodeBlockLowlight.configure({
+                lowlight,
+                defaultLanguage: "javascript",
+            }),
             BubbleMenuExtension,
             Collaboration.configure({
                 document: ydoc,
             }),
         ],
-        [ydoc]
+        [ydoc, lowlight]
     );
 
     const editor = useEditor(
         {
             immediatelyRender: false,
+            shouldRerenderOnTransaction: false,
             extensions,
             editable: canEdit,
             editorProps: {
@@ -209,6 +222,11 @@ export function NotionEditor({
         },
         [extensions, canEdit]
     );
+
+    // Track when editor is ready - simplified
+    // Simplified readiness check - simply existence of editor
+    // With immediatelyRender: true, editor.view is guaranteed to exist if editor exists
+
 
     // Close comment form when clicking outside
     useEffect(() => {
@@ -629,7 +647,15 @@ export function NotionEditor({
                             )}
 
                             {/* Editor Content */}
-                            <EditorContent editor={editor} />
+                            <div ref={editorContainerRef}>
+                                {editor ? (
+                                    <EditorContent editor={editor} />
+                                ) : (
+                                    <div className="flex items-center justify-center py-8">
+                                        <div className="text-sm text-gray-400">Loading editor...</div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {/* 3. The Right Gutter */}
@@ -733,9 +759,9 @@ export function NotionEditor({
 
                                                             <div className="min-w-0 flex-1 relative">
                                                                 <div className="flex items-center justify-between mb-0.5">
-                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate pr-2">
-                            {thread.userName}
-                        </span>
+                                                                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate pr-2">
+                                                                        {thread.userName}
+                                                                    </span>
                                                                 </div>
 
                                                                 <p className="text-sm text-gray-600 dark:text-gray-400 break-words">
@@ -805,20 +831,20 @@ export function NotionEditor({
                                                         {/* ✅ Reply Form */}
                                                         {replyingToThreadId === thread.threadId && (
                                                             <div className="pl-8 space-y-2" onClick={(e) => e.stopPropagation()}>
-                    <textarea
-                        autoFocus
-                        value={replyText}
-                        onChange={(e) => setReplyText(e.target.value)}
-                        placeholder="Reply..."
-                        className="w-full text-sm p-2 border border-gray-300 dark:border-gray-600 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        rows={2}
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter" && !e.shiftKey) {
-                                e.preventDefault();
-                                handleSubmitFloatingReply(thread.threadId);
-                            }
-                        }}
-                    />
+                                                                <textarea
+                                                                    autoFocus
+                                                                    value={replyText}
+                                                                    onChange={(e) => setReplyText(e.target.value)}
+                                                                    placeholder="Reply..."
+                                                                    className="w-full text-sm p-2 border border-gray-300 dark:border-gray-600 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                                    rows={2}
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === "Enter" && !e.shiftKey) {
+                                                                            e.preventDefault();
+                                                                            handleSubmitFloatingReply(thread.threadId);
+                                                                        }
+                                                                    }}
+                                                                />
                                                                 <div className="flex justify-end gap-2">
                                                                     <Button
                                                                         variant="ghost"
@@ -876,6 +902,9 @@ export function NotionEditor({
                 onRestore={onRestoreVersion}
                 isRestoring={isRestoringVersion}
             />
+
+            {/* File Picker Wrapper */}
+            <FilePickerWrapper editor={editor} projectId={projectId} />
         </div>
     );
 }

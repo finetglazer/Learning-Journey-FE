@@ -807,7 +807,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         if (!items) {
             return [];
         }
-        let res: any[] = [];
+        const res: any[] = [];
         items.forEach((item: any) => {
             parentMap[item.id] = currentParent ? getId(currentParent?.type, currentParent?.id) : undefined;
 
@@ -834,7 +834,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         }).subscribe({
             next: res => {
                 if (res?.status) {
-                    let parentMap: Record<string, string | undefined> = {};
+                    const parentMap: Record<string, string | undefined> = {};
                     const timelineItems = res?.data?.items || [];
                     setOriginalTimelineData({
                         ...res?.data,
@@ -1371,8 +1371,8 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                                     </defs>
 
                                     {dependencies.map(dep => {
-                                        let source = itemCoordinates.coords.get(getId(dep.type, dep.fromId));
-                                        let target = itemCoordinates.coords.get(getId(dep.type, dep.toId));
+                                        const source = itemCoordinates.coords.get(getId(dep.type, dep.fromId));
+                                        const target = itemCoordinates.coords.get(getId(dep.type, dep.toId));
 
                                         if (!source || !target) return null;
 
@@ -1382,8 +1382,8 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                                         const hoverColorClass = isBackwardsOrTouching ? "group-hover:stroke-blue-700" : "group-hover:stroke-red-700";
                                         const isRelevant = (relatedIds.has(getId(dep.type, dep.fromId)) && relatedIds.has(getId(dep.type, dep.toId)));
 
-                                        let p1 = { x: source.xEnd, y: source.y };   // Source Tail
-                                        let p2 = { x: target.xStart, y: target.y }; // Target Head
+                                        const p1 = { x: source.xEnd, y: source.y };   // Source Tail
+                                        const p2 = { x: target.xStart, y: target.y }; // Target Head
 
                                         // Connect: Source Right (Tail) -> Target Left (Head)
                                         const pathData = getOrthogonalPath(p1, p2);

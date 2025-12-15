@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { cn, filterItems, uuid4 } from "@/lib/utils";
+import { cn, filterItems } from "@/lib/utils";
 import { Dropdown, Input, Menu, Tooltip } from 'antd';
 import { isNil } from "lodash";
 import { ChevronDown, ChevronUp } from 'lucide-react';
