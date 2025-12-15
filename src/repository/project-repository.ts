@@ -365,12 +365,12 @@ export class ProjectRepository extends BaseRepository {
 
     // FILE & DOCUMENT FUNCTIONS
 
-    public getFiles = (params: { projectId: number | string, parentNodeId?: number | string }): Observable<any> => {
-        const queryParams = new URLSearchParams();
-        if (params.parentNodeId) {
-            queryParams.append("parent_node_id", params.parentNodeId.toString());
-        }
-        return this.http.get(`/${params.projectId}/files?${queryParams.toString()}`)
+    public getFiles = (params: { projectId: number | string, parentNodeId?: number | string, search?: string }): Observable<any> => {
+        const queryParams = new URLSearchParams({
+            parent_node_id: params.parentNodeId?.toString() || "",
+            search: params.search || ""
+        }).toString();
+        return this.http.get(`/${params.projectId}/files?${queryParams}`)
             .pipe(map(res => res?.data));
     };
 

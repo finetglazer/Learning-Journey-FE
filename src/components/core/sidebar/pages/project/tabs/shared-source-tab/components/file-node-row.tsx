@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
-import { getFileIcon } from "@/lib/utils";
+import { cn, getFileIcon } from "@/lib/utils";
 import { FileNode } from "@/model/project-management";
 import { MinusCircle } from "lucide-react";
+import { useContext } from "react";
+import { SharedSourceContext, SharedSourceContextProps } from "../shared-source-context";
 
 export const FileNodeRow = ({
     node,
@@ -19,6 +20,11 @@ export const FileNodeRow = ({
     isSticky?: boolean,
 }) => {
     const isFolder = node.type === 'FOLDER';
+
+    const {
+        onCancelAddFolder,
+        editingFile,
+    } = useContext<SharedSourceContextProps>(SharedSourceContext);
 
     return (
         <TableRow
@@ -36,9 +42,22 @@ export const FileNodeRow = ({
                 )}
             >
                 {getFileIcon(node.extension || '', node.type)}
-                <span className={cn("text-gray-800 truncate", isFolder && "font-medium")}>
-                    {node.name}
-                </span>
+                {editingFile?.nodeId === node.nodeId ? (
+                    <input
+                        type="text"
+                        defaultValue={node.name}
+                        className={cn(
+                            "text-gray-800 truncate bg-white border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                            isFolder && "font-medium"
+                        )}
+                        autoFocus
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                ) : (
+                    <span className={cn("text-gray-800 truncate", isFolder && "font-medium")}>
+                        {node.name}
+                    </span>
+                )}
             </TableCell>
 
             <TableCell className="text-gray-500">
@@ -56,8 +75,11 @@ export const FileNodeRow = ({
                     <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => onDelete(node.nodeId)}
-                        className="text-gray-400 hover:text-red-500"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete(node.nodeId);
+                        }}
+                        className="text-gray-400 hover:text-red-500 cursor-pointer"
                     >
                         <MinusCircle className="h-4 w-4" />
                     </Button>

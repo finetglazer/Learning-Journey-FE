@@ -6,7 +6,7 @@ import { Project } from "@/model/project-management";
 import { useContext } from "react";
 import { ListTab } from "./tabs/list-tab/list-tab";
 import RiskRegisterTab from "./tabs/risk-register-tab/risk-register-tab";
-import { SharedSourceTab } from "./tabs/shared-source/shared-source-tab";
+import { SharedSourceTab } from "./tabs/shared-source-tab/shared-source-tab";
 import { SummaryTab } from "./tabs/summary-tab/summary-tab";
 import { TaskboardTab } from "./tabs/task-board-tab/task-board-tab";
 import { GanttTimelineBoard } from "./tabs/timeline-tab/timeline-tab";
