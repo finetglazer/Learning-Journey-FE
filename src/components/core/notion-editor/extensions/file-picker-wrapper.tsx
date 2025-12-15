@@ -108,8 +108,10 @@ export function FilePickerWrapper({ editor, projectId }: FilePickerWrapperProps)
                 // ✅ FIX 1: Use 'size_bytes' instead of 'sizeBytes'
                 sizeBytes: rawFile.size_bytes,
 
-                // ✅ FIX 2: Use 'storage_reference' instead of 'storageReference'
-                storageReference: rawFile.storage_reference || "",
+                // ✅ FIX 2: For NOTION_DOC, use node_id; for STATIC_FILE, use storage_reference
+                storageReference: rawFile.type === 'NOTION_DOC'
+                    ? String(rawFile.node_id)
+                    : (rawFile.storage_reference || ""),
 
                 nodeType: rawFile.type,
             })

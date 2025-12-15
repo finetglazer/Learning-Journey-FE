@@ -245,7 +245,7 @@ export function NotionEditor({
         };
     }, [isCommenting]);
 
-    // Handle comment click
+    // Handle comment and file node clicks
     useEffect(() => {
         if (!editor || !editor.view || editor.isDestroyed) return;
 
@@ -255,8 +255,28 @@ export function NotionEditor({
 
             const handleClick = (event: MouseEvent) => {
                 const target = event.target as HTMLElement;
-                const commentElement = target.closest("[data-thread-id]");
 
+                // Handle file node clicks
+                const fileCard = target.closest(".file-node-card");
+                if (fileCard) {
+                    const storageRef = fileCard.getAttribute("data-storage-reference");
+                    const nodeType = fileCard.getAttribute("data-node-type");
+
+                    if (storageRef) {
+                        // For NOTION_DOC, construct the URL to the document page
+                        if (nodeType === 'NOTION_DOC') {
+                            const url = `/projects/files?id=${storageRef}`;
+                            window.open(url, '_blank');
+                        } else {
+                            // For STATIC_FILE, use the storage reference directly (full URL)
+                            window.open(storageRef, '_blank');
+                        }
+                        return; // Prevent comment handler from also firing
+                    }
+                }
+
+                // Handle comment clicks
+                const commentElement = target.closest("[data-thread-id]");
                 if (commentElement) {
                     const threadId = commentElement.getAttribute("data-thread-id");
                     if (threadId) {

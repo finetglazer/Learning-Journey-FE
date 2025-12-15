@@ -717,3 +717,84 @@
   align-items: center;
   justify-content: center;
 }
+
+/* File Node Styles */
+.ProseMirror .file-node-wrapper {
+  margin: 0.5rem 0;
+  user-select: none;
+}
+
+.ProseMirror .file-node-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.dark .ProseMirror .file-node-card {
+  background-color: #1f2937;
+  border-color: #374151;
+}
+
+/* Hover effects for clickable file nodes */
+.ProseMirror .file-node-card.file-node-clickable {
+  cursor: pointer;
+}
+
+.ProseMirror .file-node-card.file-node-clickable:hover {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.dark .ProseMirror .file-node-card.file-node-clickable:hover {
+  background-color: #374151;
+  border-color: #4b5563;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* File icon */
+.ProseMirror .file-node-icon {
+  width: 2rem;
+  height: 2rem;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+/* File info container */
+.ProseMirror .file-node-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+/* File name */
+.ProseMirror .file-node-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dark .ProseMirror .file-node-name {
+  color: #f3f4f6;
+}
+
+/* File size */
+.ProseMirror .file-node-size {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.dark .ProseMirror .file-node-size {
+  color: #9ca3af;
+}
