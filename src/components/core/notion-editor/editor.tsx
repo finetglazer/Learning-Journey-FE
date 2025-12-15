@@ -8,6 +8,7 @@ import Underline from "@tiptap/extension-underline";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import Collaboration from "@tiptap/extension-collaboration";
+import Image from "@tiptap/extension-image";
 import { HocuspocusProvider } from "@hocuspocus/provider";
 import * as Y from "yjs";
 import BubbleMenuExtension from "@tiptap/extension-bubble-menu";
@@ -33,6 +34,8 @@ import { AppContext, AppContextProps } from "@/hooks/app-context";
 import { cn } from "@/lib/utils";
 import { CommentActionButtons } from "./comment-actions";
 import { FilePickerWrapper } from "./extensions/file-picker-wrapper";
+import { ImageUploadWrapper } from "./extensions/image-upload-wrapper";
+import { toast } from "sonner";
 
 interface NotionEditorProps {
     provider: HocuspocusProvider;
@@ -110,6 +113,7 @@ export function NotionEditor({
         userId,
         displayName,
         avatarUrl,
+        projectRepository,
     } = useContext<AppContextProps>(AppContext);
 
     useEffect(() => {
@@ -195,6 +199,13 @@ export function NotionEditor({
             SlashCommands,
             Callout,
             FileNode,
+            Image.configure({
+                inline: true,
+                allowBase64: false,
+                HTMLAttributes: {
+                    class: 'editor-image',
+                },
+            }),
             CodeBlockLowlight.configure({
                 lowlight,
                 defaultLanguage: "javascript",
@@ -218,9 +229,44 @@ export function NotionEditor({
                     // Padding is handled by the parent container now
                     class: "prose prose-lg dark:prose-invert focus:outline-none max-w-none min-h-[500px]",
                 },
+                handlePaste: (view, event, slice) => {
+                    // Check for image files in clipboard
+                    const files = Array.from(event.clipboardData?.files || []);
+                    const imageFile = files.find(file => file.type.startsWith('image/'));
+
+                    if (imageFile && projectId && projectRepository) {
+                        // Upload and insert image
+                        const toastId = toast.loading("Uploading image...");
+
+                        projectRepository.uploadEditorImage({ projectId }, imageFile).subscribe({
+                            next: (response) => {
+                                if (response?.status && response.data?.url) {
+                                    view.dispatch(
+                                        view.state.tr.replaceSelectionWith(
+                                            view.state.schema.nodes.image.create({ src: response.data.url })
+                                        )
+                                    );
+                                    toast.success("Image inserted", { id: toastId });
+                                } else {
+                                    toast.error("Upload failed", { id: toastId });
+                                }
+                            },
+                            error: (err) => {
+                                console.error("Paste image upload error:", err);
+                                toast.error(err?.error?.message || "Failed to upload image", { id: toastId });
+                            },
+                        });
+
+                        // Return true to prevent default TipTap image handling
+                        return true;
+                    }
+
+                    // Return false to allow default handling for non-images
+                    return false;
+                },
             },
         },
-        [extensions, canEdit]
+        [extensions, canEdit, projectId, projectRepository]
     );
 
     // Track when editor is ready - simplified
@@ -298,6 +344,9 @@ export function NotionEditor({
             return;
         }
     }, [editor]);
+
+    // Note: Image paste handling is now done via editorProps.handlePaste above
+    // This prevents duplicate images by intercepting at the ProseMirror plugin level
 
     const handleAddComment = useCallback(() => {
         if (!editor || editor.state.selection.empty || !rightGutterRef.current) return;
@@ -669,7 +718,11 @@ export function NotionEditor({
                             {/* Editor Content */}
                             <div ref={editorContainerRef}>
                                 {editor ? (
-                                    <EditorContent editor={editor} />
+                                    <>
+                                        <EditorContent editor={editor} />
+                                        <FilePickerWrapper editor={editor} projectId={projectId} />
+                                        <ImageUploadWrapper editor={editor} projectId={projectId} />
+                                    </>
                                 ) : (
                                     <div className="flex items-center justify-center py-8">
                                         <div className="text-sm text-gray-400">Loading editor...</div>

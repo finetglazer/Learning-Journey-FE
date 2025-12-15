@@ -798,3 +798,23 @@
 .dark .ProseMirror .file-node-size {
   color: #9ca3af;
 }
+
+/* Image nodes in editor */
+.ProseMirror img.editor-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 16px 0;
+  cursor: pointer;
+  transition: transform 0.2s;
+  display: block;
+}
+
+.ProseMirror img.editor-image:hover {
+  transform: scale(1.02);
+}
+
+.ProseMirror img.ProseMirror-selectednode {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
