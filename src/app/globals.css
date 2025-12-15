@@ -155,3 +155,646 @@
 .ant-dropdown-menu-item-selected {
   padding-left: 0;
 }
+
+/* Placeholder Text Style */
+.tiptap p.is-editor-empty:first-child::before,
+.tiptap p.is-empty::before,
+.tiptap h1.is-empty::before,
+.tiptap h2.is-empty::before,
+.tiptap h3.is-empty::before,
+.tiptap .is-empty::before {
+  color: #adb5bd;
+  /* Gray color */
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Dark mode support (optional) */
+.dark .tiptap .is-empty::before {
+  color: #6b7280;
+}
+
+/* TipTap Heading Styles */
+.ProseMirror h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.ProseMirror h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.ProseMirror h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror p {
+  font-size: 1rem;
+  line-height: 1.75;
+  margin-bottom: 1rem;
+}
+
+/* Bullet List (unordered) */
+.ProseMirror ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.ProseMirror ul ul {
+  list-style-type: circle;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.ProseMirror ul ul ul {
+  list-style-type: square;
+}
+
+/* Numbered List (ordered) */
+.ProseMirror ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.ProseMirror ol ol {
+  list-style-type: lower-alpha;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.ProseMirror ol ol ol {
+  list-style-type: lower-roman;
+}
+
+/* List Items */
+.ProseMirror li {
+  margin-bottom: 0.25rem;
+  line-height: 1.6;
+}
+
+.ProseMirror li>p {
+  margin-bottom: 0.25rem;
+}
+
+/* Task List (Checkboxes) */
+.ProseMirror ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.ProseMirror ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.ProseMirror ul[data-type="taskList"] li>label {
+  flex: 0 0 auto;
+  margin-top: 0.25rem;
+  user-select: none;
+}
+
+.ProseMirror ul[data-type="taskList"] li>div {
+  flex: 1 1 auto;
+}
+
+.ProseMirror ul[data-type="taskList"] input[type="checkbox"] {
+  cursor: pointer;
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Blockquote */
+.ProseMirror blockquote {
+  border-left: 4px solid #e5e7eb;
+  padding-left: 1rem;
+  margin-left: 0;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  font-style: italic;
+  color: #6b7280;
+}
+
+.dark .ProseMirror blockquote {
+  border-left-color: #4b5563;
+  color: #9ca3af;
+}
+
+/* Callout Block */
+.ProseMirror .callout-block {
+  display: flex;
+  gap: 0.75rem;
+  background-color: #eff6ff;
+  border-left: 4px solid #3b82f6;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.dark .ProseMirror .callout-block {
+  background-color: #1e3a8a;
+  border-left-color: #60a5fa;
+}
+
+.ProseMirror .callout-emoji {
+  flex-shrink: 0;
+  font-size: 1.5rem;
+  line-height: 1;
+  user-select: none;
+}
+
+.ProseMirror .callout-content {
+  flex: 1;
+  color: #1f2937;
+}
+
+.dark .ProseMirror .callout-content {
+  color: #e5e7eb;
+}
+
+.ProseMirror .callout-content p {
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror .callout-content p:last-child {
+  margin-bottom: 0;
+}
+
+/* Code Block - VS Code Dark Theme */
+.ProseMirror pre {
+  background-color: #1e1e1e;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #d4d4d4;
+  border: 1px solid #333;
+}
+
+.dark .ProseMirror pre {
+  background-color: #1e1e1e;
+  border-color: #333;
+}
+
+/* Inline code */
+.ProseMirror code {
+  background-color: #f3f4f6;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.875rem;
+  color: #e91e63;
+}
+
+.dark .ProseMirror code {
+  background-color: #374151;
+  color: #f48fb1;
+}
+
+.ProseMirror pre code {
+  background-color: transparent;
+  padding: 0;
+  border-radius: 0;
+  color: #d4d4d4;
+}
+
+/* VS Code Syntax Highlighting */
+.ProseMirror .hljs-comment,
+.ProseMirror .hljs-quote {
+  color: #6a9955;
+  font-style: italic;
+}
+
+.ProseMirror .hljs-keyword,
+.ProseMirror .hljs-selector-tag,
+.ProseMirror .hljs-literal,
+.ProseMirror .hljs-section,
+.ProseMirror .hljs-link {
+  color: #569cd6;
+}
+
+.ProseMirror .hljs-string,
+.ProseMirror .hljs-attr {
+  color: #ce9178;
+}
+
+.ProseMirror .hljs-name,
+.ProseMirror .hljs-type,
+.ProseMirror .hljs-number,
+.ProseMirror .hljs-selector-id,
+.ProseMirror .hljs-selector-class {
+  color: #4ec9b0;
+}
+
+.ProseMirror .hljs-function,
+.ProseMirror .hljs-title {
+  color: #dcdcaa;
+}
+
+.ProseMirror .hljs-params {
+  color: #9cdcfe;
+}
+
+.ProseMirror .hljs-built_in,
+.ProseMirror .hljs-builtin-name {
+  color: #4fc1ff;
+}
+
+.ProseMirror .hljs-variable,
+.ProseMirror .hljs-template-variable {
+  color: #9cdcfe;
+}
+
+.ProseMirror .hljs-tag,
+.ProseMirror .hljs-meta {
+  color: #808080;
+}
+
+.ProseMirror .hljs-deletion {
+  color: #f44747;
+}
+
+.ProseMirror .hljs-addition {
+  color: #89d185;
+}
+
+.ProseMirror .hljs-emphasis {
+  font-style: italic;
+}
+
+.ProseMirror .hljs-strong {
+  font-weight: bold;
+}
+
+.ProseMirror .hljs-regexp,
+.ProseMirror .hljs-symbol {
+  color: #d16969;
+}
+
+.ProseMirror .hljs-attribute {
+  color: #9cdcfe;
+}
+
+.ProseMirror .hljs-operator {
+  color: #d4d4d4;
+}
+
+.ProseMirror .hljs-doctag {
+  color: #608b4e;
+}
+
+
+/* Horizontal Rule */
+.ProseMirror hr {
+  border: none;
+  border-top: 2px solid #e5e7eb;
+  margin: 2rem 0;
+}
+
+.dark .ProseMirror hr {
+  border-top-color: #374151;
+}
+
+/* Comment mark styling */
+.comment-mark {
+  background-color: #fef3c7;
+  border-bottom: 2px solid #fbbf24;
+  padding: 0 2px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.comment-mark:hover {
+  background-color: #fde68a;
+}
+
+
+/* Callout Block */
+.ProseMirror .callout-block {
+  display: flex;
+  gap: 0.75rem;
+  background-color: #eff6ff;
+  border-left: 4px solid #3b82f6;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.dark .ProseMirror .callout-block {
+  background-color: #1e3a8a;
+  border-left-color: #60a5fa;
+}
+
+.ProseMirror .callout-emoji {
+  flex-shrink: 0;
+  font-size: 1.5rem;
+  line-height: 1;
+  user-select: none;
+}
+
+.ProseMirror .callout-content {
+  flex: 1;
+  color: #1f2937;
+}
+
+.dark .ProseMirror .callout-content {
+  color: #e5e7eb;
+}
+
+.ProseMirror .callout-content p {
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror .callout-content p:last-child {
+  margin-bottom: 0;
+}
+
+/* Code Block - VS Code Dark Theme */
+.ProseMirror pre {
+  background-color: #1e1e1e;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #d4d4d4;
+  border: 1px solid #333;
+}
+
+.dark .ProseMirror pre {
+  background-color: #1e1e1e;
+  border-color: #333;
+}
+
+/* Inline code */
+.ProseMirror code {
+  background-color: #f3f4f6;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.875rem;
+  color: #e91e63;
+}
+
+.dark .ProseMirror code {
+  background-color: #374151;
+  color: #f48fb1;
+}
+
+.ProseMirror pre code {
+  background-color: transparent;
+  padding: 0;
+  border-radius: 0;
+  color: #d4d4d4;
+}
+
+/* VS Code Syntax Highlighting */
+.ProseMirror .hljs-comment,
+.ProseMirror .hljs-quote {
+  color: #6a9955;
+  font-style: italic;
+}
+
+.ProseMirror .hljs-keyword,
+.ProseMirror .hljs-selector-tag,
+.ProseMirror .hljs-literal,
+.ProseMirror .hljs-section,
+.ProseMirror .hljs-link {
+  color: #569cd6;
+}
+
+.ProseMirror .hljs-string,
+.ProseMirror .hljs-attr {
+  color: #ce9178;
+}
+
+.ProseMirror .hljs-name,
+.ProseMirror .hljs-type,
+.ProseMirror .hljs-number,
+.ProseMirror .hljs-selector-id,
+.ProseMirror .hljs-selector-class {
+  color: #4ec9b0;
+}
+
+.ProseMirror .hljs-function,
+.ProseMirror .hljs-title {
+  color: #dcdcaa;
+}
+
+.ProseMirror .hljs-params {
+  color: #9cdcfe;
+}
+
+.ProseMirror .hljs-built_in,
+.ProseMirror .hljs-builtin-name {
+  color: #4fc1ff;
+}
+
+.ProseMirror .hljs-variable,
+.ProseMirror .hljs-template-variable {
+  color: #9cdcfe;
+}
+
+.ProseMirror .hljs-tag,
+.ProseMirror .hljs-meta {
+  color: #808080;
+}
+
+.ProseMirror .hljs-deletion {
+  color: #f44747;
+}
+
+.ProseMirror .hljs-addition {
+  color: #89d185;
+}
+
+.ProseMirror .hljs-emphasis {
+  font-style: italic;
+}
+
+.ProseMirror .hljs-strong {
+  font-weight: bold;
+}
+
+.ProseMirror .hljs-regexp,
+.ProseMirror .hljs-symbol {
+  color: #d16969;
+}
+
+.ProseMirror .hljs-attribute {
+  color: #9cdcfe;
+}
+
+.ProseMirror .hljs-operator {
+  color: #d4d4d4;
+}
+
+.ProseMirror .hljs-doctag {
+  color: #608b4e;
+}
+
+
+/* Horizontal Rule */
+.ProseMirror hr {
+  border: none;
+  border-top: 2px solid #e5e7eb;
+  margin: 2rem 0;
+}
+
+.dark .ProseMirror hr {
+  border-top-color: #374151;
+}
+
+/* Comment mark styling */
+.comment-mark {
+  background-color: #fef3c7;
+  border-bottom: 2px solid #fbbf24;
+  padding: 0 2px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.comment-mark:hover {
+  background-color: #fde68a;
+}
+
+.dark .comment-mark {
+  background-color: #78350f;
+  border-bottom-color: #d97706;
+}
+
+.dark .comment-mark:hover {
+  background-color: #92400e;
+}
+
+/* Block Menu Styles */
+.block-menu-container {
+  position: absolute;
+  left: -32px;
+  top: 0;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 10;
+}
+
+.ProseMirror .block-menu-container:hover,
+.ProseMirror *:hover>.block-menu-container {
+  opacity: 1;
+}
+
+.block-menu-handle {
+  display: inline-block;
+}
+
+.block-menu-grip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* File Node Styles */
+.ProseMirror .file-node-wrapper {
+  margin: 0.5rem 0;
+  user-select: none;
+}
+
+.ProseMirror .file-node-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.dark .ProseMirror .file-node-card {
+  background-color: #1f2937;
+  border-color: #374151;
+}
+
+/* Hover effects for clickable file nodes */
+.ProseMirror .file-node-card.file-node-clickable {
+  cursor: pointer;
+}
+
+.ProseMirror .file-node-card.file-node-clickable:hover {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.dark .ProseMirror .file-node-card.file-node-clickable:hover {
+  background-color: #374151;
+  border-color: #4b5563;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* File icon */
+.ProseMirror .file-node-icon {
+  width: 2rem;
+  height: 2rem;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+/* File info container */
+.ProseMirror .file-node-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+/* File name */
+.ProseMirror .file-node-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dark .ProseMirror .file-node-name {
+  color: #f3f4f6;
+}
+
+/* File size */
+.ProseMirror .file-node-size {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.dark .ProseMirror .file-node-size {
+  color: #9ca3af;
+}

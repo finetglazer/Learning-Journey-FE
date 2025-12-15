@@ -7,14 +7,10 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CommentActionButtons } from "./comment-actions";
 import {
-    CheckCircle,
     MessageCircle,
-    Edit2,
-    Trash2,
     X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatDistanceToNow } from "date-fns";
 
 interface CommentSidebarProps {
     threads: CommentThread[];
@@ -171,7 +167,7 @@ function ThreadCard({
                 <Avatar className="h-8 w-8 flex-shrink-0">
                     <AvatarImage src={thread.userAvatar} />
                     <AvatarFallback className="text-xs">
-                        {thread.userName.charAt(0)}
+                        {(thread.userName || "?").charAt(0)}
                     </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
@@ -259,9 +255,11 @@ function ThreadCard({
             {/* Replies */}
             {thread.replies.length > 0 && (
                 <div className="mt-3 space-y-2 border-l-2 border-gray-200 dark:border-gray-600 pl-3">
-                    {thread.replies.map((reply) => (
+                    {/* ✅ FIXED: Added index to map and updated key to prevent duplicates */}
+                    {thread.replies.map((reply, index) => (
                         <ReplyCard
-                            key={reply.replyId}
+                            // Combine ID + index to guarantee uniqueness even if data is duplicated
+                            key={`${reply.replyId || 'unknown'}-${index}`}
                             reply={reply}
                             canDelete={reply.userId === currentUserId && canEdit}
                             onDelete={() => onDeleteReply(reply.replyId)}
@@ -280,18 +278,24 @@ interface ReplyCardProps {
 }
 
 function ReplyCard({ reply, canDelete, onDelete }: ReplyCardProps) {
+    // ✅ Fix: Ensure userName exists, fallback to "Anonymous" if undefined
+    const safeName = reply.userName || "Anonymous";
+    const initial = safeName.charAt(0).toUpperCase();
+
     return (
         <div className="group">
             <div className="flex items-start gap-2">
                 <Avatar className="h-6 w-6 flex-shrink-0">
                     <AvatarImage src={reply.userAvatar} />
                     <AvatarFallback className="text-xs">
-                        {reply.userName.charAt(0)}
+                        {/* ✅ Fix: Use the safe initial here */}
+                        {initial}
                     </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
                     <div className="text-xs font-medium text-gray-900 dark:text-gray-100">
-                        {reply.userName}
+                        {/* ✅ Fix: Display safe name */}
+                        {safeName}
                     </div>
                     {/* ✅ FIX: Added 'break-all' here too */}
                     <p className="text-sm text-gray-700 dark:text-gray-300 mt-0.5 break-words break-all whitespace-pre-wrap">

@@ -55,6 +55,7 @@ export interface DocumentDTO {
 
 export interface NotionDocDTO {
     nodeId: number;
+    projectId: number; // Add this for file picker
     name: string;
     storageReference: string;
     role: "OWNER" | "MEMBER";

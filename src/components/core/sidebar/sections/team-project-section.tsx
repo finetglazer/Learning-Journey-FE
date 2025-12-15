@@ -1,8 +1,6 @@
 import { Project } from "@/model/project-management";
 import { Dispatch, SetStateAction, useEffect } from "react";
 import CreateProjectModal from "../../project-management/create-project-modal";
-import InviteMembersModal from "../../project-management/invite-members-modal";
-import TeamMembersViewModal from "../../project-management/team-members-view-modal";
 import { AlertModal } from "../../alert-modal/alert-modal";
 
 export interface TeamProjectSectionProps {

@@ -1,6 +1,5 @@
 "use client";
 
-import { isNumber } from 'lodash';
 import { useMemo } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 

@@ -3,7 +3,7 @@ import { CALENDAR_VIEW_OPTIONS } from '@/const/consts';
 import { cn, isoToHHMM, toDayJs } from '@/lib/utils';
 import { MonthPlanningBigTask, MonthPlanningEvent, Task } from '@/model/task';
 import { Tooltip } from 'antd';
-import { Bookmark, Trash2 } from 'lucide-react';
+import { Bookmark } from 'lucide-react';
 import React, { CSSProperties, Dispatch, SetStateAction, useEffect, useState } from 'react';
 
 export interface BaseTaskProps {

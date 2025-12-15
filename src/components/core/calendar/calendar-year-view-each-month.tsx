@@ -1,6 +1,6 @@
 "use client";
 
-import { getTasksForDay, getTasksForDayInYearView } from "@/lib/utils";
+import { getTasksForDayInYearView } from "@/lib/utils";
 import { Task } from "@/model/task";
 import {
     eachDayOfInterval,

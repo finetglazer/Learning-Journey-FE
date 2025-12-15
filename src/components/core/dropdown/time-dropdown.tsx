@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { cn, generateTimeSlots, uuid4 } from "@/lib/utils";
+import { cn, generateTimeSlots } from "@/lib/utils";
 import { Dropdown, Input, Menu, Tooltip } from 'antd';
 import { isNil } from "lodash";
 import { ChevronDown, ChevronUp } from 'lucide-react';

@@ -75,7 +75,7 @@ export function AlertModal({
         }
         if (!(alertMessage?.description || []).length) {
             const errors: any = alertMessage?.description;
-            let errorDescriptions: any[] = [];
+            const errorDescriptions: any[] = [];
             Object.keys(errors).forEach(key => {
                 errorDescriptions.push({
                     [key]: errors[key]

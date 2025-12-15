@@ -374,6 +374,11 @@ export class ProjectRepository extends BaseRepository {
             .pipe(map(res => res?.data));
     };
 
+    public getFilesForPicker = (params: { projectId: number | string }): Observable<any> => {
+        return this.http.get(`/${params.projectId}/files?flatten=true&types=STATIC_FILE,NOTION_DOC`)
+            .pipe(map(res => res?.data));
+    };
+
     public createFolder = (params: { projectId: number | string }, body: any): Observable<any> => {
         return this.http.post(`/${params.projectId}/files/folder`, body)
             .pipe(map(res => res?.data));

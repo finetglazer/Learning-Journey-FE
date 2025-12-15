@@ -27,7 +27,7 @@ export function BufferList({ showAllTasks, }: BufferListProps) {
     } = useContext<CalendarContextInterface>(CalendarContext);
 
     const allTasks = useMemo(() => {
-        let t: UserTaskItem[] = [];
+        const t: UserTaskItem[] = [];
         (projects || []).forEach(project => {
             (project.tasks || []).forEach(task => t.push(task));
         });

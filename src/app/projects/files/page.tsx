@@ -301,6 +301,7 @@ export default function DocumentPage() {
                         documentTitle={document.name}
                         createdBy={document.createdBy}
                         createdAt={document.createdAt}
+                        projectId={(document as any).project_id} // Backend returns snake_case
 
                         onTitleChange={(newTitle) => {
                             // A. Update UI immediately (so it feels fast)

@@ -77,7 +77,7 @@ export default function RiskRegisterTab({
             .subscribe({
                 next: res => {
                     if (res?.status) {
-                        let newOriginalData: { [id: number]: RiskItem } = {};
+                        const newOriginalData: { [id: number]: RiskItem } = {};
                         const mappedData = (res?.data?.risks || []).map((risk: any) => {
                             const mappedRisk = {
                                 ...risk,

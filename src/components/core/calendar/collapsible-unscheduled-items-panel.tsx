@@ -153,8 +153,8 @@ export function CollapsibleUnscheduledPanel({
     const getBoundaryCoordinates = (headerRef: any, sidebarRef: any) => {
         let sidebarRightEdgeX = 0;
         let headerBottomEdgeY = 0;
-        let viewportWidth = window.innerWidth;
-        let viewportHeight = window.innerHeight;
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
 
         if (sidebarRef.current) {
             const rect = sidebarRef.current.getBoundingClientRect();
