@@ -27,7 +27,7 @@ export interface TeamProjectContextProps {
     overallLoading: boolean;
     setOverallLoading: Dispatch<SetStateAction<boolean>>;
 
-    getFiles: (search?: string, parentNodeId?: number | null) => (() => void) | undefined;
+    getFiles: (search?: string, parentNodeId?: number | null, flatten?: boolean, types?: string, onFinish?: (files: FileNode[]) => void) => (() => void) | undefined;
     files: FileNode[];
     setFiles: Dispatch<SetStateAction<FileNode[]>>;
     getTeamMembers: () => void;
@@ -250,7 +250,7 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         projectRepository,
     ]);
 
-    const getFiles = useCallback((search?: string, parentNodeId?: number | null) => {
+    const getFiles = useCallback((search?: string, parentNodeId?: number | null, flatten?: boolean, types?: string, onFinish?: (files: FileNode[]) => void) => {
         if (!projectRepository || !currentSelectedProject) {
             return;
         }
@@ -270,6 +270,8 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         const subscription = projectRepository.getFiles({
             projectId: currentSelectedProject?.id,
             parentNodeId: parentNodeId || undefined,
+            flatten: flatten ? "true" : "false",
+            types: types,
             search: search || "",
         })
             .subscribe({
@@ -280,6 +282,7 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
                             ...res?.data || [],
                         ];
                         setFiles(updatedFiles);
+                        onFinish?.(res?.data || []);
                     }
                     else {
                         toast.error(res?.msg || res?.message);

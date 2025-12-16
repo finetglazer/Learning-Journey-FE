@@ -261,6 +261,7 @@ export interface FileNode {
 };
 
 export interface TaskAttachmentDetail {
+    nodeId: number;
     fileName: string;
     fileType: NodeType;
     extension: string | null;
@@ -269,8 +270,8 @@ export interface TaskAttachmentDetail {
 };
 
 export interface ReplyInfo {
-    replyToCommentId: number;
-    replyToUserName: string;
+    replyPreview: string;
+    replyToUserId: number;
 };
 
 export interface TaskComment {

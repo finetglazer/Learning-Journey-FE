@@ -1,5 +1,7 @@
 import { map, Observable } from "rxjs";
 import { BaseRepository } from "./base-repository";
+import { flatten } from "lodash";
+import { types } from "util";
 
 const BASE_API_URL = process.env.NEXT_PUBLIC_API_URL + "/pm/projects";
 
@@ -370,10 +372,12 @@ export class ProjectRepository extends BaseRepository {
 
     // FILE & DOCUMENT FUNCTIONS
 
-    public getFiles = (params: { projectId: number | string, parentNodeId?: number | string, search?: string }): Observable<any> => {
+    public getFiles = (params: { projectId: number | string, parentNodeId?: number | string, search?: string, flatten?: string, types?: string }): Observable<any> => {
         const queryParams = new URLSearchParams({
             parent_node_id: params.parentNodeId?.toString() || "",
-            search: params.search || ""
+            search: params.search || "",
+            flatten: params.flatten || "false",
+            types: params.types || "",
         }).toString();
         return this.http.get(`/${params.projectId}/files?${queryParams}`)
             .pipe(map(res => res?.data));
@@ -427,6 +431,41 @@ export class ProjectRepository extends BaseRepository {
         formData.append("file", file);
         return this.http.post(`/${params.projectId}/editor-images/upload`, formData)
             .pipe(map(res => res?.data));
+    };
+
+    public uploadTaskAttachment = (params: { projectId: number | string, taskId: number | string }, body: { nodeId: number }): Observable<any> => {
+        return this.http.post(`/${params.projectId}/tasks/${params.taskId}/attachments`, body)
+            .pipe(map(res => res?.data));
+    };
+
+    public deleteTaskAttachment = (params: { projectId: number | string, taskId: number | string, attachmentId: number | string }): Observable<any> => {
+        return this.http.delete(`/${params.projectId}/tasks/${params.taskId}/attachments/${params.attachmentId}`)
+            .pipe(map(res => res?.data));
+    };
+
+    // COMMENT FUNCTIONS
+    public getTaskComments = (params: { taskId: number | string }): Observable<any> => {
+        return this.http.get(`../tasks/${params.taskId}/comments`, {
+            headers: { "X-User-Id": (this as any).userId }
+        }).pipe(map(res => res?.data));
+    };
+
+    public createTaskComment = (params: { taskId: number | string }, body: { content: string, parentCommentId?: number | null }): Observable<any> => {
+        return this.http.post(`../tasks/${params.taskId}/comments`, body, {
+            headers: { "X-User-Id": (this as any).userId }
+        }).pipe(map(res => res?.data));
+    };
+
+    public updateTaskComment = (params: { commentId: number | string }, body: { content: string }): Observable<any> => {
+        return this.http.put(`../comments/${params.commentId}`, body, {
+            headers: { "X-User-Id": (this as any).userId }
+        }).pipe(map(res => res?.data));
+    };
+
+    public deleteTaskComment = (params: { commentId: number | string }): Observable<any> => {
+        return this.http.delete(`../comments/${params.commentId}`, {
+            headers: { "X-User-Id": (this as any).userId }
+        }).pipe(map(res => res?.data));
     };
 };
 

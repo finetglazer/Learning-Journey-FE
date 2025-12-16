@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
+import { X } from "lucide-react";
 import { FileNode } from "@/model/project-management";
 import { getFileIcon } from "@/lib/utils";
 
 interface FilePickerProps {
     files: FileNode[];
     onSelect: (file: FileNode) => void;
+    onClose?: () => void;
 }
 
 interface FilePickerRef {
@@ -12,7 +14,7 @@ interface FilePickerRef {
 }
 
 export const FilePicker = forwardRef<FilePickerRef, FilePickerProps>(
-    ({ files, onSelect }, ref) => {
+    ({ files, onSelect, onClose }, ref) => {
         const [selectedIndex, setSelectedIndex] = useState(0);
         const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -72,10 +74,23 @@ export const FilePicker = forwardRef<FilePickerRef, FilePickerProps>(
 
         if (files.length === 0) {
             return (
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden w-80 p-4">
-                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
-                        No files found
-                    </p>
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden w-80">
+                    <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Select a file</span>
+                        {onClose && (
+                            <button
+                                onClick={onClose}
+                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                            >
+                                <X size={14} />
+                            </button>
+                        )}
+                    </div>
+                    <div className="p-4">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+                            No files found
+                        </p>
+                    </div>
                 </div>
             );
         }
@@ -85,8 +100,16 @@ export const FilePicker = forwardRef<FilePickerRef, FilePickerProps>(
                 ref={scrollContainerRef}
                 className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden w-96 max-h-96 overflow-y-auto"
             >
-                <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900">
-                    Select a file
+                <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 flex justify-between items-center sticky top-0 z-10 border-b border-gray-200 dark:border-gray-700">
+                    <span>Select a file</span>
+                    {onClose && (
+                        <button
+                            onClick={onClose}
+                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                        >
+                            <X size={14} />
+                        </button>
+                    )}
                 </div>
                 {files.map((file, index) => {
                     const isSelected = index === selectedIndex;

@@ -822,3 +822,18 @@ export const getFileSize = (size: number) => {
   const gb = mb / 1024;
   return `${Number(gb.toFixed(2))} GB`;
 };
+
+export const getRelativeTimeByDays = (date: string) => {
+  if (!date) return "";
+  const d = toDayJs(date, 0);
+  const now = toDayJs(undefined, 0);
+
+  if (d.isSame(now, 'day')) return 'Today';
+
+  const diffDays = now.diff(d, 'day');
+
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 30) return `${diffDays} days ago`;
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+  return `${Math.floor(diffDays / 365)} years ago`;
+};
