@@ -181,13 +181,13 @@ export const RiskLevel = {
 
 export const getRiskLevelLabel = (value: number | undefined) => {
     switch (value) {
-        case 1: 
+        case 1:
             return "1-Very low";
         case 2:
             return "2-Low";
         case 3:
             return "3-Medium";
-        case 4: 
+        case 4:
             return "4-High";
         case 5:
             return "5-Very high";
@@ -258,4 +258,33 @@ export interface FileNode {
     createdAt: string;
     updatedAt: string;
     uploadingId?: string;
+};
+
+export interface TaskAttachmentDetail {
+    fileName: string;
+    fileType: NodeType;
+    extension: string | null;
+    attachedAt: string; // ISO date string, e.g., "2025-12-16T10:30:00"
+    sizeBytes: number;
+};
+
+export interface ReplyInfo {
+    replyToCommentId: number;
+    replyToUserName: string;
+};
+
+export interface TaskComment {
+    commentId: number;
+    userId: number;
+    userName: string;
+    userAvatar: string;
+    content: string;
+    createdAt: string; // ISO date string, e.g., "2025-12-16T10:30:00"
+    replyInfo: ReplyInfo | null;
+};
+
+export interface PM_TaskDetail {
+    taskInfo: PM_Task;
+    attachments: TaskAttachmentDetail[];
+    comments: TaskComment[];
 };

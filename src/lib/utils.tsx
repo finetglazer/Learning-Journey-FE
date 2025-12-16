@@ -806,3 +806,19 @@ export const getFileIcon = (extension: string | null, type: NodeType, size: numb
     />
   );
 };
+
+export const getFileSize = (size: number) => {
+  if (size < 1024) {
+    return `${size} bytes`;
+  }
+  const kb = size / 1024;
+  if (kb < 1024) {
+    return `${Number(kb.toFixed(2))} KB`;
+  }
+  const mb = kb / 1024;
+  if (mb < 1024) {
+    return `${Number(mb.toFixed(2))} MB`;
+  }
+  const gb = mb / 1024;
+  return `${Number(gb.toFixed(2))} GB`;
+};

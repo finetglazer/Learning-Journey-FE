@@ -3,8 +3,9 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils';
-import { PM_Task, TaskPriority, TaskStatus, TeamMember } from '@/model/project-management';
+import { AppContext, AppContextProps } from '@/hooks/app-context';
+import { cn, getFileIcon, getFileSize, toDayJs } from '@/lib/utils';
+import { PM_Task, PM_TaskDetail, TaskAttachmentDetail, TaskPriority, TaskStatus, TeamMember } from '@/model/project-management';
 import {
     Calendar,
     CheckCircle2,
@@ -14,12 +15,17 @@ import {
     HelpCircle,
     Loader,
     Paperclip,
+    PlusSquare,
     SignalHigh,
     SignalLow,
     SignalMedium,
     User,
 } from 'lucide-react';
+import { useCallback, useContext, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { Divider } from '../divider/divider';
+import { TeamProjectContext, TeamProjectContextProps } from '../sidebar/pages/project/team-project-context';
+import { Button } from '@/components/ui/button';
 
 export const STATUS_CONFIG: Record<TaskStatus, { label: string, icon: any, color: string }> = {
     [TaskStatus.TO_DO]: { label: "To do", icon: HelpCircle, color: "text-slate-500" },
@@ -35,18 +41,6 @@ export const PRIORITY_CONFIG: Record<TaskPriority, { label: string, icon: any, c
     [TaskPriority.CRITICAL]: { label: "Critical", icon: Flame, color: "text-pink-600" },
 };
 
-// --- MOCK DATA for Discussion/Attachments (Remains the same) ---
-
-const MOCK_ATTACHMENTS = [
-    { name: 'Client_Proposal.xls', type: 'spreadsheet', date: 'Today', size: '4 MB' },
-    { name: 'PRD.docx', type: 'document', date: 'Yesterday', detail: 'Google Docs' },
-];
-
-const MOCK_DISCUSSIONS = [
-    { user: { name: 'David Lee', avatarUrl: 'path/to/david.jpg' }, comment: 'Have you considered AI-driven task prioritization?' },
-    { user: { name: 'Priya Sharma', avatarUrl: 'path/to/priya.jpg' }, comment: "Don't forget to add accessibility features in the design phase." },
-];
-
 const PropertyItem = ({ prefixIcon: Icon, label, value, colorClass = 'text-gray-700' }) => (
     <div className="flex items-center space-x-3 py-1.5 border-gray-100 last:border-b-0">
         <span className="w-32 text-sm text-gray-500 flex items-center space-x-2">
@@ -58,13 +52,13 @@ const PropertyItem = ({ prefixIcon: Icon, label, value, colorClass = 'text-gray-
     </div>
 );
 
-const AttachmentItem = ({ name, date, size, detail }) => (
+const AttachmentItem = (file: TaskAttachmentDetail) => (
     <div className="flex items-center space-x-3 py-2 border-gray-100 last:border-b-0 cursor-pointer hover:bg-gray-50">
-        <Paperclip size={20} className="text-gray-400" />
+        {getFileIcon(file.extension, file.fileType)}
         <div className="flex-grow">
-            <p className="text-sm font-medium truncate">{name}</p>
+            <p className="text-sm font-medium truncate">{file.fileName}</p>
             <p className="text-xs text-gray-500">
-                {date} {detail ? `• ${detail}` : ''} {size ? `• ${size}` : ''}
+                {file.uploadDate} `• ${getFileSize(file.sizeBytes)}`
             </p>
         </div>
         <ChevronRight size={16} className="text-gray-400 opacity-50" />
@@ -85,9 +79,18 @@ const CommentItem = ({ user, comment }) => (
 );
 
 export function TaskDetailDrawer({ task, members }: { task: PM_Task, members: TeamMember[], }) {
+    const [taskDetail, setTaskDetail] = useState<PM_TaskDetail | null>(null);
+
+    const {
+        projectRepository,
+    } = useContext<AppContextProps>(AppContext);
+
+    const {
+        selectedProject,
+    } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
     // 1. Resolve Task Owner (first assignee)
-    const ownerId = task.assignees.length > 0 ? task.assignees[0].userId : null;
+    const ownerId = (taskDetail?.taskInfo?.assignees || []).length > 0 ? taskDetail?.taskInfo?.assignees[0].userId : null;
     const taskOwner = members.find(member => member.userId === ownerId);
 
     const ownerDisplay = taskOwner
@@ -103,8 +106,8 @@ export function TaskDetailDrawer({ task, members }: { task: PM_Task, members: Te
         : <span className="text-gray-400">Unassigned</span>;
 
     // 2. Resolve Status and Priority Configs
-    const statusConfig = STATUS_CONFIG[task.status] || { label: task.status, icon: HelpCircle, color: "text-gray-500" };
-    const priorityConfig = PRIORITY_CONFIG[task.priority] || { label: task.priority, icon: SignalLow, color: "text-gray-500" };
+    const statusConfig = taskDetail?.taskInfo ? STATUS_CONFIG[taskDetail?.taskInfo?.status] || { label: taskDetail?.taskInfo?.status, icon: HelpCircle, color: "text-gray-500" } : { label: "", icon: null, color: "text-gray-500" };
+    const priorityConfig = taskDetail?.taskInfo ? PRIORITY_CONFIG[taskDetail?.taskInfo?.priority] || { label: taskDetail?.taskInfo?.priority, icon: SignalLow, color: "text-gray-500" } : { label: "", icon: null, color: "text-gray-500" };
 
 
     // 3. Define Property Items for Mapping
@@ -130,22 +133,52 @@ export function TaskDetailDrawer({ task, members }: { task: PM_Task, members: Te
             valueColor: priorityConfig.color
         },
         {
-            label: "Date added",
-            value: task.dateAdded,
+            label: "Start date",
+            value: taskDetail?.taskInfo?.startDate ? toDayJs(taskDetail?.taskInfo?.startDate, 0).format("DD/MM/YYYY") : "",
             prefixIcon: Calendar
         },
         {
             label: "Deadline",
-            value: task.endDate,
+            value: taskDetail?.taskInfo?.endDate ? toDayJs(taskDetail?.taskInfo?.endDate, 0).format("DD/MM/YYYY") : "",
             prefixIcon: Calendar
         },
     ];
+
+    const getTaskDetail = useCallback(() => {
+        if (!projectRepository || !selectedProject) {
+            return;
+        }
+
+        const subscription = projectRepository.getTaskDetail({
+            projectId: selectedProject.id,
+            taskId: task.taskId,
+        })
+            .subscribe({
+                next: res => {
+                    if (res?.status) {
+                        setTaskDetail(res?.data);
+                    }
+                    else {
+                        toast.error(res?.message || res?.msg);
+                    }
+                },
+                error: err => { }
+            });
+
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, [task, projectRepository, selectedProject]);
+
+    useEffect(() => {
+        getTaskDetail();
+    }, [task]);
 
     return (
         <div className="flex h-full flex-col bg-white">
             {/* Header / Title */}
             <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-                <h2 className="text-xl font-bold text-gray-900">{task.name}</h2>
+                <h2 className="text-xl font-bold text-gray-900">{taskDetail?.taskInfo?.name || "---"}</h2>
             </div>
 
             <ScrollArea className="flex-1 px-4">
@@ -185,12 +218,17 @@ export function TaskDetailDrawer({ task, members }: { task: PM_Task, members: Te
 
                     <Divider className={"w-[calc(100%-10px)] mt-5"} />
 
-                    {/* --- 2. Attachments Section (MOCK) --- */}
-                    <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mt-6 mb-3">
-                        Attachments
-                    </h3>
+                    {/* --- 2. Attachments Section --- */}
+                    <div className="flex items-center justify-between group">
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mt-6 mb-3">
+                            Attachments
+                        </h3>
+                        <Button variant="ghost" className="mr-3 text-gray-500 cursor-pointer hover:bg-transparent">
+                            <PlusSquare size={24} className="h-4 w-4" />
+                        </Button>
+                    </div>
                     <div className="space-y-1">
-                        {MOCK_ATTACHMENTS.map((file, index) => (
+                        {(taskDetail?.attachments || []).map((file, index) => (
                             <AttachmentItem key={index} {...file} />
                         ))}
                     </div>
@@ -202,9 +240,9 @@ export function TaskDetailDrawer({ task, members }: { task: PM_Task, members: Te
                         Discussion
                     </h3>
                     <div className="space-y-2">
-                        {MOCK_DISCUSSIONS.map((discussion, index) => (
+                        {/* {MOCK_DISCUSSIONS.map((discussion, index) => (
                             <CommentItem key={index} {...discussion} />
-                        ))}
+                        ))} */}
                     </div>
                 </div>
             </ScrollArea>

@@ -1,11 +1,13 @@
+import { FilePreviewModal } from "@/components/core/file-preview/file-preview-modal";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { FILE_EXTENSION } from "@/const/consts";
 import { cn, getFileIcon } from "@/lib/utils";
 import { FileNode, ProjectMembershipRole } from "@/model/project-management";
 import { isEqual } from "lodash";
 import { Loader2, MoreVerticalIcon } from "lucide-react";
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { TeamProjectContext, TeamProjectContextProps } from "../../../team-project-context";
 import { SharedSourceContext, SharedSourceContextProps } from "../shared-source-context";
 
@@ -20,6 +22,10 @@ export const FileNodeRow = ({
 }) => {
     const isFolder = node.type === 'FOLDER';
     const isUploading = node.uploadingId !== undefined;
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+    // File types that support preview
+    const isPreviewable = !isFolder && node.storageReference && FILE_EXTENSION.includes(node.extension?.toLowerCase() || '');
 
     const {
         currentMember,
@@ -37,6 +43,11 @@ export const FileNodeRow = ({
     } = useContext<SharedSourceContextProps>(SharedSourceContext);
 
     const menu: any = [
+        {
+            label: 'Preview',
+            onClick: () => setIsPreviewOpen(true),
+            isShow: isPreviewable,
+        },
         {
             label: 'Delete '.concat(isFolder ? "folder" : "file"),
             onClick: () => {
@@ -57,16 +68,23 @@ export const FileNodeRow = ({
             isShow: !isEqual(node.nodeId, -1),
         },
     ];
+    
+    const onClickFile = () => {
+        setIsPreviewOpen(true);
+    };
 
     return (
         <TableRow
             className={cn(
-                "bg-white border-b border-gray-100 h-12 transition-colors",
+                "bg-white border-b border-gray-100 h-12 transition-colors cursor-pointer",
                 isSticky ? "sticky top-0 z-10 font-semibold" : "hover:bg-gray-50",
                 isFolder && !isUploading && "cursor-pointer hover:bg-gray-100",
                 isUploading && "opacity-50 pointer-events-none bg-gray-100"
             )}
-            onClick={() => { if (isFolder && !isSticky && !isUploading) onOpenFolder(node); }}
+            onClick={() => {
+                if (isFolder && !isSticky && !isUploading) onOpenFolder(node);
+                else if (!isFolder && !isUploading && !isPreviewOpen) onClickFile();
+            }}
         >
             <TableCell
                 className={cn(
@@ -141,6 +159,7 @@ export const FileNodeRow = ({
                                     }}
                                     disabled={!item.isShow}
                                 >
+                                    {item.icon && item.icon}
                                     <span className={cn({ "text-red-400": (item.label as string).toLowerCase().includes("delete") })}>{item.label}</span>
                                 </DropdownMenuItem>
                             ))}
@@ -148,6 +167,19 @@ export const FileNodeRow = ({
                     </DropdownMenu>
                 )}
             </TableCell>
+
+            {/* File Preview Modal */}
+            {isPreviewable && (
+                <FilePreviewModal
+                    isOpen={isPreviewOpen}
+                    onClose={() => {
+                        setIsPreviewOpen(false);
+                    }}
+                    fileUrl={node.storageReference || ''}
+                    fileName={node.name + (node.extension ? `.${node.extension}` : '')}
+                    fileExtension={node.extension || ''}
+                />
+            )}
         </TableRow>
     );
 };
