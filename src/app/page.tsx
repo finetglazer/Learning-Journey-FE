@@ -157,8 +157,7 @@ export default function RootPage() {
     {
       title: "Community",
       items: [
-        { id: "com-1", label: "Com 1", icon: <Users size={16} />, onClick: () => setActiveItem("com-1") },
-        { id: "com-2", label: "Com 2", icon: <Users size={16} />, onClick: () => setActiveItem("com-2") },
+        { id: "my-community", label: "My community", icon: <Users size={16} />, onClick: () => setActiveItem("my-community") },
       ],
     },
     {
@@ -176,29 +175,29 @@ export default function RootPage() {
 
   const settingsSections: SidebarSectionConfig[] = [
     {
-      title: "",
+      title: "Profile",
       items: [
         { id: "profile", label: "Public profile", icon: <User size={16} />, onClick: () => setActiveItem("profile") },
         { id: "password", label: "Password change", icon: <KeyRound size={16} />, onClick: () => setActiveItem("password") },
-        { id: "appearance", label: "Appearance", icon: <Image size={16} />, onClick: () => setActiveItem("appearance") },
-        { id: "accessibility", label: "Accessibility", icon: <PersonStanding size={16} />, onClick: () => setActiveItem("accessibility") },
-        { id: "notifications", label: "Notifications", icon: <Bell size={16} />, onClick: () => setActiveItem("notifications") },
+        // { id: "appearance", label: "Appearance", icon: <Image size={16} />, onClick: () => setActiveItem("appearance") },
+        // { id: "accessibility", label: "Accessibility", icon: <PersonStanding size={16} />, onClick: () => setActiveItem("accessibility") },
+        // { id: "notifications", label: "Notifications", icon: <Bell size={16} />, onClick: () => setActiveItem("notifications") },
       ],
     },
-    {
-      title: "Community",
-      items: [
-        { id: "auth", label: "Password and authentication", icon: <Lock size={16} />, onClick: () => setActiveItem("auth") },
-        { id: "emails", label: "Emails", icon: <Mail size={16} />, onClick: () => setActiveItem("emails") },
-      ],
-    },
-    {
-      title: "File",
-      items: [
-        { id: "repos", label: "Repositories", icon: <Github size={16} />, onClick: () => setActiveItem("repos") },
-        { id: "codespaces", label: "Codespaces", icon: <Terminal size={16} />, onClick: () => setActiveItem("codespaces") },
-      ],
-    },
+    // {
+    //   title: "Authentication",
+    //   items: [
+    //     { id: "auth", label: "Password and authentication", icon: <Lock size={16} />, onClick: () => setActiveItem("auth") },
+    //     { id: "emails", label: "Emails", icon: <Mail size={16} />, onClick: () => setActiveItem("emails") },
+    //   ],
+    // },
+    // {
+    //   title: "File",
+    //   items: [
+    //     { id: "repos", label: "Repositories", icon: <Github size={16} />, onClick: () => setActiveItem("repos") },
+    //     { id: "codespaces", label: "Codespaces", icon: <Terminal size={16} />, onClick: () => setActiveItem("codespaces") },
+    //   ],
+    // },
     {
       title: "Calendar",
       items: [
@@ -206,20 +205,20 @@ export default function RootPage() {
         { id: "memorable-events", label: "Memorable events", icon: <CalendarHeart size={16} />, onClick: () => setActiveItem("memorable-events") },
       ],
     },
-    {
-      title: "Integrations",
-      items: [
-        { id: "apps", label: "Applications", icon: <AppWindow size={16} />, onClick: () => setActiveItem("apps") },
-        { id: "reminders", label: "Scheduled reminders", icon: <Timer size={16} />, onClick: () => setActiveItem("reminders") },
-      ],
-    },
-    {
-      title: "Archives",
-      items: [
-        { id: "security", label: "Security log", icon: <Shield size={16} />, onClick: () => setActiveItem("security") },
-        { id: "sponsorship", label: "Sponsorship log", icon: <Heart size={16} />, onClick: () => setActiveItem("sponsorship") },
-      ],
-    },
+    // {
+    //   title: "Integrations",
+    //   items: [
+    //     { id: "apps", label: "Applications", icon: <AppWindow size={16} />, onClick: () => setActiveItem("apps") },
+    //     { id: "reminders", label: "Scheduled reminders", icon: <Timer size={16} />, onClick: () => setActiveItem("reminders") },
+    //   ],
+    // },
+    // {
+    //   title: "Archives",
+    //   items: [
+    //     { id: "security", label: "Security log", icon: <Shield size={16} />, onClick: () => setActiveItem("security") },
+    //     { id: "sponsorship", label: "Sponsorship log", icon: <Heart size={16} />, onClick: () => setActiveItem("sponsorship") },
+    //   ],
+    // },
   ];
 
   const getProjects = useCallback(() => {
