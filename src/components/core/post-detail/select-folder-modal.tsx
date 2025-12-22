@@ -95,7 +95,7 @@ export const SelectFolderModal = ({ open, onOpenChange, onSelect, projectsOnly =
                 <DialogHeader>
                     <DialogTitle>
                         {(history.length === 0 || projectsOnly) ? "Your projects" : (
-                            <div className="flex items-center flex-wrap gap-1 text-base font-normal">
+                            <div className="flex items-center flex-wrap gap-1 text-xl font-normal">
                                 <span
                                     className="hover:underline cursor-pointer font-semibold text-foreground"
                                     onClick={handleRootBreadcrumbClick}
@@ -124,7 +124,7 @@ export const SelectFolderModal = ({ open, onOpenChange, onSelect, projectsOnly =
                 <div className="min-h-[300px] border rounded-md">
                     <div className="p-2 flex flex-col gap-1">
                         {items.length === 0 ? (
-                            <div className="p-8 text-center text-muted-foreground text-sm">
+                            <div className="p-8 text-center text-muted-foreground text-xl">
                                 This folder is empty
                             </div>
                         ) : (
@@ -139,7 +139,7 @@ export const SelectFolderModal = ({ open, onOpenChange, onSelect, projectsOnly =
                                     )}
                                 >
                                     {getIcon(item)}
-                                    <span className="text-sm font-medium">{item.name}</span>
+                                    <span className="text-xl font-medium">{item.name}</span>
                                 </div>
                             ))
                         )}

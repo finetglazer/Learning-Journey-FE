@@ -1,10 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { FileCode, MoreHorizontal, Check, CheckCircle2 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Check, FileCode, MoreHorizontal } from "lucide-react";
 import { useContext, useState } from "react";
 import { PostDetailContext, PostDetailContextProps } from "./post-detail-context";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { SelectFolderModal } from "./select-folder-modal";
 
 export const PostDetailQuestion = () => {
@@ -44,7 +44,7 @@ export const PostDetailQuestion = () => {
                             ) : (
                                 <Button
                                     variant="secondary"
-                                    className="h-10 text-sm font-medium bg-secondary/50 hover:bg-secondary transition-colors"
+                                    className="h-10 text-sm cursor-pointer font-medium bg-secondary/50 hover:bg-secondary transition-colors"
                                     onClick={() => setIsModalOpen(true)}
                                 >
                                     Add to your project
@@ -61,7 +61,7 @@ export const PostDetailQuestion = () => {
                         key={index}
                         className="inline-flex items-center px-4 py-1.5 rounded-md text-base font-medium bg-emerald-100/80 text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer"
                     >
-                        #{tag}
+                        {tag}
                     </span>
                 ))}
 
@@ -76,7 +76,7 @@ export const PostDetailQuestion = () => {
                             <TooltipContent>
                                 <div className="flex flex-col gap-1">
                                     {postDetailData.tags.slice(3).map((tag, index) => (
-                                        <span key={index} className="text-sm font-medium">#{tag}</span>
+                                        <span key={index} className="text-sm font-medium">{tag}</span>
                                     ))}
                                 </div>
                             </TooltipContent>

@@ -1,11 +1,11 @@
 export const postDetail = {
     id: 1,
-    title: "Optimizing React Performance with useMemo and useCallback",
-    content: "I've been working on a large React application and I'm noticing some performance issues. I've heard about useMemo and useCallback hooks, but I'm not entirely sure when and how to use them effectively. Could someone explain the best practices and provide some real-world examples?",
+    title: "What are the best practices for structuring a large Zustand store?",
+    content: "I'm migrating to **Zustand** and need advice on scalability.\n\n1. **Slices vs. Multiple Stores**: Use one store with slices or separate stores?\n2. **Actions**: Define inside store or externally?\n3. **Async**: Handle in Zustand or use **TanStack Query**?",
     votes: 150,
     answers: 12,
     views: 3420,
-    tags: ["react", "javascript", "performance", "hooks"],
+    tags: ["react", "zustand", "state-management", "frontend"],
     author: {
         name: "Sarah Wilson",
         avatar: "https://github.com/shadcn.png"
@@ -14,10 +14,10 @@ export const postDetail = {
     haveSolution: true,
     attachments: [
         {
-            name: "JWTValidator.java",
+            name: "store.ts",
             url: "#",
-            type: "java",
-            isAdded: true
+            type: "typescript",
+            isAdded: false
         }
     ]
 };

@@ -68,8 +68,6 @@ export interface CalendarContextInterface {
     }>>;
     monthPlanId: number | null;
     setMonthPlanId: Dispatch<SetStateAction<number | null>>;
-    calendarId: number | null;
-    setCalendarId: Dispatch<SetStateAction<number | null>>;
     getSleepBlocks: () => {
         top: string;
         height: string;
@@ -151,8 +149,6 @@ export const CalendarContext = createContext<CalendarContextInterface>({
     hours: [],
     monthPlanId: null,
     setMonthPlanId: () => { },
-    calendarId: null,
-    setCalendarId: () => { },
     sleepStartTime: "22:00",
     sleepEndTime: "06:00",
     topPosition: "0",
@@ -242,7 +238,6 @@ export const useCalendarHooks = () => {
     });
     const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
     const [monthPlanId, setMonthPlanId] = useState<number | null>(null);
-    const [calendarId, setCalendarId] = useState<number | null>(null);
 
     const [unscheduledMonthData, setUnscheduledMonthData] = useState<UnscheduledMonthData[]>([]);
     const sidebarRef = useRef<HTMLDivElement | null>(null);
@@ -250,6 +245,7 @@ export const useCalendarHooks = () => {
     const {
         calendarRepository,
         projectRepository,
+        calendarId,
     } = useContext<AppContextProps>(AppContext);
 
     const CELL_HEIGHT = 4.57;
@@ -1279,8 +1275,6 @@ export const useCalendarHooks = () => {
         updateBigTask,
         monthPlanId,
         setMonthPlanId,
-        calendarId,
-        setCalendarId,
     };
 };
 

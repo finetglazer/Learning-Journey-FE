@@ -3,7 +3,7 @@
 import { IntegratedButton, IntegratedButtonProps } from "@/components/core/button/integrated-button";
 import { Icon } from "@/components/core/icon/icon";
 import { IntegratedInputProps } from "@/components/core/input/integrated-input";
-import { SIGN_IN_ROUTE, SIGN_UP_EMAIL_VERIFICATION_ROUTE } from "@/const/routes-const";
+import { GOOGLE_OAUTH2_ROUTE, SIGN_IN_ROUTE, SIGN_UP_EMAIL_VERIFICATION_ROUTE } from "@/const/routes-const";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
 import AuthFormLayout from "@/layout/auth-form-layout";
 import { SignUpModel } from "@/model/sign-up-model";
@@ -91,7 +91,8 @@ export default function SignUpPage() {
                     name="GoogleIcon"
                     className="mr-2 h-20 w-20"
                 />
-            )
+            ),
+            onClick: () => { router.push(GOOGLE_OAUTH2_ROUTE) },
         },
     ];
 

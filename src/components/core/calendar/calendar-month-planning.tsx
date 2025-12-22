@@ -110,12 +110,12 @@ export function CalendarMonthPlanning() {
 
     const {
         calendarRepository,
+        calendarId,
     } = useContext<AppContextProps>(AppContext);
 
     const {
         setMonthPlanId,
         monthPlanId,
-        calendarId,
     } = useContext<CalendarContextInterface>(CalendarContext);
 
     const handleCellClick = (type: TaskType, e: React.MouseEvent<HTMLTableDataCellElement>, scrollContainerRef?: any) => {
@@ -124,16 +124,16 @@ export function CalendarMonthPlanning() {
                 ? {
                     ...new MonthPlanningEvent,
                     // Add startTime & endTime for task editor
-                    startTime: dayJsToISOString(toDayJs()),
-                    endTime: dayJsToISOString(toDayJs()),
+                    startTime: dayJsToISOString(toDayJs(undefined, 0), 0),
+                    endTime: dayJsToISOString(toDayJs(undefined, 0), 0),
                 }
                 : type === "routine"
                     ? ""        // Set "" to call updateRoutineList("", <new name>) with create case
                     : {
                         ...new MonthPlanningBigTask,
                         // Add startTime & endTime for task editor
-                        startTime: dayJsToISOString(toDayJs()),
-                        endTime: dayJsToISOString(toDayJs()),
+                        startTime: dayJsToISOString(toDayJs(undefined, 0), 0),
+                        endTime: dayJsToISOString(toDayJs(undefined, 0), 0),
                     };
         setEditingItem(newItem);
         setEditorPosition(getEditorAdjustedPosition(e.clientX, e.clientY, scrollContainerRef.current));
@@ -353,8 +353,8 @@ export function CalendarMonthPlanning() {
                                     ...res?.data?.bigTask,
                                     type: "big-task",
                                     // Add startTime & endTime for task editor
-                                    startTime: dayJsToISOString(toDayJs(res?.data?.bigTask?.estimatedStartDate)),
-                                    endTime: dayJsToISOString(toDayJs(res?.data?.bigTask?.estimatedEndDate)),
+                                    startTime: dayJsToISOString(toDayJs(res?.data?.bigTask?.estimatedStartDate, 0)),
+                                    endTime: dayJsToISOString(toDayJs(res?.data?.bigTask?.estimatedEndDate, 0)),
                                 });
                                 setEditingTask(null);
                             }

@@ -88,11 +88,12 @@ export const TaskEditor = ({
 
     const {
         calendarRepository,
+        calendarId,
     } = useContext<AppContextProps>(AppContext);
 
     const {
-        calendarId,
         monthPlanId,
+        currentDate,
     } = useContext(CalendarContext);
 
     useEffect(() => {
@@ -316,8 +317,8 @@ export const TaskEditor = ({
                 }, {
                     name: model?.name,
                     description: model?.note,
-                    estimatedStartDate: toDayJs(model?.startTime as string).format("YYYY-MM-DD"),
-                    estimatedEndDate: toDayJs(model?.endTime as string).format("YYYY-MM-DD"),
+                    estimatedStartDate: toDayJs(model?.startTime as string, 0).month(currentDate.get("month")).format("YYYY-MM-DD"),
+                    estimatedEndDate: toDayJs(model?.endTime as string, 0).month(currentDate.get("month")).format("YYYY-MM-DD"),
                     unscheduledTasks: model?.unscheduledTasks || [],
                 }).subscribe({
                     next: res => {
@@ -408,6 +409,11 @@ export const TaskEditor = ({
             const updatedEndTime = updatedStartTime.add(15, 'minutes');
             updateModel("startTime", dayJsToISOString(updatedStartTime, 0));
             updateModel("endTime", dayJsToISOString(updatedEndTime, 0));
+        }
+        // TODO: Fix this
+        if (currentView === 'month-planning' && !model?.id) {
+            updateModel("startTime", dayJsToISOString(toDayJs(model?.startTime, 0).set('month', currentDate.get('month')).set('year', currentDate.get('year')), 0));
+            updateModel("endTime", dayJsToISOString(toDayJs(model?.startTime, 0).set('month', currentDate.get('month')).set('year', currentDate.get('year')), 0));
         }
     }, [
         model?.startTime,

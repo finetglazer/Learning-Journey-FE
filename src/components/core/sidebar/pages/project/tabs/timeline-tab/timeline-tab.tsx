@@ -19,6 +19,7 @@ import { finalize } from "rxjs";
 import { toast } from "sonner";
 import { TeamProjectContext, TeamProjectContextProps, TeamProjectTab } from '../../team-project-context';
 import { AddMilestoneCard } from "./components/add-milestone-card";
+import { TimelineRow } from "./components/timeline-row";
 import GanttBar from "./components/gantt-bar";
 import { HorizontalScrollbar } from "./components/horizontal-scroll-bar";
 dayjs.extend(isoWeek);
@@ -42,12 +43,6 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         startY: number;
         currentX: number;
         currentY: number;
-    } | null>(null);
-    const [ghostBar, setGhostBar] = useState<{
-        itemId: number | string;
-        startDate: string;
-        endDate: string;
-        x: number;
     } | null>(null);
     const [isUpdating, setIsUpdating] = useState<boolean>(false);
     const [dependencySource, setDependencySource] = useState<TimelineItem | null>(null);
@@ -481,21 +476,20 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         projectRepository,
     ]);
 
-    const handleCreateTimelineItem = useCallback(() => {
-        if (!ghostBar || !selectedProject || !projectRepository) {
+    const handleCreateTimelineItem = useCallback((data: { itemId: string | number; startDate: string; endDate: string }) => {
+        if (!selectedProject || !projectRepository) {
             return;
         }
-        setGhostBar(null);
 
-        const pref = (ghostBar.itemId as string).split("-")[0];
+        const pref = (data.itemId as string).split("-")[0];
         const type = isEqual(pref, "deli") ? "DELIVERABLE" : isEqual(pref, "phase") ? "PHASE" : "TASK";
         const subscription = projectRepository.updateTimelineDates({
             projectId: selectedProject.id,
         }, {
             type: type,
-            id: Number((ghostBar.itemId as string).split("-")[1]),
-            start_date: ghostBar.startDate,
-            end_date: ghostBar.endDate,
+            id: Number((data.itemId as string).split("-")[1]),
+            start_date: data.startDate,
+            end_date: data.endDate,
         }).subscribe({
             next: res => {
                 if (res?.status) {
@@ -514,7 +508,6 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         }
     }, [
         selectedProject,
-        ghostBar,
         projectRepository,
     ]);
 
@@ -1472,93 +1465,32 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                                 </TableHeader>
                                 <TableBody>
                                     {visibleRows.map(({ item }) => {
-                                        const barPosition = calculateBarPosition(item.startDate, item.endDate, new Date(timelineStructure?.projectStartDate || toDayJs(undefined, 0).format("YYYY-MM-DD")), totalViewDays);
-                                        const isHovered = hoveredRowId === getId(item.type, item.id);
                                         const isRelated = !selectedItem || relatedIds.has(getId(item.type, item.id));
-                                        const hasTimeline = !isNil(item.startDate) && !isNil(item.endDate);
-                                        const isGhosting = !hasTimeline && isEqual(ghostBar?.itemId, getId(item.type, item.id));
 
                                         return (
-                                            <TableRow
+                                            <TimelineRow
                                                 key={getId(item.type, item.id)}
-                                                className={
-                                                    cn(
-                                                        "h-12 border-b border-gray-50 transition-colors relative group",
-                                                    )}
-                                                onMouseEnter={() => setHoveredRowId(getId(item.type, item.id))}
-                                                onMouseMove={(e) => {
-                                                    if (hasTimeline || !canEdit || !timelineScrollRef?.current) return;
-
-                                                    const getDateFromX = (x: number, totalWidth: number, totalViewDays: number, startDate: Date) => {
-                                                        if (totalWidth === 0) return dateToDayJs(startDate, 0);
-                                                        const ratio = x / totalWidth;
-                                                        const daysToAdd = Math.floor(ratio * totalViewDays);
-                                                        return dateToDayJs(startDate, 0).add(daysToAdd, 'day');
-                                                    };
-
-                                                    const rect = e.currentTarget.getBoundingClientRect();
-                                                    const x = e.clientX - rect.left;
-                                                    const viewStart = toDayJs(undefined, 0).subtract(6, 'month');
-                                                    const centerDate = getDateFromX(x, itemCoordinates.totalWidth, totalViewDays, viewStart.toDate());
-
-                                                    setGhostBar({
-                                                        itemId: getId(item.type, item.id),
-                                                        startDate: centerDate.subtract(1, 'week').format("YYYY-MM-DD"),
-                                                        endDate: centerDate.add(1, 'week').format("YYYY-MM-DD"),
-                                                        x: x
-                                                    });
-                                                }}
-                                                onMouseLeave={() => {
-                                                    setHoveredRowId(null);
-                                                    setGhostBar(null);
-                                                }}
-                                            >
-                                                {/* Render Grid Cells (Background) */}
-                                                {weeks.map((_: string, i: number) => (
-                                                    <TableCell key={i} className="p-0 border-l border-gray-100 min-w-[150px] relative pointer-events-none" />
-                                                ))}
-
-                                                {/* Render Gantt Bar (Absolute Overlay) */}
-
-                                                <div className="absolute inset-0 w-full h-full pointer-events-none">
-                                                    <div className="relative w-full h-full pointer-events-auto"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            if (!canEdit) {
-                                                                return;
-                                                            }
-                                                            if (isGhosting) {
-                                                                handleCreateTimelineItem();
-                                                                return;
-                                                            }
-                                                            setSelectedItem(item);
-                                                        }}
-                                                    >
-                                                        <GanttBar
-                                                            item={item}
-                                                            ghostBar={ghostBar}
-                                                            isGhosting={isGhosting}
-                                                            canEdit={canEdit}
-                                                            originalStyle={barPosition}
-                                                            viewStartDate={new Date(toDayJs(undefined, 0).subtract(6, "month").format("YYYY-MM-DD"))}
-                                                            isHovered={isHovered}
-                                                            timelineStructure={timelineStructure}
-                                                            isRelated={isRelated}
-                                                            totalViewDays={totalViewDays}
-                                                            onDateUpdate={handleUpdateGnattBarDate}
-                                                            parentStartDate={toDayJs(undefined, 0).subtract(6, 'month').format("YYYY-MM-DD")}
-                                                            parentEndDate={toDayJs(undefined, 0).add(6, 'month').format("YYYY-MM-DD")}
-                                                            handleMoveGnattBar={handleMoveGnattBar}
-                                                            isAddingDependency={isAddingDependency}
-                                                            hasUnsavedChanges={!!unsavedTimelineItem}
-                                                            setUnsavedTimelineItem={setUnsavedTimelineItem}
-                                                            parentMap={parentMap}
-                                                            handleMouseDownWhenAddingDependency={handleMouseDownWhenAddingDependency}
-                                                            handleDraggingLineDropWhenAddingDependency={handleDraggingLineDropWhenAddingDependency}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </TableRow>
+                                                item={item}
+                                                weeks={weeks}
+                                                timelineStructure={timelineStructure}
+                                                totalViewDays={totalViewDays}
+                                                timelineContainerWidth={itemCoordinates.totalWidth}
+                                                canEdit={canEdit}
+                                                isAddingDependency={isAddingDependency}
+                                                unsavedTimelineItem={unsavedTimelineItem}
+                                                parentMap={parentMap}
+                                                selectedItem={selectedItem}
+                                                isRelated={isRelated}
+                                                hoveredRowId={hoveredRowId}
+                                                setHoveredRowId={setHoveredRowId}
+                                                setSelectedItem={setSelectedItem}
+                                                onCreateTimelineItem={handleCreateTimelineItem}
+                                                onDateUpdate={handleUpdateGnattBarDate}
+                                                handleMoveGnattBar={handleMoveGnattBar}
+                                                setUnsavedTimelineItem={setUnsavedTimelineItem}
+                                                handleMouseDownWhenAddingDependency={handleMouseDownWhenAddingDependency}
+                                                handleDraggingLineDropWhenAddingDependency={handleDraggingLineDropWhenAddingDependency}
+                                            />
                                         );
                                     })}
                                 </TableBody>

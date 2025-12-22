@@ -402,7 +402,7 @@ const GanttBar = ({
             )}
 
             {/* Label */}
-            {duration > 5 && (
+            {duration && (
                 <span className="text-[12px] font-medium truncate px-2 w-full pointer-events-none select-none">
                     {item.name}
                 </span>

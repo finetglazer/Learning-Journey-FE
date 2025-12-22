@@ -6,11 +6,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { PM_Task, PM_TaskAssignee, ProjectMembershipRole, TaskPriority, TaskStatus, TeamMember } from '@/model/project-management';
 import { AppContext, AppContextProps } from '@/hooks/app-context';
+import { PM_Task, PM_TaskAssignee, ProjectMembershipRole, TaskPriority, TaskStatus, TeamMember } from '@/model/project-management';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Check, Circle, MoreHorizontal, RotateCcw, UserPlus, X } from 'lucide-react';
+import { Check, ListTodo, MoreHorizontal, RotateCcw, UserPlus, X } from 'lucide-react';
 import { memo, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { finalize } from 'rxjs';
 import { toast } from 'sonner';
@@ -276,7 +276,7 @@ function PM_TaskItemBase({ task, onUpdateTask, onDeleteTask }: TaskItemProps) {
             onDoubleClick={handleStartEdit}
         >
             <button className="text-gray-300 hover:text-gray-500">
-                <Circle size={18} />
+                <ListTodo size={18} />
             </button>
             <span className="text-sm font-medium text-gray-400">{task.key}</span>
             <span className="text-sm text-gray-900 font-medium truncate">{task.name}</span>

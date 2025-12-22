@@ -25,7 +25,7 @@ export const FileNodeRow = ({
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
     // File types that support preview
-    const isPreviewable = !isFolder && node.storageReference && FILE_EXTENSION.includes(node.extension?.toLowerCase() || '');
+    const isPreviewable = !isFolder;
 
     const {
         currentMember,

@@ -102,6 +102,8 @@ export const TIMEZONE_GROUPS = [
 
 export const FILE_EXTENSION = [
     'doc',
+    'docs',
+    'docx',
     'txt',
     'pdf',
     'ppt',
@@ -109,4 +111,16 @@ export const FILE_EXTENSION = [
     'zip',
     'jpg',
     'png',
+    'xls',
+    'xlsx',
+];
+
+export const FILE_PREVIEWABLE = [
+    'doc',
+    'docs',
+    'docx',
+    'txt',
+    'pdf',
+    'xls',
+    'xlsx',
 ];

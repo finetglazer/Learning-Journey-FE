@@ -76,11 +76,8 @@ export default function RootPage() {
     setTaskLimitHours,
     setRoutineLimitHours,
     userId,
-  } = useContext<AppContextProps>(AppContext);
-
-  const {
     setCalendarId,
-  } = useContext<CalendarContextInterface>(CalendarContext);
+  } = useContext<AppContextProps>(AppContext);
 
   const calendarContextValues = useCalendarHooks();
   const isModalOpen = useMemo(() => {

@@ -167,12 +167,10 @@ export function CreatePostModal({ open, onClose }: CreatePostModalProps) {
                                         key={tag}
                                         className={cn(
                                             "flex items-center gap-1 rounded-sm px-2 py-1 text-xs font-medium",
-                                            index % 2 === 0
-                                                ? "bg-teal-100/50 text-teal-800"
-                                                : "bg-blue-100/50 text-blue-800"
+                                            "bg-teal-100/50 text-teal-800"
                                         )}
                                     >
-                                        <span>#{tag}</span>
+                                        <span>{tag}</span>
                                         <X
                                             className="h-3 w-3 cursor-pointer hover:text-foreground/80"
                                             onClick={() => handleRemoveTag(tag)}

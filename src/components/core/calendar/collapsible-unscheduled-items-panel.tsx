@@ -244,15 +244,20 @@ export function CollapsibleUnscheduledPanel({
                         className="w-[350px] bg-white shadow-lg rounded-lg font-sans flex flex-col"
                     >
                         <div
-                            className="flex justify-between items-center p-4 border-b cursor-grab"
-                            onClick={() => setIsCollapsed(true)}
+                            className="flex justify-between items-center p-4 border-b cursor-grab active:cursor-grabbing bg-gray-50 rounded-t-lg"
+                            {...listeners}
+                            {...attributes}
+                            ref={setNodeRef}
                         >
-                            <h3 className="font-semibold text-lg">Unscheduled Tasks</h3>
+                            <h3 className="font-semibold text-lg text-gray-700">Unscheduled Items</h3>
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => setIsCollapsed(true)}
-                                className="cursor-pointer"
+                                onClick={(e) => {
+                                    e.stopPropagation(); // Prevent drag start when clicking close
+                                    setIsCollapsed(true);
+                                }}
+                                className="h-8 w-8 hover:bg-gray-200"
                             >
                                 <X className="h-4 w-4" />
                             </Button>

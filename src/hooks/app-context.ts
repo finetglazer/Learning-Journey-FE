@@ -46,6 +46,8 @@ export interface AppContextProps {
         value: string;
         utc: string;
     } | null>>;
+    calendarId: number | null;
+    setCalendarId: Dispatch<SetStateAction<number | null>>;
 
     // Repositories
     authRepository: AuthRepository | null;
@@ -79,6 +81,8 @@ export const AppContext = createContext<AppContextProps>({
     setRoutineLimitHours: () => { },
     timezone: null,
     setTimeZone: () => { },
+    calendarId: null,
+    setCalendarId: () => { },
 
     // Repositories
     authRepository: null,
@@ -107,6 +111,7 @@ export const useAppHooks = (): AppContextProps => {
     const [dailyLimitsEnabled, setDailyLimitsEnabled] = useState<boolean>(true);
     const [taskLimitHours, setTaskLimitHours] = useState<number | null>(null);
     const [routineLimitHours, setRoutineLimitHours] = useState<number | null>(null);
+    const [calendarId, setCalendarId] = useState<number | null>(null);
     const [timezone, setTimeZone] = useState<{
         label: string;
         value: string;
@@ -166,6 +171,8 @@ export const useAppHooks = (): AppContextProps => {
         setRoutineLimitHours,
         timezone,
         setTimeZone,
+        calendarId,
+        setCalendarId,
 
         authRepository,
         calendarRepository,

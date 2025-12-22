@@ -1,13 +1,13 @@
 "use client";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { FILE_PREVIEWABLE } from "@/const/consts";
 import { cn } from "@/lib/utils";
-import { Download, ExternalLink, X, Loader2, FileWarning } from "lucide-react";
 import DocViewer, { DocViewerRenderers, IDocument } from "@cyntler/react-doc-viewer";
 import "@cyntler/react-doc-viewer/dist/index.css";
+import { Download, ExternalLink, FileWarning, Loader2, X } from "lucide-react";
 import { useMemo, useState } from "react";
-import { FILE_EXTENSION } from "@/const/consts";
 
 export interface FilePreviewModalProps {
     isOpen: boolean;
@@ -53,7 +53,7 @@ export function FilePreviewModal({
     const [isLoading, setIsLoading] = useState(true);
 
     const isPreviewSupported = useMemo(() => {
-        return FILE_EXTENSION.includes(fileExtension?.toLowerCase() || '');
+        return FILE_PREVIEWABLE.includes(fileExtension?.toLowerCase() || '');
     }, [fileExtension]);
 
     const documents: IDocument[] = useMemo(() => {
@@ -101,14 +101,14 @@ export function FilePreviewModal({
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent
                 className={cn(
-                    "max-w-5xl p-0 overflow-hidden",
+                    "max-w-5xl p-0 overflow-hidden flex flex-col",
                     "bg-white dark:bg-gray-900 rounded-xl shadow-2xl"
                 )}
                 style={{ width, height, maxWidth: width }}
                 showCloseButton={false}
             >
                 {/* Header */}
-                <DialogHeader className="flex flex-row items-center justify-between px-6 py-4 border-b bg-gray-50 dark:bg-gray-800">
+                <DialogHeader className="flex flex-row items-center justify-between px-6 py-2 border-b bg-gray-50 dark:bg-gray-800 shrink-0">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                         <DialogTitle className="text-lg font-semibold text-gray-800 dark:text-gray-100 truncate">
                             {fileName}
@@ -124,7 +124,7 @@ export function FilePreviewModal({
                             variant="outline"
                             size="sm"
                             onClick={handleOpenInNewTab}
-                            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 cursor-pointer"
+                            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 cursor-pointer h-8"
                         >
                             <ExternalLink className="h-4 w-4" />
                             <span className="hidden sm:inline">Open</span>
@@ -133,7 +133,7 @@ export function FilePreviewModal({
                             variant="outline"
                             size="sm"
                             onClick={handleDownload}
-                            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 cursor-pointer"
+                            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 cursor-pointer h-8"
                         >
                             <Download className="h-4 w-4" />
                             <span className="hidden sm:inline">Download</span>
@@ -144,39 +144,55 @@ export function FilePreviewModal({
                             onClick={() => {
                                 onClose();
                             }}
-                            className="text-gray-500 hover:text-gray-700 cursor-pointer"
+                            className="text-gray-500 hover:text-gray-700 cursor-pointer h-8 w-8"
                         >
                             <X className="h-5 w-5" />
                         </Button>
                     </div>
                 </DialogHeader>
 
-                {/* Preview Content */}
-                <div className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-950" style={{ height: `calc(${height} - 80px)` }}>
+                <div className="flex-1 bg-gray-100 dark:bg-gray-950 min-h-0 relative">
+                    <style>
+                        {`
+                            #react-doc-viewer {
+                                height: 100% !important;
+                            }
+                            #react-doc-viewer #proxy-renderer {
+                                height: 100% !important;
+                                overflow: auto !important;
+                            }
+                            #react-doc-viewer #proxy-renderer > div {
+                                height: 100% !important;
+                            }
+                        `}
+                    </style>
                     {isPreviewSupported && documents.length > 0 ? (
-                        <DocViewer
-                            documents={documents}
-                            pluginRenderers={DocViewerRenderers}
-                            config={{
-                                header: {
-                                    disableHeader: true,
-                                    disableFileName: true,
-                                    retainURLParams: false,
-                                },
-                                loadingRenderer: {
-                                    overrideComponent: CustomLoadingRenderer,
-                                },
-                                noRenderer: {
-                                    overrideComponent: () => <CustomNoRenderer fileName={fileName} />,
-                                },
-                            }}
-                            style={{
-                                width: '100%',
-                                height: '100%',
-                            }}
-                        />
+                        <div className="absolute inset-0 flex flex-col">
+                            <DocViewer
+                                documents={documents}
+                                pluginRenderers={DocViewerRenderers}
+                                config={{
+                                    header: {
+                                        disableHeader: true,
+                                        disableFileName: true,
+                                    },
+                                    loadingRenderer: {
+                                        overrideComponent: CustomLoadingRenderer,
+                                    },
+                                    noRenderer: {
+                                        overrideComponent: () => <CustomNoRenderer fileName={fileName} />,
+                                    },
+                                }}
+                                style={{
+                                    width: "100%",
+                                    height: "100%",
+                                }}
+                            />
+                        </div>
                     ) : (
-                        <CustomNoRenderer fileName={fileName} />
+                        <div className="h-full">
+                            <CustomNoRenderer fileName={fileName} />
+                        </div>
                     )}
                 </div>
             </DialogContent>

@@ -34,7 +34,6 @@ export function CalendarYearView() {
         editorPosition,
         onDeleteCalendarItem,
         setSelectedRoutineId,
-        calendarId,
     } = useContext<CalendarContextInterface>(CalendarContext);
 
     const [selectedDay, setSelectedDay] = useState<Date>(currentDate.toDate());
@@ -45,6 +44,7 @@ export function CalendarYearView() {
 
     const {
         calendarRepository,
+        calendarId,
     } = useContext<AppContextProps>(AppContext);
 
     // Fetch all scheduled tasks, events, routines in a year
