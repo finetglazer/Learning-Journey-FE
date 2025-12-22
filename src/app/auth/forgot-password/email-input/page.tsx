@@ -3,10 +3,12 @@
 import { IntegratedButton } from "@/components/core/button/integrated-button";
 import { SIGN_IN_ROUTE } from "@/const/routes-const";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
-import { OtpEmailInputLayout } from "@/layout/otp-email-input-layout";
 import { formService } from "@/service/form-service";
+import dynamic from "next/dynamic";
 import { useContext } from "react";
 import { Model } from "react-3layer-common";
+
+const OtpEmailInputLayout = dynamic(() => import("@/layout/otp-email-input-layout").then(mod => mod.OtpEmailInputLayout), { ssr: false });
 
 export default function EmailInputPage() {
     const {

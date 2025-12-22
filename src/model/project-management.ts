@@ -282,6 +282,7 @@ export interface TaskComment {
     content: string;
     createdAt: string; // ISO date string, e.g., "2025-12-16T10:30:00"
     replyInfo: ReplyInfo | null;
+    isEdited: boolean;
 };
 
 export interface PM_TaskDetail {

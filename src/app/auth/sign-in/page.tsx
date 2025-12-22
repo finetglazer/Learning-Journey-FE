@@ -6,13 +6,15 @@ import { IntegratedInputProps } from "@/components/core/input/integrated-input";
 import { LinkWithLoading } from "@/components/core/link/link";
 import { FORGOT_PASSWORD_EMAIL_INPUT_ROUTE, GOOGLE_OAUTH2_ROUTE, ROOT_ROUTE, SIGN_UP_BASE_ROUTE } from "@/const/routes-const";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
-import AuthFormLayout from "@/layout/auth-form-layout";
 import { SignInModel } from "@/model/sign-in-model";
 import { formService } from "@/service/form-service";
 import { LockIcon, UserIcon } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useContext } from "react";
 import Cookies from "js-cookie";
+
+const AuthFormLayout = dynamic(() => import("@/layout/auth-form-layout"), { ssr: false });
 
 export default function SignInPage() {
     const router = useRouter();
