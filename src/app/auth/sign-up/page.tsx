@@ -5,12 +5,14 @@ import { Icon } from "@/components/core/icon/icon";
 import { IntegratedInputProps } from "@/components/core/input/integrated-input";
 import { GOOGLE_OAUTH2_ROUTE, SIGN_IN_ROUTE, SIGN_UP_EMAIL_VERIFICATION_ROUTE } from "@/const/routes-const";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
-import AuthFormLayout from "@/layout/auth-form-layout";
 import { SignUpModel } from "@/model/sign-up-model";
 import { formService } from "@/service/form-service";
 import { LockIcon, MailIcon, UserIcon } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useContext } from "react";
+
+const AuthFormLayout = dynamic(() => import("@/layout/auth-form-layout"), { ssr: false });
 
 export default function SignUpPage() {
     const router = useRouter();

@@ -58,7 +58,12 @@ export const TaskCommentItem = ({
             <div className="flex-1">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                        <p className="text-sm font-semibold">{comment.userName}</p>
+                        <div>
+                            {comment.isEdited && (
+                                <p className="text-[10px] text-[#33BFFF] font-medium leading-none mb-1">Edited</p>
+                            )}
+                            <p className="text-sm font-semibold">{comment.userName}</p>
+                        </div>
                         <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 cursor-pointer hover:text-gray-600" onClick={() => onReply(comment.commentId)}>
                                 <CornerUpLeft size={14} />

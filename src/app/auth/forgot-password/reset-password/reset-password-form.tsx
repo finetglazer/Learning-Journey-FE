@@ -4,12 +4,14 @@ import { IntegratedButton } from "@/components/core/button/integrated-button";
 import { IntegratedInputProps } from "@/components/core/input/integrated-input";
 import { FORGOT_PASSWORD_EMAIL_INPUT_ROUTE, SIGN_IN_ROUTE } from "@/const/routes-const";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
-import AuthFormLayout from "@/layout/auth-form-layout";
 import { ResetPasswordModel } from "@/model/reset-password-model";
 import { formService } from "@/service/form-service";
 import { LockIcon } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useContext, useEffect } from "react";
+
+const AuthFormLayout = dynamic(() => import("@/layout/auth-form-layout"), { ssr: false });
 
 export default function ResetPasswordForm() {
     const router = useRouter();

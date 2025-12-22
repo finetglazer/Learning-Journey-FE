@@ -583,13 +583,13 @@ export const ListTab = ({ }: ListTabProps) => {
                         />
                     </div>
                 )}
-                {((!deliverables || !deliverables.length) && !fetching) ? (
+                {((!deliverables || !deliverables.length) && !fetching && !isAddingDeliverable) ? (
                     <EmptyData
                         title="No deliverables found"
                         message={!search ? "You haven't added any deliverables yet. Add one to get started." : `No items found with "${search}"`}
                     />
                 ) : null}
-                {(!fetching && deliverables && deliverables.length) ? (
+                {(!fetching && deliverables && deliverables.length || isAddingDeliverable) ? (
                     <DndContext
                         sensors={sensors}
                         collisionDetection={closestCenter}

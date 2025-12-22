@@ -48,7 +48,7 @@ export class BaseRepository extends Repository {
       const token = localStorage.getItem("accessToken");
 
       // 2. Inject headers safely
-      if (token) {
+      if (token && config.url !== REFRESH_TOKEN_URL) {
         config.headers["Authorization"] = `Bearer ${token}`;
       }
       // if (this.userId) {
