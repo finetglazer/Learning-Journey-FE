@@ -1,4 +1,4 @@
-import { Node, mergeAttributes } from "@tiptap/core";
+import { Node } from "@tiptap/core";
 
 // Helper to get icon path
 const getIconPath = (ext: string | null, type: string): string => {

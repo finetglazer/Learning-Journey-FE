@@ -4,7 +4,7 @@ import { IntegratedButton, IntegratedButtonProps } from "@/components/core/butto
 import { Icon } from "@/components/core/icon/icon";
 import { IntegratedInputProps } from "@/components/core/input/integrated-input";
 import { LinkWithLoading } from "@/components/core/link/link";
-import { FORGOT_PASSWORD_EMAIL_INPUT_ROUTE, GOOGLE_OAUTH2_ROUTE, ROOT_ROUTE, SIGN_UP_BASE_ROUTE } from "@/const/routes-const";
+import { FORGOT_PASSWORD_ROUTE, GOOGLE_OAUTH2_ROUTE, ROOT_ROUTE, SIGN_UP_ROUTE } from "@/const/routes-const";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
 import { SignInModel } from "@/model/sign-in-model";
 import { formService } from "@/service/form-service";
@@ -66,7 +66,7 @@ export default function SignInPage() {
             prefix: <LockIcon />,
             extraComponent: (
                 <LinkWithLoading
-                    href={FORGOT_PASSWORD_EMAIL_INPUT_ROUTE}
+                    href={FORGOT_PASSWORD_ROUTE}
                     content="Forgot password?"
                     className="absolute text-[0.9rem] w-30 top-3 right-60 hover:underline"
                 />
@@ -104,7 +104,7 @@ export default function SignInPage() {
             <span className="mt-4">
                 {"Don't have an account? "}
                 <LinkWithLoading
-                    href={SIGN_UP_BASE_ROUTE}
+                    href={SIGN_UP_ROUTE}
                     className="underline"
                     content="Sign up"
                 >

@@ -4,7 +4,7 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import { calculateBarPosition, cn, dateToDayJs, getId, toDayJs } from "@/lib/utils";
 import { ProjectTimelineStructure, TimelineItem } from "@/model/project-management";
 import { isEqual, isNil } from "lodash";
-import { Dispatch, SetStateAction, useRef, useState } from "react";
+import { Dispatch, SetStateAction, useState } from "react";
 import GanttBar from "./gantt-bar";
 
 interface TimelineRowProps {

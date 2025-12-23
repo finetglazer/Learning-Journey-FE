@@ -6,30 +6,20 @@ import { LimitTimeAndTimeZone } from "@/components/core/sidebar/pages/limit-time
 import { SettingsPanel } from "@/components/core/sidebar/settings-panel";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
 import {
-  AppWindow,
-  Bell,
   CalendarDays,
   CalendarHeart,
   Clock,
-  Github,
-  Heart,
-  Image,
   KeyRound,
   Lock,
   LogOut,
-  Mail,
-  PersonStanding,
   Plus,
-  Shield,
-  Terminal,
-  Timer,
   User,
   Users
 } from "lucide-react";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { CalendarContext, CalendarContextInterface, useCalendarHooks } from "@/components/core/calendar/calendar-context";
+import { CalendarContext, useCalendarHooks } from "@/components/core/calendar/calendar-context";
 import { CalendarDayView } from "@/components/core/calendar/calendar-day-view";
 import { CalendarMonthPlanning } from "@/components/core/calendar/calendar-month-planning";
 import { CalendarMonthView } from "@/components/core/calendar/calendar-month-view";
