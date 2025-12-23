@@ -3,9 +3,10 @@ import { dayJsToISOString, getBigTask, getDetails, getEditorAdjustedPosition, ge
 import { ProjectGroup, UserTaskItem } from "@/model/project-management";
 import { Task, UnscheduledBigTask, UnscheduledMonthData, UnscheduledRoutine, UnscheduledTask } from "@/model/task";
 import { DragEndEvent, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import dayjs, { Dayjs } from "dayjs";
 import { isNil } from "lodash";
-import React, { createContext, Dispatch, RefObject, SetStateAction, useCallback, useContext, useEffect, useRef, useState } from "react";
+import React, { createContext, Dispatch, RefObject, SetStateAction, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { finalize } from "rxjs";
 import { toast } from "sonner";
 import { AlertMessage } from "../alert-modal/alert-modal";
@@ -219,23 +220,144 @@ export const CalendarContext = createContext<CalendarContextInterface>({
 });
 
 export const useCalendarHooks = () => {
-    const [currentDate, setCurrentDate] = useState<Dayjs>(toDayJs());
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+
+    // Derived State
+    const dateParam = searchParams?.get("date");
+    // Memoize currentDate to prevent infinite loops in useEffects that depend on it
+    const currentDate = React.useMemo(() => {
+        return dateParam ? dayjs(dateParam) : toDayJs();
+    }, [dateParam]);
+
+    const viewParam = searchParams?.get("view");
+    const isPlanningPath = pathname?.startsWith("/calendar/planning");
+    const currentView = viewParam || (isPlanningPath ? "month-planning" : "week");
+
+    // Local State
     const [tasksStyle, setTasksStyle] = useState<Record<string, any>>({});
     const [calendarMap, setCalendarMap] = useState<Record<string, any[]>>({});
     const [currentMondayTime, setCurrentMondayTime] = useState<Dayjs>(getMondayOfThisWeek());
-    const [currentView, setCurrentView] = useState<string>("day");
+
+    // Setters (URL updates)
+    const setCurrentDate = useCallback((action: SetStateAction<Dayjs>) => {
+        const nextDate = typeof action === 'function' ? action(currentDate) : action;
+        const params = new URLSearchParams(searchParams?.toString());
+        const dateStr = nextDate.format("YYYY-MM-DD");
+        params.set("date", dateStr);
+        if (typeof window !== "undefined") {
+            sessionStorage.setItem("calendar_session_date", dateStr);
+        }
+        router.push(`${pathname}?${params.toString()}`);
+    }, [currentDate, pathname, router, searchParams]);
+
+    const setCurrentView = useCallback((action: SetStateAction<string>) => {
+        const nextView = typeof action === 'function' ? action(currentView) : action;
+        const params = new URLSearchParams(searchParams?.toString());
+        params.set("view", nextView);
+
+        if (typeof window !== "undefined" && nextView !== "month-planning") {
+            sessionStorage.setItem("calendar_session_view", nextView);
+        }
+
+        if (nextView === "month-planning") {
+            router.push(`/calendar/planning?${params.toString()}`);
+        } else {
+            if (pathname?.startsWith("/calendar/planning")) {
+                router.push(`/calendar?${params.toString()}`);
+            } else {
+                router.push(`${pathname}?${params.toString()}`);
+            }
+        }
+    }, [currentView, pathname, router, searchParams]);
     const [updatedTasks, setUpdatedTasks] = useState<Task[]>(reId([]));
     const [projectGroups, setProjectGroups] = useState<ProjectGroup[]>([]);
     const [activeDragId, setActiveDragId] = useState<string | null>(null);
     const [editorPosition, setEditorPosition] = useState({ x: 0, y: 0 });
-    const [panelPosition, setPanelPosition] = useState({
-        x: window?.visualViewport ? window.visualViewport.pageLeft + window.visualViewport.width / 2 + 250 : 20,
-        y: window?.visualViewport ? window.visualViewport.pageTop + window.visualViewport.height - 250 : 100,
-    });
-    const [panelBufferListPosition, setPanelBufferListPosition] = useState({
-        x: window?.visualViewport ? window.visualViewport.pageLeft + window.visualViewport.width / 3 + 250 : 20,
-        y: window?.visualViewport ? window.visualViewport.pageTop + window.visualViewport.height - 250 : 100,
-    });
+    const [panelPosition, setPanelPosition] = useState({ x: 20, y: 100 });
+    const [panelBufferListPosition, setPanelBufferListPosition] = useState({ x: 20, y: 100 });
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            setPanelPosition({
+                x: window.visualViewport ? window.visualViewport.pageLeft + window.visualViewport.width / 2 + 250 : 20,
+                y: window.visualViewport ? window.visualViewport.pageTop + window.visualViewport.height - 250 : 100,
+            });
+            setPanelBufferListPosition({
+                x: window.visualViewport ? window.visualViewport.pageLeft + window.visualViewport.width / 3 + 250 : 20,
+                y: window.visualViewport ? window.visualViewport.pageTop + window.visualViewport.height - 250 : 100,
+            });
+
+            // Restore from sessionStorage if URL params are missing
+            const savedView = sessionStorage.getItem("calendar_session_view");
+            const savedDate = sessionStorage.getItem("calendar_session_date");
+
+            // Only restore if we are on a calendar page (prevent hijacking other pages like Projects)
+            const isCalendarPage = pathname?.startsWith("/calendar");
+
+            // Case 1: Fresh Session (Empty Storage) - Force Default Logic
+            // User requirement: "When I sign in should be ... current week view".
+            // If explicit params are NOT present, or even if they are present but we want to ENFORCE default on fresh login (though usually login redirects to /calendar clean)
+            // But if user clicks a link with params, we might want to respect it? 
+            // The prompt says: "When I put the current private calendar view: .../calendar?date=...&view=month-view ... I log out then sign in, the page shows .../calendar?view=month-view... What I want when I sign in should be ... containing the current week view."
+            // This implies even if there ARE params (maybe from browser history or redirect), we should override them if it's a "fresh" login? 
+            // Or simpler: The login page redirects to /calendar (no params). 
+            // If they navigate manually, we check session.
+
+            // If no saved state exists, and we are on /calendar without params, set default params.
+            if (isCalendarPage && !savedView && !savedDate && !viewParam && !dateParam) {
+                const params = new URLSearchParams(searchParams?.toString());
+                params.set("view", "week");
+                params.set("date", toDayJs().format("YYYY-MM-DD"));
+                router.replace(`${pathname}?${params.toString()}`);
+                return;
+            }
+
+            // Case 2: Restore State (Missing URL params but have Saved Session)
+            // If I am on /calendar and have NO params, but I HAVE a saved session, restore it.
+            if (isCalendarPage && !viewParam && !dateParam && (savedView || savedDate)) {
+                const params = new URLSearchParams(searchParams?.toString());
+
+                // Special handling: If on standard /calendar but saved view is 'month-planning',
+                // DO NOT redirect to planning page. Just restore the date and let view default to week/day.
+                if (pathname === '/calendar' && savedView === 'month-planning') {
+                    if (savedDate) params.set("date", savedDate);
+                    // Force view to week if we were in planning but now in standard calendar
+                    params.set("view", "week");
+                    router.replace(`${pathname}?${params.toString()}`);
+                    return;
+                }
+
+                if (savedView) params.set("view", savedView);
+                if (savedDate) params.set("date", savedDate);
+
+                const targetPath = savedView === 'month-planning' ? '/calendar/planning' : (pathname === '/calendar/planning' ? '/calendar' : pathname);
+
+                // If we are already on the target path, just replace params.
+                if (targetPath !== pathname) {
+                    router.push(`${targetPath}?${params.toString()}`);
+                } else {
+                    router.replace(`${targetPath}?${params.toString()}`);
+                }
+                return;
+            }
+
+            // Case 3: Sync URL to Session (Persistence during session)
+            // If URL has params, ensure they are saved to session so navigation away (e.g. to Projects) remembers them.
+            // Also, if we just landed on a page with params (e.g. manually typed), valid them.
+            if (isCalendarPage && (viewParam || dateParam)) {
+                if (viewParam && viewParam !== savedView && viewParam !== "month-planning") {
+                    sessionStorage.setItem("calendar_session_view", viewParam);
+                }
+                if (dateParam && dateParam !== savedDate) {
+                    sessionStorage.setItem("calendar_session_date", dateParam);
+                }
+            }
+        }
+    }, [viewParam, dateParam, pathname]);
+
+
     const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
     const [monthPlanId, setMonthPlanId] = useState<number | null>(null);
 
@@ -249,10 +371,15 @@ export const useCalendarHooks = () => {
     } = useContext<AppContextProps>(AppContext);
 
     const CELL_HEIGHT = 4.57;
-    const now = dayjs();
-    const hoursNow = now.hour();
-    const minutesNow = now.minute();
-    const topPosition = `calc(${(hoursNow + minutesNow / 60) * CELL_HEIGHT}rem - 0.25rem)`;
+    const [topPosition, setTopPosition] = useState("0");
+
+    useEffect(() => {
+        const now = dayjs();
+        const hoursNow = now.hour();
+        const minutesNow = now.minute();
+        setTopPosition(`calc(${(hoursNow + minutesNow / 60) * CELL_HEIGHT}rem - 0.25rem)`);
+    }, [CELL_HEIGHT]);
+
     const hours = Array.from({ length: 24 }, (_, i) =>
         i.toString().padStart(2, "0")
     ); // 00 to 23

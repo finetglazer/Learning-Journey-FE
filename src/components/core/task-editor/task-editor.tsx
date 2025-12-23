@@ -399,6 +399,14 @@ export const TaskEditor = ({
         onClose?.();
     };
 
+    const handleSave = () => {
+        if (currentView !== 'month-planning' || (model?.specificDate && model?.id)) {
+            onSaveEditingTask();
+        } else {
+            onSaveEditingItem();
+        }
+    };
+
     // Get nearest "rounded" times (for init)
     useEffect(() => {
         const startMinute = toDayJs(model?.startTime, 0).get('minute');
@@ -413,7 +421,7 @@ export const TaskEditor = ({
         // TODO: Fix this
         if (currentView === 'month-planning' && !model?.id) {
             updateModel("startTime", dayJsToISOString(toDayJs(model?.startTime, 0).set('month', currentDate.get('month')).set('year', currentDate.get('year')), 0));
-            updateModel("endTime", dayJsToISOString(toDayJs(model?.startTime, 0).set('month', currentDate.get('month')).set('year', currentDate.get('year')), 0));
+            updateModel("endTime", dayJsToISOString(toDayJs(model?.endTime, 0).set('month', currentDate.get('month')).set('year', currentDate.get('year')), 0));
         }
     }, [
         model?.startTime,
@@ -430,14 +438,19 @@ export const TaskEditor = ({
                             placeholder="Task title"
                             className="truncate font-semibold text-[#1D2129] text-base border-none focus:ring-0 shadow-none placeholder:text-gray-400 bg-transparent"
                             onChange={(e) => updateModel("name", e.target.value)}
-                            value={model?.name}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                    handleSave();
+                                }
+                            }}
+                            value={model?.name || ""}
                         />
                         {/* {isEmptyTitle && (
                             <ValidationError tooltip="Title should not be empty" />
                         )} */}
                         <div className="flex items-center space-x-2">
                             <Button className="bg-green-300 hover:bg-green-400 text-green-800 rounded-full px-5 text-sm font-semibold cursor-pointer"
-                                onClick={currentView !== 'month-planning' || (model?.specificDate && model?.id) ? onSaveEditingTask : onSaveEditingItem}
+                                onClick={handleSave}
                             // onSaveEditingTask would be invoked when it is not month-planning mode or update event (apply for update event only) in month-planning mode
                             >
                                 Save

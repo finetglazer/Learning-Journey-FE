@@ -25,6 +25,7 @@ import { TaskEditor } from "../task-editor/task-editor";
 import { BaseTask } from "../task/base-task";
 import { CalendarContext, CalendarContextInterface } from "./calendar-context";
 import { DayTasksPopover } from "./day-tasks-popover";
+import { useRouter } from "next/navigation";
 
 export function CalendarMonthView() {
     const {
@@ -64,6 +65,7 @@ export function CalendarMonthView() {
     const [editorPosition, setEditorPosition] = useState({ x: 0, y: 0 });
 
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+    const router = useRouter();
 
     return (
         <Card className="w-full h-[100vh] mx-auto rounded-xl shadow-lg bg-white p-0 flex flex-col">
@@ -84,7 +86,9 @@ export function CalendarMonthView() {
                 <div className="flex items-center justify-end">
                     <SegmentedControl
                         value={currentView}
-                        onValueChange={setCurrentView}
+                        onValueChange={(value) => {
+                            setCurrentView(value);
+                        }}
                     />
                 </div>
             </CardHeader>

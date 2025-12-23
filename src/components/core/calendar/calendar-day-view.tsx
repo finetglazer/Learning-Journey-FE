@@ -18,6 +18,7 @@ import { UnscheduledRoutineItem } from "./unscheduled-routine-item";
 import { UnscheduledTaskItem } from "./unscheduled-task-item";
 import { CollapsibleUnscheduledBufferListPanel } from "./collapsible-unscheduled-buffer-list-panel";
 import { BufferListProjectTask } from "./buffer-list-project-task";
+import { useRouter } from "next/navigation";
 export const CalendarDayView = () => {
     const {
         tasksStyle,
@@ -68,6 +69,7 @@ export const CalendarDayView = () => {
 
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
     const headerRef = useRef<HTMLDivElement | null>(null);
+    const router = useRouter();
 
     return (
         <Card className="w-full h-[100%] mx-auto rounded-xl shadow-lg bg-slate-50/50 p-0">
@@ -89,7 +91,9 @@ export const CalendarDayView = () => {
                 <div className="flex items-center justify-end">
                     <SegmentedControl
                         value={currentView}
-                        onValueChange={setCurrentView}
+                        onValueChange={(value) => {
+                            setCurrentView(value);
+                        }}
                     />
                 </div>
             </CardHeader>
@@ -97,10 +101,7 @@ export const CalendarDayView = () => {
             <CardContent className="p-0 h-full">
                 <div className="-mt-6">
                     {Object.keys(calendarMap).map((id: string) => {
-                        return (calendarMap[id] || []).map((task: Task, index: number) => {
-                            if (task?.type !== "memorable_event") {
-                                return <></>
-                            }
+                        return (calendarMap[id] || []).filter(task => task?.type === "memorable_event").map((task: Task, index: number) => {
                             return (
                                 <DraggableTask
                                     key={task.id?.toString() || "draggable-task-".concat(index.toString())} // Use task.id for a stable key
@@ -143,10 +144,7 @@ export const CalendarDayView = () => {
                                                 className="w-14/15 cursor-pointer"
                                             >
                                                 <CalendarDayViewDroppableCell key={id} id={id} bordered={false}>
-                                                    {(calendarMap[id] || []).map((task: Task, index: number) => {
-                                                        if (task?.type === "memorable_event") {
-                                                            return <></>
-                                                        }
+                                                    {(calendarMap[id] || []).filter(task => task?.type !== "memorable_event").map((task: Task, index: number) => {
                                                         return (
                                                             <DraggableTask
                                                                 key={task.id?.toString() || "draggable-task-".concat(index.toString())} // Use task.id for a stable key
@@ -187,40 +185,41 @@ export const CalendarDayView = () => {
                             selectedRoutineId={selectedRoutineId}
                         />
 
-                        <CollapsibleUnscheduledBufferListPanel 
+                        <CollapsibleUnscheduledBufferListPanel
                             headerRef={headerRef}
                         />
 
+                        {/* @ts-ignore */}
                         <DragOverlay>
-                            {/* For scheduled items */}
-                            {!isNil(draggingScheduledTaskId) ? (
-                                getDraggableTaskOverlay()
-                            ) : null}
-                            {isPanelDragging && (
-                                <PanelDragOverlay
-                                    type={"unscheduled-task-panel"}
-                                />
-                            )}
-                            {isPanelBufferListDragging && (
-                                <PanelDragOverlay
-                                    type="buffer-list-panel"
-                                />
-                            )}
-                            {!isNil(draggingProjectTaskId) && (
-                                <BufferListProjectTask
-                                    task={getDraggingProjectTask()}
-                                />
-                            )}
-                            {!isNil(draggingUnscheduledTaskId) && (
-                                <UnscheduledTaskItem
-                                    task={getDraggingTask() as UnscheduledTask}
-                                />
-                            )}
-                            {!isNil(draggingUnscheduledRoutineId) && (
-                                <UnscheduledRoutineItem
-                                    routine={getDraggingRoutine() as UnscheduledRoutine}
-                                />
-                            )}
+                            <>{/* For scheduled items */}
+                                {!isNil(draggingScheduledTaskId) ? (
+                                    getDraggableTaskOverlay()
+                                ) : null}
+                                {isPanelDragging && (
+                                    <PanelDragOverlay
+                                        type={"unscheduled-task-panel"}
+                                    />
+                                )}
+                                {isPanelBufferListDragging && (
+                                    <PanelDragOverlay
+                                        type="buffer-list-panel"
+                                    />
+                                )}
+                                {!isNil(draggingProjectTaskId) && (
+                                    <BufferListProjectTask
+                                        task={getDraggingProjectTask()}
+                                    />
+                                )}
+                                {!isNil(draggingUnscheduledTaskId) && (
+                                    <UnscheduledTaskItem
+                                        task={getDraggingTask() as UnscheduledTask}
+                                    />
+                                )}
+                                {!isNil(draggingUnscheduledRoutineId) && (
+                                    <UnscheduledRoutineItem
+                                        routine={getDraggingRoutine() as UnscheduledRoutine}
+                                    />
+                                )}</>
                         </DragOverlay>
                     </DndContext>
 

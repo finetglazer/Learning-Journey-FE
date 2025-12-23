@@ -88,6 +88,9 @@ export default function RootPage() {
   const handleLogOut = () => {
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("accessToken");
+    // Clear calendar session state so next login is fresh
+    sessionStorage.removeItem("calendar_session_view");
+    sessionStorage.removeItem("calendar_session_date");
     setLoadingPage(true);
     router.push(SIGN_IN_ROUTE);
   };
@@ -117,7 +120,27 @@ export default function RootPage() {
     {
       title: "Calendar",
       items: [
-        { id: "private-calendar", label: "Private calendar", icon: <Lock size={16} />, onClick: () => router.push(CALENDAR_ROUTE) },
+        {
+          id: "private-calendar", label: "Private calendar", icon: <Lock size={16} />, onClick: () => {
+            const savedView = sessionStorage.getItem("calendar_session_view");
+            const savedDate = sessionStorage.getItem("calendar_session_date");
+
+            if (savedView === 'month-planning') {
+              if (savedDate) {
+                router.push(`${CALENDAR_ROUTE}?date=${savedDate}`);
+              } else {
+                router.push(CALENDAR_ROUTE);
+              }
+            } else if (savedView || savedDate) {
+              const params = new URLSearchParams();
+              if (savedView) params.set("view", savedView);
+              if (savedDate) params.set("date", savedDate);
+              router.push(`${CALENDAR_ROUTE}?${params.toString()}`);
+            } else {
+              router.push(CALENDAR_ROUTE);
+            }
+          }
+        },
         { id: "month-planning", label: "Month planning", icon: <CalendarDays size={16} />, onClick: () => router.push(CALENDAR_PLANNING_ROUTE) },
       ],
     },
@@ -214,12 +237,6 @@ export default function RootPage() {
   useEffect(() => {
     setModalStates([false, false, false, false]);
   }, [currentSelectedProject]);
-
-  useEffect(() => {
-    if (currentView === 'home' && activeItem === 'private-calendar') {
-      calendarContextValues.setCurrentView('day');
-    }
-  }, [activeItem, currentView]);
 
   useEffect(() => {
     if (isModalOpen) {

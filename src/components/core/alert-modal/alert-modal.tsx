@@ -92,9 +92,9 @@ export function AlertModal({
                 ))
             });
         }
-        return (alertMessage?.description || []).map((descriptionItem: any) => {
+        return (alertMessage?.description || []).map((descriptionItem: any, index: number) => {
             return (
-                <p className={descriptionClassName}>{descriptionItem}</p>
+                <p key={index} className={descriptionClassName}>{descriptionItem}</p>
             );
         })
     };
@@ -109,10 +109,12 @@ export function AlertModal({
 
                     <div className="w-1/2 border-t border-gray-200 pt-4" />
 
-                    <AlertDialogDescription className="text-slate-600 text-base font-bold text-center">
-                        {title}
-                        {description && <br />}
-                        {getDescription()}
+                    <AlertDialogDescription asChild className="text-slate-600 text-base font-bold text-center">
+                        <div>
+                            {title}
+                            {description && <br />}
+                            {getDescription()}
+                        </div>
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter className="sm:justify-center">

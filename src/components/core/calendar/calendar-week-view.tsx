@@ -29,6 +29,7 @@ import { UnscheduledRoutineItem } from "./unscheduled-routine-item";
 import { UnscheduledTaskItem } from "./unscheduled-task-item";
 import React from "react";
 import { CollapsibleUnscheduledBufferListPanel } from "./collapsible-unscheduled-buffer-list-panel";
+import { useRouter } from "next/navigation";
 
 export interface WeekViewCalendarProps {
     tasks?: Task[];
@@ -84,6 +85,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
 
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
     const headerRef = useRef<HTMLDivElement | null>(null);
+    const router = useRouter();
 
     return (
         <>
@@ -106,7 +108,9 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                     <div className="flex items-center justify-end">
                         <SegmentedControl
                             value={currentView}
-                            onValueChange={setCurrentView}
+                            onValueChange={(value) => {
+                                setCurrentView(value);
+                            }}
                         />
                     </div>
                 </CardHeader>
@@ -266,35 +270,36 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                 headerRef={headerRef}
                             />
 
+                            {/* @ts-ignore */}
                             <DragOverlay>
-                                {/* For scheduled items */}
-                                {!isNil(draggingScheduledTaskId) ? (
-                                    getDraggableTaskOverlay()
-                                ) : null}
-                                {isPanelDragging && (
-                                    <div className="h-16 w-16 rounded-full bg-gray-700 border-4 border-white p-0 shadow-lg">
-                                        <div className="flex h-full w-full items-center justify-center rounded-full bg-sky-300">
-                                            <ClipboardList className="h-8 w-8 text-black" />
+                                <>{/* For scheduled items */}
+                                    {!isNil(draggingScheduledTaskId) ? (
+                                        getDraggableTaskOverlay()
+                                    ) : null}
+                                    {isPanelDragging && (
+                                        <div className="h-16 w-16 rounded-full bg-gray-700 border-4 border-white p-0 shadow-lg">
+                                            <div className="flex h-full w-full items-center justify-center rounded-full bg-sky-300">
+                                                <ClipboardList className="h-8 w-8 text-black" />
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
-                                {isPanelBufferListDragging && (
-                                    <div className="h-16 w-16 rounded-full bg-gray-700 border-4 border-white p-0 shadow-lg">
-                                        <div className="flex h-full w-full items-center justify-center rounded-full bg-sky-300">
-                                            <Users className="h-8 w-8 text-black" />
+                                    )}
+                                    {isPanelBufferListDragging && (
+                                        <div className="h-16 w-16 rounded-full bg-gray-700 border-4 border-white p-0 shadow-lg">
+                                            <div className="flex h-full w-full items-center justify-center rounded-full bg-sky-300">
+                                                <Users className="h-8 w-8 text-black" />
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
-                                {!isNil(draggingUnscheduledTaskId) && (
-                                    <UnscheduledTaskItem
-                                        task={getDraggingTask() as UnscheduledTask}
-                                    />
-                                )}
-                                {!isNil(draggingUnscheduledRoutineId) && (
-                                    <UnscheduledRoutineItem
-                                        routine={getDraggingRoutine() as UnscheduledRoutine}
-                                    />
-                                )}
+                                    )}
+                                    {!isNil(draggingUnscheduledTaskId) && (
+                                        <UnscheduledTaskItem
+                                            task={getDraggingTask() as UnscheduledTask}
+                                        />
+                                    )}
+                                    {!isNil(draggingUnscheduledRoutineId) && (
+                                        <UnscheduledRoutineItem
+                                            routine={getDraggingRoutine() as UnscheduledRoutine}
+                                        />
+                                    )}</>
                             </DragOverlay>
                         </DndContext>
                         {/* Current Time Indicator */}
