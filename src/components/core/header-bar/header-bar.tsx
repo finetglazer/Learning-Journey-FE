@@ -1,21 +1,225 @@
 "use client";
 
-import { Bell, Menu, Search, Settings } from 'lucide-react';
-import React from 'react';
+import { Menu, Search, Settings } from 'lucide-react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
+import { NotificationBox } from '../notification/notification-box';
+import { Notification, NotificationFilter } from '@/model/notification';
+import { AppContext } from '@/hooks/app-context';
+import { toast } from 'sonner';
+import { finalize } from 'rxjs';
+import { fetchEventSource, EventSourceMessage } from '@microsoft/fetch-event-source';
+import { isNil } from 'lodash';
 
 export interface HeaderBarProps {
     onMenuClick?: () => void;
-    onNotificationsClick?: () => void;
     onSettingsClick?: () => void;
     avatarUrl?: string;
+    onView?: (url: string) => void;
 }
 
 export const HeaderBar: React.FC<HeaderBarProps> = ({
     onMenuClick,
-    onNotificationsClick,
     onSettingsClick,
     avatarUrl,
+    onView = (url) => { console.log(url) },
 }) => {
+    const { notificationRepository, userId } = useContext(AppContext);
+
+    const [unreadNotifications, setUnreadNotifications] = useState<Notification[]>([]);
+    const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
+
+    const [unreadPage, setUnreadPage] = useState(1);
+    const [allPage, setAllPage] = useState(1);
+    const [hasMoreUnread, setHasMoreUnread] = useState(true);
+    const [hasMoreAll, setHasMoreAll] = useState(true);
+    const [isLoadingGetAll, setIsLoadingGetAll] = useState(false);
+    const [isLoadingGetUnread, setIsLoadingGetUnread] = useState(false);
+
+    const handleLoadMoreAll = useCallback(() => {
+        if (isLoadingGetAll || !hasMoreAll || !notificationRepository) return;
+        setIsLoadingGetAll(true);
+
+        const nextPage = allPage + 1;
+        notificationRepository.getNotifications({
+            filter: NotificationFilter.ALL,
+            page: nextPage,
+            limit: 50
+        })
+            .pipe(finalize(() => setIsLoadingGetAll(false)))
+            .subscribe({
+                next: (res) => {
+                    if (res?.status) {
+                        const newNotes = res.data?.notifications || [];
+                        if (newNotes.length < 50) setHasMoreAll(false);
+                        setAllNotifications(prev => [...prev, ...newNotes]);
+                        setAllPage(nextPage);
+                    }
+                    else {
+                        toast.error(res?.message || res?.msg);
+                    }
+                },
+                error: () => { }
+            });
+    }, [
+        isLoadingGetAll,
+        hasMoreAll,
+        notificationRepository,
+        allPage,
+    ]);
+
+    const handleLoadMoreUnread = useCallback(() => {
+        if (isLoadingGetUnread || !hasMoreUnread || !notificationRepository) return;
+        setIsLoadingGetUnread(true);
+
+        const nextPage = unreadPage + 1;
+        const subscription = notificationRepository.getNotifications({
+            filter: NotificationFilter.UNREAD,
+            page: nextPage,
+            limit: 50
+        })
+            .pipe(finalize(() => setIsLoadingGetUnread(false)))
+            .subscribe({
+                next: (res) => {
+                    if (res?.status) {
+                        const newNotes = res.data?.notifications || [];
+                        if (newNotes.length < 50) setHasMoreUnread(false);
+                        setUnreadNotifications(prev => [...prev, ...newNotes]);
+                        setUnreadPage(nextPage);
+                    }
+                },
+                error: () => { }
+            });
+
+        return () => {
+            subscription.unsubscribe();
+        }
+    }, [
+        isLoadingGetUnread,
+        hasMoreUnread,
+        notificationRepository,
+        unreadPage,
+    ]);
+
+    const getAllNotifications = useCallback(() => {
+        if (isLoadingGetAll || !notificationRepository) {
+            return;
+        }
+
+        const subscription = notificationRepository.getNotifications({
+            filter: NotificationFilter.ALL,
+            page: 1,
+            limit: 50
+        })
+            .pipe(finalize(() => setIsLoadingGetAll(false)))
+            .subscribe({
+                next: (res) => {
+                    if (res?.status) {
+                        const data = res.data?.notifications || [];
+                        setAllNotifications(data);
+                        if (data.length < 50) setHasMoreAll(false);
+                    }
+                    else {
+                        toast.error(res?.message || res?.msg);
+                    }
+                },
+                error: () => { }
+            });
+
+        return () => {
+            subscription.unsubscribe();
+        }
+    }, [
+        isLoadingGetAll,
+        notificationRepository,
+    ]);
+
+    const getUnreadNotifications = useCallback(() => {
+        if (isLoadingGetUnread || !notificationRepository) {
+            return;
+        }
+
+        const subscription = notificationRepository.getNotifications({
+            filter: NotificationFilter.UNREAD,
+            page: 1,
+            limit: 50
+        })
+            .pipe(finalize(() => setIsLoadingGetUnread(false)))
+            .subscribe({
+                next: (res) => {
+                    if (res?.status) {
+                        const data = res.data?.notifications || [];
+                        setUnreadNotifications(data);
+                        if (data.length < 50) setHasMoreUnread(false);
+                    }
+                    else {
+                        toast.error(res?.message || res?.msg);
+                    }
+                },
+                error: () => { }
+            });
+
+        return () => {
+            subscription.unsubscribe();
+        }
+    }, [
+        isLoadingGetUnread,
+        notificationRepository,
+    ]);
+
+    // Initial Fetch
+    useEffect(() => {
+        getAllNotifications();
+        getUnreadNotifications();
+    }, [notificationRepository]);
+
+    // SSE Connection
+    useEffect(() => {
+        if (!userId) return;
+
+        const controller = new AbortController();
+
+        const connectSSE = async () => {
+            if (isNil(userId)) {
+                return;
+            }
+            const token = localStorage.getItem("accessToken");
+            try {
+                await fetchEventSource(`${process.env.NEXT_PUBLIC_API_URL}/notifications/stream/${userId}`, {
+                    method: 'GET',
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "X-User-Id": String(userId),
+                    },
+                    signal: controller.signal,
+                    onmessage(event: EventSourceMessage) {
+                        try {
+                            const newNotification = JSON.parse(event.data);
+                            setUnreadNotifications(prev => [newNotification, ...prev]);
+                            setAllNotifications(prev => [newNotification, ...prev]);
+                            toast.info(`New notification: ${(newNotification as Notification).contentMessage}`);
+                        } catch (error) {
+                            console.error("Error parsing SSE data", error);
+                        }
+                    },
+                    onerror(err: any) {
+                        console.error("SSE Connection Failed:", err);
+                        // Do not retry if it's a fatal error, or let it retry otherwise
+                        // throwing an error here stops retries, 
+                        // but usually we want to retry on connection loss.
+                    },
+                });
+            } catch (err) {
+                console.error("SSE Setup Failed", err);
+            }
+        };
+
+        connectSSE();
+
+        return () => {
+            controller.abort();
+        };
+    }, [userId]);
+
     return (
         <header className="relative flex h-16 w-full items-center justify-between border-b border-gray-200 bg-white px-5 shadow-sm">
 
@@ -57,13 +261,21 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
 
             {/* Right Section: Icons and Avatar */}
             <div className="flex items-center gap-3">
-                <button
-                    onClick={onNotificationsClick}
-                    className="p-2 rounded-full text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                    aria-label="View notifications"
-                >
-                    <Bell size={20} />
-                </button>
+                <div className="relative">
+                    <NotificationBox
+                        unreadNotifications={unreadNotifications}
+                        allNotifications={allNotifications}
+                        setUnreadNotifications={setUnreadNotifications}
+                        setAllNotifications={setAllNotifications}
+                        isLoadingGetAll={isLoadingGetAll}
+                        isLoadingGetUnread={isLoadingGetUnread}
+                        hasMoreUnread={hasMoreUnread}
+                        hasMoreAll={hasMoreAll}
+                        onLoadMoreUnread={handleLoadMoreUnread}
+                        onLoadMoreAll={handleLoadMoreAll}
+                        onView={onView}
+                    />
+                </div>
                 <button
                     onClick={onSettingsClick}
                     className="p-2 rounded-full cursor-pointer text-gray-600 hover:bg-gray-100 hover:text-gray-900"
