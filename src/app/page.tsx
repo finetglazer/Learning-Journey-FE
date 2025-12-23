@@ -36,6 +36,7 @@ import { SIGN_IN_ROUTE, CALENDAR_ROUTE, CALENDAR_PLANNING_ROUTE, getProjectDetai
 import { NotificationFilter } from "@/model/notification";
 import { Project } from "@/model/project-management";
 import { useRouter } from "next/navigation";
+import { useNotificationStream } from "@/hooks/use-notification-stream";
 
 export default function RootPage() {
   const router = useRouter();

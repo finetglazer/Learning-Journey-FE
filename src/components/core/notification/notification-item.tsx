@@ -31,7 +31,6 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
     isActionLoading,
 }) => {
     const {
-        id,
         sender,
         contentMessage,
         createdAt,
@@ -43,6 +42,8 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
 
     const isInvitation = type === NotificationType.ACTION_INVITATION;
     const isPendingInvitation = isInvitation && invitationStatus === InvitationStatus.PENDING;
+    const canMarkRead = !isRead && !isPendingInvitation;
+    const canDelete = !isPendingInvitation;
 
     return (
         <div className={cn(
@@ -80,21 +81,23 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
                             >
                                 Mark unread
                             </button>
-                        ) : (
+                        ) : canMarkRead ? (
                             <button
                                 onClick={(e) => { e.stopPropagation(); onMarkRead(notification.id); }}
                                 className="text-blue-500 cursor-pointer hover:text-blue-700 font-medium hover:underline"
                             >
-                                Mark as read
+                                    Mark as read
+                                </button>
+                            ) : null}
+
+                        {canDelete && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); onDelete(notification.id); }}
+                                className="text-red-500 cursor-pointer hover:text-red-700 flex items-center gap-1 hover:underline cursor-pointer font-medium"
+                            >
+                                Delete
                             </button>
                         )}
-
-                        <button
-                            onClick={(e) => { e.stopPropagation(); onDelete(notification.id); }}
-                            className="text-red-500 cursor-pointer hover:text-red-700 flex items-center gap-1 hover:underline cursor-pointer font-medium"
-                        >
-                            Delete
-                        </button>
                     </div>
                 </div>
 
@@ -104,7 +107,7 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
                         <Button
                             variant="outline"
                             size="sm"
-                            className="h-7 text-xs"
+                            className="h-7 text-xs cursor-pointer"
                             onClick={() => onView && onView(targetUrl)}
                         >
                             View
@@ -112,26 +115,30 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
                     )}
 
                     {isPendingInvitation && (
-                        <>
-                            <Button
-                                size="sm"
-                                disabled={isActionLoading}
-                                className="h-7 text-xs bg-green-500 hover:bg-green-600 text-white border-none flex items-center gap-2"
-                                onClick={() => onAcceptInvitation && onAcceptInvitation(notification)}
-                            >
-                                {isActionLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-                                Accept
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={isActionLoading}
-                                className="h-7 text-xs"
-                                onClick={() => onDeclineInvitation && onDeclineInvitation(notification)}
-                            >
-                                Decline
-                            </Button>
-                        </>
+                        isActionLoading ? (
+                            <div className="flex items-center gap-2 text-xs text-gray-500 italic">
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                                <span>Processing...</span>
+                            </div>
+                        ) : (
+                            <>
+                                <Button
+                                    size="sm"
+                                    className="h-7 text-xs cursor-pointer bg-green-500 hover:bg-green-600 text-white border-none flex items-center gap-2"
+                                    onClick={() => onAcceptInvitation && onAcceptInvitation(notification)}
+                                >
+                                    Accept
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-7 text-xs cursor-pointer"
+                                    onClick={() => onDeclineInvitation && onDeclineInvitation(notification)}
+                                >
+                                    Decline
+                                </Button>
+                            </>
+                        )
                     )}
                 </div>
 

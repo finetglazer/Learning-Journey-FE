@@ -24,7 +24,7 @@ export class BaseRepository extends Repository {
   constructor(userId: number, baseApiUrl?: string) {
     super(baseApiConfig(baseApiUrl));
 
-    this.userId = userId;
+    // this.userId = userId;
 
     // FIX 1: Cast inputs and outputs to 'any' to solve the Axios version conflict
     this.http.interceptors.request.use(

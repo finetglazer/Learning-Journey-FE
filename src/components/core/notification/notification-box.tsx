@@ -4,7 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppContext } from "@/hooks/app-context";
-import { Notification } from "@/model/notification";
+import { Notification, NotificationType, InvitationStatus } from "@/model/notification";
 import { Bell, Check, Loader2, Trash2 } from "lucide-react";
 import React, { useCallback, useContext, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
@@ -46,7 +46,7 @@ export const NotificationBox: React.FC<NotificationBoxProps> = ({
     const unreadCount = unreadNotifications.length;
 
     const handleDeleteReadNotifications = useCallback(() => {
-        const numberOfReadNotifications = allNotifications.filter(n => n.isRead).length;
+        const numberOfReadNotifications = allNotifications.filter(n => n.isRead && n.invitationStatus !== InvitationStatus.NONE && n.invitationStatus !== InvitationStatus.PENDING).length;
         if (!notificationRepository || numberOfReadNotifications === 0) {
             return;
         }
@@ -305,19 +305,37 @@ export const NotificationBox: React.FC<NotificationBoxProps> = ({
                                             </p>
                                         }
                                     >
-                                        {unreadNotifications.map((notification) => (
-                                            <NotificationItem
-                                                key={notification.id}
-                                                notification={notification}
-                                                onMarkRead={(id) => handleUpdateReadStatus(id, true)}
-                                                onMarkUnread={(id) => handleUpdateReadStatus(id, false)}
-                                                onDelete={handleDelete}
-                                                onAcceptInvitation={handleAcceptInvitation}
-                                                onDeclineInvitation={handleDeclineInvitation}
-                                                onView={onView}
-                                                isActionLoading={loadingNotificationId === notification.id}
-                                            />
-                                        ))}
+                                        {unreadNotifications.map((notification: Notification) => {
+                                            let contentMessage = notification.contentMessage;
+
+                                            // Customize message for invitations based on status
+                                            if (notification.type === NotificationType.ACTION_INVITATION) {
+                                                if (notification.invitationStatus === InvitationStatus.ACCEPTED) {
+                                                    contentMessage = "You have accepted this invitation.";
+                                                } else if (notification.invitationStatus === InvitationStatus.DECLINED) {
+                                                    contentMessage = "You have declined this invitation.";
+                                                } else if (notification.invitationStatus === InvitationStatus.EXPIRED) {
+                                                    contentMessage = "This invitation has expired.";
+                                                }
+                                            }
+
+                                            return (
+                                                <NotificationItem
+                                                    key={notification.id}
+                                                    notification={{
+                                                        ...notification,
+                                                        contentMessage: contentMessage
+                                                    }}
+                                                    onMarkRead={(id) => handleUpdateReadStatus(id, true)}
+                                                    onMarkUnread={(id) => handleUpdateReadStatus(id, false)}
+                                                    onDelete={handleDelete}
+                                                    onAcceptInvitation={handleAcceptInvitation}
+                                                    onDeclineInvitation={handleDeclineInvitation}
+                                                    onView={onView}
+                                                    isActionLoading={loadingNotificationId === notification.id}
+                                                />
+                                            )
+                                        })}
                                     </InfiniteScroll>
                                 </div>
                             )}
@@ -348,19 +366,37 @@ export const NotificationBox: React.FC<NotificationBoxProps> = ({
                                             </p>
                                         }
                                     >
-                                        {allNotifications.map((notification) => (
-                                            <NotificationItem
-                                                key={notification.id}
-                                                notification={notification}
-                                                onMarkRead={(id) => handleUpdateReadStatus(id, true)}
-                                                onMarkUnread={(id) => handleUpdateReadStatus(id, false)}
-                                                onDelete={handleDelete}
-                                                onAcceptInvitation={handleAcceptInvitation}
-                                                onDeclineInvitation={handleDeclineInvitation}
-                                                onView={onView}
-                                                isActionLoading={loadingNotificationId === notification.id}
-                                            />
-                                        ))}
+                                        {allNotifications.map((notification) => {
+                                            let contentMessage = notification.contentMessage;
+
+                                            // Customize message for invitations based on status
+                                            if (notification.type === NotificationType.ACTION_INVITATION) {
+                                                if (notification.invitationStatus === InvitationStatus.ACCEPTED) {
+                                                    contentMessage = "You have accepted this invitation.";
+                                                } else if (notification.invitationStatus === InvitationStatus.DECLINED) {
+                                                    contentMessage = "You have declined this invitation.";
+                                                } else if (notification.invitationStatus === InvitationStatus.EXPIRED) {
+                                                    contentMessage = "This invitation has expired.";
+                                                }
+                                            }
+
+                                            return (
+                                                <NotificationItem
+                                                    key={notification.id}
+                                                    notification={{
+                                                        ...notification,
+                                                        contentMessage: contentMessage
+                                                    }}
+                                                    onMarkRead={(id) => handleUpdateReadStatus(id, true)}
+                                                    onMarkUnread={(id) => handleUpdateReadStatus(id, false)}
+                                                    onDelete={handleDelete}
+                                                    onAcceptInvitation={handleAcceptInvitation}
+                                                    onDeclineInvitation={handleDeclineInvitation}
+                                                    onView={onView}
+                                                    isActionLoading={loadingNotificationId === notification.id}
+                                                />
+                                            )
+                                        })}
                                     </InfiniteScroll>
                                 </div>
                             )}

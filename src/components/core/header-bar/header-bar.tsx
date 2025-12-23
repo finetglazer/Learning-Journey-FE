@@ -1,24 +1,21 @@
 "use client";
 
-import { Menu, Search, Settings } from 'lucide-react';
-import React, { useCallback, useContext, useEffect, useState } from 'react';
-import { NotificationBox } from '../notification/notification-box';
-import { Notification, NotificationFilter } from '@/model/notification';
 import { AppContext } from '@/hooks/app-context';
-import { toast } from 'sonner';
-import { finalize } from 'rxjs';
 import { useNotificationStream } from '@/hooks/use-notification-stream';
-import { isNil } from 'lodash';
+import { Notification, NotificationFilter } from '@/model/notification';
+import { Search, Settings } from 'lucide-react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
+import { finalize } from 'rxjs';
+import { toast } from 'sonner';
+import { NotificationBox } from '../notification/notification-box';
 
 export interface HeaderBarProps {
-    onMenuClick?: () => void;
     onSettingsClick?: () => void;
     avatarUrl?: string;
     onView?: (url: string) => void;
 }
 
 export const HeaderBar: React.FC<HeaderBarProps> = ({
-    onMenuClick,
     onSettingsClick,
     avatarUrl,
     onView = (url) => { console.log(url) },
@@ -191,13 +188,6 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
 
             {/* Left Section: Menu and Logo */}
             <div className="flex items-center gap-3">
-                <button
-                    onClick={onMenuClick}
-                    className="p-2 rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                    aria-label="Toggle menu"
-                >
-                    <Menu size={22} />
-                </button>
                 <button className="h-8 w-8 cursor-pointer overflow-hidden" aria-label="View profile">
                     <img
                         // Uses the avatarUrl prop, or a placeholder if not provided

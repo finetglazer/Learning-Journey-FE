@@ -1,8 +1,7 @@
-import { useEffect, useRef } from "react";
-import { fetchEventSource, EventSourceMessage } from "@microsoft/fetch-event-source";
-import { isNil } from "lodash";
-import { toast } from "sonner";
 import { Notification } from "@/model/notification";
+import { EventSourceMessage, fetchEventSource } from "@microsoft/fetch-event-source";
+import { isNil } from "lodash";
+import { useEffect, useRef } from "react";
 
 interface UseNotificationStreamProps {
     userId: number | null;
@@ -33,7 +32,7 @@ export const useNotificationStream = ({ userId, onNewNotification }: UseNotifica
                         "X-User-Id": String(userId),
                     },
                     signal: signal,
-
+                    openWhenHidden: true,
                     onmessage(event: EventSourceMessage) {
                         try {
                             // 1. Handle Heartbeat
@@ -73,7 +72,7 @@ export const useNotificationStream = ({ userId, onNewNotification }: UseNotifica
                         // Actually, fetchEventSource default behavior handles 200 OK.
                         // If 401/403, we should probably throw a fatal error.
                         if (response.status === 401 || response.status === 403) {
-                            throw new Error("UNAUTHORIZED"); // Trigger onError
+                            throw new Error("UNAUTHORIZED");
                         }
                     },
 
@@ -120,8 +119,15 @@ export const useNotificationStream = ({ userId, onNewNotification }: UseNotifica
             } catch (err: any) {
                 if (signal.aborted) return;
 
-                // If 401, stop forever.
-                if (err.message === "UNAUTHORIZED") return;
+                // If 401, wait for token refresh (e.g. 5s) then retry
+                if (err.message === "UNAUTHORIZED") {
+                    console.log("Token expired. Waiting 5s for refresh...");
+                    await new Promise(r => setTimeout(r, 5000));
+                    if (!signal.aborted) {
+                        connectSSE();
+                    }
+                    return;
+                }
 
                 // Case 3 & 4: Service Downtime / Network Glitch -> Health Probe Mode
                 console.log("Connection lost. Starting Health Probe...");
@@ -179,9 +185,12 @@ export const useNotificationStream = ({ userId, onNewNotification }: UseNotifica
             }
         };
 
-        connectSSE();
+        const timeoutId = setTimeout(() => {
+            connectSSE();
+        }, 500);
 
         return () => {
+            clearTimeout(timeoutId);
             controller.abort();
         };
     }, [userId]);
