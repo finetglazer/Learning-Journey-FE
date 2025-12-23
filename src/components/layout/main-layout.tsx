@@ -8,6 +8,7 @@ import { SettingsPanel } from "@/components/core/sidebar/settings-panel";
 import { TeamProjectSection } from "@/components/core/sidebar/sections/team-project-section";
 import { TeamProjectContext, useTeamProjectHooks } from "@/components/core/sidebar/pages/project/team-project-context";
 import { Button } from "@/components/ui/button";
+import dayjs from "dayjs";
 import {
     CalendarDays,
     CalendarHeart,
@@ -121,6 +122,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     const handleLogOut = () => {
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("accessToken");
+        sessionStorage.removeItem("calendar_session_view");
+        sessionStorage.removeItem("calendar_session_date");
         setUserId(null); // Clear userId to stop context fetching
         setLoadingPage(true);
         router.push(SIGN_IN_ROUTE);
@@ -157,13 +160,29 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     id: "private-calendar",
                     label: "Private calendar",
                     icon: <Lock size={16} />,
-                    onClick: () => router.push(CALENDAR_ROUTE)
+                    onClick: () => {
+                        // Direct navigation to eliminate flicker
+                        let savedView = sessionStorage.getItem("calendar_session_view") || "week";
+                        if (savedView === "month-planning") {
+                            savedView = "week";
+                        }
+                        const savedDate = sessionStorage.getItem("calendar_session_date") || dayjs().format("YYYY-MM-DD");
+
+                        // Construct direct URL
+                        const params = new URLSearchParams();
+                        params.set("view", savedView);
+                        params.set("date", savedDate);
+
+                        router.push(`${CALENDAR_ROUTE}?${params.toString()}`);
+                    }
                 },
                 {
                     id: "month-planning",
                     label: "Month planning",
                     icon: <CalendarDays size={16} />,
-                    onClick: () => router.push(CALENDAR_PLANNING_ROUTE)
+                    onClick: () => {
+                        calendarContextValues.setCurrentView('month-planning');
+                    }
                 },
             ],
         },

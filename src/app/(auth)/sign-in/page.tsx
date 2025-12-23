@@ -35,6 +35,8 @@ export default function SignInPage() {
         authRepository?.signIn,
         (data) => {
             Cookies.set("userId", String(data?.user?.id), { expires: 7, secure: true, sameSite: 'strict' });
+            sessionStorage.removeItem("calendar_session_date");
+            sessionStorage.removeItem("calendar_session_view");
             router.push(CALENDAR_ROUTE);
             setUserId(data?.user?.id as number);
             setLoadingPage(true);

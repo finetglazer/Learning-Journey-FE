@@ -33,6 +33,7 @@ import { toast } from "sonner";
 import { AlertModal } from "../alert-modal/alert-modal";
 import { RoundedButton } from "../button/rounded-button";
 import { DateRangeNavigator } from "../date-range-navigator/date-range-navigator";
+import { SegmentedControl } from "../segmented-control/segmented-control";
 import { TaskEditor } from "../task-editor/task-editor";
 import { TaskType } from "../task-editor/task-type-dropdown";
 import { BaseTask } from "../task/base-task";
@@ -43,6 +44,7 @@ import {
 import { DayTasksPopover } from "./day-tasks-popover";
 import { RoutineEditor } from "./routine-editor";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
+import { useRouter } from "next/navigation";
 
 export function CalendarMonthPlanning() {
     const {
@@ -63,6 +65,7 @@ export function CalendarMonthPlanning() {
     const MAX_VISIBLE_TASKS = 2;
 
     const scrollContainerRef = useRef(null);
+    const router = useRouter();
 
     const [popoverState, setPopoverState] = useState<{
         open: boolean;
@@ -689,75 +692,76 @@ export function CalendarMonthPlanning() {
                                     </TableRow>
                                 )
                             })}
-                            {alertMessage && (
-                                <AlertModal
-                                    alertMessage={alertMessage}
-                                    onClose={() => setAlertMessage(null)}
-                                />
-                            )}
-                            {/* --- FIX: This Popover is ONLY for the "big-task-popover" showing unscheduled tasks --- */}
-                            <Popover
-                                open={popoverState.open && popoverState.id === "big-task-popover"
-                                    && !editingItem && !editingTask
-                                }
-                                onOpenChange={(isOpen) => {
-                                    if (!isOpen)
-                                        setPopoverState({ open: false, id: null, tasks: [] });
-                                }}
-                            >
-                                <PopoverTrigger asChild>
-                                    <div
-                                        className="absolute"
-                                        style={{
-                                            top: editorPosition.y,
-                                            left: editorPosition.x,
-                                            width: 1,
-                                            height: 1,
-                                        }}
-                                    />
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0 z-[999]" side="bottom" align="start">
-                                    <DayTasksPopover
-                                        tasks={popoverState.tasks}
-                                        currentTaskType={popoverState.type}
-                                        type="month-planning"
-                                        scrollContainerRef={scrollContainerRef}
-                                        setPopoverState={(popoverState) => setPopoverState(popoverState)}
-                                        selectedTaskId={selectedItemId}
-                                        setOpenRoutineEditor={setOpenRoutineEditor}
-                                        setSelectedTaskId={setSelectedItemId}
-                                        setEditingMonthPlanItem={setEditingItem}
-                                        setEditorPosition={setEditorPosition}
-                                        handleBigTaskClick={handleBigTaskClick as any} // Pass through
-                                        editorOffset={{ x: 0, y: 0 }} // Offset from the invisible trigger
-                                        onAddTaskClick={() => {
-                                            setEditingItem({
-                                                ...new UnscheduledTask(),
-                                                type: "task",
-                                                startTime: dayJsToISOString(toDayJs()),
-                                                endTime: dayJsToISOString(toDayJs()),
-                                                parentBigTaskId: popoverState?.bigTaskId,
-                                            });
-                                            // Close this popover when opening editor
-                                            setPopoverState({ open: false, id: null, tasks: [] });
-                                            // Also set editor position for the new task
-                                        }}
-                                        onTaskClick={() => {
-                                            // Close this popover when a task inside is clicked
-                                            setPopoverState({ open: false, id: null, tasks: [] });
-                                        }}
-                                    />
-                                </PopoverContent>
-                            </Popover>
-                            {openRoutineEditor && (
-                                <RoutineEditor
-                                    editingItem={editingItem as string}
-                                    setOpenRoutineEditor={setOpenRoutineEditor}
-                                    updateRoutineList={updateRoutineList}
-                                />
-                            )}
                         </TableBody>
                     </Table>
+
+                    {alertMessage && (
+                        <AlertModal
+                            alertMessage={alertMessage}
+                            onClose={() => setAlertMessage(null)}
+                        />
+                    )}
+                    {/* --- FIX: This Popover is ONLY for the "big-task-popover" showing unscheduled tasks --- */}
+                    <Popover
+                        open={popoverState.open && popoverState.id === "big-task-popover"
+                            && !editingItem && !editingTask
+                        }
+                        onOpenChange={(isOpen) => {
+                            if (!isOpen)
+                                setPopoverState({ open: false, id: null, tasks: [] });
+                        }}
+                    >
+                        <PopoverTrigger asChild>
+                            <div
+                                className="absolute"
+                                style={{
+                                    top: editorPosition.y,
+                                    left: editorPosition.x,
+                                    width: 1,
+                                    height: 1,
+                                }}
+                            />
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0 z-[999]" side="bottom" align="start">
+                            <DayTasksPopover
+                                tasks={popoverState.tasks}
+                                currentTaskType={popoverState.type}
+                                type="month-planning"
+                                scrollContainerRef={scrollContainerRef}
+                                setPopoverState={(popoverState) => setPopoverState(popoverState)}
+                                selectedTaskId={selectedItemId}
+                                setOpenRoutineEditor={setOpenRoutineEditor}
+                                setSelectedTaskId={setSelectedItemId}
+                                setEditingMonthPlanItem={setEditingItem}
+                                setEditorPosition={setEditorPosition}
+                                handleBigTaskClick={handleBigTaskClick as any} // Pass through
+                                editorOffset={{ x: 0, y: 0 }} // Offset from the invisible trigger
+                                onAddTaskClick={() => {
+                                    setEditingItem({
+                                        ...new UnscheduledTask(),
+                                        type: "task",
+                                        startTime: dayJsToISOString(toDayJs()),
+                                        endTime: dayJsToISOString(toDayJs()),
+                                        parentBigTaskId: popoverState?.bigTaskId,
+                                    });
+                                    // Close this popover when opening editor
+                                    setPopoverState({ open: false, id: null, tasks: [] });
+                                    // Also set editor position for the new task
+                                }}
+                                onTaskClick={() => {
+                                    // Close this popover when a task inside is clicked
+                                    setPopoverState({ open: false, id: null, tasks: [] });
+                                }}
+                            />
+                        </PopoverContent>
+                    </Popover>
+                    {openRoutineEditor && (
+                        <RoutineEditor
+                            editingItem={editingItem as string}
+                            setOpenRoutineEditor={setOpenRoutineEditor}
+                            updateRoutineList={updateRoutineList}
+                        />
+                    )}
 
                     <TaskEditor
                         key="month-planning-task-editor"

@@ -34,6 +34,7 @@ export const CALENDAR_VIEW_OPTIONS = [
     'day',
     'week',
     'month-view',
+    'month-planning',
     'year',
 ];
 

@@ -18,6 +18,8 @@ export const SegmentedControl = (props: SegmentedControlProps) => {
                 return "Week";
             case "month-view":
                 return "Month view";
+            case "month-planning":
+                return "Month planning";
             case "year":
                 return "Year";
             default:
@@ -33,7 +35,7 @@ export const SegmentedControl = (props: SegmentedControlProps) => {
             )}
             role="group"
         >
-            {CALENDAR_VIEW_OPTIONS.map((option, index) => {
+            {CALENDAR_VIEW_OPTIONS.filter(option => option !== 'month-planning').map((option, index) => {
                 const isActive = value === option;
 
                 return (

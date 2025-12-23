@@ -13,6 +13,7 @@ import { Month } from "./calendar-year-view-each-month";
 import { toast } from "sonner";
 import { isTaskOnDay } from "@/lib/utils";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
+import { useRouter } from "next/navigation";
 
 export function CalendarYearView() {
     const {
@@ -41,6 +42,7 @@ export function CalendarYearView() {
     const [allItems, setAllItems] = useState<any[]>([]);
 
     const scrollContainerRef = useRef(null);
+    const router = useRouter();
 
     const {
         calendarRepository,
@@ -117,7 +119,9 @@ export function CalendarYearView() {
                 <div className="flex items-center justify-end">
                     <SegmentedControl
                         value={currentView}
-                        onValueChange={setCurrentView}
+                        onValueChange={(value) => {
+                            setCurrentView(value);
+                        }}
                     />
                 </div>
             </CardHeader>
