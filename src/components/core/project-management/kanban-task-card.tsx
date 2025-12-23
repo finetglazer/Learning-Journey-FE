@@ -11,6 +11,9 @@ import { TeamProjectContext, TeamProjectContextProps, TeamProjectTab } from '../
 import { PRIORITY_CONFIG } from './task-detail-drawer';
 import { cn, getFallbackName } from '@/lib/utils';
 
+import { useRouter, useParams } from 'next/navigation';
+import { getProjectDetailRoute } from '@/const/routes-const';
+
 export interface TaskCardProps {
     task: PM_Task;
 }
@@ -35,6 +38,10 @@ const getPriorityIcon = (priority: TaskPriority) => {
 
 
 const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
+    const router = useRouter();
+    const params = useParams();
+    const projectId = Number(params?.projectId);
+
     const {
         attributes,
         listeners,
@@ -52,11 +59,6 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
     const {
         members: teamMembers,
         deliverables,
-        setTab,
-        setExpandedDeliverables,
-        setExpandedPhases,
-        setScrollToItem,
-        setIsNavigatingFromTaskBoard,
         currentMember,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
@@ -78,11 +80,8 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
 
     const handleEditClick = (e: React.MouseEvent) => {
         e.stopPropagation();
-        setTab(TeamProjectTab.LIST);
-        setIsNavigatingFromTaskBoard(true);
-        setExpandedPhases(prev => new Set(prev).add(task.phaseIdStr));
-        setExpandedDeliverables(prev => new Set(prev).add(deliverables.find(deliverable => deliverable.phases.some(phase => phase.phaseId === task.phaseId))?.deliverableIdStr as string));
-        setScrollToItem(task.taskIdStr);
+        // Deep link to task on List tab
+        router.push(getProjectDetailRoute(projectId, "list", task.taskId));
     };
 
     const { Icon: PriorityIconComponent, colorClass, label } = getPriorityIcon(task.priority);

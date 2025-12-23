@@ -27,6 +27,8 @@ import {
 import { getFallbackName } from "@/lib/utils";
 import { Project, ProjectMembershipRole, TeamMember } from "@/model/project-management";
 import { TeamProjectContext, TeamProjectContextProps, TeamProjectTab } from "../sidebar/pages/project/team-project-context";
+import { useRouter } from "next/navigation";
+import { getProjectDetailRoute } from "@/const/routes-const";
 
 export interface ProjectHeaderProps {
     role?: ProjectMembershipRole;
@@ -57,6 +59,28 @@ export const ProjectHeader = ({
     const membersToShow = members.slice(0, MAX_AVATARS);
     const remainingMembers = members.slice(MAX_AVATARS);
     const remainingCount = remainingMembers.length;
+
+
+    // Navigation logic
+    const router = useRouter();
+
+    const handleTabChange = (value: string) => {
+        if (currentSelectedProject) {
+            // Map the tab value to the URL param expected by getProjectDetailRoute
+            // The enum values match the query param expectations in this case
+            let tabParam = value;
+            // The enum values are: "summary", "list", "task_board", "timeline", "shared_source", "risk_register"
+            // Our map in [projectId]/page.tsx handles "board" mapping to TASK_BOARD
+            // Let's ensure consistency.
+            if (value === TeamProjectTab.TASK_BOARD) tabParam = "board";
+            if (value === TeamProjectTab.SHARED_SOURCE) tabParam = "files";
+            if (value === TeamProjectTab.RISK_REGISTER) tabParam = "risk";
+
+            router.push(getProjectDetailRoute(currentSelectedProject.id, tabParam));
+        } else {
+            setTab(value);
+        }
+    };
 
     return (
         <TooltipProvider delayDuration={200}>
@@ -138,7 +162,7 @@ export const ProjectHeader = ({
                 </div>
 
                 {/* --- Navigation Tabs --- */}
-                <Tabs value={tab} onValueChange={setTab}>
+                <Tabs value={tab} onValueChange={handleTabChange}>
                     <TabsList className="bg-transparen p-0 h-auto gap-2.5">
                         {/* Summary */}
                         <TabsTrigger

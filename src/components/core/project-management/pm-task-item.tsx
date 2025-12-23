@@ -21,6 +21,8 @@ import { TeamProjectContext, TeamProjectContextProps } from '../sidebar/pages/pr
 import TaskAssigneeModal from './task-assignee-modal';
 import { TaskDetailDrawer } from './task-detail-drawer';
 import { PM_DraggableItemData } from './type';
+import { useRouter, useSearchParams, useParams } from 'next/navigation';
+import { getProjectDetailRoute } from '@/const/routes-const';
 
 export type TaskDraft = {
     name: string;
@@ -58,11 +60,17 @@ function PM_TaskItemBase({ task, onUpdateTask, onDeleteTask }: TaskItemProps) {
     });
     const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
 
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const params = useParams();
+    const projectId = Number(params?.projectId);
+
     const {
         currentMember,
         members,
         selectedProject,
-        getProjectStructure, // Used for mandatory refresh after mutation/delete
+        getProjectStructure,
+        tab
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
     const {
@@ -91,6 +99,19 @@ function PM_TaskItemBase({ task, onUpdateTask, onDeleteTask }: TaskItemProps) {
     });
 
     const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+
+    // 🆕 URL-based Drawer Logic
+    const urlTaskId = searchParams.get("taskId");
+
+    useEffect(() => {
+        if (urlTaskId && Number(urlTaskId) === task.taskId) {
+            setIsDetailDrawerOpen(true);
+        } else {
+            if (isDetailDrawerOpen && Number(urlTaskId) !== task.taskId) {
+                setIsDetailDrawerOpen(false);
+            }
+        }
+    }, [urlTaskId, task.taskId]);
 
     // ----------------------------------------------------------------------
     // 🛠️ SPECIAL HANDLER: Status Only API Call
@@ -130,11 +151,20 @@ function PM_TaskItemBase({ task, onUpdateTask, onDeleteTask }: TaskItemProps) {
 
     const handleTaskClick = useCallback((e: React.MouseEvent) => {
         // Prevent opening the drawer if dragging is currently active
+        // Also prevent if clicking interactive elements
         if (e.target instanceof HTMLButtonElement || e.target instanceof HTMLInputElement) {
-            return; // Don't open if clicking on interactive elements
+            return;
         }
-        setIsDetailDrawerOpen(true);
-    }, []);
+        // Navigate to URL with taskId
+        // We generally keep the current tab (List) but ensure it's explicit
+        router.push(getProjectDetailRoute(projectId, tab || "list", task.taskId));
+    }, [projectId, tab, task.taskId, router]);
+
+    const handleCloseDrawer = useCallback(() => {
+        setIsDetailDrawerOpen(false);
+        // Remove taskId from URL
+        router.push(getProjectDetailRoute(projectId, tab || "list"));
+    }, [projectId, tab, router]);
 
 
     const handleStatusChange = useCallback((newStatus: TaskStatus) => {
@@ -414,12 +444,15 @@ function PM_TaskItemBase({ task, onUpdateTask, onDeleteTask }: TaskItemProps) {
                 teamMembers={members}
             />
             {/* Task Detail Drawer */}
-            <Sheet open={isDetailDrawerOpen} onOpenChange={setIsDetailDrawerOpen}>
+            <Sheet open={isDetailDrawerOpen} onOpenChange={(open) => {
+                if (!open) handleCloseDrawer();
+                else setIsDetailDrawerOpen(true);
+            }}>
                 <SheetContent side="right" className="w-full sm:max-w-lg p-0">
                     <div className="absolute top-4 right-4 z-50">
                         <button aria-label="Close" className="opacity-0 cursor-pointer" onClick={(e) => {
                             e.stopPropagation();
-                            setIsDetailDrawerOpen(false);
+                            handleCloseDrawer();
                         }}>
                             <X size={20} />
                         </button>

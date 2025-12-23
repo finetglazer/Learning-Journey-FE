@@ -22,9 +22,7 @@ export const TeamProjectSection = ({
     currentSelectedProject,
     deleteProject,
 }: TeamProjectSectionProps) => {
-    useEffect(() => {
-        getTeamProjects();
-    }, []);
+
 
     return (
         <>

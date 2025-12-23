@@ -7,7 +7,7 @@ import { Notification, NotificationFilter } from '@/model/notification';
 import { AppContext } from '@/hooks/app-context';
 import { toast } from 'sonner';
 import { finalize } from 'rxjs';
-import { fetchEventSource, EventSourceMessage } from '@microsoft/fetch-event-source';
+import { useNotificationStream } from '@/hooks/use-notification-stream';
 import { isNil } from 'lodash';
 
 export interface HeaderBarProps {
@@ -168,57 +168,23 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
 
     // Initial Fetch
     useEffect(() => {
-        getAllNotifications();
-        getUnreadNotifications();
+        const cleanupAll = getAllNotifications();
+        const cleanupUnread = getUnreadNotifications();
+        return () => {
+            if (cleanupAll) cleanupAll();
+            if (cleanupUnread) cleanupUnread();
+        }
     }, [notificationRepository]);
 
-    // SSE Connection
-    useEffect(() => {
-        if (!userId) return;
-
-        const controller = new AbortController();
-
-        const connectSSE = async () => {
-            if (isNil(userId)) {
-                return;
-            }
-            const token = localStorage.getItem("accessToken");
-            try {
-                await fetchEventSource(`${process.env.NEXT_PUBLIC_API_URL}/notifications/stream/${userId}`, {
-                    method: 'GET',
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "X-User-Id": String(userId),
-                    },
-                    signal: controller.signal,
-                    onmessage(event: EventSourceMessage) {
-                        try {
-                            const newNotification = JSON.parse(event.data);
-                            setUnreadNotifications(prev => [newNotification, ...prev]);
-                            setAllNotifications(prev => [newNotification, ...prev]);
-                            toast.info(`New notification: ${(newNotification as Notification).contentMessage}`);
-                        } catch (error) {
-                            console.error("Error parsing SSE data", error);
-                        }
-                    },
-                    onerror(err: any) {
-                        console.error("SSE Connection Failed:", err);
-                        // Do not retry if it's a fatal error, or let it retry otherwise
-                        // throwing an error here stops retries, 
-                        // but usually we want to retry on connection loss.
-                    },
-                });
-            } catch (err) {
-                console.error("SSE Setup Failed", err);
-            }
-        };
-
-        connectSSE();
-
-        return () => {
-            controller.abort();
-        };
-    }, [userId]);
+    // SSE Connection via Custom Hook
+    useNotificationStream({
+        userId: userId ?? null,
+        onNewNotification: (newNotification) => {
+            setUnreadNotifications(prev => [newNotification, ...prev]);
+            setAllNotifications(prev => [newNotification, ...prev]);
+            toast.info(`New notification: ${newNotification.contentMessage}`);
+        }
+    });
 
     return (
         <header className="relative flex h-16 w-full items-center justify-between border-b border-gray-200 bg-white px-5 shadow-sm">

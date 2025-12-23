@@ -11,3 +11,22 @@ export const GOOGLE_OAUTH2_ROUTE = "http://localhost:8080/oauth2/authorization/g
 // Home page routes
 export const ROOT_ROUTE = "/";
 export const HOME_BASE_ROUTE = "/home";
+
+// Scheduling routes
+export const CALENDAR_ROUTE = "/calendar";
+export const CALENDAR_PLANNING_ROUTE = "/calendar/planning";
+
+// Project routes
+export const PROJECT_ROUTE = "/projects";
+export const getProjectDetailRoute = (projectId: number, tab?: string, taskId?: number) => {
+    let url = `/projects/${projectId}`;
+    const params = new URLSearchParams();
+    if (tab) params.set("tab", tab);
+    if (taskId) params.set("taskId", String(taskId));
+    const queryString = params.toString();
+    return queryString ? `${url}?${queryString}` : url;
+};
+
+// Settings routes
+export const SETTINGS_ROUTE = "/settings";
+export const getSettingsRoute = (tab: string) => `/settings?tab=${tab}`;

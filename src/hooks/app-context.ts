@@ -58,6 +58,9 @@ export interface AppContextProps {
     projectRepository: ProjectRepository | null;
     settingsRepository: SettingsRepository | null;
     userRepository: UserRepository | null;
+    teamProjects: any[];
+    setTeamProjects: Dispatch<SetStateAction<any[]>>;
+    getProjects: () => void;
 };
 
 export const AppContext = createContext<AppContextProps>({
@@ -94,6 +97,9 @@ export const AppContext = createContext<AppContextProps>({
     projectRepository: null,
     settingsRepository: null,
     userRepository: null,
+    teamProjects: [],
+    setTeamProjects: () => { },
+    getProjects: () => { },
 });
 
 export const useAppHooks = (): AppContextProps => {
@@ -129,6 +135,8 @@ export const useAppHooks = (): AppContextProps => {
     const [settingsRepository, setSettingsRepository] = useState<SettingsRepository | null>(null);
     const [userRepository, setUserRepository] = useState<UserRepository | null>(null);
 
+    const [teamProjects, setTeamProjects] = useState<any[]>([]);
+
     useEffect(() => {
         if (isNil(userId)) {
             Cookies.remove("userId");
@@ -139,6 +147,7 @@ export const useAppHooks = (): AppContextProps => {
             setProjectRepository(null);
             setSettingsRepository(null);
             setUserRepository(null);
+            setNotificationRepository(null);
             return;
         }
 
@@ -152,6 +161,88 @@ export const useAppHooks = (): AppContextProps => {
         setNotificationRepository(notificationRepositoryCons(userId));
         setUserRepository(userRepositoryCons(userId));
     }, [userId]);
+
+    // Centralized Data Fetching
+    useEffect(() => {
+        const accessToken = localStorage.getItem("accessToken");
+        if (!userRepository || !settingsRepository || !calendarRepository || !projectRepository || !userId || !accessToken) return;
+
+        // 1. Fetch Profile
+        userRepository.getProfile().subscribe({
+            next: (res) => {
+                if (res?.status) {
+                    const { name, avatarUrl, email } = res.data;
+                    setAvatarUrl(avatarUrl || "");
+                    setEmail(email);
+                    setDisplayName(name);
+                }
+            },
+            error: (err) => console.error("Failed to fetch profile", err)
+        });
+
+        // 2. Fetch Settings
+        settingsRepository.getDailyLimits().subscribe({
+            next: (res) => {
+                if (res?.status) {
+                    const limits = res?.data?.limits;
+                    if (res?.data?.enabled) {
+                        setDailyLimitsEnabled(true);
+                        setTaskLimitHours(limits?.TASK?.hours);
+                        setRoutineLimitHours(limits?.ROUTINE?.hours);
+                    } else {
+                        setDailyLimitsEnabled(false);
+                    }
+                }
+            }
+        });
+
+        settingsRepository.getSleepHours().subscribe({
+            next: (res: any) => {
+                if (res?.status) {
+                    setSleepHours(res?.data?.sleepHours);
+                }
+            }
+        });
+
+        // 3. Fetch Calendar
+        calendarRepository.getCalendars().subscribe({
+            next: res => {
+                if (res?.status) {
+                    const calendars = res?.data?.calendars || [];
+                    if (!calendars.length) {
+                        calendarRepository.createCalendar(userId).subscribe({
+                            next: res => {
+                                if (res?.status && res?.data) setCalendarId(res.data);
+                            }
+                        });
+                    } else {
+                        setCalendarId(calendars[0]?.id);
+                    }
+                }
+            }
+        });
+
+        // 4. Fetch Projects
+        projectRepository.getProjects().subscribe({
+            next: res => {
+                if (res?.status) {
+                    setTeamProjects(res?.data?.projects || []);
+                }
+            }
+        });
+
+    }, [userRepository, settingsRepository, calendarRepository, projectRepository, userId]);
+
+    const getProjects = () => {
+        if (!projectRepository) return;
+        projectRepository.getProjects().subscribe({
+            next: res => {
+                if (res?.status) {
+                    setTeamProjects(res?.data?.projects || []);
+                }
+            }
+        });
+    };
 
     return {
         userId,
@@ -178,6 +269,9 @@ export const useAppHooks = (): AppContextProps => {
         setTimeZone,
         calendarId,
         setCalendarId,
+        teamProjects,
+        setTeamProjects,
+        getProjects,
 
         authRepository,
         calendarRepository,

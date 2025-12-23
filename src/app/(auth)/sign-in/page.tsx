@@ -4,7 +4,7 @@ import { IntegratedButton, IntegratedButtonProps } from "@/components/core/butto
 import { Icon } from "@/components/core/icon/icon";
 import { IntegratedInputProps } from "@/components/core/input/integrated-input";
 import { LinkWithLoading } from "@/components/core/link/link";
-import { FORGOT_PASSWORD_ROUTE, GOOGLE_OAUTH2_ROUTE, ROOT_ROUTE, SIGN_UP_ROUTE } from "@/const/routes-const";
+import { FORGOT_PASSWORD_ROUTE, GOOGLE_OAUTH2_ROUTE, CALENDAR_ROUTE, SIGN_UP_ROUTE } from "@/const/routes-const";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
 import { SignInModel } from "@/model/sign-in-model";
 import { formService } from "@/service/form-service";
@@ -35,7 +35,7 @@ export default function SignInPage() {
         authRepository?.signIn,
         (data) => {
             Cookies.set("userId", String(data?.user?.id), { expires: 7, secure: true, sameSite: 'strict' });
-            router.push(ROOT_ROUTE);
+            router.push(CALENDAR_ROUTE);
             setUserId(data?.user?.id as number);
             setLoadingPage(true);
         }
