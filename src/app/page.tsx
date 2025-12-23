@@ -32,7 +32,7 @@ import { TeamProjectContext, useTeamProjectHooks } from "@/components/core/sideb
 import { PublicProfile } from "@/components/core/sidebar/pages/public-profile/public-profile";
 import { TeamProjectSection } from "@/components/core/sidebar/sections/team-project-section";
 import { Button } from "@/components/ui/button";
-import { SIGN_IN_ROUTE } from "@/const/routes-const";
+import { SIGN_IN_ROUTE, CALENDAR_ROUTE, CALENDAR_PLANNING_ROUTE, getProjectDetailRoute, SETTINGS_ROUTE, getSettingsRoute } from "@/const/routes-const";
 import { NotificationFilter } from "@/model/notification";
 import { Project } from "@/model/project-management";
 import { useRouter } from "next/navigation";
@@ -48,8 +48,7 @@ export default function RootPage() {
   // [2]: Team Members View Modal
   // [3]: Conifrm Delete Project Modal
   const [modalStates, setModalStates] = useState([false, false, false, false]);
-  const [teamProjects, setTeamProjects] = useState<Project[]>([]);
-  
+
   const {
     setSleepHours,
     setLoadingPage,
@@ -68,6 +67,9 @@ export default function RootPage() {
     setRoutineLimitHours,
     userId,
     setCalendarId,
+    teamProjects,
+    setTeamProjects,
+    getProjects,
   } = useContext<AppContextProps>(AppContext);
 
   const calendarContextValues = useCalendarHooks();
@@ -115,8 +117,8 @@ export default function RootPage() {
     {
       title: "Calendar",
       items: [
-        { id: "private-calendar", label: "Private calendar", icon: <Lock size={16} />, onClick: () => setActiveItem("private-calendar") },
-        { id: "month-planning", label: "Month planning", icon: <CalendarDays size={16} />, onClick: () => setActiveItem("month-planning") },
+        { id: "private-calendar", label: "Private calendar", icon: <Lock size={16} />, onClick: () => router.push(CALENDAR_ROUTE) },
+        { id: "month-planning", label: "Month planning", icon: <CalendarDays size={16} />, onClick: () => router.push(CALENDAR_PLANNING_ROUTE) },
       ],
     },
     {
@@ -136,8 +138,7 @@ export default function RootPage() {
           icon: <Users size={16} />,
           onClick: (e: any) => {
             e.stopPropagation();
-            setActiveItem(`project-${project?.id}`);
-            setCurrentSelectedProject(project);
+            router.push(getProjectDetailRoute(project.id, "summary"));
           },
         }
       })
@@ -165,8 +166,8 @@ export default function RootPage() {
     {
       title: "Profile",
       items: [
-        { id: "profile", label: "Public profile", icon: <User size={16} />, onClick: () => setActiveItem("profile") },
-        { id: "password", label: "Password change", icon: <KeyRound size={16} />, onClick: () => setActiveItem("password") },
+        { id: "profile", label: "Public profile", icon: <User size={16} />, onClick: () => router.push(getSettingsRoute("profile")) },
+        { id: "password", label: "Password change", icon: <KeyRound size={16} />, onClick: () => router.push(getSettingsRoute("password")) },
         // { id: "appearance", label: "Appearance", icon: <Image size={16} />, onClick: () => setActiveItem("appearance") },
         // { id: "accessibility", label: "Accessibility", icon: <PersonStanding size={16} />, onClick: () => setActiveItem("accessibility") },
         // { id: "notifications", label: "Notifications", icon: <Bell size={16} />, onClick: () => setActiveItem("notifications") },
@@ -189,8 +190,8 @@ export default function RootPage() {
     {
       title: "Calendar",
       items: [
-        { id: "timezone", label: "Limit time and time zone", icon: <Clock size={16} />, onClick: () => setActiveItem("timezone") },
-        { id: "memorable-events", label: "Memorable events", icon: <CalendarHeart size={16} />, onClick: () => setActiveItem("memorable-events") },
+        { id: "timezone", label: "Limit time and time zone", icon: <Clock size={16} />, onClick: () => router.push(getSettingsRoute("timezone")) },
+        { id: "memorable-events", label: "Memorable events", icon: <CalendarHeart size={16} />, onClick: () => router.push(getSettingsRoute("memorable-events")) },
       ],
     },
     // {
@@ -208,186 +209,6 @@ export default function RootPage() {
     //   ],
     // },
   ];
-
-  const getProjects = useCallback(() => {
-    projectRepository?.getProjects().subscribe({
-      next: res => {
-        if (res?.status) {
-          const projects = res?.data?.projects;
-          setTeamProjects(projects);
-        }
-        else {
-          toast.error(res?.message || res?.msg);
-        }
-      },
-      error: err => { },
-    });
-  }, [projectRepository]);
-
-  // --- Fetch user settings ---
-  useEffect(() => {
-    if (!userRepository
-      || !settingsRepository
-      || !calendarRepository
-      || !projectRepository
-      || !userId
-    ) return;
-
-    userRepository?.getProfile().subscribe({
-      next: (res) => {
-        if (res?.status) {
-          const userData = res.data;
-          const { name, avatarUrl, email } = userData;
-
-          const finalAvatar = avatarUrl || "";
-          setAvatarUrl(finalAvatar);
-          setEmail(email);
-          setDisplayName(name);
-        }
-      },
-      error: (err) => {
-        console.error("Failed to fetch user profile", err);
-      }
-    });
-
-    settingsRepository?.getDailyLimits().subscribe({
-      next: (res) => {
-        if (res?.status) {
-          const limits = res?.data?.limits;
-          if (res?.data?.enabled) {
-            setDailyLimitsEnabled(true);
-            setTaskLimitHours(limits?.TASK?.hours);
-            setRoutineLimitHours(limits?.ROUTINE?.hours);
-          } else {
-            setDailyLimitsEnabled(false);
-          }
-        } else {
-          toast.error(res?.message || res?.msg);
-        }
-      },
-      error: () => { },
-    });
-
-    settingsRepository?.getSleepHours().subscribe({
-      next: (res: any) => {
-        if (!res?.status) {
-          toast.error(res?.message || res?.msg);
-        } else {
-          setSleepHours(res?.data?.sleepHours);
-        }
-      },
-      error: () => { },
-    });
-
-    // Get monthPlanId
-    // calendarRepository?.getMonthPlanIdByDate({ year: currentDate.get("year"), month: currentDate.get("month") + 1 }).subscribe({
-    //   next: (res) => {
-    //     const success = res?.status;
-    //     const monthPlanId = res?.data;
-    //     if (success && monthPlanId) {
-    //       localStorage.setItem("monthPlanId", monthPlanId);
-    //     }
-    //     else if (!success || !monthPlanId) {
-    //       // toast.error(res?.msg || res?.message);
-    //       localStorage.removeItem("monthPlanId");
-    //       // If monthPlanId not found, create new monthPlanId
-    //       calendarRepository?.createMonthPlan({
-    //         year: currentDate.get("year"),
-    //         month: currentDate.get("month") + 1,
-    //       }).subscribe({
-    //         next: res => {
-    //           if (res.status) {
-    //             localStorage.setItem("monthPlanId", res?.data?.monthPlanId);
-    //           }
-    //           else {
-    //             toast.error(res?.message || res?.msg);
-    //           }
-    //         },
-    //         error: err => {
-    //           const errors = err?.response?.data?.data;
-    //           const message = err?.response?.data?.msg || err?.response?.data?.message;
-    //           setAlertMessage({
-    //             type: "warning",
-    //             title: message,
-    //             description: errors,
-    //           });
-    //         }
-    //       });
-    //     }
-    //   },
-    //   error: () => {
-    //     localStorage.removeItem("monthPlanId");
-    //   },
-    // });
-
-    // Get calendarId
-    // ✅ FIX: Check if userId exists before using it
-    if (userId) {
-      calendarRepository?.getCalendars().subscribe({
-        next: res => {
-          if (res?.status) {
-            const calendars = res?.data?.calendars || [];
-            if (!calendars.length) {
-              // If there are no calendars, create 1
-              // Now TS knows userId is a number here
-              calendarRepository?.createCalendar(userId).subscribe({
-                next: res => {
-                  if (res?.status) {
-                    if (res?.data) {
-                      setCalendarId(res?.data);
-                    }
-                  }
-                  else {
-                    toast.error(res?.msg || res?.message);
-                  }
-                },
-                error: err => { }
-              });
-            }
-            else {
-              setCalendarId(calendars[0]?.id);
-            }
-          }
-          else {
-            toast.error(res?.msg || res?.message);
-          }
-        },
-        error: err => { },
-      });
-    }
-
-    // Get team projects
-    getProjects();
-
-    // Get user profile
-    const subscription = userRepository?.getProfile().subscribe({
-      next: res => {
-        if (res?.status) {
-          const userDisplayName = res?.data?.name;
-          const userAvatarUrl = res?.data?.avatarUrl;
-          const userEmail = res?.data?.email;
-
-          setDisplayName(userDisplayName);
-          setAvatarUrl(userAvatarUrl);
-          setEmail(userEmail);
-        }
-        else {
-          toast.error(res?.message || res?.msg);
-        }
-      },
-      error: err => { },
-    });
-
-    return () => {
-      subscription?.unsubscribe();
-    }
-  }, [
-    calendarRepository,
-    projectRepository,
-    userRepository,
-    settingsRepository,
-    userId,
-  ]);
 
   // Close all modals when selecting other project
   useEffect(() => {
@@ -427,7 +248,7 @@ export default function RootPage() {
           {/* --- Headerbar --- */}
           <HeaderBar
             avatarUrl={avatarUrl}
-            onSettingsClick={() => setCurrentView("settings")}
+            onSettingsClick={() => router.push(getSettingsRoute("profile"))}
           />
 
           <div className="flex">

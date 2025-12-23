@@ -5,7 +5,7 @@ import { OtpEmailInputLayout } from "@/layout/otp-email-input-layout";
 import "./page.css";
 import { formService } from "@/service/form-service";
 import { EmailVerificationModel } from "@/model/email-verification-model";
-import { SIGN_IN_ROUTE, SIGN_UP_BASE_ROUTE } from "@/const/routes-const";
+import { SIGN_IN_ROUTE, SIGN_UP_ROUTE } from "@/const/routes-const";
 import { useRouter } from "next/navigation";
 import { useContext, useState } from "react";
 import { OTP_REGEX } from "@/const/consts";
@@ -32,7 +32,7 @@ export default function EmailVerificationPage() {
             setLoadingPage(true);
         }
     );
-    
+
     const [otpValidationError, setOtpValidationError] = useState<string | undefined | null>(undefined);
 
     const validateOtp = () => {
@@ -73,7 +73,7 @@ export default function EmailVerificationPage() {
             updateModel={updateModel}
             otpValidationError={otpValidationError}
             backButtonTitle="Sign up"
-            backButtonUrl={SIGN_UP_BASE_ROUTE}
+            backButtonUrl={SIGN_UP_ROUTE}
             onSubmitForm={onSubmitForm}
         />
     );

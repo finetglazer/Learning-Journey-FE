@@ -2,7 +2,7 @@
 
 import { IntegratedButton } from "@/components/core/button/integrated-button";
 import { IntegratedInputProps } from "@/components/core/input/integrated-input";
-import { FORGOT_PASSWORD_EMAIL_INPUT_ROUTE, SIGN_IN_ROUTE } from "@/const/routes-const";
+import { FORGOT_PASSWORD_ROUTE, SIGN_IN_ROUTE } from "@/const/routes-const";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
 import { ResetPasswordModel } from "@/model/reset-password-model";
 import { formService } from "@/service/form-service";
@@ -40,7 +40,7 @@ export default function ResetPasswordForm() {
     const header = {
         title: "Reset password",
         backButtonTitle: "Email checking",
-        backButtonUrl: FORGOT_PASSWORD_EMAIL_INPUT_ROUTE,
+        backButtonUrl: FORGOT_PASSWORD_ROUTE,
     };
 
     const bodyInputs: IntegratedInputProps[] = [

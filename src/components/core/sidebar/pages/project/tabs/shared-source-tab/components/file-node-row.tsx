@@ -2,7 +2,6 @@ import { FilePreviewModal } from "@/components/core/file-preview/file-preview-mo
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { FILE_EXTENSION } from "@/const/consts";
 import { cn, getFileIcon } from "@/lib/utils";
 import { FileNode, ProjectMembershipRole } from "@/model/project-management";
 import { isEqual } from "lodash";

@@ -6,7 +6,6 @@ import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { isNil } from "lodash";
 import { ClipboardList, Users } from "lucide-react";
 import { useContext, useRef } from "react";
-import { AlertModal } from "../alert-modal/alert-modal";
 import { RoundedButton } from "../button/rounded-button";
 import { DateRangeNavigator } from "../date-range-navigator/date-range-navigator";
 import { SegmentedControl } from "../segmented-control/segmented-control";

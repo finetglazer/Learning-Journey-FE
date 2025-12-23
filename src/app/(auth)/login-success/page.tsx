@@ -1,6 +1,6 @@
 "use client"
 
-import { ROOT_ROUTE } from "@/const/routes-const";
+import { CALENDAR_ROUTE } from "@/const/routes-const";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -26,13 +26,13 @@ export default function AuthSuccess() {
         if (token) {
             localStorage.setItem("accessToken", token);
             localStorage.setItem("refreshToken", refreshToken as string);
-            
+
             Cookies.set("userId", String(userId), { expires: 7, secure: true, sameSite: 'strict' });
-            
+
             setUserId(Number(userId));
             setDisplayName(displayName as string);
             setEmail(email as string);
-            setTimeout(() => router.push(ROOT_ROUTE), 1200);
+            setTimeout(() => router.push(CALENDAR_ROUTE), 1200);
         }
     }, [router, window.location.search]);
 

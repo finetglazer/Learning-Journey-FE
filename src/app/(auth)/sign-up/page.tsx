@@ -3,7 +3,7 @@
 import { IntegratedButton, IntegratedButtonProps } from "@/components/core/button/integrated-button";
 import { Icon } from "@/components/core/icon/icon";
 import { IntegratedInputProps } from "@/components/core/input/integrated-input";
-import { GOOGLE_OAUTH2_ROUTE, SIGN_IN_ROUTE, SIGN_UP_EMAIL_VERIFICATION_ROUTE } from "@/const/routes-const";
+import { GOOGLE_OAUTH2_ROUTE, SIGN_IN_ROUTE, VERIFY_EMAIL_ROUTE } from "@/const/routes-const";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
 import { SignUpModel } from "@/model/sign-up-model";
 import { formService } from "@/service/form-service";
@@ -31,7 +31,7 @@ export default function SignUpPage() {
         SignUpModel,
         authRepository?.signUp,
         () => {
-            router.push(SIGN_UP_EMAIL_VERIFICATION_ROUTE);
+            router.push(VERIFY_EMAIL_ROUTE);
             setLoadingPage(true);
         }
     );

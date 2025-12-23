@@ -1,7 +1,5 @@
 import { map, Observable } from "rxjs";
 import { BaseRepository } from "./base-repository";
-import { flatten } from "lodash";
-import { types } from "util";
 
 const BASE_API_URL = process.env.NEXT_PUBLIC_API_URL + "/pm/projects";
 

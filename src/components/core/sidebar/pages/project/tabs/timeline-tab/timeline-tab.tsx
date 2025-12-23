@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
-import { calculateBarPosition, cn, dateToDayJs, findRecursive, getDaysDiff, getId, getOrthogonalPath, toDayJs } from "@/lib/utils";
+import { cn, findRecursive, getDaysDiff, getId, getOrthogonalPath, toDayJs } from "@/lib/utils";
 import { ProjectDependency, ProjectMembershipRole, ProjectTimelineStructure, TimelineItem, TimelineMilestone } from '@/model/project-management';
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
@@ -20,7 +20,6 @@ import { toast } from "sonner";
 import { TeamProjectContext, TeamProjectContextProps, TeamProjectTab } from '../../team-project-context';
 import { AddMilestoneCard } from "./components/add-milestone-card";
 import { TimelineRow } from "./components/timeline-row";
-import GanttBar from "./components/gantt-bar";
 import { HorizontalScrollbar } from "./components/horizontal-scroll-bar";
 dayjs.extend(isoWeek);
 
