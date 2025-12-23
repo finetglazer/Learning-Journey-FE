@@ -20,7 +20,6 @@ type FailedQueuePromise = {
 export class BaseRepository extends Repository {
   private static isRefreshing = false;
   private static failedQueue: FailedQueuePromise[] = [];
-  private userId: number;
 
   constructor(userId: number, baseApiUrl?: string) {
     super(baseApiConfig(baseApiUrl));

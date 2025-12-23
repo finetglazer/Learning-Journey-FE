@@ -33,6 +33,7 @@ import { PublicProfile } from "@/components/core/sidebar/pages/public-profile/pu
 import { TeamProjectSection } from "@/components/core/sidebar/sections/team-project-section";
 import { Button } from "@/components/ui/button";
 import { SIGN_IN_ROUTE } from "@/const/routes-const";
+import { NotificationFilter } from "@/model/notification";
 import { Project } from "@/model/project-management";
 import { useRouter } from "next/navigation";
 
@@ -48,7 +49,7 @@ export default function RootPage() {
   // [3]: Conifrm Delete Project Modal
   const [modalStates, setModalStates] = useState([false, false, false, false]);
   const [teamProjects, setTeamProjects] = useState<Project[]>([]);
-
+  
   const {
     setSleepHours,
     setLoadingPage,
@@ -225,7 +226,12 @@ export default function RootPage() {
 
   // --- Fetch user settings ---
   useEffect(() => {
-    if (!userRepository || !settingsRepository || !calendarRepository || !projectRepository || !userId) return;
+    if (!userRepository
+      || !settingsRepository
+      || !calendarRepository
+      || !projectRepository
+      || !userId
+    ) return;
 
     userRepository?.getProfile().subscribe({
       next: (res) => {
@@ -371,6 +377,7 @@ export default function RootPage() {
       },
       error: err => { },
     });
+
     return () => {
       subscription?.unsubscribe();
     }
@@ -402,7 +409,6 @@ export default function RootPage() {
     }
   }, [isModalOpen]);
 
-
   return (
     <TeamProjectContext.Provider value={useTeamProjectHooks(currentSelectedProject)}>
       <CalendarContext.Provider value={calendarContextValues as any}>
@@ -421,7 +427,6 @@ export default function RootPage() {
           {/* --- Headerbar --- */}
           <HeaderBar
             avatarUrl={avatarUrl}
-
             onSettingsClick={() => setCurrentView("settings")}
           />
 

@@ -9,6 +9,7 @@ import { UserRepository, userRepositoryCons } from "@/repository/user-repository
 import { isNil } from "lodash";
 import { createContext, Dispatch, SetStateAction, useEffect, useState } from "react";
 import Cookies from "js-cookie";
+import { NotificationRepository, notificationRepositoryCons } from "@/repository/notification-repository";
 
 export interface SleepHour {
     startTime: string;  // HH:mm
@@ -53,6 +54,7 @@ export interface AppContextProps {
     authRepository: AuthRepository | null;
     calendarRepository: CalendarRepository | null;
     documentRepository: DocumentRepository | null;
+    notificationRepository: NotificationRepository | null;
     projectRepository: ProjectRepository | null;
     settingsRepository: SettingsRepository | null;
     userRepository: UserRepository | null;
@@ -88,6 +90,7 @@ export const AppContext = createContext<AppContextProps>({
     authRepository: null,
     calendarRepository: null,
     documentRepository: null,
+    notificationRepository: null,
     projectRepository: null,
     settingsRepository: null,
     userRepository: null,
@@ -121,6 +124,7 @@ export const useAppHooks = (): AppContextProps => {
     const [authRepository, setAuthRepository] = useState<AuthRepository | null>(null);
     const [calendarRepository, setCalendarRepository] = useState<CalendarRepository | null>(null);
     const [documentRepository, setDocumentRepository] = useState<DocumentRepository | null>(null);
+    const [notificationRepository, setNotificationRepository] = useState<NotificationRepository | null>(null);
     const [projectRepository, setProjectRepository] = useState<ProjectRepository | null>(null);
     const [settingsRepository, setSettingsRepository] = useState<SettingsRepository | null>(null);
     const [userRepository, setUserRepository] = useState<UserRepository | null>(null);
@@ -145,6 +149,7 @@ export const useAppHooks = (): AppContextProps => {
         setDocumentRepository(documentRepositoryCons(userId));
         setProjectRepository(projectRepositoryCons(userId));
         setSettingsRepository(settingsRepositoryCons(userId));
+        setNotificationRepository(notificationRepositoryCons(userId));
         setUserRepository(userRepositoryCons(userId));
     }, [userId]);
 
@@ -177,6 +182,7 @@ export const useAppHooks = (): AppContextProps => {
         authRepository,
         calendarRepository,
         documentRepository,
+        notificationRepository,
         projectRepository,
         settingsRepository,
         userRepository,
