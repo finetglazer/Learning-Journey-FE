@@ -150,8 +150,12 @@ export const useNotificationStream = ({ userId, onNewNotification }: UseNotifica
             // Loop until healthy or aborted
             while (!signal.aborted) {
                 try {
+                    const token = localStorage.getItem("accessToken");
                     const healthRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications/health-check`, {
-                        signal // allows cancelling probe if component unmounts
+                        signal, // allows cancelling probe if component unmounts
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        }
                     });
 
                     if (healthRes.ok) {

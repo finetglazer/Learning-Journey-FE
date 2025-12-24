@@ -88,18 +88,19 @@ export const InviteMembersModal = ({
     currentSelectedProject,
     getTeamMembers,
 }: InviteMembersModalProps) => {
-    const [inviteEmail, setInviteEmail] = useState('');
+    const [inviteUser, setInviteUser] = useState<FetchedUser | null>(null);
     const [editingUserId, setEditingUserId] = useState<number | null>(null);
-
+    const [inviteEmail, setInviteEmail] = useState<string>('');
     const [searchResults, setSearchResults] = useState<FetchedUser[]>([]);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const debouncedSearchQuery = useDebounce(inviteEmail, 300);
+    const debouncedSearchQuery = useDebounce(inviteEmail || '', 300);
 
     const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
 
     const {
         selectedProject,
         currentMember,
+        setMembers,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
     const {
@@ -150,7 +151,7 @@ export const InviteMembersModal = ({
     ]);
 
     useEffect(() => {
-        if (!projectRepository) {
+        if (!projectRepository || !inviteEmail) {
             return;
         }
         if (debouncedSearchQuery) {
@@ -181,40 +182,46 @@ export const InviteMembersModal = ({
 
     const handleInvite = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!projectRepository) {
+        if (!projectRepository || !inviteUser) {
             return;
         }
-        if (inviteEmail) {
-            projectRepository.addMemberToProject({
-                projectId: currentSelectedProject?.id,
-            }, {
-                email: inviteEmail,
-            }).subscribe({
-                next: res => {
-                    if (res?.status) {
-                        toast.success(res?.message || res?.msg);
-                        setInviteEmail('');
-                        setIsDropdownOpen(false);
-                    }
-                    else {
-                        setAlertMessage({
-                            type: "warning",
-                            title: res?.msg || res?.message,
-                            description: res?.data
-                        });
-                    }
-                },
-                error: err => {
-                    const errors = err?.response?.data?.data;
-                    const message = err?.response?.data?.msg || err?.response?.data?.message;
+        projectRepository.addMemberToProject({
+            projectId: currentSelectedProject?.id,
+        }, {
+            email: inviteUser?.email,
+        }).subscribe({
+            next: res => {
+                if (res?.status) {
+                    toast.success(res?.message || res?.msg);
+                    setInviteUser(null);
+                    setIsDropdownOpen(false);
+                    setMembers(prev => [...prev, {
+                        userId: inviteUser?.userId,
+                        name: inviteUser?.name,
+                        avatarUrl: inviteUser?.avatarUrl,
+                        email: inviteUser?.email,
+                        customRoleName: "",
+                        role: ProjectMembershipRole.INVITED,
+                    }]);
+                }
+                else {
                     setAlertMessage({
                         type: "warning",
-                        title: message,
-                        description: errors,
+                        title: res?.msg || res?.message,
+                        description: res?.data
                     });
-                },
-            })
-        }
+                }
+            },
+            error: err => {
+                const errors = err?.response?.data?.data;
+                const message = err?.response?.data?.msg || err?.response?.data?.message;
+                setAlertMessage({
+                    type: "warning",
+                    title: message,
+                    description: errors,
+                });
+            },
+        })
     };
 
     const handleRemoveMember = (memberToRemove: TeamMember) => {
@@ -244,6 +251,7 @@ export const InviteMembersModal = ({
 
     // --- 5. New handler for selecting a user from dropdown ---
     const handleSelectUser = (user: FetchedUser) => {
+        setInviteUser(user);
         setInviteEmail(user.email);
         setIsDropdownOpen(false);
     };

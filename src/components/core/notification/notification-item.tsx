@@ -77,14 +77,14 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
                         {isRead ? (
                             <button
                                 onClick={(e) => { e.stopPropagation(); onMarkUnread(notification.id); }}
-                                className="text-blue-500 cursor-pointer hover:text-blue-700 font-medium hover:underline"
+                                className="text-[#33BFFF] cursor-pointer hover:text-blue-700 font-medium hover:underline"
                             >
                                 Mark unread
                             </button>
                         ) : canMarkRead ? (
                             <button
                                 onClick={(e) => { e.stopPropagation(); onMarkRead(notification.id); }}
-                                className="text-blue-500 cursor-pointer hover:text-blue-700 font-medium hover:underline"
+                                className="text-[#33BFFF] cursor-pointer hover:text-blue-700 font-medium hover:underline"
                             >
                                     Mark as read
                                 </button>
@@ -93,7 +93,7 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
                         {canDelete && (
                             <button
                                 onClick={(e) => { e.stopPropagation(); onDelete(notification.id); }}
-                                className="text-red-500 cursor-pointer hover:text-red-700 flex items-center gap-1 hover:underline cursor-pointer font-medium"
+                                className="text-gray-400 cursor-pointer hover:text-red-500 flex items-center gap-1 hover:underline cursor-pointer font-medium"
                             >
                                 Delete
                             </button>

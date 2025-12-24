@@ -2,12 +2,15 @@
 
 import { AppContext } from '@/hooks/app-context';
 import { useNotificationStream } from '@/hooks/use-notification-stream';
-import { Notification, NotificationFilter } from '@/model/notification';
+import { InvitationStatus, Notification, NotificationFilter } from '@/model/notification';
 import { Search, Settings } from 'lucide-react';
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { finalize } from 'rxjs';
 import { toast } from 'sonner';
 import { NotificationBox } from '../notification/notification-box';
+import { TeamProjectContext, TeamProjectContextProps } from '../sidebar/pages/project/team-project-context';
+import { ProjectMembershipRole } from '@/model/project-management';
+import { isNil } from 'lodash';
 
 export interface HeaderBarProps {
     onSettingsClick?: () => void;
@@ -31,6 +34,12 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
     const [hasMoreAll, setHasMoreAll] = useState(true);
     const [isLoadingGetAll, setIsLoadingGetAll] = useState(false);
     const [isLoadingGetUnread, setIsLoadingGetUnread] = useState(false);
+
+    const {
+        selectedProject,
+        setMembers,
+        members,
+    } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
     const handleLoadMoreAll = useCallback(() => {
         if (isLoadingGetAll || !hasMoreAll || !notificationRepository) return;
@@ -177,6 +186,31 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
     useNotificationStream({
         userId: userId ?? null,
         onNewNotification: (newNotification) => {
+            if (selectedProject?.id === newNotification.referenceId) {
+                const invitationStatus = newNotification.invitationStatus;
+                if (invitationStatus === InvitationStatus.ACCEPTED) {
+                    // Member is already in the project with INVITED status, now change to MEMBER
+                    const updateMember = members.find(m => m.userId === newNotification.sender.id);
+                    if (updateMember) {
+                        updateMember.role = ProjectMembershipRole.MEMBER;
+                        const updatedMembers = [...members];
+                        const i = updatedMembers.findIndex(m => m.userId === updateMember.userId);
+                        if (!isNil(i)) {
+                            updatedMembers[i] = updateMember;
+                            setMembers(updatedMembers);
+                        }
+                    }
+                }
+                else if (invitationStatus === InvitationStatus.DECLINED || invitationStatus === InvitationStatus.EXPIRED) {
+                    // Member is already in the project with INVITED status, now remove that person
+                    const updatedMembers = [...members];
+                    const i = updatedMembers.findIndex(m => m.userId === newNotification.sender.id);
+                    if (!isNil(i)) {
+                        updatedMembers.splice(i, 1);
+                        setMembers(updatedMembers);
+                    }
+                }
+            }
             setUnreadNotifications(prev => [newNotification, ...prev]);
             setAllNotifications(prev => [newNotification, ...prev]);
             toast.info(`New notification: ${newNotification.contentMessage}`);

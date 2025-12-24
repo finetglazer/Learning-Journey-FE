@@ -277,7 +277,7 @@ export const NotificationBox: React.FC<NotificationBoxProps> = ({
                     </div>
 
                     <ScrollArea
-                        className="h-[500px] w-full bg-white"
+                        className="h-auto max-h-[400px] w-full bg-white"
                         viewportId="notification-scroll-viewport"
                     >
                         {/* INBOX CONTENT TAB */}
