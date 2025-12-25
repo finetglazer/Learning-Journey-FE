@@ -89,9 +89,9 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
 
     return (
         <>
-            <Card className="w-full h-full mx-auto rounded-xl shadow-lg bg-slate-50/50 p-0">
+            <Card className="w-full h-full mx-auto rounded-xl shadow-lg bg-slate-50/50 p-0 gap-0">
                 {/* ====== Header (Same as before) ====== */}
-                <CardHeader ref={headerRef} className="grid grid-cols-[auto_1fr_auto] items-center p-4 border-b-0 border-gray-200 bg-slate-100/60 rounded-t-xl">
+                <CardHeader ref={headerRef} className="grid grid-cols-[auto_1fr_auto] items-center p-4 border-b-0 border-gray-200 bg-white rounded-t-xl">
                     <div className="text-sm font-semibold text-slate-600 whitespace-nowrap">
                         Private calendar / <span className="text-slate-800">Week View</span>
                     </div>
@@ -118,11 +118,11 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                 {/* ====== Calendar Table ====== */}
                 <CardContent className="p-0 h-full">
                     {/* Scroll container */}
-                    <div className="relative flex pr-4">
+                    <div className="relative flex pr-4 bg-white">
                         <Table>
                             <TableHeader className="sticky top-0 bg-white z-10">
                                 <TableRow>
-                                    <TableHead className="min-w-6 max-w-6 text-left border-b border-gray-200"> {/* Added border */}
+                                    <TableHead className="min-w-6 max-w-6 text-left border-b border-gray-200 bg-white">
                                         <Clock className="w-4 h-4 mx-auto text-slate-400" />
                                     </TableHead>
                                     {DAYS_OF_WEEK.map((day, index) => {
@@ -131,7 +131,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                         return (
                                             <TableHead
                                                 key={content}
-                                                className="text-center font-medium text-slate-600 max-w-16.5 min-w-16.5 p-2 border-b border-gray-200"
+                                                className="text-center font-medium text-slate-600 max-w-16.5 min-w-16.5 p-2 border-b border-gray-200 bg-white"
                                             >
                                                 <span>{content}</span>
                                             </TableHead>

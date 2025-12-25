@@ -54,10 +54,11 @@ export const ProjectHeader = ({
     // 🆕 RBAC Check
     const canDelete = currentMember?.role === ProjectMembershipRole.OWNER;
 
-    // Avatar list logic
+    // Avatar list logic - filter out INVITED members
     const MAX_AVATARS = 6;
-    const membersToShow = members.slice(0, MAX_AVATARS);
-    const remainingMembers = members.slice(MAX_AVATARS);
+    const activeMembers = members.filter(member => member.role !== ProjectMembershipRole.INVITED);
+    const membersToShow = activeMembers.slice(0, MAX_AVATARS);
+    const remainingMembers = activeMembers.slice(MAX_AVATARS);
     const remainingCount = remainingMembers.length;
 
 

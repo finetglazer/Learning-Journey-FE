@@ -156,7 +156,7 @@ export const InviteMembersModal = ({
         }
         if (debouncedSearchQuery) {
             projectRepository.findUsersByEmail({
-                email: inviteEmail,
+                email: inviteEmail.toLowerCase(),
                 projectId: currentSelectedProject?.id,
             }).subscribe({
                 next: res => {
