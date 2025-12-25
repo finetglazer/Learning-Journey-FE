@@ -6,8 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppContext } from "@/hooks/app-context";
 import { Notification, NotificationType, InvitationStatus } from "@/model/notification";
 import { Bell, Check, Loader2, Trash2 } from "lucide-react";
-import React, { useCallback, useContext, useState } from "react";
-import InfiniteScroll from "react-infinite-scroll-component";
+import React, { useCallback, useContext, useMemo, useState } from "react";
+import InfiniteScrollComponent from "react-infinite-scroll-component";
+const InfiniteScroll = InfiniteScrollComponent as any;
 import { toast } from "sonner";
 import { NotificationItem } from "./notification-item";
 import { finalize } from "rxjs";
@@ -44,6 +45,9 @@ export const NotificationBox: React.FC<NotificationBoxProps> = ({
     const [activeTab, setActiveTab] = useState("inbox");
     const [loadingNotificationId, setLoadingNotificationId] = useState<number | null>(null);
     const unreadCount = unreadNotifications.length;
+
+    // Stable callback functions for InfiniteScroll to prevent warnings
+    const noOpLoadMore = useMemo(() => () => { }, []);
 
     const handleDeleteReadNotifications = useCallback(() => {
         const numberOfReadNotifications = allNotifications.filter(n => n.isRead && n.invitationStatus !== InvitationStatus.NONE && n.invitationStatus !== InvitationStatus.PENDING).length;
@@ -226,24 +230,24 @@ export const NotificationBox: React.FC<NotificationBoxProps> = ({
                     )}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[450px] p-0 shadow-xl border-gray-200" align="end">
+            <PopoverContent className="w-[450px] p-0 shadow-xl border-gray-200 rounded-[15px] overflow-hidden" align="end">
                 <Tabs defaultValue="inbox" value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white rounded-t-[15px]">
                         <TabsList className="bg-transparent p-0 h-auto gap-4">
                             <TabsTrigger
                                 value="inbox"
-                                className="bg-transparent p-0 pb-1 cursor-pointer rounded-none border-b-2 border-transparent data-[state=active]:border-b-blue-600 data-[state=active]:text-blue-600 data-[state=active]:shadow-none font-semibold text-gray-500 transition-all hover:text-gray-900"
+                                className="bg-transparent p-0 pb-1 cursor-pointer rounded-none border-b-2 border-transparent data-[state=active]:border-b-[#91FFD9] data-[state=active]:text-[#91FFD9] data-[state=active]:shadow-none font-semibold text-gray-500 transition-all hover:text-gray-900"
                             >
                                 Inbox
                                 {unreadCount > 0 && (
-                                    <span className="ml-2 bg-blue-100 text-blue-600 text-xs px-1.5 py-0.5 rounded-sm">
+                                    <span className="ml-2 bg-[#91FFD9]/20 text-[#91FFD9] text-xs px-1.5 py-0.5 rounded-sm">
                                         {unreadCount}
                                     </span>
                                 )}
                             </TabsTrigger>
                             <TabsTrigger
                                 value="all"
-                                className="bg-transparent p-0 pb-1 cursor-pointer rounded-none border-b-2 border-transparent data-[state=active]:border-b-blue-600 data-[state=active]:text-blue-600 data-[state=active]:shadow-none font-semibold text-gray-500 transition-all hover:text-gray-900"
+                                className="bg-transparent p-0 pb-1 cursor-pointer rounded-none border-b-2 border-transparent data-[state=active]:border-b-[#91FFD9] data-[state=active]:text-[#91FFD9] data-[state=active]:shadow-none font-semibold text-gray-500 transition-all hover:text-gray-900"
                             >
                                 All
                             </TabsTrigger>
@@ -254,30 +258,28 @@ export const NotificationBox: React.FC<NotificationBoxProps> = ({
                     <div className="bg-gray-50/50 border-b border-gray-100 px-4 py-2 flex justify-center">
                         {activeTab === "inbox" ? (
                             <Button
-                                variant="ghost"
+                                variant="outline"
                                 size="sm"
-                                className="w-full text-gray-500 hover:text-blue-600 cursor-pointer hover:bg-blue-50 h-8 text-xs font-medium cursor-pointer"
+                                className="w-full text-gray-600 h-8 text-xs font-normal cursor-pointer border-gray-300 hover:bg-gray-50"
                                 onClick={handleMarkAllRead}
                                 disabled={unreadCount === 0}
                             >
-                                <Check className="w-3.5 h-3.5 mr-2" />
                                 Mark all as read
                             </Button>
                         ) : (
                             <Button
-                                variant="ghost"
+                                variant="outline"
                                 size="sm"
-                                className="w-full text-gray-500 hover:text-red-600 cursor-pointer hover:bg-red-50 h-8 text-xs font-medium cursor-pointer"
+                                className="w-full text-gray-600 h-8 text-xs font-normal cursor-pointer border-gray-300 hover:bg-gray-50"
                                 onClick={handleDeleteReadNotifications}
                             >
-                                <Trash2 className="w-3.5 h-3.5 mr-2" />
                                 Clear read notifications
                             </Button>
                         )}
                     </div>
 
                     <ScrollArea
-                        className="h-auto max-h-[400px] w-full bg-white"
+                        className="h-[400px] w-full bg-white"
                         viewportId="notification-scroll-viewport"
                     >
                         {/* INBOX CONTENT TAB */}
@@ -291,14 +293,16 @@ export const NotificationBox: React.FC<NotificationBoxProps> = ({
                                 <div className="flex flex-col">
                                     <InfiniteScroll
                                         dataLength={unreadNotifications.length}
-                                        next={onLoadMoreUnread || (() => { })}
-                                        hasMore={!!hasMoreUnread}
+                                        next={onLoadMoreUnread || noOpLoadMore}
+                                        hasMore={hasMoreUnread === true}
                                         loader={
                                             <div className="h-4 w-full flex items-center justify-center p-2">
                                                 <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
                                             </div>
                                         }
                                         scrollableTarget="notification-scroll-viewport"
+                                        scrollThreshold={0.9}
+                                        style={{ overflow: 'visible' }}
                                         endMessage={
                                             <p className="text-center text-xs text-gray-400 py-2">
                                                 No more notifications
@@ -352,14 +356,16 @@ export const NotificationBox: React.FC<NotificationBoxProps> = ({
                                 <div className="flex flex-col">
                                     <InfiniteScroll
                                         dataLength={allNotifications.length}
-                                        next={onLoadMoreAll || (() => { })}
-                                        hasMore={!!hasMoreAll}
+                                        next={onLoadMoreAll || noOpLoadMore}
+                                        hasMore={hasMoreAll === true}
                                         loader={
                                             <div className="h-4 w-full flex items-center justify-center p-2">
                                                 <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
                                             </div>
                                         }
                                         scrollableTarget="notification-scroll-viewport"
+                                        scrollThreshold={0.9}
+                                        style={{ overflow: 'visible' }}
                                         endMessage={
                                             <p className="text-center text-xs text-gray-400 py-2">
                                                 No more notifications

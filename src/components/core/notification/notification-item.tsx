@@ -86,9 +86,9 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
                                 onClick={(e) => { e.stopPropagation(); onMarkRead(notification.id); }}
                                 className="text-[#33BFFF] cursor-pointer hover:text-blue-700 font-medium hover:underline"
                             >
-                                    Mark as read
-                                </button>
-                            ) : null}
+                                Mark as read
+                            </button>
+                        ) : null}
 
                         {canDelete && (
                             <button
@@ -124,7 +124,7 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
                             <>
                                 <Button
                                     size="sm"
-                                    className="h-7 text-xs cursor-pointer bg-green-500 hover:bg-green-600 text-white border-none flex items-center gap-2"
+                                    className="h-7 text-xs cursor-pointer bg-[#91FFA2] hover:bg-[#7de88a] text-white border-none flex items-center gap-2"
                                     onClick={() => onAcceptInvitation && onAcceptInvitation(notification)}
                                 >
                                     Accept
