@@ -266,6 +266,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         <HeaderBar
                             avatarUrl={avatarUrl}
                             onSettingsClick={() => router.push(getSettingsRoute("profile"))}
+                            onView={(url) => router.push(url)}
                         />
 
                         <div className="flex">

@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { AppContext, AppContextProps } from '@/hooks/app-context';
 import { PM_Task, PM_TaskAssignee, ProjectMembershipRole, TaskPriority, TaskStatus, TeamMember } from '@/model/project-management';
@@ -449,6 +449,7 @@ function PM_TaskItemBase({ task, onUpdateTask, onDeleteTask }: TaskItemProps) {
                 else setIsDetailDrawerOpen(true);
             }}>
                 <SheetContent side="right" className="w-full sm:max-w-lg p-0">
+                    <SheetTitle className="sr-only">Task Details</SheetTitle>
                     <div className="absolute top-4 right-4 z-50">
                         <button aria-label="Close" className="opacity-0 cursor-pointer" onClick={(e) => {
                             e.stopPropagation();
