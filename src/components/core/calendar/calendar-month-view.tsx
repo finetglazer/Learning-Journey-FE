@@ -68,8 +68,8 @@ export function CalendarMonthView() {
     const router = useRouter();
 
     return (
-        <Card className="w-full h-[100vh] mx-auto rounded-xl shadow-lg bg-white p-0 flex flex-col">
-            <CardHeader className="grid grid-cols-[auto_1fr_auto] items-center p-4 border-b-0 border-gray-200 bg-slate-100/60 rounded-t-xl">
+        <Card className="w-full h-[100vh] mx-auto rounded-xl shadow-lg bg-white p-0 flex flex-col gap-0">
+            <CardHeader className="grid grid-cols-[auto_1fr_auto] items-center p-4 border-b-0 border-gray-200 bg-white rounded-t-xl">
                 <div className="text-sm font-semibold text-slate-600 whitespace-nowrap">
                     Private calendar / <span className="text-slate-800">Month View</span>
                 </div>

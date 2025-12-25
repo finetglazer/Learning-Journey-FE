@@ -162,7 +162,7 @@ export default function RootPage() {
           icon: <Users size={16} />,
           onClick: (e: any) => {
             e.stopPropagation();
-            router.push(getProjectDetailRoute(project.id, "summary"));
+            router.push(  getProjectDetailRoute(project.id, "summary"));
           },
         }
       })

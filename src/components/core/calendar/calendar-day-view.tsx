@@ -74,7 +74,7 @@ export const CalendarDayView = () => {
     return (
         <Card className="w-full h-[100%] mx-auto rounded-xl shadow-lg bg-slate-50/50 p-0">
             {/* ====== Header (Same as before) ====== */}
-            <CardHeader ref={headerRef} className="grid grid-cols-[auto_1fr_auto] items-center p-4 border-gray-200 border-b-0 bg-slate-100/60 rounded-t-xl">
+            <CardHeader ref={headerRef} className="grid grid-cols-[auto_1fr_auto] items-center p-4 border-gray-200 border-b-0 bg-white rounded-t-xl">
                 <div className="text-sm font-semibold text-slate-600 whitespace-nowrap">
                     Private calendar / <span className="text-slate-800">Day View</span>
                 </div>
