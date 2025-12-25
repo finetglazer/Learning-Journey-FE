@@ -244,22 +244,6 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
                 </button>
             </div>
 
-            {/* Center Section: Search Bar */}
-            {/* This uses absolute positioning to ensure it's perfectly centered */}
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-                <div className="relative">
-                    <Search
-                        size={18}
-                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
-                    />
-                    <input
-                        type="text"
-                        placeholder="Search"
-                        className="w-64 sm:w-96 rounded-md border border-gray-300 bg-white py-2 pl-10 pr-4 text-sm
-                                   focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                </div>
-            </div>
 
             {/* Right Section: Icons and Avatar */}
             <div className="flex items-center gap-3">
