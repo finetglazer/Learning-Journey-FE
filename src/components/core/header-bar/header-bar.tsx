@@ -57,7 +57,10 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
                     if (res?.status) {
                         const newNotes = res.data?.notifications || [];
                         if (newNotes.length < 50) setHasMoreAll(false);
-                        setAllNotifications(prev => [...prev, ...newNotes]);
+                        setAllNotifications(prev => {
+                            const newUniqueNotes = newNotes.filter((n: Notification) => !prev.some(p => p.id === n.id));
+                            return [...prev, ...newUniqueNotes];
+                        });
                         setAllPage(nextPage);
                     }
                     else {
@@ -89,7 +92,10 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
                     if (res?.status) {
                         const newNotes = res.data?.notifications || [];
                         if (newNotes.length < 50) setHasMoreUnread(false);
-                        setUnreadNotifications(prev => [...prev, ...newNotes]);
+                        setUnreadNotifications(prev => {
+                            const newUniqueNotes = newNotes.filter((n: Notification) => !prev.some(p => p.id === n.id));
+                            return [...prev, ...newUniqueNotes];
+                        });
                         setUnreadPage(nextPage);
                     }
                 },
@@ -211,8 +217,14 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
                     }
                 }
             }
-            setUnreadNotifications(prev => [newNotification, ...prev]);
-            setAllNotifications(prev => [newNotification, ...prev]);
+            setUnreadNotifications(prev => {
+                if (prev.some(n => n.id === newNotification.id)) return prev;
+                return [newNotification, ...prev];
+            });
+            setAllNotifications(prev => {
+                if (prev.some(n => n.id === newNotification.id)) return prev;
+                return [newNotification, ...prev];
+            });
             toast.info(`New notification: ${newNotification.contentMessage}`);
         }
     });

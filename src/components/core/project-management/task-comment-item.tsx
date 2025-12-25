@@ -75,11 +75,9 @@ export const TaskCommentItem = ({
                                             <Pencil size={14} />
                                         </Button>
                                     )}
-                                    {isOwner && (
-                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 cursor-pointer hover:text-red-500" onClick={() => onDelete(comment.commentId)}>
-                                            <Trash2 size={14} />
-                                        </Button>
-                                    )}
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 cursor-pointer hover:text-red-500" onClick={() => onDelete(comment.commentId)}>
+                                        <Trash2 size={14} />
+                                    </Button>
                                 </>
                             )}
                         </div>
