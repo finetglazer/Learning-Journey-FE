@@ -71,6 +71,22 @@ export class ProjectRepository extends BaseRepository {
             .pipe(map(res => res?.data));
     };
 
+    /**
+     * Fetches lightweight skeleton structure (deliverables + phases only, no tasks)
+     * Used for initial page load to reduce payload size
+     */
+    public getProjectSkeleton = (params: { projectId: string | number }): Observable<any> => {
+        return this.http.get(`/${params.projectId}/deliverables/structure/skeleton`);
+    };
+
+    /**
+     * Fetches tasks for a specific phase (lazy loading)
+     * Used when user expands a phase to view its tasks
+     */
+    public getTasksByPhase = (params: { projectId: string | number, phaseId: number }): Observable<any> => {
+        return this.http.get(`/${params.projectId}/phases/${params.phaseId}/tasks`);
+    };
+
     public createDeliverable = (params: any, body: any): Observable<any> => {
         return this.http.post(`/${params.projectId}/deliverables`, body)
             .pipe(map(res => res?.data));

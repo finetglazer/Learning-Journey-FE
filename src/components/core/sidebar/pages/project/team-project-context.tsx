@@ -120,55 +120,70 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         projectRepository,
     } = useContext<AppContextProps>(AppContext);
 
+    // Full structure API - Used ONLY for search (loads all tasks)
     const getProjectStructure = useCallback((searchWithParam?: boolean, searchParam?: string) => {
         if (!projectRepository || !currentSelectedProject) return () => { };
+
+        const searchTerm = searchWithParam ? searchParam || "" : search || "";
         const subscription = projectRepository.getProjectStructure({
             projectId: currentSelectedProject?.id,
-            search: searchWithParam ? searchParam || "" : search || "",
+            search: searchTerm,
         }).subscribe({
             next: res => {
                 if (res?.status) {
-                    const projectDeliverables = res?.data?.data || [];
-                    // --- AUTO-EXPANSION LOGIC START ---
-                    const isSearching = search && search.trim() !== "";
+                    const isSearching = searchTerm.trim().length > 0;
+                    const data = res?.data || [];
+
                     const newExpandedDeliverables = new Set<string>();
                     const newExpandedPhases = new Set<string>();
-                    // --- AUTO-EXPANSION LOGIC END ---
-                    const updatedProjectDeliverables = projectDeliverables.map((deliverable: any) => {
-                        const deliverableIdStr = `del-${deliverable.id}`;
 
-                        // --- AUTO-EXPANSION LOGIC START ---
-                        // 1. Check if the DELIVERABLE itself contains a keyword match (deep or shallow)
+                    // Transform structure data
+                    const transformedData = data.map((deliverable: any) => {
+                        const deliverableIdStr = `deliverable-${deliverable.id}`;
+
+                        // Auto-expand deliverables with matches during search
                         if (isSearching && deliverable.hasChildContainKeyword) {
                             newExpandedDeliverables.add(deliverableIdStr);
                         }
-                        // --- AUTO-EXPANSION LOGIC END ---
 
                         const updatedProjectPhases = (deliverable.phases || []).map((phase: any) => {
                             const phaseIdStr = `phase-${phase.id}`;
 
-                            // --- AUTO-EXPANSION LOGIC START ---
-                            // 2. Check if the PHASE itself contains a keyword match (deep or shallow)
+                            // Auto-expand phases with matches during search
                             if (isSearching && phase.hasChildContainKeyword) {
                                 newExpandedPhases.add(phaseIdStr);
                             }
-                            // --- AUTO-EXPANSION LOGIC END ---
 
                             const tasks = (phase.tasks || []).map((task: any) => {
                                 const taskIdStr = `task-${task.id}`;
                                 return {
-                                    ...task, taskId: task.id, taskIdStr, phaseId: phase.id, phaseIdStr,
+                                    ...task,
+                                    taskId: task.id,
+                                    taskIdStr,
+                                    phaseId: phase.id,
+                                    phaseIdStr,
                                     status: task.status.toUpperCase().split(/\s+/).join("_"),
                                     priority: task.priority.toUpperCase(),
                                 };
                             });
                             return {
-                                ...phase, tasks, phaseId: phase.id, phaseIdStr, deliverableId: deliverable.id, deliverableIdStr,
+                                ...phase,
+                                tasks,
+                                phaseId: phase.id,
+                                phaseIdStr,
+                                deliverableId: deliverable.id,
+                                deliverableIdStr,
                             };
                         });
-                        return { ...deliverable, phases: updatedProjectPhases, deliverableId: deliverable.id, deliverableIdStr };
+                        return {
+                            ...deliverable,
+                            phases: updatedProjectPhases,
+                            deliverableId: deliverable.id,
+                            deliverableIdStr
+                        };
                     });
 
+                    // Auto-expand search results
                     setExpandedDeliverables(prevExpanded => {
                         if (isSearching) {
                             return newExpandedDeliverables;
@@ -182,20 +197,20 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
                         }
                         return prevExpanded;
                     });
-                    setDeliverables(updatedProjectDeliverables);
 
-                    // --- AUTO-EXPANSION LOGIC END ---
+                    setDeliverables(transformedData);
+                    setOverallLoading(false);
                 } else {
-                    toast.error(res?.message || res?.msg);
+                    setOverallLoading(false);
                 }
             },
-            error: err => { },
+            error: () => {
+                setOverallLoading(false);
+            },
         });
 
-        return () => {
-            subscription.unsubscribe();
-        };
-    }, [currentSelectedProject, setIsReordering, search, setExpandedDeliverables, setExpandedPhases, projectRepository]);
+        return () => subscription.unsubscribe();
+    }, [currentSelectedProject, projectRepository, search, setDeliverables, setExpandedDeliverables, setExpandedPhases, setOverallLoading]);
 
     const getTeamMembers = useCallback(() => {
         if (!projectRepository || !currentSelectedProject) return;
@@ -317,15 +332,15 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
                 next: res => {
                     if (res?.status) {
                         toast.success(res?.message || res?.msg);
-                        getProjectStructure();
+                        // getProjectStructure(); // Disabled - list tab handles its own refetch via React Query
                     }
                     else {
                         toast.error(res?.msg || res?.message)
-                        getProjectStructure();
+                        // getProjectStructure(); // Disabled - list tab handles its own refetch via React Query
                     }
                 },
                 error: err => {
-                    getProjectStructure();
+                    // getProjectStructure(); // Disabled - list tab handles its own refetch via React Query
                 },
             });
 
@@ -348,12 +363,12 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         }
         if (currentSelectedProject) {
             getTeamMembers();
-            getProjectStructure();
+            // getProjectStructure(); // Disabled - list tab handles its own data fetch via React Query
         }
 
         // 3. 🎯 Reset ALL states related to the previous project structure
         // This ensures a clean slate when switching projects or initializing.
-        setDeliverables([]);
+        // setDeliverables([]); // Disabled - list tab manages its own deliverables via React Query
         setSearch("");
         setScrollToItem("");
         setExpandedDeliverables(new Set());
@@ -367,7 +382,7 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
     useEffect(() => {
         if (tab !== TeamProjectTab.LIST && search) {
             setSearch("");
-            getProjectStructure(true, "");
+            // getProjectStructure(true, ""); // Disabled - list tab handles its own data via React Query
         }
     }, [tab]);
 
