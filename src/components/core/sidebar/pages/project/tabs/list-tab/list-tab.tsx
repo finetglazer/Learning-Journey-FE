@@ -30,6 +30,7 @@ export const ListTab = ({ }: ListTabProps) => {
 
     const {
         selectedProject,
+        getProjectStructure,
         deliverables,
         isReordering,
         setDeliverables,
@@ -75,7 +76,7 @@ export const ListTab = ({ }: ListTabProps) => {
 
     // Sync skeleton data with context
     useEffect(() => {
-        // BUGFIX: Extract data array from response object
+        // Extract data array from response object if needed
         const dataArray = skeletonData?.data || skeletonData;
 
         if (dataArray && Array.isArray(dataArray)) {
@@ -88,13 +89,27 @@ export const ListTab = ({ }: ListTabProps) => {
                     ...phase,
                     phaseId: phase.id,
                     phaseIdStr: String(phase.id),
-                    tasks: [], // Empty for now - will be lazy loaded in Phase 6
+                    tasks: [], // Empty for now - will be lazy loaded
                 })) || [],
             }));
 
             setDeliverables(transformedData);
         }
     }, [skeletonData, setDeliverables]);
+
+    // 🔍 Search Mode Toggle: Switch between skeleton (lazy) and structure (search) APIs
+    useEffect(() => {
+        if (!selectedProject?.id) return;
+
+        if (search && search.trim().length > 0) {
+            // SEARCH MODE: Use full structure API (loads all tasks for search)
+            console.log('🔍 Search mode activated - using structure API');
+            const cleanup = getProjectStructure();
+            return cleanup;
+        }
+        // LAZY MODE: React Query auto-handles skeleton fetch (no manual refetch needed)
+        console.log('⚡ Lazy mode - React Query handles skeleton');
+    }, [search, selectedProject?.id, getProjectStructure]);
 
     // RBAC Check
     const canEditStructure = currentMember?.role === ProjectMembershipRole.OWNER;

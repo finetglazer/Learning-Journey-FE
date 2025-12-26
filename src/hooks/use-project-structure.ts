@@ -40,8 +40,10 @@ export function useProjectSkeleton(projectId: string | undefined) {
             });
         },
         enabled: !!projectId && !!projectRepository,
-        staleTime: 5 * 60 * 1000, // 5 minutes
-        gcTime: 10 * 60 * 1000,
+        staleTime: 60 * 1000, // 1 minute - fresher data for team collaboration
+        gcTime: 10 * 60 * 1000, // 10 minutes - keep cache warm
+        refetchOnWindowFocus: true, // Auto-refresh when returning from other apps/tabs
+        refetchOnMount: true, // Auto-refresh stale data when navigating between pages
     });
 }
 
@@ -78,7 +80,8 @@ export function usePhaseTasksQuery(
             });
         },
         enabled: enabled && !!projectId && !!phaseId && !!projectRepository,
-        staleTime: 5 * 60 * 1000, // 5 minutes
-        gcTime: 10 * 60 * 1000,
+        staleTime: 60 * 1000, // 1 minute - fresher data for team collaboration
+        gcTime: 10 * 60 * 1000, // 10 minutes - keep cache warm
+        refetchOnWindowFocus: true, // Auto-refresh when returning from other apps/tabs
     });
 }
