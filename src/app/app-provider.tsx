@@ -2,6 +2,7 @@
 
 import LoadingPage from "@/components/core/loading-page/loading-page";
 import { AppContext, useAppHooks } from "@/hooks/app-context";
+import { QueryProvider } from "@/providers/query-provider";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 
@@ -20,8 +21,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const loadingPageDescription = "Just a moment! We're pouring the coffee and fluffing the pixels to make everything perfect for you";
 
     return (
-        <AppContext.Provider value={appHooks}>
-            {loadingPage ? <LoadingPage title={loadingPageTitle} description={loadingPageDescription} /> : children}
-        </AppContext.Provider>
+        <QueryProvider>
+            <AppContext.Provider value={appHooks}>
+                {loadingPage ? <LoadingPage title={loadingPageTitle} description={loadingPageDescription} /> : children}
+            </AppContext.Provider>
+        </QueryProvider>
     );
 }

@@ -17,6 +17,7 @@ import SpinnerLoader from "@/components/core/loader/spinner-loader";
 import { debounce } from "lodash";
 import { finalize } from "rxjs";
 import { EmptyData } from "@/components/core/project-management/empty-data";
+import { useProjectSkeleton } from "@/hooks/use-project-structure";
 
 export interface ListTabProps { };
 
@@ -26,10 +27,9 @@ export const ListTab = ({ }: ListTabProps) => {
     const [isAddingDeliverable, setIsAddingDeliverable] = useState(false);
     const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
     const scrollContainerRef = useRef(null);
-    const [fetching, setFetching] = useState(false);
+
     const {
         selectedProject,
-        getProjectStructure,
         deliverables,
         isReordering,
         setDeliverables,
@@ -47,12 +47,98 @@ export const ListTab = ({ }: ListTabProps) => {
         setIsNavigatingFromTaskBoard,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
-    const {
-        projectRepository,
-    } = useContext<AppContextProps>(AppContext);
+    const { projectRepository } = useContext<AppContextProps>(AppContext);
+
+    // 🆕 React Query: Fetch skeleton structure
+    const { data: skeletonData, isLoading: isFetchingSkeleton, refetch: refetchSkeleton } = useProjectSkeleton(selectedProject?.id?.toString());
+
+    // 🆕 Phase 6: Track lazily-loaded tasks per phase
+    const [phaseTasks, setPhaseTasks] = useState<Record<number, any[]>>({});
+
+    // 🆕 Track loading state per phase for skeleton UI
+    const [phaseLoadingStates, setPhaseLoadingStates] = useState<Record<number, boolean>>({});
+
+    // Merge skeleton deliverables with lazily-loaded tasks for rendering
+    const mergedDeliverables = useMemo(() => {
+        const result = deliverables.map(deliverable => ({
+            ...deliverable,
+            phases: deliverable.phases?.map(phase => ({
+                ...phase,
+                tasks: phaseTasks[phase.phaseId] || phase.tasks || [], // Use loaded tasks or empty
+                isLoadingTasks: phaseLoadingStates[phase.phaseId] || false, // Track loading state
+            })) || [],
+        }));
+        console.log('🔀 mergedDeliverables recalculated:', result);
+        console.log('🔀 phaseTasks state:', phaseTasks);
+        return result;
+    }, [deliverables, phaseTasks, phaseLoadingStates]);
+
+    // Sync skeleton data with context
+    useEffect(() => {
+        // BUGFIX: Extract data array from response object
+        const dataArray = skeletonData?.data || skeletonData;
+
+        if (dataArray && Array.isArray(dataArray)) {
+            // Transform skeleton data to match frontend structure
+            const transformedData = dataArray.map((deliverable: any) => ({
+                ...deliverable,
+                deliverableId: deliverable.id,
+                deliverableIdStr: String(deliverable.id),
+                phases: deliverable.phases?.map((phase: any) => ({
+                    ...phase,
+                    phaseId: phase.id,
+                    phaseIdStr: String(phase.id),
+                    tasks: [], // Empty for now - will be lazy loaded in Phase 6
+                })) || [],
+            }));
+
+            setDeliverables(transformedData);
+        }
+    }, [skeletonData, setDeliverables]);
 
     // RBAC Check
     const canEditStructure = currentMember?.role === ProjectMembershipRole.OWNER;
+
+    // Helper function to refetch tasks for a specific phase
+    const refetchPhaseTask = useCallback((phaseId: number) => {
+        if (!projectRepository || !selectedProject?.id) return;
+
+        console.log('🔄 refetchPhaseTask called for phase:', phaseId);
+        projectRepository.getTasksByPhase({
+            projectId: selectedProject.id.toString(),
+            phaseId: phaseId,
+        }).subscribe({
+            next: (res) => {
+                console.log('📦 API Response:', res);
+                if (res?.status) {
+                    // Handle both direct and nested data formats
+                    const tasks = res.data.data || res.data || [];
+                    console.log('✅ Extracted tasks:', tasks);
+                    const transformedTasks = tasks.map((task: any) => ({
+                        ...task,
+                        taskId: task.id,
+                        taskIdStr: `task-${task.id}`,
+                        phaseId: phaseId,
+                        phaseIdStr: `phase-${phaseId}`,
+                        status: task.status?.toUpperCase().split(/\s+/).join("_"),
+                        priority: task.priority?.toUpperCase(),
+                    }));
+                    console.log('🔧 Transformed tasks:', transformedTasks);
+                    setPhaseTasks(prev => {
+                        const updated = {
+                            ...prev,
+                            [phaseId]: transformedTasks,
+                        };
+                        console.log('💾 Setting phaseTasks:', updated);
+                        return updated;
+                    });
+                }
+            },
+            error: (err) => {
+                console.error('Failed to refetch tasks for phase:', phaseId, err);
+            },
+        });
+    }, [projectRepository, selectedProject]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -77,7 +163,7 @@ export const ListTab = ({ }: ListTabProps) => {
                 if (res?.status) {
                     toast.success(res?.message || res?.msg);
                     setIsAddingDeliverable(false);
-                    getProjectStructure();
+                    refetchSkeleton(); // React Query refetch
                 }
                 else {
                     setAlertMessage({
@@ -110,7 +196,7 @@ export const ListTab = ({ }: ListTabProps) => {
             next: res => {
                 if (res?.status) {
                     toast.success(res?.message || res?.msg);
-                    getProjectStructure();
+                    refetchSkeleton(); // React Query: refetch skeleton after update
                 }
                 else {
                     setAlertMessage({
@@ -139,7 +225,7 @@ export const ListTab = ({ }: ListTabProps) => {
             deliverableId: deliverableId,
         })
             .pipe(finalize(() => {
-                getProjectStructure();
+                refetchSkeleton(); // React Query: refetch skeleton after delete
             }))
             .subscribe({
                 next: res => {
@@ -165,7 +251,7 @@ export const ListTab = ({ }: ListTabProps) => {
             next: res => {
                 if (res?.status) {
                     toast.success(res?.message || res?.msg);
-                    getProjectStructure();
+                    refetchSkeleton(); // React Query: refetch skeleton after phase create
                 }
                 else {
                     setAlertMessage({
@@ -198,7 +284,7 @@ export const ListTab = ({ }: ListTabProps) => {
             next: res => {
                 if (res?.status) {
                     toast.success(res?.message || res?.msg);
-                    getProjectStructure();
+                    refetchSkeleton(); // React Query: refetch skeleton after phase update
                 }
                 else {
                     setAlertMessage({
@@ -229,7 +315,7 @@ export const ListTab = ({ }: ListTabProps) => {
             next: res => {
                 if (res?.status) {
                     toast.success(res?.message || res?.msg);
-                    getProjectStructure();
+                    refetchSkeleton(); // React Query: refetch skeleton after phase delete
                 }
                 else {
                     toast.error(res?.message || res?.msg);
@@ -251,7 +337,7 @@ export const ListTab = ({ }: ListTabProps) => {
             next: res => {
                 if (res?.status) {
                     toast.success(res?.message || res?.msg);
-                    getProjectStructure();
+                    refetchPhaseTask(phaseId); // Refetch only this phase's tasks
                 }
                 else {
                     setAlertMessage({
@@ -289,7 +375,7 @@ export const ListTab = ({ }: ListTabProps) => {
             next: res => {
                 if (res?.status) {
                     toast.success(res?.message || res?.msg);
-                    getProjectStructure();
+                    refetchPhaseTask(updatedTask.phaseId); // Refetch only this phase's tasks
                 }
                 else {
                     setAlertMessage({
@@ -313,14 +399,29 @@ export const ListTab = ({ }: ListTabProps) => {
 
     const handleDeleteTask = useCallback((taskId: number) => {
         if (!projectRepository) return;
-        projectRepository.deletePhase({
+
+        // Find the phaseId for this task
+        let targetPhaseId: number | null = null;
+        for (const deliverable of mergedDeliverables) {
+            for (const phase of deliverable.phases || []) {
+                if (phase.tasks?.some((t: any) => t.taskId === taskId)) {
+                    targetPhaseId = phase.phaseId;
+                    break;
+                }
+            }
+            if (targetPhaseId) break;
+        }
+
+        projectRepository.deleteTask({
             projectId: selectedProject?.id,
             taskId: taskId,
         }).subscribe({
             next: res => {
                 if (res?.status) {
                     toast.success(res?.message || res?.msg);
-                    getProjectStructure();
+                    if (targetPhaseId) {
+                        refetchPhaseTask(targetPhaseId); // Refetch only this phase's tasks
+                    }
                 }
                 else {
                     toast.error(res?.message || res?.msg);
@@ -328,19 +429,61 @@ export const ListTab = ({ }: ListTabProps) => {
             },
             error: err => { },
         });
-    }, [selectedProject, projectRepository]);
+    }, [selectedProject, projectRepository, mergedDeliverables, refetchPhaseTask]);
 
     const handleTogglePhase = useCallback((id: string) => {
-        setExpandedPhases(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(id)) {
-                newSet.delete(id);
+        const phaseId = parseInt(id.replace('phase-', ''));
+        const isExpanding = !expandedPhases.has(id);
+
+        // If expanding and tasks not yet loaded, fetch them
+        if (isExpanding && !phaseTasks[phaseId] && projectRepository && selectedProject?.id) {
+            // Set loading state
+            setPhaseLoadingStates(prev => ({ ...prev, [phaseId]: true }));
+
+            projectRepository.getTasksByPhase({
+                projectId: selectedProject.id.toString(),
+                phaseId: phaseId,
+            }).subscribe({
+                next: (res) => {
+                    if (res?.status) {
+                        const tasks = res.data.data || res.data || [];
+                        // Transform tasks to match frontend structure
+                        const transformedTasks = tasks.map((task: any) => ({
+                            ...task,
+                            taskId: task.id,
+                            taskIdStr: `task-${task.id}`,
+                            phaseId: phaseId,
+                            phaseIdStr: id,
+                            status: task.status?.toUpperCase().split(/\s+/).join("_"),
+                            priority: task.priority?.toUpperCase(),
+                        }));
+                        setPhaseTasks(prev => ({
+                            ...prev,
+                            [phaseId]: transformedTasks,
+                        }));
+                        // Clear loading state
+                        setPhaseLoadingStates(prev => ({ ...prev, [phaseId]: false }));
+                    }
+                },
+                error: (err) => {
+                    console.error('Failed to fetch tasks for phase:', phaseId, err);
+                    // Clear loading state on error
+                    setPhaseLoadingStates(prev => ({ ...prev, [phaseId]: false }));
+                },
+            });
+        }
+
+        // Toggle expansion state
+        setExpandedPhases((prevExpanded) => {
+            const newExpanded = new Set(prevExpanded);
+            if (newExpanded.has(id)) {
+                newExpanded.delete(id);
             } else {
-                newSet.add(id);
+                newExpanded.add(id);
             }
-            return newSet;
+            return newExpanded;
         });
-    }, []);
+    }, [expandedPhases, phaseTasks, selectedProject, projectRepository, setExpandedPhases]);
 
     const handleToggleDeliverable = useCallback((id: string) => {
         setExpandedDeliverables(prev => {
@@ -457,30 +600,7 @@ export const ListTab = ({ }: ListTabProps) => {
         setIsAddingDeliverable(false);
     };
 
-    const debouncedGetProjectStructure = useMemo(
-        () => {
-            return debounce(getProjectStructure, 150);
-        },
-        [getProjectStructure]
-    );
-
-    useEffect(() => {
-        // Deliverables changes means something finished including fetching process finished
-        setFetching(false);
-    }, [deliverables]);
-
-    useEffect(() => {
-        // Only run the fetch if a project is selected
-        if (selectedProject?.id && !isNavigatingFromTaskBoard) {
-            setFetching(true);
-            debouncedGetProjectStructure();
-        }
-
-        // Cleanup: Important! This cleans up any pending debounced call when the hook unmounts or search/project changes
-        return () => {
-            debouncedGetProjectStructure.cancel();
-        };
-    }, [search, selectedProject, debouncedGetProjectStructure]);
+    // ✅ React Query handles fetching automatically - no manual useEffect needed!
 
     /**
      * 🎯 Scroll logic implementation
@@ -575,32 +695,33 @@ export const ListTab = ({ }: ListTabProps) => {
                 <div>Assigned to</div>
             </div>
             <div ref={scrollContainerRef} className="overflow-y-auto max-h-[calc(100vh-200px)]">
-                {fetching && (
-                    <div className="ml-[700px] w-[500px]">
+                {isFetchingSkeleton && (
+                    <div className="flex flex-col items-center justify-center py-16 gap-3">
                         <SpinnerLoader
                             sizeClass="24"
-                            message="Getting project deliverables..."
+                            message="Loading project structure..."
                         />
                     </div>
                 )}
-                {((!deliverables || !deliverables.length) && !fetching && !isAddingDeliverable) ? (
+                {((!deliverables || !deliverables.length) && !isFetchingSkeleton && !isAddingDeliverable) ? (
                     <EmptyData
                         title="No deliverables found"
                         message={!search ? "You haven't added any deliverables yet. Add one to get started." : `No items found with "${search}"`}
                     />
                 ) : null}
-                {(!fetching && deliverables && deliverables.length || isAddingDeliverable) ? (
+                {(!isFetchingSkeleton && mergedDeliverables && mergedDeliverables.length || isAddingDeliverable) ? (
                     <DndContext
                         sensors={sensors}
                         collisionDetection={closestCenter}
                         onDragEnd={handleDragEnd}
                     >
+                        {/* @ts-ignore - React 19 type incompatibility with @dnd-kit/sortable v10.0.0 */}
                         <SortableContext
-                            items={deliverables.map(d => d.deliverableIdStr)}
+                            items={mergedDeliverables.map(d => d.deliverableIdStr)}
                             strategy={verticalListSortingStrategy}
                         >
                             <div className="flex flex-col pb-10">
-                                {deliverables.map(del => (
+                                {mergedDeliverables.map(del => (
                                     <PM_DeliverableItem
                                         key={del.deliverableIdStr}
                                         deliverable={del}

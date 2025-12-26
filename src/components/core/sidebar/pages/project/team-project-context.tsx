@@ -317,15 +317,15 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
                 next: res => {
                     if (res?.status) {
                         toast.success(res?.message || res?.msg);
-                        getProjectStructure();
+                        // getProjectStructure(); // Disabled - list tab handles its own refetch via React Query
                     }
                     else {
                         toast.error(res?.msg || res?.message)
-                        getProjectStructure();
+                        // getProjectStructure(); // Disabled - list tab handles its own refetch via React Query
                     }
                 },
                 error: err => {
-                    getProjectStructure();
+                    // getProjectStructure(); // Disabled - list tab handles its own refetch via React Query
                 },
             });
 
@@ -348,12 +348,12 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
         }
         if (currentSelectedProject) {
             getTeamMembers();
-            getProjectStructure();
+            // getProjectStructure(); // Disabled - list tab handles its own data fetch via React Query
         }
 
         // 3. 🎯 Reset ALL states related to the previous project structure
         // This ensures a clean slate when switching projects or initializing.
-        setDeliverables([]);
+        // setDeliverables([]); // Disabled - list tab manages its own deliverables via React Query
         setSearch("");
         setScrollToItem("");
         setExpandedDeliverables(new Set());
@@ -367,7 +367,7 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
     useEffect(() => {
         if (tab !== TeamProjectTab.LIST && search) {
             setSearch("");
-            getProjectStructure(true, "");
+            // getProjectStructure(true, ""); // Disabled - list tab handles its own data via React Query
         }
     }, [tab]);
 

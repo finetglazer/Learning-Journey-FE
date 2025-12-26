@@ -17,6 +17,7 @@ import { memo, useCallback, useContext, useState } from 'react'; // Added useCon
 import { TeamProjectContext, TeamProjectContextProps } from '../sidebar/pages/project/team-project-context'; // Assuming this context is in scope
 import { PM_TaskItem } from './pm-task-item';
 import { PM_DraggableItemData } from './type';
+import { TaskItemSkeleton } from '../sidebar/pages/project/tabs/list-tab/task-item-skeleton';
 
 type PhaseItemProps = {
     phase: PM_Phase;
@@ -180,12 +181,12 @@ function PM_PhaseItemBase({
                         className="p-1 mr-2 rounded-full hover:bg-gray-100"
                     >
 
-                            <ChevronDown
-                                className={cn(
-                                    "h-4 w-4 transition-transform duration-200",
-                                    isExpanded ? "rotate-0" : "-rotate-90"
-                                )}
-                            />
+                        <ChevronDown
+                            className={cn(
+                                "h-4 w-4 transition-transform duration-200",
+                                isExpanded ? "rotate-0" : "-rotate-90"
+                            )}
+                        />
 
                     </button>
                 )}
@@ -246,21 +247,42 @@ function PM_PhaseItemBase({
                 <div className="overflow-hidden">
                     {/* Conditionally render SortableContext based on permission */}
                     {canEditStructure ? (
-                        <SortableContext
-                            items={phase.tasks.map((t) => t.taskIdStr)}
-                            strategy={verticalListSortingStrategy}
-                        >
-                            {phase.tasks.map((task) => (
-                                <PM_TaskItem
-                                    key={task.taskIdStr}
-                                    task={task}
-                                    onUpdateTask={onUpdateTask}
-                                    onDeleteTask={onDeleteTask}
-                                />
-                            ))}
-                        </SortableContext>
+                        <>
+                            {/* @ts-ignore - React 19 type incompatibility with @dnd-kit/sortable v10.0.0 */}
+                            <SortableContext
+                                items={phase.tasks.map((t) => t.taskIdStr)}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                {/* Show skeleton loaders while tasks are being fetched (not cached) */}
+                                {(phase as any).isLoadingTasks && phase.tasks.length === 0 && (
+                                    <>
+                                        <TaskItemSkeleton />
+                                        <TaskItemSkeleton />
+                                        <TaskItemSkeleton />
+                                    </>
+                                )}
+
+                                {phase.tasks.map((task) => (
+                                    <PM_TaskItem
+                                        key={task.taskIdStr}
+                                        task={task}
+                                        onUpdateTask={onUpdateTask}
+                                        onDeleteTask={onDeleteTask}
+                                    />
+                                ))}
+                            </SortableContext>
+                        </>
                     ) : (
                         <>
+                            {/* Show skeleton loaders while tasks are being fetched (not cached) */}
+                            {(phase as any).isLoadingTasks && phase.tasks.length === 0 && (
+                                <>
+                                    <TaskItemSkeleton />
+                                    <TaskItemSkeleton />
+                                    <TaskItemSkeleton />
+                                </>
+                            )}
+
                             {phase.tasks.map((task) => (
                                 <PM_TaskItem
                                     key={task.taskIdStr}
@@ -293,7 +315,7 @@ function PM_PhaseItemBase({
                     )}
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 
