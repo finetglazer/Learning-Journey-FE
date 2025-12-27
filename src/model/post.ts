@@ -1,21 +1,39 @@
+export type PostStatus = string;
+
+export interface PostStats {
+    score: number;
+    viewCount: number;
+    answerCount: number;
+    isSolved: boolean;
+}
+
 export interface Post {
-    id: number;
+    postId: number;
+    userId: number;
     title: string;
-    content: string;
-    votes: number;
-    answers: number;
-    views: number;
+    preview: string;
+
+    // Author information
+    authorId: number;
+    authorName: string;
+    authorAvatar: string;
+
     tags: string[];
-    author: {
-        name: string;
-        avatar: string;
-    };
+
+    // Statistics
+    stats: PostStats;
+
     createdAt: string;
-    haveSolution: boolean;
+    status: PostStatus;
+
+    // Optional fields for Post Detail
+    content?: string;
     attachments?: {
         name: string;
         url: string;
         type: string;
         isAdded?: boolean;
     }[];
-};
+    answers?: any[];
+    comments?: any[];
+}

@@ -10,6 +10,7 @@ import { isNil } from "lodash";
 import { createContext, Dispatch, SetStateAction, useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { NotificationRepository, notificationRepositoryCons } from "@/repository/notification-repository";
+import { PostRepository, postRepositoryCons } from "@/repository/post-reposiory";
 
 export interface SleepHour {
     startTime: string;  // HH:mm
@@ -61,6 +62,7 @@ export interface AppContextProps {
     teamProjects: any[];
     setTeamProjects: Dispatch<SetStateAction<any[]>>;
     getProjects: () => void;
+    postRepository: PostRepository | null;
 };
 
 export const AppContext = createContext<AppContextProps>({
@@ -100,6 +102,7 @@ export const AppContext = createContext<AppContextProps>({
     teamProjects: [],
     setTeamProjects: () => { },
     getProjects: () => { },
+    postRepository: null,
 });
 
 export const useAppHooks = (): AppContextProps => {
@@ -134,7 +137,7 @@ export const useAppHooks = (): AppContextProps => {
     const [projectRepository, setProjectRepository] = useState<ProjectRepository | null>(null);
     const [settingsRepository, setSettingsRepository] = useState<SettingsRepository | null>(null);
     const [userRepository, setUserRepository] = useState<UserRepository | null>(null);
-
+    const [postRepository, setPostRepository] = useState<PostRepository | null>(null);
     const [teamProjects, setTeamProjects] = useState<any[]>([]);
 
     useEffect(() => {
@@ -160,6 +163,7 @@ export const useAppHooks = (): AppContextProps => {
         setSettingsRepository(settingsRepositoryCons(userId));
         setNotificationRepository(notificationRepositoryCons(userId));
         setUserRepository(userRepositoryCons(userId));
+        setPostRepository(postRepositoryCons(userId));
     }, [userId]);
 
     // Centralized Data Fetching
@@ -278,6 +282,7 @@ export const useAppHooks = (): AppContextProps => {
         documentRepository,
         notificationRepository,
         projectRepository,
+        postRepository,
         settingsRepository,
         userRepository,
     };

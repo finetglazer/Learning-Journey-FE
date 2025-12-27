@@ -19,42 +19,6 @@ export interface Comment {
     replyTo?: string;
 }
 
-export const MOCK_COMMENTS: Comment[] = [
-    {
-        id: "1",
-        author: {
-            name: "Tran Manh Hung",
-            avatar: "https://github.com/shadcn.png",
-        },
-        content: "I recommend the **slice pattern**. Keeps it modular. Multiple stores get potential dependency issues.",
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-        replies: [
-            {
-                id: "1-1",
-                author: {
-                    name: "Nguyen Vinh Hiep",
-                    avatar: "https://github.com/shadcn.png",
-                },
-                content: "Agree. Plus you can type the store as an intersection of slices.",
-                createdAt: new Date(Date.now() - 1000 * 60 * 30), // 30 mins ago
-                replyTo: "I recommend the...",
-            },
-        ],
-    },
-    {
-        id: "2",
-        author: {
-            name: "Sarah Wilson",
-            avatar: "https://github.com/shadcn.png",
-        },
-        content: "Defining actions inside the store is cleaner and easier to test.",
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5), // 5 hours ago
-        replies: [],
-    }
-];
-
-// --- Components ---
-
 const CommentItem = ({ comment, isReply = false }: { comment: Comment; isReply?: boolean }) => {
     const [isReplying, setIsReplying] = useState(false);
     const [replyContent, setReplyContent] = useState("");
@@ -80,13 +44,6 @@ const CommentItem = ({ comment, isReply = false }: { comment: Comment; isReply?:
                 {/* Header: Name, Time, Reply Info */}
                 <div className="flex items-center gap-2 text-sm mb-1">
                     {!isReply ? (
-                        // Top level comment header style could be implicit or just name
-                        // Design image shows name on the right for replies? 
-                        // Actually the image shows standard "Name created just now"
-                        // Let's stick to standard left-aligned for first implementation unless specified.
-                        // Wait, the image has right aligned user info for the reply?? 
-                        // "Tran Manh Hung created just now reply to..." is on the RIGHT side of the text? No, it looks like a standard row.
-                        // Let's just do standard Header: Name • Time
                         <>
                             <span className="font-medium text-blue-500">{comment.author.name}</span>
                             <span className="text-gray-500 text-xs">
@@ -105,14 +62,6 @@ const CommentItem = ({ comment, isReply = false }: { comment: Comment; isReply?:
                 <div className="text-gray-700 text-sm leading-relaxed">
                     {comment.content}
                 </div>
-
-                {/* Reply Metadata (Author info moved here for replies based on image?) 
-                    The image shows:
-                    <Content>
-                    <Reply Action>    <Avatar> Name created just now reply to "..."
-                    
-                    This is an interesting layout. Let's try to match it.
-                 */}
 
                 <div className="flex items-center justify-between mt-2">
                     <div className="flex gap-3 text-xs font-medium text-blue-500">
@@ -167,7 +116,7 @@ const CommentItem = ({ comment, isReply = false }: { comment: Comment; isReply?:
     );
 };
 
-export function PostDetailComment({ comments = MOCK_COMMENTS }: { comments?: Comment[] }) {
+export function PostDetailComment({ comments }: { comments: Comment[] }) {
     const [isOpen, setIsOpen] = useState(true);
     const commentCount = comments.reduce((acc, curr) => acc + 1 + (curr.replies?.length || 0), 0);
 

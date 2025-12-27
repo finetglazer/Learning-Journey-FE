@@ -2,18 +2,25 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, User, Bookmark, ArrowUp, HandHeart, Plus } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { AppContext } from "@/hooks/app-context";
 import { PostPageContext } from "./post-page-context";
 import { cn } from "@/lib/utils";
 
 export function PostPageHeader() {
     const { displayName } = useContext(AppContext);
-    const { 
-        activeFilter, 
-        setActiveFilter, 
+    const {
+        activeFilter,
+        setActiveFilter,
         setIsCreateNewPost,
+        searchTerm,
+        setSearchTerm
     } = useContext(PostPageContext);
+
+    const [inputValue, setInputValue] = useState(searchTerm); 
+    const handleSearch = () => {
+        setSearchTerm(inputValue);
+    };
 
     const handleFilterClick = (filter: string) => {
         if (activeFilter === filter) {
@@ -26,7 +33,7 @@ export function PostPageHeader() {
     const getButtonClass = (filter: string) => {
         const isActive = activeFilter === filter;
         return cn(
-            "gap-2 cursor-pointer transition-colors",
+            "gap-2 cursor-pointer transition-colors cursor-pointer",
             isActive
                 ? "bg-teal-500 text-white hover:bg-teal-500"
                 : "bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700"
@@ -67,12 +74,24 @@ export function PostPageHeader() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-                <div className="relative w-full sm:w-[320px]">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                        placeholder="Search posts"
-                        className="pl-9 bg-muted/50 border-none shadow-none focus-visible:ring-1"
-                    />
+                <div className="relative w-full sm:w-[500px] flex gap-2">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                            placeholder="Search posts"
+                            className="pl-9 bg-muted/50 border-none shadow-none focus-visible:ring-1"
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                    handleSearch();
+                                }
+                            }}
+                        />
+                    </div>
+                    <Button onClick={handleSearch} className="bg-blue-600 cursor-pointer hover:bg-blue-800 text-white">
+                        Search
+                    </Button>
                 </div>
 
                 <div className="flex items-center gap-2 w-full sm:w-auto">

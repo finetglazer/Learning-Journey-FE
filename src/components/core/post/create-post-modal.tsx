@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { AppContext } from "@/hooks/app-context";
 import {
     Dialog,
     DialogContent,
@@ -13,13 +14,15 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { CreatePostModel } from "@/model/create-post-model";
 import { formService } from "@/service/form-service";
-import { SlashCommands } from "../notion-editor/extensions/slash-commands";
-import { useRef, useState } from "react";
-import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, useEditor } from "@tiptap/react";
-import { useEffect } from "react";
-import { MoreHorizontal, Plus, X } from "lucide-react";
+import StarterKit from "@tiptap/starter-kit";
+import { Plus, X } from "lucide-react";
+import { useContext, useEffect, useRef, useState, useCallback } from "react";
+import { SlashCommands } from "../notion-editor/extensions/slash-commands";
+import { PostPageContext, PostPageContextInterface } from "./post-page-context";
+import { AlertModal } from "../alert-modal/alert-modal";
+import { isEqual, debounce } from "lodash";
 
 export interface CreatePostModalProps {
     open: boolean;
@@ -27,9 +30,17 @@ export interface CreatePostModalProps {
 }
 
 export function CreatePostModal({ open, onClose }: CreatePostModalProps) {
+    const {
+        alertMessage,
+        setAlertMessage,
+        onCreatePost,
+    } = useContext<PostPageContextInterface>(PostPageContext);
+
+    const { postRepository } = useContext(AppContext);
+
     const { model, updateModel, onSubmitForm, loading } = formService.useForm(
         CreatePostModel,
-        undefined,
+        onCreatePost as any,
         undefined,
         new CreatePostModel()
     );
@@ -37,6 +48,38 @@ export function CreatePostModal({ open, onClose }: CreatePostModalProps) {
     const [newTag, setNewTag] = useState("");
     const [isAddingTag, setIsAddingTag] = useState(false);
     const tagInputRef = useRef<HTMLInputElement>(null);
+
+    const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
+    const [showTagDropdown, setShowTagDropdown] = useState(false);
+
+    const searchTagsDebounced = useCallback(
+        debounce((query: string) => {
+            if (!query.trim() || !postRepository) {
+                setSuggestedTags([]);
+                return;
+            }
+            postRepository.searchTags(query).subscribe({
+                next: (res: any) => {
+                    if (res?.data) {
+                        setSuggestedTags(res.data?.tags || []);
+                    }
+                },
+                error: (err) => {
+                    console.error(err);
+                },
+            });
+        }, 300),
+        [postRepository]
+    );
+
+    useEffect(() => {
+        if (isAddingTag && newTag) {
+            searchTagsDebounced(newTag);
+            setShowTagDropdown(true);
+        } else {
+            setShowTagDropdown(false);
+        }
+    }, [newTag, isAddingTag, searchTagsDebounced]);
 
     const editor = useEditor({
         immediatelyRender: false,
@@ -49,7 +92,7 @@ export function CreatePostModal({ open, onClose }: CreatePostModalProps) {
         ],
         content: model.content,
         onUpdate: ({ editor }) => {
-            updateModel("content", editor.getHTML());
+            updateModel("content", editor.getJSON());
         },
         editorProps: {
             attributes: {
@@ -78,17 +121,40 @@ export function CreatePostModal({ open, onClose }: CreatePostModalProps) {
     const handleKeyDownTag = (e: React.KeyboardEvent) => {
         if (e.key === "Enter") {
             e.preventDefault();
+            // If dropdown is visible and has items, selecting first one is a nice UX, but for now just add what's typed
             handleAddTag();
+            setShowTagDropdown(false);
         } else if (e.key === "Escape") {
             setIsAddingTag(false);
             setNewTag("");
+            setShowTagDropdown(false);
         }
+    };
+
+    const handleSelectTag = (tag: string) => {
+        if (!model.tags.includes(tag)) {
+            updateModel("tags", [...model.tags, tag]);
+        }
+        setNewTag("");
+        setIsAddingTag(false);
+        setShowTagDropdown(false);
     };
 
     // Reset editor content when modal opens or model changes externally (if that ever happens)
     useEffect(() => {
-        if (open && editor && editor.getHTML() !== model.content) {
-            editor.commands.setContent(model.content);
+        if (open && editor) {
+            const currentContent = editor.getJSON();
+            if (!isEqual(currentContent, model.content)) {
+                // Handle initial empty string case
+
+                // If model.content is "" (initial) and editor is empty doc, do nothing?
+                // Or if model.content is object, set it.
+                // If model.content is "", setContent("") clears it.
+
+                if (model.content === "" && Object.keys(currentContent).length === 0) return;
+
+                editor.commands.setContent(model.content);
+            }
         }
     }, [open, editor, model.content]);
 
@@ -138,23 +204,44 @@ export function CreatePostModal({ open, onClose }: CreatePostModalProps) {
                             {/* Left side: Add Tag + Tag List */}
                             <div className="flex items-center flex-wrap gap-2">
                                 {isAddingTag ? (
-                                    <div className="flex items-center gap-1 rounded-sm border bg-muted px-2 py-1">
+                                    <div className="relative flex items-center gap-1 rounded-sm border bg-muted px-2 py-1">
                                         <input
                                             ref={tagInputRef}
                                             type="text"
                                             value={newTag}
                                             onChange={(e) => setNewTag(e.target.value)}
                                             onKeyDown={handleKeyDownTag}
-                                            onBlur={handleAddTag}
+                                            onBlur={() => {
+                                                setShowTagDropdown(false);
+                                            }}
                                             className="w-24 bg-transparent text-sm outline-none"
                                             placeholder="Tag name"
                                         />
+                                        {showTagDropdown && suggestedTags.length > 0 && (
+                                            <div className="absolute top-full left-0 z-50 mt-1 w-48 rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in fade-in-0 zoom-in-95">
+                                                <div className="p-1">
+                                                    {suggestedTags.map((tag) => (
+                                                        <div
+                                                            key={tag}
+                                                            className="cursor-pointer relative flex select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                handleSelectTag(tag);
+                                                            }}
+                                                        >
+                                                            {tag}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        className="gap-1 rounded-sm bg-muted/50 text-muted-foreground hover:bg-muted"
+                                        className="gap-1 cursor-pointer rounded-sm bg-muted/50 text-muted-foreground hover:bg-muted"
                                         onClick={() => setIsAddingTag(true)}
                                     >
                                         <Plus className="h-3.5 w-3.5" />
@@ -162,7 +249,7 @@ export function CreatePostModal({ open, onClose }: CreatePostModalProps) {
                                     </Button>
                                 )}
 
-                                {model.tags.map((tag, index) => (
+                                {model.tags.map((tag) => (
                                     <div
                                         key={tag}
                                         className={cn(
@@ -177,10 +264,6 @@ export function CreatePostModal({ open, onClose }: CreatePostModalProps) {
                                         />
                                     </div>
                                 ))}
-
-                                <Button variant="ghost" size="icon" className="h-7 w-7">
-                                    <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                                </Button>
                             </div>
                         </div>
                     </div>
@@ -203,6 +286,13 @@ export function CreatePostModal({ open, onClose }: CreatePostModalProps) {
                         </Button>
                     </div>
                 </DialogFooter>
+
+                {alertMessage && (
+                    <AlertModal
+                        alertMessage={alertMessage}
+                        onClose={() => setAlertMessage(null)}
+                    />
+                )}
             </DialogContent>
         </Dialog>
     );

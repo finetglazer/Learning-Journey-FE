@@ -2,7 +2,7 @@ import { Model } from "react-3layer-common";
 
 export class CreatePostModel extends Model {
     title: string;
-    content: string;
+    content: any;
     tags: string[];
 
     constructor() {

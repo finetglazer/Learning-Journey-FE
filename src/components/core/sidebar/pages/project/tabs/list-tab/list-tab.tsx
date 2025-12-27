@@ -1,23 +1,22 @@
 "use client";
 
 import { AlertMessage, AlertModal } from "@/components/core/alert-modal/alert-modal";
+import SpinnerLoader from "@/components/core/loader/spinner-loader";
+import { EmptyData } from "@/components/core/project-management/empty-data";
 import { PM_DeliverableItem } from "@/components/core/project-management/pm-deliverable";
 import { PM_DraggableItemData } from "@/components/core/project-management/type";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PM_Phase, PM_Task, ProjectMembershipRole, ReorderType } from "@/model/project-management";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
+import { useProjectSkeleton } from "@/hooks/use-project-structure";
+import { PM_Phase, PM_Task, ProjectMembershipRole, ReorderType } from "@/model/project-management";
 import { closestCenter, DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Check, Plus, Search, X } from "lucide-react";
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { finalize } from "rxjs";
 import { toast } from "sonner";
 import { TeamProjectContext, TeamProjectContextProps } from "../../team-project-context";
-import SpinnerLoader from "@/components/core/loader/spinner-loader";
-import { debounce } from "lodash";
-import { finalize } from "rxjs";
-import { EmptyData } from "@/components/core/project-management/empty-data";
-import { useProjectSkeleton } from "@/hooks/use-project-structure";
 
 export interface ListTabProps { };
 

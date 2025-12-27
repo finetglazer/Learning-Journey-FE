@@ -8,7 +8,6 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { projects } from "./index";
 import { useState, useMemo } from "react";
 import { ChevronRight, Folder, Users, Lock, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -31,7 +30,8 @@ export const SelectFolderModal = ({ open, onOpenChange, onSelect, projectsOnly =
     // Determine items to display
     const items = useMemo(() => {
         if (!currentParent) {
-            return projects;
+            return [];
+            // return projects;
         }
         return currentParent.folders || currentParent.children || [];
     }, [currentParent]);

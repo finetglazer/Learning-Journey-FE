@@ -9,15 +9,15 @@ export function PostPageBodySkeleton() {
                     <div className="flex flex-col items-end gap-3 w-28 shrink-0">
                         <div className="flex items-center gap-2">
                             <Skeleton className="h-4 w-4" /> {/* Number */}
-                            <Skeleton className="h-4 w-8" /> {/* Label: votes */}
+                            <Skeleton className="h-4 w-8" /> {/* Label: score */}
                         </div>
                         <div className="flex items-center gap-2 px-2 py-1 rounded">
                             <Skeleton className="h-4 w-4" /> {/* Number */}
-                            <Skeleton className="h-4 w-12" /> {/* Label: answers */}
+                            <Skeleton className="h-4 w-12" /> {/* Label: answerCount */}
                         </div>
                         <div className="flex items-center gap-2">
                             <Skeleton className="h-4 w-4" /> {/* Number */}
-                            <Skeleton className="h-4 w-8" /> {/* Label: views */}
+                            <Skeleton className="h-4 w-8" /> {/* Label: viewCount */}
                         </div>
                     </div>
 

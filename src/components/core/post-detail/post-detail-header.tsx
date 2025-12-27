@@ -8,15 +8,15 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bookmark, Briefcase, CheckCircle2, Eye } from "lucide-react";
-import { usePostDetailHook } from "./post-detail-context";
-import dayjs from "dayjs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import dayjs from "dayjs";
+import { Bookmark, Briefcase, CheckCircle2, Eye } from "lucide-react";
+import { useContext, useState } from "react";
+import { PostDetailContext, PostDetailContextProps } from "./post-detail-context";
 import { SelectFolderModal } from "./select-folder-modal";
-import { useState } from "react";
 
 export const PostDetailHeader = () => {
-    const { postDetailData } = usePostDetailHook();
+    const { postDetailData } = useContext<PostDetailContextProps>(PostDetailContext);
     const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
 
     if (!postDetailData) return null;
@@ -27,11 +27,11 @@ export const PostDetailHeader = () => {
                 <div className="flex gap-4">
                     <div className="flex flex-col items-center gap-1">
                         <Avatar className="h-14 w-14 cursor-pointer border-2 border-transparent hover:border-primary/20 transition-all">
-                            <AvatarImage src={postDetailData.author.avatar} alt={postDetailData.author.name} />
-                            <AvatarFallback>{postDetailData.author.name.charAt(0)}</AvatarFallback>
+                            <AvatarImage src={postDetailData.authorAvatar} alt={postDetailData.authorName} />
+                            <AvatarFallback>{postDetailData.authorName.charAt(0)}</AvatarFallback>
                         </Avatar>
-                        <span className="text-sm text-muted-foreground font-medium max-w-[80px] truncate text-center" title={postDetailData.author.name}>
-                            {postDetailData.author.name}
+                        <span className="text-sm text-muted-foreground font-medium max-w-[80px] truncate text-center" title={postDetailData.authorName}>
+                            {postDetailData.authorName}
                         </span>
                     </div>
 
@@ -44,9 +44,9 @@ export const PostDetailHeader = () => {
                             <span>Created at {dayjs(postDetailData.createdAt).format("HH:mm")}</span>
                             <div className="flex items-center gap-1">
                                 <Eye className="h-5 w-5" />
-                                <span>{postDetailData.views}</span>
+                                <span>{postDetailData.viewCount}</span>
                             </div>
-                            {postDetailData.haveSolution && (
+                            {postDetailData.isSolved && (
                                 <TooltipProvider>
                                     <Tooltip>
                                         <TooltipTrigger>

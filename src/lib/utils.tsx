@@ -7,7 +7,10 @@ import { Task, UnscheduledMonthData } from "@/model/task";
 import { clsx, type ClassValue } from "clsx";
 import { addWeeks, endOfMonth, endOfWeek, format, isBefore, isSameDay, startOfMonth, startOfWeek } from "date-fns";
 import dayjs, { Dayjs } from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
 import { isEqual, isNil } from "lodash";
+
+dayjs.extend(relativeTime);
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
