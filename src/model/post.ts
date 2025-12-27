@@ -27,7 +27,7 @@ export interface Post {
     status: PostStatus;
 
     // Optional fields for Post Detail
-    content?: string;
+    content?: object;
     attachments?: {
         name: string;
         url: string;

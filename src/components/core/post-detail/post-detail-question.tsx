@@ -6,6 +6,7 @@ import { Check, FileCode, MoreHorizontal } from "lucide-react";
 import { useContext, useState } from "react";
 import { PostDetailContext, PostDetailContextProps } from "./post-detail-context";
 import { SelectFolderModal } from "./select-folder-modal";
+import { RichTextRenderer } from "../rich-text/rich-text-renderer";
 
 export const PostDetailQuestion = () => {
     const { postDetailData } = useContext<PostDetailContextProps>(PostDetailContext);
@@ -16,7 +17,7 @@ export const PostDetailQuestion = () => {
     return (
         <div className="flex flex-col gap-6 py-6">
             <div className="text-xl leading-relaxed text-foreground whitespace-pre-wrap">
-                {postDetailData.content}
+                <RichTextRenderer content={postDetailData.content} />
             </div>
 
             {postDetailData.attachments && postDetailData.attachments.length > 0 && (

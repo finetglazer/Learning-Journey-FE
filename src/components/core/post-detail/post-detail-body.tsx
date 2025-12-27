@@ -10,6 +10,7 @@ import { PostDetailComment } from "./post-detail-comment";
 import { PostDetailContext, PostDetailContextProps } from "./post-detail-context";
 import { PostDetailQuestion } from "./post-detail-question";
 import { PostDetailAnswerEditor } from "./post-detail-answer-editor";
+import { RichTextRenderer } from "../rich-text/rich-text-renderer";
 
 
 export const PostDetailBody = () => {
@@ -139,7 +140,7 @@ export const PostDetailBody = () => {
                             {/* Answer Content */}
                             <div className="flex-1 min-w-0">
                                 <div className="text-gray-800 leading-relaxed mb-4">
-                                    {answer.content}
+                                    <RichTextRenderer content={answer.content} />
                                 </div>
 
                                 {/* Answer Metadata / Actions */}
