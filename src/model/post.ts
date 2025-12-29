@@ -7,6 +7,35 @@ export interface PostStats {
     isSolved: boolean;
 }
 
+export interface PostAuthor {
+    userId: number;
+    name: string;
+    avatar: string;
+}
+
+export interface Answer {
+    answerId: number;
+    content: Record<string, any>;
+    author: PostAuthor;
+    score: number;
+    isAccepted: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface Comment {
+    commentId: number;
+    content: string;
+    author: PostAuthor;
+    parentCommentId?: number;
+    replyPreview?: string;
+    postId?: number;
+    answerId?: number;
+    createdAt: string;
+    updatedAt: string;
+    replies?: Comment[]; // For frontend recursive rendering
+}
+
 export interface Post {
     postId: number;
     userId: number;
@@ -27,13 +56,15 @@ export interface Post {
     status: PostStatus;
 
     // Optional fields for Post Detail
-    content?: object;
+    content?: Record<string, any>;
     attachments?: {
         name: string;
         url: string;
         type: string;
         isAdded?: boolean;
     }[];
-    answers?: any[];
-    comments?: any[];
+    answers?: Answer[];
+    comments?: Comment[];
+    userVote?: number;
+    isSaved?: boolean;
 }

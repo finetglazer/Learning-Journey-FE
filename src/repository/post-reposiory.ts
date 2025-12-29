@@ -133,10 +133,10 @@ export class PostRepository extends BaseRepository {
             .pipe(map((response) => response?.data));
     };
 
-    public acceptAnswer = (userId: number, answerId: number): Observable<any> => {
+    public switchAnswerAcceptStatus = (userId: number, answerId: number): Observable<any> => {
         return this.http
             .put(
-                `${BASE_API_URL}/answers/${answerId}/accept`,
+                `${BASE_API_URL}/answers/${answerId}/switch-accept-status`,
                 {},
                 { headers: { "X-User-Id": userId } }
             )

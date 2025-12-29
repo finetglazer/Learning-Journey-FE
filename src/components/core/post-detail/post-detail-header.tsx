@@ -44,9 +44,9 @@ export const PostDetailHeader = () => {
                             <span>Created at {dayjs(postDetailData.createdAt).format("HH:mm")}</span>
                             <div className="flex items-center gap-1">
                                 <Eye className="h-5 w-5" />
-                                <span>{postDetailData.viewCount}</span>
+                                <span>{postDetailData.stats.viewCount}</span>
                             </div>
-                            {postDetailData.isSolved && (
+                            {postDetailData.stats.isSolved && (
                                 <TooltipProvider>
                                     <Tooltip>
                                         <TooltipTrigger>

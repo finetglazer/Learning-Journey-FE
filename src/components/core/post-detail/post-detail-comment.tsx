@@ -3,29 +3,22 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Comment } from "@/model/post";
 import { formatDistanceToNow } from "date-fns";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { useState } from "react";
-
-export interface Comment {
-    id: string;
-    author: {
-        name: string;
-        avatar: string;
-    };
-    content: string;
-    createdAt: Date;
-    replies?: Comment[];
-    replyTo?: string;
-}
+import { useContext, useEffect, useState } from "react";
+import { AppContext } from "@/hooks/app-context";
+import { PostDetailContext, PostDetailContextProps } from "./post-detail-context";
 
 const CommentItem = ({ comment, isReply = false }: { comment: Comment; isReply?: boolean }) => {
     const [isReplying, setIsReplying] = useState(false);
     const [replyContent, setReplyContent] = useState("");
 
+    const { addComment } = useContext<PostDetailContextProps>(PostDetailContext);
+
     const handleReplySubmit = () => {
-        // Here you would typically call an API
-        console.log("Submitting reply:", replyContent, "to comment:", comment.id);
+        if (!replyContent.trim()) return;
+        addComment("COMMENT", comment.commentId, replyContent);
         setIsReplying(false);
         setReplyContent("");
     };
@@ -47,7 +40,7 @@ const CommentItem = ({ comment, isReply = false }: { comment: Comment; isReply?:
                         <>
                             <span className="font-medium text-blue-500">{comment.author.name}</span>
                             <span className="text-gray-500 text-xs">
-                                created {formatDistanceToNow(comment.createdAt, { addSuffix: true })}
+                                created {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
                             </span>
                         </>
                     ) : (
@@ -83,13 +76,13 @@ const CommentItem = ({ comment, isReply = false }: { comment: Comment; isReply?:
                         <div className="flex items-center gap-2 justify-end text-xs text-gray-500">
                             <Avatar className="h-5 w-5">
                                 <AvatarImage src={comment.author.avatar} />
-                                <AvatarFallback>U</AvatarFallback>
+                                <AvatarFallback>{comment.author.name[0]}</AvatarFallback>
                             </Avatar>
                             <span className="font-medium text-blue-500">{comment.author.name}</span>
-                            <span>created {formatDistanceToNow(comment.createdAt, { addSuffix: true })}</span>
-                            {comment.replyTo && (
-                                <span className="truncate max-w-[150px]" title={comment.replyTo}>
-                                    reply to "{comment.replyTo.substring(0, 20)}..."
+                            <span>created {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}</span>
+                            {comment.replyPreview && (
+                                <span className="truncate max-w-[150px]" title={comment.replyPreview}>
+                                    reply to "{comment.replyPreview.substring(0, 20)}..."
                                 </span>
                             )}
                         </div>
@@ -116,9 +109,58 @@ const CommentItem = ({ comment, isReply = false }: { comment: Comment; isReply?:
     );
 };
 
-export function PostDetailComment({ comments }: { comments: Comment[] }) {
+export function PostDetailComment({
+    targetType,
+    targetId,
+}: {
+    targetType: 'POST' | 'ANSWER';
+    targetId: number;
+}) {
+    const LIMIT = 5; // Batch size for fetching
+    const { postDetailData } = useContext<PostDetailContextProps>(PostDetailContext);
+    const { postRepository } = useContext(AppContext);
+
     const [isOpen, setIsOpen] = useState(true);
+    const [comments, setComments] = useState<Comment[]>([]);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true); // Assume true initially or check count
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+
     const commentCount = comments.reduce((acc, curr) => acc + 1 + (curr.replies?.length || 0), 0);
+
+    // Initialize comments from postDetailData (Page 1)
+    useEffect(() => {
+        if (postDetailData) {
+            const initialComments = (postDetailData?.comments || []).filter(comment =>
+                targetType === 'POST' ? comment.postId === targetId : comment.answerId === targetId
+            );
+            setComments(initialComments);
+            setPage(1);
+        }
+    }, [postDetailData, targetType, targetId]);
+
+    const handleLoadMore = () => {
+        if (!postRepository) return;
+        setIsLoadingMore(true);
+        postRepository.getComments(targetType, targetId, page + 1, LIMIT)
+            .subscribe({
+                next: (res) => {
+                    const newComments = res?.comments || [];
+                    if (newComments.length > 0) {
+                        setComments(prev => [...prev, ...newComments]);
+                        setPage(prev => prev + 1);
+                    }
+                    if (newComments.length < LIMIT) {
+                        setHasMore(false);
+                    }
+                    setIsLoadingMore(false);
+                },
+                error: (err) => {
+                    console.error("Failed to load more comments", err);
+                    setIsLoadingMore(false);
+                }
+            });
+    };
 
     return (
         <div>
@@ -138,20 +180,26 @@ export function PostDetailComment({ comments }: { comments: Comment[] }) {
             {isOpen && (
                 <div className="space-y-6">
                     {comments.map((comment) => (
-                        <div key={comment.id}>
+                        <div key={comment.commentId}>
                             <CommentItem comment={comment} />
                             {/* Nested Replies */}
                             {comment.replies?.map((reply) => (
-                                <CommentItem key={reply.id} comment={reply} isReply={true} />
+                                <CommentItem key={reply.commentId} comment={reply} isReply={true} />
                             ))}
                         </div>
                     ))}
 
-                    <div className="pt-4">
-                        <button className="text-gray-500 text-sm hover:underline flex items-center gap-1 cursor-pointer">
-                            Show all comments
-                        </button>
-                    </div>
+                    {(hasMore && comments.length > 0) && (
+                        <div className="pt-4">
+                            <button
+                                className="text-gray-500 text-sm hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                                onClick={handleLoadMore}
+                                disabled={isLoadingMore}
+                            >
+                                {isLoadingMore ? "Loading..." : "Show more comments"}
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
