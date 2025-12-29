@@ -3,14 +3,14 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { AppContext } from "@/hooks/app-context";
 import { Comment } from "@/model/post";
 import { formatDistanceToNow } from "date-fns";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useContext, useEffect, useState } from "react";
-import { AppContext } from "@/hooks/app-context";
 import { PostDetailContext, PostDetailContextProps } from "./post-detail-context";
 
-const CommentItem = ({ comment, isReply = false }: { comment: Comment; isReply?: boolean }) => {
+const CommentItem = ({ comment }: { comment: Comment }) => {
     const [isReplying, setIsReplying] = useState(false);
     const [replyContent, setReplyContent] = useState("");
 
@@ -24,39 +24,14 @@ const CommentItem = ({ comment, isReply = false }: { comment: Comment; isReply?:
     };
 
     return (
-        <div className={`flex gap-3 ${isReply ? "ml-12 mt-4" : "mt-6"}`}>
-            {/* Avatar */}
-            {!isReply && (
-                <Avatar className="h-8 w-8">
-                    <AvatarImage src={comment.author.avatar} alt={comment.author.name} />
-                    <AvatarFallback>{comment.author.name[0]}</AvatarFallback>
-                </Avatar>
-            )}
-
+        <div className="mt-1 border-b border-gray-100 pb-1 last:border-0">
             <div className="flex-1">
-                {/* Header: Name, Time, Reply Info */}
-                <div className="flex items-center gap-2 text-sm mb-1">
-                    {!isReply ? (
-                        <>
-                            <span className="font-medium text-blue-500">{comment.author.name}</span>
-                            <span className="text-gray-500 text-xs">
-                                created {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
-                            </span>
-                        </>
-                    ) : (
-                        // Reply header
-                        <div className="flex items-center gap-2 w-full justify-between">
-                            {/* Styling bit specific to proper threading if needed, but standard is fine */}
-                        </div>
-                    )}
-                </div>
-
                 {/* Content */}
-                <div className="text-gray-700 text-sm leading-relaxed">
+                <div className="text-gray-700 text-sm leading-relaxed mb-1">
                     {comment.content}
                 </div>
 
-                <div className="flex items-center justify-between mt-2">
+                <div className="flex items-center justify-between">
                     <div className="flex gap-3 text-xs font-medium text-blue-500">
                         <button
                             onClick={() => setIsReplying(!isReplying)}
@@ -64,29 +39,23 @@ const CommentItem = ({ comment, isReply = false }: { comment: Comment; isReply?:
                         >
                             Reply
                         </button>
-                        {!isReply && (
-                            <>
-                                <button className="hover:underline cursor-pointer">Edit</button>
-                                <button className="text-gray-400 hover:text-red-500 hover:underline cursor-pointer">Delete</button>
-                            </>
-                        )}
+                        <button className="hover:underline cursor-pointer">Edit</button>
+                        <button className="text-gray-400 hover:text-red-500 hover:underline cursor-pointer">Delete</button>
                     </div>
 
-                    {isReply && (
-                        <div className="flex items-center gap-2 justify-end text-xs text-gray-500">
-                            <Avatar className="h-5 w-5">
-                                <AvatarImage src={comment.author.avatar} />
-                                <AvatarFallback>{comment.author.name[0]}</AvatarFallback>
-                            </Avatar>
-                            <span className="font-medium text-blue-500">{comment.author.name}</span>
-                            <span>created {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}</span>
-                            {comment.replyPreview && (
-                                <span className="truncate max-w-[150px]" title={comment.replyPreview}>
-                                    reply to "{comment.replyPreview.substring(0, 20)}..."
-                                </span>
-                            )}
-                        </div>
-                    )}
+                    <div className="flex items-center gap-2 justify-end text-xs text-gray-500">
+                        <Avatar className="h-5 w-5">
+                            <AvatarImage src={comment.author.avatar} />
+                            <AvatarFallback>{comment.author.name[0]}</AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium text-blue-500">{comment.author.name}</span>
+                        <span>created {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}</span>
+                        {comment.replyPreview && (
+                            <span className="truncate max-w-[200px] text-gray-400" title={comment.replyPreview}>
+                                reply to "{comment.replyPreview.length > 30 ? comment.replyPreview.substring(0, 30) + '...' : comment.replyPreview}"
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 {/* Reply Input */}
@@ -116,7 +85,7 @@ export function PostDetailComment({
     targetType: 'POST' | 'ANSWER';
     targetId: number;
 }) {
-    const LIMIT = 5; // Batch size for fetching
+    const LIMIT = 2; // Batch size for fetching
     const { postDetailData } = useContext<PostDetailContextProps>(PostDetailContext);
     const { postRepository } = useContext(AppContext);
 
@@ -125,8 +94,6 @@ export function PostDetailComment({
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true); // Assume true initially or check count
     const [isLoadingMore, setIsLoadingMore] = useState(false);
-
-    const commentCount = comments.reduce((acc, curr) => acc + 1 + (curr.replies?.length || 0), 0);
 
     // Initialize comments from postDetailData (Page 1)
     useEffect(() => {
@@ -145,7 +112,7 @@ export function PostDetailComment({
         postRepository.getComments(targetType, targetId, page + 1, LIMIT)
             .subscribe({
                 next: (res) => {
-                    const newComments = res?.comments || [];
+                    const newComments = res?.data?.comments || [];
                     if (newComments.length > 0) {
                         setComments(prev => [...prev, ...newComments]);
                         setPage(prev => prev + 1);
@@ -171,7 +138,7 @@ export function PostDetailComment({
             >
                 <div className="text-gray-500 font-medium text-sm">
                     {/* Assuming dynamic count */}
-                    &lt;{commentCount} comments&gt;
+                    &lt;{comments.length} comments&gt;
                 </div>
                 {isOpen ? <ChevronUp className="h-4 w-4 text-gray-500" /> : <ChevronDown className="h-4 w-4 text-gray-500" />}
             </div>
@@ -181,11 +148,9 @@ export function PostDetailComment({
                 <div className="space-y-6">
                     {comments.map((comment) => (
                         <div key={comment.commentId}>
-                            <CommentItem comment={comment} />
-                            {/* Nested Replies */}
-                            {comment.replies?.map((reply) => (
-                                <CommentItem key={reply.commentId} comment={reply} isReply={true} />
-                            ))}
+                            <CommentItem
+                                comment={comment}
+                            />
                         </div>
                     ))}
 

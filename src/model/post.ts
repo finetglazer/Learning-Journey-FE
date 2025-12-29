@@ -33,7 +33,6 @@ export interface Comment {
     answerId?: number;
     createdAt: string;
     updatedAt: string;
-    replies?: Comment[]; // For frontend recursive rendering
 }
 
 export interface Post {

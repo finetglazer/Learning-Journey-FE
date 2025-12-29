@@ -12,8 +12,10 @@ export interface PostDetailContextProps {
     isFetching: boolean;
     updateAnswerAcceptedStatus: (answerId: number) => void;
     hasMoreAnswers: boolean;
-    onHasMoreAnswer: () => void;
+    onHasMoreAnswer: (isReload?: boolean) => void;
     addComment: (targetType: "POST" | "ANSWER" | "COMMENT", targetId: number, content: string) => void;
+    answerSort: 'newest' | 'most_helpful';
+    setAnswerSort: (sort: 'newest' | 'most_helpful') => void;
 }
 
 export const PostDetailContext = createContext<PostDetailContextProps>({
@@ -23,6 +25,8 @@ export const PostDetailContext = createContext<PostDetailContextProps>({
     hasMoreAnswers: true,
     onHasMoreAnswer: () => { },
     addComment: () => { },
+    answerSort: 'most_helpful',
+    setAnswerSort: () => { },
 });
 
 export const usePostDetailHook = (postId: number): PostDetailContextProps => {
@@ -31,6 +35,7 @@ export const usePostDetailHook = (postId: number): PostDetailContextProps => {
     const [hasMoreAnswers, setHasMoreAnswers] = useState(true);
     const [answerPage, setAnswerPage] = useState(1);
     const [isFetchingAnswers, setIsFetchingAnswers] = useState(false);
+    const [answerSort, setAnswerSort] = useState<'newest' | 'most_helpful'>('most_helpful');
 
     const {
         postRepository,
@@ -38,11 +43,12 @@ export const usePostDetailHook = (postId: number): PostDetailContextProps => {
     } = useContext<AppContextProps>(AppContext);
 
 
-    const onHasMoreAnswer = useCallback(() => {
-        if (!postRepository || !postId || isFetchingAnswers || !hasMoreAnswers) return;
+    const onHasMoreAnswer = useCallback((isReload?: boolean) => {
+        if (!postRepository || !postId || isFetchingAnswers) return;
 
         setIsFetchingAnswers(true);
-        postRepository.getAnswers(postId, answerPage + 1)
+
+        postRepository.getAnswers(postId, isReload ? 1 : answerPage + 1, 10, answerSort.toUpperCase())
             .pipe(finalize(() => setIsFetchingAnswers(false)))
             .subscribe({
                 next: (res) => {
@@ -50,6 +56,9 @@ export const usePostDetailHook = (postId: number): PostDetailContextProps => {
                     if (newAnswers.length > 0) {
                         setPostDetailData(prev => {
                             if (!prev) return null;
+                            if (isReload) {
+                                return newAnswers;
+                            }
                             return {
                                 ...prev,
                                 answers: [...(prev.answers || []), ...newAnswers]
@@ -63,7 +72,7 @@ export const usePostDetailHook = (postId: number): PostDetailContextProps => {
                 },
                 error: (err) => console.error(err)
             });
-    }, [postRepository, postId, answerPage, hasMoreAnswers, isFetchingAnswers]);
+    }, [postRepository, postId, answerPage, hasMoreAnswers, isFetchingAnswers, answerSort]);
 
     const addComment = useCallback((targetType: "POST" | "ANSWER" | "COMMENT", targetId: number, content: string) => {
         if (!postRepository || !userId) return;
@@ -77,15 +86,20 @@ export const usePostDetailHook = (postId: number): PostDetailContextProps => {
         const sub = postRepository.addComment(userId, request).subscribe({
             next: (res) => {
                 if (res) {
-                    toast.success("Comment added successfully");
-                    setPostDetailData(prev => {
-                        if (!prev) return null;
-                        const newComment = res.data; // Assuming res is the full Comment object
-                        return {
-                            ...prev,
-                            comments: [...(prev.comments || []), newComment]
-                        };
-                    });
+                    if (res?.status) {
+                        toast.success(res?.msg || res?.message);
+                        setPostDetailData(prev => {
+                            if (!prev) return null;
+                            const newComment = res.data;
+                            return {
+                                ...prev,
+                                comments: [...(prev.comments || []), newComment]
+                            };
+                        });
+                    }
+                    else {
+                        toast.error(res?.msg || res?.message);
+                    }
                 }
             },
             error: (err) => {
@@ -134,6 +148,10 @@ export const usePostDetailHook = (postId: number): PostDetailContextProps => {
         postId,
         userId,
     ]);
+
+    useEffect(() => {
+        onHasMoreAnswer(true);
+    }, [answerSort]);
 
     useEffect(() => {
         if (!postRepository || !postId || !userId) {
@@ -188,5 +206,7 @@ export const usePostDetailHook = (postId: number): PostDetailContextProps => {
         hasMoreAnswers,
         onHasMoreAnswer,
         addComment,
+        answerSort,
+        setAnswerSort
     };
 };

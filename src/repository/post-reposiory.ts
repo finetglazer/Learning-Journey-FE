@@ -15,7 +15,7 @@ export interface UpdateSavePostStatusRequest {
 }
 
 export interface CreateAnswerRequest {
-    content: string;
+    content: any;
 }
 
 export interface CreateCommentRequest {

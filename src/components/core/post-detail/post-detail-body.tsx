@@ -14,7 +14,7 @@ import { RichTextRenderer } from "../rich-text/rich-text-renderer";
 
 
 export const PostDetailBody = () => {
-    const { postDetailData, updateAnswerAcceptedStatus, hasMoreAnswers, onHasMoreAnswer, addComment } = useContext<PostDetailContextProps>(PostDetailContext);
+    const { postDetailData, updateAnswerAcceptedStatus, hasMoreAnswers, onHasMoreAnswer, addComment, answerSort, setAnswerSort } = useContext<PostDetailContextProps>(PostDetailContext);
     const [isQuestionCommentOpen, setIsQuestionCommentOpen] = useState(false);
     const [replyingToAnswerId, setReplyingToAnswerId] = useState<number | null>(null);
     const [commentContent, setCommentContent] = useState("");
@@ -104,18 +104,28 @@ export const PostDetailBody = () => {
                     <h3 className="text-xl font-semibold text-gray-700">
                         {postDetailData.stats.answerCount} answers
                     </h3>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                         <Button
-                            variant="secondary"
-                            className="bg-blue-50 text-blue-600 hover:bg-blue-100 h-9 px-4 font-medium text-sm cursor-pointer"
+                            variant="ghost"
+                            className={`gap-2 cursor-pointer transition-colors ${answerSort === "newest"
+                                ? "bg-teal-500 text-white hover:bg-teal-600"
+                                : "bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700"
+                                }`}
+                            onClick={() => setAnswerSort("newest")}
                         >
-                            <Flag className="mr-2 h-4 w-4" /> Newest
+                            <Flag className="h-4 w-4" />
+                            Newest
                         </Button>
                         <Button
                             variant="ghost"
-                            className="bg-gray-100 text-gray-700 hover:bg-gray-200 h-9 px-4 font-medium text-sm cursor-pointer"
+                            className={`gap-2 cursor-pointer transition-colors ${answerSort === "most_helpful"
+                                ? "bg-teal-500 text-white hover:bg-teal-600"
+                                : "bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700"
+                                }`}
+                            onClick={() => setAnswerSort("most_helpful")}
                         >
-                            <ArrowUp className="mr-2 h-5 w-5" /> Most helpful
+                            <ArrowUp className="h-4 w-4" />
+                            Most helpful
                         </Button>
                     </div>
                 </div>

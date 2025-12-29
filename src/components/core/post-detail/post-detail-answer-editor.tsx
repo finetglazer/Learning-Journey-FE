@@ -6,18 +6,20 @@ import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useContext, useState } from "react";
+import { finalize } from "rxjs";
+import { toast } from "sonner";
 import { SlashCommands } from "../notion-editor/extensions/slash-commands";
 import { PostDetailContext } from "./post-detail-context";
+import { CreateAnswerRequest } from "@/repository/post-reposiory";
 
-export interface PostDetailAnswerEditorProps {
-    // You might want to pass onSubmit callback or handle it internally
-}
+export interface PostDetailAnswerEditorProps { }
 
 export function PostDetailAnswerEditor({ }: PostDetailAnswerEditorProps) {
     const { postRepository, userId } = useContext(AppContext);
-    const { postDetailData } = useContext(PostDetailContext);
+    const { postDetailData, onHasMoreAnswer } = useContext(PostDetailContext);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [content, setContent] = useState<any>(null);
+
     const editor = useEditor({
         immediatelyRender: false,
         extensions: [
@@ -38,15 +40,34 @@ export function PostDetailAnswerEditor({ }: PostDetailAnswerEditorProps) {
         },
     });
 
-    const handleSubmit = () => {
-        if (!editor || !postDetailData || editor.isEmpty) return;
+    const postAnswer = () => {
+        if (!editor || !postDetailData || editor.isEmpty || !postRepository || !userId) return;
 
         setIsSubmitting(true);
 
-        setTimeout(() => {
-            setIsSubmitting(false);
-            editor.commands.setContent("");
-        }, 1000);
+        const request: CreateAnswerRequest = {
+            content: editor.getJSON() as any,
+        };
+
+        postRepository.submitAnswer(userId, postDetailData.postId, request)
+            .pipe(finalize(() => setIsSubmitting(false)))
+            .subscribe({
+                next: (res) => {
+                    if (res?.status) {
+                        toast.success(res?.msg || res?.message);
+                        editor.commands.clearContent();
+                        // Reload answers to show the new one at the top (if sort is newest) or just refresh
+                        onHasMoreAnswer(true);
+                    }
+                    else {
+                        toast.error(res?.msg || res?.message);
+                    }
+                },
+                error: (err) => {
+                    toast.error("Failed to post answer");
+                    console.error(err);
+                }
+            });
     };
 
     return (
@@ -55,8 +76,8 @@ export function PostDetailAnswerEditor({ }: PostDetailAnswerEditorProps) {
             <EditorContent editor={editor} />
             <div className="flex justify-end">
                 <Button
-                    className="bg-[#0EB4FC] hover:bg-[#0EB4FC]/90 text-white min-w-[120px]"
-                    onClick={handleSubmit}
+                    className="bg-[#0EB4FC] cursor-pointer hover:bg-[#0EB4FC]/90 text-white min-w-[120px]"
+                    onClick={postAnswer}
                     disabled={isSubmitting || !editor || editor.isEmpty}
                 >
                     {isSubmitting ? "Posting..." : "Post Answer"}
