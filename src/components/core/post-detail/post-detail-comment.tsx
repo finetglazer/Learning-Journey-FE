@@ -2,19 +2,27 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { AppContext } from "@/hooks/app-context";
-import { Comment } from "@/model/post";
+import { Comment, PostAuthor } from "@/model/post";
 import { formatDistanceToNow } from "date-fns";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useContext, useEffect, useState } from "react";
 import { PostDetailContext, PostDetailContextProps } from "./post-detail-context";
+import { AlertMessage, AlertModal } from "../alert-modal/alert-modal";
+import { toast } from "sonner";
+// Local AuthorHoverInfo removed used from import
+import { AuthorHoverInfo } from "./author-hover-info";
 
-const CommentItem = ({ comment }: { comment: Comment }) => {
+const CommentItem = ({ comment, onUpdate }: { comment: Comment, onUpdate: (id: number, content: string) => void }) => {
     const [isReplying, setIsReplying] = useState(false);
     const [replyContent, setReplyContent] = useState("");
+    const [isEditing, setIsEditing] = useState(false);
+    const [editContent, setEditContent] = useState(comment.content);
+    const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
 
-    const { addComment } = useContext<PostDetailContextProps>(PostDetailContext);
+    const { addComment, deleteComment, userId } = useContext<PostDetailContextProps>(PostDetailContext);
 
     const handleReplySubmit = () => {
         if (!replyContent.trim()) return;
@@ -23,13 +31,58 @@ const CommentItem = ({ comment }: { comment: Comment }) => {
         setReplyContent("");
     };
 
+    const handleDelete = () => {
+        setAlertMessage({
+            title: "Are you sure you want to delete this comment?",
+            description: "This action cannot be undone.",
+            type: "warning",
+            proceedAnyway: () => deleteComment(comment.commentId),
+        });
+    };
+
+    const handleUpdate = () => {
+        if (!editContent.trim()) return;
+        onUpdate(comment.commentId, editContent);
+        setIsEditing(false);
+    };
+
     return (
         <div className="mt-1 border-b border-gray-100 pb-1 last:border-0">
             <div className="flex-1">
                 {/* Content */}
-                <div className="text-gray-700 text-sm leading-relaxed mb-1">
-                    {comment.content}
-                </div>
+                {isEditing ? (
+                    <div className="mb-2">
+                        <Input
+                            className="text-sm h-9 mb-2"
+                            value={editContent}
+                            onChange={(e) => setEditContent(e.target.value)}
+                        />
+                        <div className="flex justify-end gap-2">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-xs cursor-pointer"
+                                onClick={() => {
+                                    setIsEditing(false);
+                                    setEditContent(comment.content);
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                size="sm"
+                                className="h-7 px-2 text-xs cursor-pointer"
+                                onClick={handleUpdate}
+                            >
+                                Save
+                            </Button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="text-gray-700 text-sm leading-relaxed mb-1">
+                        {comment.content}
+                    </div>
+                )}
 
                 <div className="flex items-center justify-between">
                     <div className="flex gap-3 text-xs font-medium text-blue-500">
@@ -39,8 +92,25 @@ const CommentItem = ({ comment }: { comment: Comment }) => {
                         >
                             Reply
                         </button>
-                        <button className="hover:underline cursor-pointer">Edit</button>
-                        <button className="text-gray-400 hover:text-red-500 hover:underline cursor-pointer">Delete</button>
+                        {comment.author.userId === userId && (
+                            <>
+                                <button
+                                    className="hover:underline cursor-pointer"
+                                    onClick={() => {
+                                        setIsEditing(true);
+                                        setEditContent(comment.content);
+                                    }}
+                                >
+                                    Edit
+                                </button>
+                                <button
+                                    className="text-gray-400 hover:text-red-500 hover:underline cursor-pointer"
+                                    onClick={handleDelete}
+                                >
+                                    Delete
+                                </button>
+                            </>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-2 justify-end text-xs text-gray-500">
@@ -48,7 +118,7 @@ const CommentItem = ({ comment }: { comment: Comment }) => {
                             <AvatarImage src={comment.author.avatar} />
                             <AvatarFallback>{comment.author.name[0]}</AvatarFallback>
                         </Avatar>
-                        <span className="font-medium text-blue-500">{comment.author.name}</span>
+                        <span className="font-medium text-blue-500"><AuthorHoverInfo author={comment.author} currentUserId={userId} /></span>
                         <span>created {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}</span>
                         {comment.replyPreview && (
                             <span className="truncate max-w-[200px] text-gray-400" title={comment.replyPreview}>
@@ -57,6 +127,13 @@ const CommentItem = ({ comment }: { comment: Comment }) => {
                         )}
                     </div>
                 </div>
+
+                {alertMessage && (
+                    <AlertModal
+                        alertMessage={alertMessage}
+                        onClose={() => setAlertMessage(null)}
+                    />
+                )}
 
                 {/* Reply Input */}
                 {isReplying && (
@@ -86,8 +163,8 @@ export function PostDetailComment({
     targetId: number;
 }) {
     const LIMIT = 2; // Batch size for fetching
-    const { postDetailData } = useContext<PostDetailContextProps>(PostDetailContext);
-    const { postRepository } = useContext(AppContext);
+    const { postDetailData, setPostDetailData, } = useContext<PostDetailContextProps>(PostDetailContext);
+    const { postRepository, userId } = useContext(AppContext);
 
     const [isOpen, setIsOpen] = useState(true);
     const [comments, setComments] = useState<Comment[]>([]);
@@ -104,7 +181,7 @@ export function PostDetailComment({
             setComments(initialComments);
             setPage(1);
         }
-    }, [postDetailData, targetType, targetId]);
+    }, [postDetailData?.comments, targetType, targetId]);
 
     const handleLoadMore = () => {
         if (!postRepository) return;
@@ -129,6 +206,31 @@ export function PostDetailComment({
             });
     };
 
+    const handleUpdateComment = (commentId: number, content: string) => {
+        if (!postRepository || !userId) return;
+
+        postRepository.updateComment(userId, commentId, content).subscribe({
+            next: (res) => {
+                if (res?.status) {
+                    toast.success(res?.msg || "Updated comment successfully");
+                    setPostDetailData(prev => {
+                        if (!prev) return null;
+                        return {
+                            ...prev,
+                            comments: prev.comments?.map(c => c.commentId === commentId ? { ...c, content } : c) || []
+                        };
+                    });
+                } else {
+                    toast.error(res?.msg || "Failed to update comment");
+                }
+            },
+            error: (err) => {
+                console.error(err);
+                toast.error("Failed to update comment");
+            }
+        });
+    };
+
     return (
         <div>
             {/* Section Header */}
@@ -150,6 +252,7 @@ export function PostDetailComment({
                         <div key={comment.commentId}>
                             <CommentItem
                                 comment={comment}
+                                onUpdate={handleUpdateComment}
                             />
                         </div>
                     ))}

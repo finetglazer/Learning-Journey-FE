@@ -27,23 +27,37 @@ import { isEqual, debounce } from "lodash";
 export interface CreatePostModalProps {
     open: boolean;
     onClose: () => void;
+    initialData?: { title: string; content: any; tags: string[] };
+    onSubmit?: (model: CreatePostModel) => void;
 }
 
-export function CreatePostModal({ open, onClose }: CreatePostModalProps) {
-    const {
-        alertMessage,
-        setAlertMessage,
-        onCreatePost,
-    } = useContext<PostPageContextInterface>(PostPageContext);
+export function CreatePostModal({ open, onClose, initialData, onSubmit }: CreatePostModalProps) {
+    const postPageContext = useContext<PostPageContextInterface>(PostPageContext);
+
+    const alertMessage = postPageContext?.alertMessage || null;
+    const setAlertMessage = postPageContext?.setAlertMessage;
+    const onCreatePost = postPageContext?.onCreatePost;
 
     const { postRepository } = useContext(AppContext);
 
     const { model, updateModel, onSubmitForm, loading } = formService.useForm(
         CreatePostModel,
-        onCreatePost as any,
+        onSubmit,
         undefined,
         new CreatePostModel()
     );
+
+    useEffect(() => {
+        if (open && initialData) {
+            updateModel("title", initialData.title);
+            updateModel("content", initialData.content);
+            updateModel("tags", initialData.tags);
+        } else if (open && !initialData) {
+            updateModel("title", "");
+            updateModel("content", "");
+            updateModel("tags", []);
+        }
+    }, [open, initialData]);
 
     const [newTag, setNewTag] = useState("");
     const [isAddingTag, setIsAddingTag] = useState(false);
@@ -168,7 +182,7 @@ export function CreatePostModal({ open, onClose }: CreatePostModalProps) {
         <Dialog open={open} onOpenChange={(val) => !val && onClose()}>
             <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>Create Post</DialogTitle>
+                    <DialogTitle>{initialData ? "Edit Post" : "Create Post"}</DialogTitle>
                 </DialogHeader>
 
                 <div className="flex flex-col gap-6 py-4">
@@ -279,7 +293,7 @@ export function CreatePostModal({ open, onClose }: CreatePostModalProps) {
                             disabled={loading || !model.title || !model.content}
                         >
                             <Plus className="h-4 w-4" />
-                            Post
+                            {initialData ? "Update" : "Post"}
                         </Button>
                         <Button variant="secondary" onClick={onClose} className="cursor-pointer bg-muted hover:bg-muted/80">
                             Cancel

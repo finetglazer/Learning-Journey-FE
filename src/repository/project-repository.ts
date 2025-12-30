@@ -40,6 +40,15 @@ export class ProjectRepository extends BaseRepository {
             .pipe(map(res => res?.data));
     };
 
+    /**
+     * Get list of projects that can invite the specified user.
+     * Corresponds to: GET /inviteable-projects/{invitedId}
+     */
+    public getInviteableProjects = (invitedId: number | string): Observable<any> => {
+        return this.http.get(`/inviteable-projects/${invitedId}`)
+            .pipe(map(res => res?.data));
+    };
+
     public addMemberToProject = (params: any, body: any): Observable<any> => {
         return this.http.post(`/${params.projectId}/members`, body)
             .pipe(map(res => res?.data));

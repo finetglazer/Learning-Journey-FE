@@ -11,7 +11,9 @@ export interface VoteRequest {
 }
 
 export interface UpdateSavePostStatusRequest {
-    isSaved: boolean;
+    target: "PRIVATE" | "PROJECT";
+    projectId?: number;
+    wannaSave: boolean;
 }
 
 export interface CreateAnswerRequest {
@@ -93,6 +95,15 @@ export class PostRepository extends BaseRepository {
             })
             .pipe(map((response) => response?.data));
     };
+
+    public updatePost = (userId: number, postId: number, request: CreatePostModel): Observable<Post> => {
+        return this.http
+            .put(`${BASE_API_URL}/posts/${postId}`, request, {
+                headers: { "X-User-Id": userId },
+            })
+            .pipe(map((response) => response?.data));
+    };
+
 
     public updateSaveStatus = (
         userId: number,
@@ -194,12 +205,32 @@ export class PostRepository extends BaseRepository {
             .pipe(map((response) => response?.data));
     };
 
+    public updateComment = (userId: number, commentId: number, content: string): Observable<any> => {
+        return this.http
+            .put(`${BASE_API_URL}/comments/${commentId}`, { content }, {
+                headers: { "X-User-Id": userId },
+            })
+            .pipe(map((response) => response?.data));
+    };
+
     // --- 5. UTILITIES ---
 
     public searchTags = (query: string): Observable<any> => {
         return this.http
             .get(`${BASE_API_URL}/tags/search`, {
                 params: { query },
+            })
+            .pipe(map((response) => response?.data));
+    };
+
+    public updateAnswer = (
+        userId: number,
+        answerId: number,
+        request: CreateAnswerRequest // Re-using CreateAnswerRequest as the structure is likely the same (content)
+    ): Observable<any> => {
+        return this.http
+            .put(`${BASE_API_URL}/answers/${answerId}`, request, {
+                headers: { "X-User-Id": userId },
             })
             .pipe(map((response) => response?.data));
     };

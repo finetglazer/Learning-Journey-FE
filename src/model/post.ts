@@ -11,6 +11,7 @@ export interface PostAuthor {
     userId: number;
     name: string;
     avatar: string;
+    email: string;
 }
 
 export interface Answer {
@@ -45,6 +46,7 @@ export interface Post {
     authorId: number;
     authorName: string;
     authorAvatar: string;
+    authorEmail: string;
 
     tags: string[];
 
@@ -66,4 +68,5 @@ export interface Post {
     comments?: Comment[];
     userVote?: number;
     isSaved?: boolean;
+    savedToProjectIds?: number[];
 }

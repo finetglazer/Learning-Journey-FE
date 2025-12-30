@@ -8,21 +8,67 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useState, useMemo } from "react";
-import { ChevronRight, Folder, Users, Lock, Briefcase } from "lucide-react";
+import { useState, useMemo, useContext, useEffect } from "react";
+import { ChevronRight, Folder, Users, Lock, Briefcase, Loader2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AppContext } from "@/hooks/app-context";
+import { isNil } from "lodash";
 
 interface SelectFolderModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSelect?: (folder: any) => void;
     projectsOnly?: boolean;
+    invitedUserId?: number | string;
+    savedProjectIds?: number[];
 }
 
-export const SelectFolderModal = ({ open, onOpenChange, onSelect, projectsOnly = false }: SelectFolderModalProps) => {
+export const SelectFolderModal = ({ open, onOpenChange, onSelect, projectsOnly = false, invitedUserId, savedProjectIds = [] }: SelectFolderModalProps) => {
     // History stack keeps track of navigation. Empty array means root (projects list).
     const [history, setHistory] = useState<any[]>([]);
     const [selectedItem, setSelectedItem] = useState<any | null>(null);
+    const [projects, setProjects] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    const { projectRepository } = useContext(AppContext);
+
+    // Fetch projects when modal opens
+    useEffect(() => {
+        if (open && projectRepository) {
+            setIsLoading(true);
+            const finalize = () => setIsLoading(false);
+
+            if (invitedUserId) {
+                projectRepository.getInviteableProjects(invitedUserId).subscribe({
+                    next: (res) => {
+                        if (res?.data) {
+                            setProjects(res?.data || []);
+                        }
+                        finalize();
+                    },
+                    error: (err) => {
+                        console.error("Failed to fetch inviteable projects", err);
+                        setProjects([]);
+                        finalize();
+                    }
+                });
+            } else {
+                projectRepository.getProjects().subscribe({
+                    next: (res) => {
+                        if (res?.status) {
+                            setProjects(res?.data?.projects || []);
+                        }
+                        finalize();
+                    },
+                    error: (err) => {
+                        console.error("Failed to fetch projects", err);
+                        setProjects([]);
+                        finalize();
+                    }
+                });
+            }
+        }
+    }, [open, projectRepository, invitedUserId]);
 
     // Current parent is the last item in history
     const currentParent = history.length > 0 ? history[history.length - 1] : null;
@@ -30,11 +76,10 @@ export const SelectFolderModal = ({ open, onOpenChange, onSelect, projectsOnly =
     // Determine items to display
     const items = useMemo(() => {
         if (!currentParent) {
-            return [];
-            // return projects;
+            return projects;
         }
         return currentParent.folders || currentParent.children || [];
-    }, [currentParent]);
+    }, [currentParent, projects]);
 
     const handleSingleClick = (item: any) => {
         setSelectedItem(item);
@@ -82,11 +127,28 @@ export const SelectFolderModal = ({ open, onOpenChange, onSelect, projectsOnly =
         // If at root level, show user/group icon based on privacy, else show folder icon
         if (!currentParent) {
             // It's a project
-            if (item.privacy === 'public') return <Users className="h-5 w-5 text-muted-foreground" />;
-            if (item.privacy === 'private') return <Lock className="h-5 w-5 text-muted-foreground" />;
-            return <Briefcase className="h-5 w-5 text-muted-foreground" />;
+            return <Users className="h-5 w-5 text-muted-foreground" />;
         }
         return <Folder className="h-5 w-5 text-muted-foreground" />;
+    };
+
+    const isSelected = (item: any) => {
+        return (selectedItem?.id === item.id && !isNil(selectedItem?.id)) || (selectedItem?.projectId === item.projectId && !isNil(selectedItem?.projectId));
+    };
+
+    const isSaved = (item: any) => {
+        const id = item.id || item.projectId;
+        return savedProjectIds.includes(id);
+    };
+
+    const getButtonText = () => {
+        if (projectsOnly && invitedUserId) return "Invite to this project";
+
+        if (selectedItem && isSaved(selectedItem)) {
+            return "Unsave from this project";
+        }
+
+        return projectsOnly ? "Save to this project" : "Save in this folder";
     };
 
     return (
@@ -123,23 +185,30 @@ export const SelectFolderModal = ({ open, onOpenChange, onSelect, projectsOnly =
 
                 <div className="min-h-[300px] border rounded-md">
                     <div className="p-2 flex flex-col gap-1">
-                        {items.length === 0 ? (
+                        {isLoading ? (
+                            <div className="flex items-center justify-center min-h-[200px]">
+                                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                            </div>
+                        ) : items.length === 0 ? (
                             <div className="p-8 text-center text-muted-foreground text-xl">
                                 This folder is empty
                             </div>
                         ) : (
-                            items.map((item: any) => (
+                            (items || []).map((item: any) => (
                                 <div
                                     key={item.id}
                                     onClick={() => handleSingleClick(item)}
                                     onDoubleClick={() => handleDoubleProjectClick(item)}
                                     className={cn(
-                                        "flex items-center gap-3 p-3 rounded-md cursor-pointer transition-colors select-none",
-                                        selectedItem?.id === item.id ? "bg-gray-200" : "hover:bg-accent/50"
+                                        "flex items-center justify-between p-3 rounded-md cursor-pointer transition-colors select-none",
+                                        isSelected(item) ? "bg-gray-200" : "hover:bg-accent/50"
                                     )}
                                 >
-                                    {getIcon(item)}
-                                    <span className="text-xl font-medium">{item.name}</span>
+                                    <div className="flex items-center gap-3">
+                                        {getIcon(item)}
+                                        <span className="text-xl font-medium">{item.name || item.projectName}</span>
+                                    </div>
+                                    {isSaved(item) && <Check className="h-5 w-5 text-green-500" />}
                                 </div>
                             ))
                         )}
@@ -153,9 +222,14 @@ export const SelectFolderModal = ({ open, onOpenChange, onSelect, projectsOnly =
                     <Button
                         disabled={!selectedItem}
                         onClick={handleSave}
-                        className="bg-emerald-500 cursor-pointer hover:bg-emerald-600 text-white"
+                        className={cn(
+                            "cursor-pointer text-white",
+                            selectedItem && isSaved(selectedItem)
+                                ? "bg-red-500 hover:bg-red-600"
+                                : "bg-emerald-500 hover:bg-emerald-600"
+                        )}
                     >
-                        {projectsOnly ? "Save to this project" : "Save in this folder"}
+                        {getButtonText()}
                     </Button>
                 </DialogFooter>
             </DialogContent>

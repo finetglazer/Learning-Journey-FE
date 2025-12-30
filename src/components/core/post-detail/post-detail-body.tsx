@@ -11,13 +11,60 @@ import { PostDetailContext, PostDetailContextProps } from "./post-detail-context
 import { PostDetailQuestion } from "./post-detail-question";
 import { PostDetailAnswerEditor } from "./post-detail-answer-editor";
 import { RichTextRenderer } from "../rich-text/rich-text-renderer";
+import { PostDetailAnswerEditForm } from "./post-detail-answer-edit-form";
+import { AuthorHoverInfo } from "./author-hover-info";
+import { CreatePostModal } from "../post/create-post-modal";
+import { CreatePostModel } from "@/model/create-post-model";
+import { toast } from "sonner";
+import { AppContext } from "@/hooks/app-context";
 
 
 export const PostDetailBody = () => {
-    const { postDetailData, updateAnswerAcceptedStatus, hasMoreAnswers, onHasMoreAnswer, addComment, answerSort, setAnswerSort } = useContext<PostDetailContextProps>(PostDetailContext);
+    const {
+        postDetailData,
+        updateAnswerAcceptedStatus,
+        hasMoreAnswers,
+        onHasMoreAnswer,
+        addComment,
+        answerSort,
+        setAnswerSort,
+        userId: currentUserId,
+        setPostDetailData
+    } = useContext<PostDetailContextProps>(PostDetailContext);
+
+    const { postRepository } = useContext(AppContext);
+
     const [isQuestionCommentOpen, setIsQuestionCommentOpen] = useState(false);
     const [replyingToAnswerId, setReplyingToAnswerId] = useState<number | null>(null);
     const [commentContent, setCommentContent] = useState("");
+    const [editingAnswerId, setEditingAnswerId] = useState<number | null>(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+    const handleUpdatePost = (model: CreatePostModel) => {
+        if (!postRepository || !currentUserId || !postDetailData) return;
+
+        postRepository.updatePost(currentUserId, postDetailData.postId, model).subscribe({
+            next: (res: any) => {
+                if (res?.status) {
+                    toast.success(res?.message || res?.msg || "Post updated successfully");
+                    setIsEditModalOpen(false);
+                    setPostDetailData({
+                        ...postDetailData,
+                        title: model.title,
+                        content: model.content,
+                        tags: model.tags
+                    });
+                }
+                else {
+                    toast.error(res?.msg || res?.message || "Failed to update post");
+                }
+            },
+            error: (err) => {
+                console.error(err);
+                toast.error("Failed to update post");
+            }
+        });
+    };
 
     const handleSubmitComment = (targetType: "POST" | "ANSWER", targetId: number) => {
         if (!commentContent.trim()) return;
@@ -60,9 +107,14 @@ export const PostDetailBody = () => {
                     >
                         Comment
                     </button>
-                    <button className="text-gray-500 text-sm font-medium hover:text-blue-500 cursor-pointer">
-                        Edit
-                    </button>
+                    {currentUserId === postDetailData.authorId && (
+                        <button
+                            className="text-gray-500 text-sm font-medium hover:text-blue-500 cursor-pointer"
+                            onClick={() => setIsEditModalOpen(true)}
+                        >
+                            Edit
+                        </button>
+                    )}
                     <button className="text-gray-500 text-sm font-medium hover:text-red-500 cursor-pointer">
                         Delete
                     </button>
@@ -131,121 +183,135 @@ export const PostDetailBody = () => {
                 </div>
                 {/* Answers List */}
                 <div className="space-y-10">
-                    {(postDetailData?.answers || []).map((answer) => (
-                        <div key={answer.answerId} className="flex gap-6">
-                            {/* Answer Vote Counter */}
-                            <div className="flex flex-col items-center gap-1">
-                                <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 cursor-pointer">
-                                    <ChevronUp className="h-8 w-8 text-gray-500" />
-                                </Button>
+                    {postDetailData?.answers?.map((answer) => {
+                        const isAuthor = currentUserId === answer.author.userId;
+                        return (
+                            <div key={answer.answerId} className="flex gap-6">
+                                {/* Answer Vote Counter */}
+                                <div className="flex flex-col items-center gap-1">
+                                    <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 cursor-pointer">
+                                        <ChevronUp className="h-8 w-8 text-gray-500" />
+                                    </Button>
 
-                                <span className="text-xl font-semibold text-gray-700">
-                                    {answer.score}
-                                </span>
+                                    <span className="text-xl font-semibold text-gray-700">
+                                        {answer.score}
+                                    </span>
 
-                                <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 cursor-pointer">
-                                    <ChevronDown className="h-8 w-8 text-gray-500" />
-                                </Button>
+                                    <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 cursor-pointer">
+                                        <ChevronDown className="h-8 w-8 text-gray-500" />
+                                    </Button>
 
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="rounded-full h-10 w-10 cursor-pointer mt-2"
-                                    onClick={() => updateAnswerAcceptedStatus(answer.answerId)}
-                                >
-                                    {answer.isAccepted ? (
-                                        <div className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center shadow-sm">
-                                            <span className="text-white text-lg font-bold">✓</span>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="rounded-full h-10 w-10 cursor-pointer mt-2"
+                                        onClick={() => updateAnswerAcceptedStatus(answer.answerId)}
+                                    >
+                                        {answer.isAccepted ? (
+                                            <div className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center shadow-sm">
+                                                <span className="text-white text-lg font-bold">✓</span>
+                                            </div>
+                                        ) : (
+                                            <div className="h-8 w-8 rounded-full border-2 border-gray-300 hover:border-gray-400 transition-colors" />
+                                        )}
+                                    </Button>
+                                </div>
+
+                                {/* Answer Content */}
+                                <div className="flex-1 min-w-0">
+                                    {editingAnswerId === answer.answerId ? (
+                                        <div className="mb-4">
+                                            <PostDetailAnswerEditForm
+                                                answerId={answer.answerId}
+                                                initialContent={answer.content}
+                                                onCancel={() => setEditingAnswerId(null)}
+                                            />
                                         </div>
                                     ) : (
-                                        <div className="h-8 w-8 rounded-full border-2 border-gray-300 hover:border-gray-400 transition-colors" />
+                                        <div className="text-gray-800 leading-relaxed mb-4">
+                                            <RichTextRenderer content={answer.content} />
+                                        </div>
                                     )}
-                                </Button>
-                            </div>
 
-                            {/* Answer Content */}
-                            <div className="flex-1 min-w-0">
-                                <div className="text-gray-800 leading-relaxed mb-4">
-                                    <RichTextRenderer content={answer.content} />
-                                </div>
+                                    {/* Answer Metadata / Actions */}
+                                    {editingAnswerId !== answer.answerId && (
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className="flex items-center gap-4">
+                                                <button
+                                                    className="text-blue-500 text-sm hover:underline cursor-pointer"
+                                                    onClick={() => {
+                                                        setReplyingToAnswerId(replyingToAnswerId === answer.answerId ? null : answer.answerId);
+                                                        setCommentContent("");
+                                                    }}
+                                                >
+                                                    Comment
+                                                </button>
+                                                {isAuthor && (
+                                                    <>
+                                                        <button
+                                                            className="text-blue-500 text-sm hover:underline cursor-pointer"
+                                                            onClick={() => setEditingAnswerId(answer.answerId)}
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                        <button className="text-gray-400 text-sm hover:text-red-500 hover:underline cursor-pointer">
+                                                            Delete
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
 
-                                {/* Answer Metadata / Actions */}
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="flex items-center gap-4">
-                                        <button
-                                            className="text-blue-500 text-sm hover:underline cursor-pointer"
-                                            onClick={() => {
-                                                setReplyingToAnswerId(replyingToAnswerId === answer.answerId ? null : answer.answerId);
-                                                setCommentContent(""); // Reset content when opening reply
-                                            }}
-                                        >
-                                            Comment
-                                        </button>
-                                        <button
-                                            className="text-blue-500 text-sm hover:underline cursor-pointer"
-                                            onClick={() => setIsQuestionCommentOpen(false)}
-                                        >
-                                            Edit
-                                        </button>
-                                        <button className="text-gray-400 text-sm hover:text-red-500 hover:underline cursor-pointer">
-                                            Delete
-                                        </button>
-                                    </div>
-
-                                    {/* Author Card (Right aligned) */}
-                                    <div className="flex items-center gap-3 bg-blue-50/50 p-2 rounded-lg border border-blue-100 min-w-[200px]">
-                                        <Avatar className="h-10 w-10">
-                                            <AvatarImage src={answer.author.avatar} />
-                                            <AvatarFallback>{answer.author.name[0]}</AvatarFallback>
-                                        </Avatar>
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-semibold text-gray-900">{answer.author.name}</span>
-                                            {answer.author.userId && (
-                                                <span className="text-xs text-gray-500">{answer.author.userId}</span>
-                                            )}
-                                            <span className="text-xs text-gray-400 mt-1">
-                                                answered {formatDistanceToNow(answer.createdAt, { addSuffix: true })}
-                                            </span>
+                                            <div className="flex items-center gap-2 justify-end">
+                                                <Avatar className="h-5 w-5">
+                                                    <AvatarImage src={answer.author.avatar} />
+                                                    <AvatarFallback>{answer.author.name[0]}</AvatarFallback>
+                                                </Avatar>
+                                                <AuthorHoverInfo
+                                                    author={answer.author}
+                                                    currentUserId={currentUserId}
+                                                    className="text-sm"
+                                                />
+                                                <span className="text-xs text-gray-500">
+                                                    created {formatDistanceToNow(new Date(answer.createdAt), { addSuffix: true })}
+                                                </span>
+                                            </div>
                                         </div>
-                                        <Button className="ml-auto bg-emerald-300 hover:bg-emerald-400 text-emerald-900 text-xs h-7 px-2 cursor-pointer rounded shadow-sm">
-                                            Invite to your project
-                                        </Button>
-                                    </div>
-                                </div>
+                                    )}
 
-                                {/* Answer Comment Input */}
-                                {replyingToAnswerId === answer.answerId && (
-                                    <div className="mb-4 animate-in fade-in slide-in-from-top-2">
-                                        <Textarea
-                                            placeholder="Write a comment..."
-                                            className="resize-none min-h-[50px] border-gray-300 text-sm focus-visible:ring-1 focus-visible:ring-blue-500"
-                                            autoFocus
-                                            value={commentContent}
-                                            onChange={(e) => setCommentContent(e.target.value)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === "Enter" && !e.shiftKey) {
-                                                    e.preventDefault();
-                                                    handleSubmitComment('ANSWER', answer.answerId);
-                                                }
-                                            }}
-                                        />
-                                        <div className="flex justify-end mt-2">
-                                            <Button
-                                                size="sm"
-                                                className="bg-blue-600 cursor-pointer hover:bg-blue-700 text-white"
-                                                onClick={() => handleSubmitComment('ANSWER', answer.answerId)}
-                                            >
-                                                Post Comment
-                                            </Button>
+                                    {/* Answer Comment Input */}
+                                    {replyingToAnswerId === answer.answerId && (
+                                        <div className="mb-4 animate-in fade-in slide-in-from-top-2">
+                                            <Textarea
+                                                placeholder="Write a comment..."
+                                                className="resize-none min-h-[50px] border-gray-300 text-sm focus-visible:ring-1 focus-visible:ring-blue-500"
+                                                autoFocus
+                                                value={commentContent}
+                                                onChange={(e) => setCommentContent(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Enter" && !e.shiftKey) {
+                                                        e.preventDefault();
+                                                        handleSubmitComment('ANSWER', answer.answerId);
+                                                    }
+                                                }}
+                                            />
+                                            <div className="flex justify-end mt-2">
+                                                <Button
+                                                    size="sm"
+                                                    className="bg-blue-600 cursor-pointer hover:bg-blue-700 text-white"
+                                                    onClick={() => handleSubmitComment('ANSWER', answer.answerId)}
+                                                >
+                                                    Post Comment
+                                                </Button>
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
 
-                                {/* Answer Comments */}
-                                <PostDetailComment targetType="ANSWER" targetId={answer.answerId} />
+                                    {/* Answer Comments List */}
+                                    <PostDetailComment targetType="ANSWER" targetId={answer.answerId} />
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 {hasMoreAnswers && (
@@ -253,7 +319,7 @@ export const PostDetailBody = () => {
                         <Button
                             variant="outline"
                             className="bg-white hover:bg-gray-50 text-blue-600 border-blue-200 cursor-pointer min-w-[200px]"
-                            onClick={onHasMoreAnswer}
+                            onClick={onHasMoreAnswer as any}
                         >
                             Load more answers
                         </Button>
@@ -264,6 +330,19 @@ export const PostDetailBody = () => {
                     <PostDetailAnswerEditor />
                 </div>
             </div>
+
+            {isEditModalOpen && (
+                <CreatePostModal
+                    open={isEditModalOpen}
+                    onClose={() => setIsEditModalOpen(false)}
+                    initialData={{
+                        title: postDetailData.title,
+                        content: postDetailData.content,
+                        tags: postDetailData.tags
+                    }}
+                    onSubmit={handleUpdatePost}
+                />
+            )}
         </div>
     );
 };
