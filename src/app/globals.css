@@ -83,6 +83,10 @@
   --navbar-background: oklch(92.36% 0.131 161.4);
   --button-text-primary: oklch(42.484% 0.12753 256.023);
   --button-primary: oklch(93.847% 0.07446 162.529);
+  --teal-blue: #33BFFF;
+  --theme-3: #91EEFF;
+  --theme-2: #91FFD9;
+  --theme-1: #91FFA2;
 }
 
 .dark {

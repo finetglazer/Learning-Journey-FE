@@ -122,6 +122,7 @@ export interface CalendarContextInterface {
     handleRemoveUnscheduledTask: (unscheduledTaskId: number | string | null, bigTaskId: number) => void;
     handleRemoveUnscheduledRoutine: (unscheduledRoutineId: number | string | null) => void;
     updateBigTask: (monthData: UnscheduledMonthData[], bigTaskParams: { index: number; item: UnscheduledBigTask; monthDataIndex: number; }) => void;
+    handleTaskEditorClose: () => void;
 };
 
 export const CalendarContext = createContext<CalendarContextInterface>({
@@ -217,6 +218,7 @@ export const CalendarContext = createContext<CalendarContextInterface>({
     handleRemoveUnscheduledRoutine: () => { },
     updateBigTask: () => { },
     getSleepBlocks: () => [],
+    handleTaskEditorClose: () => { },
 });
 
 export const useCalendarHooks = () => {
@@ -277,6 +279,8 @@ export const useCalendarHooks = () => {
     const [editorPosition, setEditorPosition] = useState({ x: 0, y: 0 });
     const [panelPosition, setPanelPosition] = useState({ x: 20, y: 100 });
     const [panelBufferListPosition, setPanelBufferListPosition] = useState({ x: 20, y: 100 });
+
+    const justClosedRef = useRef(false);
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -476,13 +480,24 @@ export const useCalendarHooks = () => {
 
     useEffect(() => {
         const newTasks = [...updatedTasks];
-        const updatedCalendarMap = initCalendarMap(newTasks);
+
+        // determine view range for routine generation
+        // default to current month +/- 1 month for safety
+        const viewStart = currentDate.clone().subtract(1, "month").startOf("month");
+        const viewEnd = currentDate.clone().add(1, "month").endOf("month");
+
+        const updatedCalendarMap = initCalendarMap(newTasks, viewStart, viewEnd);
         const newTasksStyle: Record<string, any> = {};
         let currentZIndex = 0;
 
         setCalendarMap(updatedCalendarMap);
 
-        const visited: Record<string, boolean> = {};
+        const calculateWidthAndLeft = (task: Task, tasksVal: Task[], count: number) => {
+            const width = Math.min(90, 90 / tasksVal.length);
+            const left = count * width; // Simple stacking for now, can be improved for complex overlaps
+            return { width, left };
+        };
+
         Object.keys(updatedCalendarMap).forEach(timeKey => {
             const tasksVal = updatedCalendarMap[timeKey];
             tasksVal.forEach((task: Task, count: number) => {
@@ -499,30 +514,40 @@ export const useCalendarHooks = () => {
 
                 const diff = (diffInMinutes / 60) * 100;
 
-                newStyle = {
-                    zIndex: !visited[task?.id as number] ? ++currentZIndex : newStyle?.zIndex,
-                    top: Math.max((!visited[task?.id as number] ? diff : newStyle?.top) - 20, 0),    // %
-                    left: count * 10,    // %
-                    height: getPercentageHeight(task) * CELL_HEIGHT, // rem
-                    width: Math.min(newStyle?.width || 90, 90 / tasksVal.length),   // %
+                if (!newStyle) {
+                    const widthAndLeft = calculateWidthAndLeft(task, tasksVal, count);
+                    newStyle = { zIndex: currentZIndex++, ...widthAndLeft };
+                    newTasksStyle[task?.id as number] = newStyle;
                 }
 
-                newTasksStyle[task?.id as number] = newStyle;
+                newTasksStyle[task?.id as number] = {
+                    ...newTasksStyle[task?.id as number],
+                    top: Math.max((diff) - 20, 0),    // %
+                    height: getPercentageHeight(task) * CELL_HEIGHT, // rem
+                }
             });
         });
 
-        const sortedTasks = [...updatedTasks].sort((a, b) =>
-            toDayJs(a.startTime).diff(toDayJs(b.startTime))
-        );
+        const sortedKeys = Object.keys(newTasksStyle).sort((a, b) => { // Sort by startTime
+            const taskA = newTasks.find(t => t.id === Number(a));
+            const taskB = newTasks.find(t => t.id === Number(b));
+            return (taskA?.startTime && taskB?.startTime) ? dayjs(taskA.startTime).diff(dayjs(taskB.startTime)) : 0;
+        });
 
-        for (const task of sortedTasks) {
-            const overlappingTasks = sortedTasks.filter(otherTask =>
+        for (const taskId of sortedKeys) {
+            const task = newTasks.find(t => t.id === Number(taskId));
+            if (!task) continue;
+
+            // Recalculate based on overlapping
+            const overlaps = newTasks.filter(otherTask =>
+                otherTask.id !== task.id &&
                 toDayJs(task.startTime).isBefore(toDayJs(otherTask.endTime)) &&
                 toDayJs(otherTask.startTime).isBefore(toDayJs(task.endTime))
             );
-            const width = 90 / overlappingTasks.length;
-            overlappingTasks.sort((a, b) => String(a.id).localeCompare(String(b.id)));
-            const columnIndex = overlappingTasks.findIndex(t => t.id === task.id);
+
+            const width = 90 / (overlaps.length + 1); // +1 for the current task
+            overlaps.sort((a, b) => String(a.id).localeCompare(String(b.id)));
+            const columnIndex = overlaps.findIndex(t => t.id === task.id) === -1 ? overlaps.length : overlaps.findIndex(t => t.id === task.id);
             const left = columnIndex * width;
 
             newTasksStyle[task?.id as number] = {
@@ -534,7 +559,7 @@ export const useCalendarHooks = () => {
 
         setTasksStyle(newTasksStyle);
 
-    }, [currentMondayTime, updatedTasks]);
+    }, [currentMondayTime, updatedTasks, currentDate]);
 
 
 
@@ -677,8 +702,8 @@ export const useCalendarHooks = () => {
                         setSelectedTaskId(taskId);
                         setEditingTask({
                             ...res?.data,
-                            startTime: (res?.data?.timeSlot?.startTime as string).concat("Z"),
-                            endTime: (res?.data?.timeSlot?.endTime as string).concat("Z"),
+                            startTime: _task?.startTime ? _task.startTime : (res?.data?.timeSlot?.startTime as string).concat("Z"),
+                            endTime: _task?.endTime ? _task.endTime : (res?.data?.timeSlot?.endTime as string).concat("Z"),
                         });
                     }
                     else {
@@ -984,6 +1009,9 @@ export const useCalendarHooks = () => {
     };
 
     const handleCellClick = (event: React.MouseEvent<HTMLTableCellElement>, cellId: string, scrollContainerRef?: any) => {
+        // Prevent opening if we just closed the editor
+        if (justClosedRef.current) return;
+
         if ((event.target as HTMLElement).closest('.cursor-grab')) {
             return;
         }
@@ -1402,6 +1430,10 @@ export const useCalendarHooks = () => {
         updateBigTask,
         monthPlanId,
         setMonthPlanId,
+        handleTaskEditorClose: () => {
+            justClosedRef.current = true;
+            setTimeout(() => { justClosedRef.current = false }, 200);
+        },
     };
 };
 

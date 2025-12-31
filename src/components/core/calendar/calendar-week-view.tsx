@@ -81,6 +81,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
         handleCellClick,
         getSleepBlocks,
         isPanelBufferListDragging,
+        handleTaskEditorClose,
     } = useContext<CalendarContextInterface>(CalendarContext);
 
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -162,7 +163,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                                             }
                                                             return (
                                                                 <DraggableTask
-                                                                    key={task.id?.toString() || "draggable-task-".concat(index.toString())}
+                                                                    key={`${id}-${index}`}
                                                                     task={{ ...task, type: (task?.type || "").toLowerCase() }}
                                                                     draggable={false}
                                                                     wrapperClassName="truncate rounded-lg pl-2 mt-1 mb-1"
@@ -223,15 +224,27 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                                         wrapperClassName="w-16.5 h-[4.6rem]"
                                                         onClick={(e) => handleCellClick(e, id, scrollContainerRef)}
                                                     >
-                                                        {(calendarMap[id] || []).map((task: Task) => {
+                                                        {(calendarMap[id] || []).map((task: Task, index: number) => {
                                                             if (task?.type === "memorable_event") {
                                                                 return <></>
                                                             }
+                                                            // Only override startTime/endTime for ROUTINES (for split series support)
+                                                            // Tasks and Events should keep their original API times
+                                                            const isRoutine = (task?.type || "").toLowerCase() === "routine";
+                                                            let taskStartTime = task.startTime;
+                                                            let taskEndTime = task.endTime;
+
+                                                            if (isRoutine) {
+                                                                const duration = (toDayJs(task.endTime || "").diff(toDayJs(task.startTime || "")));
+                                                                taskStartTime = id; // Use occurrence date from map key
+                                                                taskEndTime = dayJsToISOString(toDayJs(id).add(duration, 'millisecond'));
+                                                            }
+
                                                             return (
                                                                 <DraggableTask
-                                                                    key={id}
+                                                                    key={task.id?.toString() || `${id}-${index}`}
                                                                     handleTaskDoubleClick={handleTaskDoubleClick}
-                                                                    task={{ ...task, type: (task?.type || "").toLowerCase() }}
+                                                                    task={{ ...task, type: (task?.type || "").toLowerCase(), startTime: taskStartTime, endTime: taskEndTime }}
                                                                     draggable={!((task?.type || "").toLowerCase() === "routine")}
                                                                     wrapperClassName="truncate absolute rounded-lg pl-2"
                                                                     wrapperStyle={{
@@ -317,6 +330,8 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                 task={{ ...editingTask, type: (editingTask?.type || "").toLowerCase() }}
                                 setAlertMessage={setAlertMessage}
                                 onClose={() => {
+                                    handleTaskEditorClose();
+
                                     setEditingTask(null);
                                     setSelectedTaskId(null);
                                 }}

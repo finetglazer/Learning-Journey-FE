@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MonthPlanningBigTask, MonthPlanningEvent, UnscheduledTask } from "@/model/task";
 import { Trash2 } from "lucide-react";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 
 export interface RoutineEditorProps {
     // editingItem should always have "string" type since it is a routine
@@ -12,22 +12,37 @@ export interface RoutineEditorProps {
     setOpenRoutineEditor?: Dispatch<SetStateAction<boolean>>;
     setEditingItem?: Dispatch<SetStateAction<MonthPlanningEvent | MonthPlanningBigTask | UnscheduledTask | string | null>>;
     updateRoutineList?: (oldName?: string, newName?: string) => void;
+    onClose?: () => void;
 };
 
 export const RoutineEditor = ({
     editingItem,
     setOpenRoutineEditor,
     updateRoutineList,
+    onClose,
 }: RoutineEditorProps) => {
 
     const [routineName, setRoutineName] = useState<string>(editingItem as string);
+    const wrapperRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         setRoutineName(editingItem as string);
     }, [editingItem]);
 
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+                onClose?.();
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [onClose]);
+
     return (
-        <div className={cn("z-[999] absolute top-[50%] h-auto grid grid-cols-[1fr,auto,auto] cursor-default items-center gap-2 rounded-lg border-3 border-[#68DE79] bg-stone-50 p-4 w-full")}>
+        <div ref={wrapperRef} className={cn("z-[999] absolute top-[50%] h-auto grid grid-cols-[1fr,auto,auto] cursor-default items-center gap-2 rounded-lg border-3 border-[#68DE79] bg-stone-50 p-4 w-full")}>
             <input
                 type="text"
                 value={routineName}
@@ -36,7 +51,7 @@ export const RoutineEditor = ({
                 autoFocus
                 onKeyDown={(e) => {
                     if (e.key === 'Escape') {
-                        setOpenRoutineEditor?.(false);
+                        onClose?.();
                     }
                 }}
                 onClick={(e) => e.stopPropagation()}
@@ -53,7 +68,7 @@ export const RoutineEditor = ({
                     </button>
                 )}
                 <button className="cursor-pointer ml-3 text-cyan-950" onClick={() => {
-                    setOpenRoutineEditor?.(false);
+                    onClose?.();
                 }}>Cancel</button>
             </div>
         </div>

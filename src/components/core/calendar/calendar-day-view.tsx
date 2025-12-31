@@ -65,6 +65,7 @@ export const CalendarDayView = () => {
         isPanelBufferListDragging,
         draggingProjectTaskId,
         getDraggingProjectTask,
+        handleTaskEditorClose,
     } = useContext<CalendarContextInterface>(CalendarContext);
 
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -238,6 +239,8 @@ export const CalendarDayView = () => {
                         task={{ ...editingTask, type: (editingTask?.type || "").toLowerCase() }}
                         setAlertMessage={setAlertMessage}
                         onClose={() => {
+                            handleTaskEditorClose();
+
                             setEditingTask(null);
                             setSelectedTaskId(null);
                         }}

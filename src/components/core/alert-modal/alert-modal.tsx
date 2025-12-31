@@ -50,6 +50,11 @@ export interface AlertModalProps {
     onClose?: () => void;
 };
 
+const formatStringDates = (text: any) => {
+    if (typeof text !== 'string') return text;
+    return text.replace(/(\d{4})-(\d{2})-(\d{2})/g, '$3/$2/$1');
+};
+
 export function AlertModal({
     alertMessage,
     onClose,
@@ -71,7 +76,7 @@ export function AlertModal({
         }
         if (typeof alertMessage?.description === "string") {
             return (
-                <div className={descriptionClassName}>{alertMessage?.description}</div>
+                <div className={descriptionClassName}>{formatStringDates(alertMessage?.description)}</div>
             )
         }
         if (!(alertMessage?.description || []).length) {
@@ -87,14 +92,14 @@ export function AlertModal({
                 return keys.map(key => (
                     <div className="flex align-center gap-2">
                         <p className="font-bold">{key}</p>
-                        <p className="font-normal">{descriptionItem[key]}</p>
+                        <p className="font-normal">{formatStringDates(descriptionItem[key])}</p>
                     </div>
                 ))
             });
         }
         return (alertMessage?.description || []).map((descriptionItem: any, index: number) => {
             return (
-                <p key={index} className={descriptionClassName}>{descriptionItem}</p>
+                <p key={index} className={descriptionClassName}>{formatStringDates(descriptionItem)}</p>
             );
         })
     };
@@ -111,7 +116,7 @@ export function AlertModal({
 
                     <AlertDialogDescription asChild className="text-slate-600 text-base font-bold text-center">
                         <div>
-                            {title}
+                            {formatStringDates(title)}
                             {description && <br />}
                             {getDescription()}
                         </div>

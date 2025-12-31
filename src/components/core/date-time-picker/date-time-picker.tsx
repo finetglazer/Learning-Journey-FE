@@ -114,8 +114,8 @@ export const DateTimePicker = (props: DateTimePickerProps) => {
             <PopoverTrigger />
             <PopoverContent
                 className={cn("w-auto p-0 mt-2 z-[99999999]", wrapperClassName)}
-                // Prevent popover from closing when clicking inside
-                // onInteractOutside={(e) => e.preventDefault()}
+            // Prevent popover from closing when clicking inside
+            // onInteractOutside={(e) => e.preventDefault()}
             >
                 <div className="sm:flex">
                     {/* Show Calendar if type is 'date-only' or 'date-time' */}
@@ -126,6 +126,7 @@ export const DateTimePicker = (props: DateTimePickerProps) => {
                             onSelect={handleDateSelect}
                             disabled={(day) => enabledDate ? !isSameDay(day, enabledDate) : false}
                             month={enabledDate}
+                            defaultMonth={model?.[fieldName] ? isoStringToDate(model[fieldName]) : undefined}
                             disableNavigation={!!enabledDate}
                         />
                     )}

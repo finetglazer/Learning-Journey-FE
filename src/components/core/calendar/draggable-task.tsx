@@ -1,7 +1,9 @@
 import { useDraggable } from '@dnd-kit/core';
 import { BaseTask, BaseTaskProps } from '../task/base-task';
+import { MonthPlanningBigTask, MonthPlanningEvent, Task } from '@/model/task';
 
-export interface DraggableTaskProps extends BaseTaskProps {
+export interface DraggableTaskProps extends Omit<BaseTaskProps, 'task'> {
+    task: Task | MonthPlanningBigTask | MonthPlanningEvent;
     handleTaskDoubleClick?: (e: React.MouseEvent<HTMLDivElement>, taskId: number, task?: any, scrollContainerRef?: any) => void;
     isOverlay?: boolean;
     draggable?: boolean;
@@ -54,7 +56,7 @@ export const DraggableTask = ({
                     {...listeners}
                     {...attributes}
                     className="cursor-grab"
-                    onDoubleClick={(e) => handleTaskDoubleClick?.(e, task?.id as number, undefined, scrollContainerRef)}
+                    onDoubleClick={(e) => handleTaskDoubleClick?.(e, task?.id as number, task, scrollContainerRef)}
                 >
                     <BaseTask task={task} {...baseTaskProps} />
                 </div>
@@ -63,7 +65,7 @@ export const DraggableTask = ({
                     ref={setNodeRef}
                     style={style}
                     className="cursor-grab"
-                        onDoubleClick={(e) => handleTaskDoubleClick?.(e, task?.id as number, undefined, scrollContainerRef)}
+                    onDoubleClick={(e) => handleTaskDoubleClick?.(e, task?.id as number, task, scrollContainerRef)}
                 >
                     <BaseTask task={task} {...baseTaskProps} />
                 </div>

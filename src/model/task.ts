@@ -22,6 +22,7 @@ export class Task extends Model {
     public subtasks?: Subtask[];
 
     // For routine
+    public endDate?: string; // Series end date
     public pattern?: RecurringPattern;
     public exceptions?: string[]; // [2025-10-28T04:36:30]
 
@@ -96,7 +97,7 @@ export interface UnscheduledBigTask {
 export class MonthPlanningEvent {
     public id?: number;
     public type: string = 'event';
-    public name: string = "New event";
+    public name: string = "";
     public note?: string;
     public specificDate: string = dayjs().format('YYYY-MM-DD');
     // For task editor
@@ -107,7 +108,7 @@ export class MonthPlanningEvent {
 export class MonthPlanningBigTask {
     public id?: number;
     public type: string = 'big-task';
-    public name: string = "New big task";
+    public name: string = "";
     public estimatedStartDate: string = dayjs().format('YYYY-MM-DD');
     public estimatedEndDate: string = dayjs().format('YYYY-MM-DD');
     public unscheduledTasks?: UnscheduledTask[];    // {id, name, note}

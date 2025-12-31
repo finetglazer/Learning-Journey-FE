@@ -61,7 +61,7 @@ export function CalendarMonthPlanning() {
     } = useContext<CalendarContextInterface>(CalendarContext);
 
     const categories = ["Event", "Routine", "Big Task"];
-    const weeks = getWeeksInMonth(currentDate.get("month"));
+    const weeks = getWeeksInMonth(currentDate.get("month"), currentDate.get("year"));
     const MAX_VISIBLE_TASKS = 2;
 
     const scrollContainerRef = useRef(null);
@@ -121,22 +121,52 @@ export function CalendarMonthPlanning() {
         monthPlanId,
     } = useContext<CalendarContextInterface>(CalendarContext);
 
-    const handleCellClick = (type: TaskType, e: React.MouseEvent<HTMLTableDataCellElement>, scrollContainerRef?: any) => {
+    const isInitialMount = useRef(true);
+    const justClosedRef = useRef(false);
+
+    useEffect(() => {
+        setCurrentView('month-planning');
+        // Suppress the first run (the Strict Mode check)
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            return;
+        }
+        if (!calendarRepository) {
+            return;
+        }
+        getMonthPlanId();
+    }, [currentDate, calendarRepository]);
+
+    const handleCellClick = (type: TaskType, e: React.MouseEvent<HTMLTableDataCellElement>, scrollContainerRef?: any, week?: string, weekIndex?: number) => {
+        if (justClosedRef.current) return;
+
+        let defaultDate = toDayJs();
+        if (week) {
+            const { startDate } = getWeekStartTimeEndTime(week, currentDate, weekIndex);
+
+            // If the current date is within the selected week, use the current date.
+            // But strict requirement: use startDate unless today falls in range.
+            const today = toDayJs();
+            // We use the start of the week logic for defaults
+            defaultDate = startDate.startOf('day');
+        }
+
         const newItem =
             type === "event"
                 ? {
                     ...new MonthPlanningEvent,
                     // Add startTime & endTime for task editor
-                    startTime: dayJsToISOString(toDayJs(undefined, 0), 0),
-                    endTime: dayJsToISOString(toDayJs(undefined, 0), 0),
+                    specificDate: dayJsToISOString(defaultDate), // Set specificDate for MonthPlanningEvent
+                    startTime: dayJsToISOString(defaultDate),
+                    endTime: dayJsToISOString(defaultDate.add(1, 'hour')), // Default duration 1 hour
                 }
                 : type === "routine"
                     ? ""        // Set "" to call updateRoutineList("", <new name>) with create case
                     : {
                         ...new MonthPlanningBigTask,
                         // Add startTime & endTime for task editor
-                        startTime: dayJsToISOString(toDayJs(undefined, 0), 0),
-                        endTime: dayJsToISOString(toDayJs(undefined, 0), 0),
+                        startTime: dayJsToISOString(defaultDate),
+                        endTime: dayJsToISOString(defaultDate.add(7, 'day')), // BigTask default 1 week
                     };
         setEditingItem(newItem);
         setEditorPosition(getEditorAdjustedPosition(e.clientX, e.clientY, scrollContainerRef.current));
@@ -427,26 +457,13 @@ export function CalendarMonthPlanning() {
         });
     };
 
-    const isInitialMount = useRef(true);
 
-    useEffect(() => {
-        setCurrentView('month-planning');
-        // Suppress the first run (the Strict Mode check)
-        if (isInitialMount.current) {
-            isInitialMount.current = false;
-            return;
-        }
-        if (!calendarRepository) {
-            return;
-        }
-        getMonthPlanId();
-    }, [currentDate, calendarRepository]);
 
     useEffect(() => {
         const newBigTaskStyles: Record<number, any> = {};
-        weeks.forEach((week) => {
+        weeks.forEach((week, index) => {
             monthPlanningBigTasks.forEach((bigTask) => {
-                const { startDate, endDate } = getWeekStartTimeEndTime(week, currentDate);
+                const { startDate, endDate } = getWeekStartTimeEndTime(week, currentDate, index);
                 const weekStart = startDate.format("YYYY-MM-DD");
                 const weekEnd = endDate.format("YYYY-MM-DD");
                 const startTime = bigTask.estimatedStartDate;
@@ -465,7 +482,7 @@ export function CalendarMonthPlanning() {
 
     return (
         <Card className="w-full h-full mx-auto rounded-xl shadow-lg bg-white p-0">
-            <CardHeader className="grid grid-cols-[auto_1fr_auto] items-center p-4 border-b border-gray-200 bg-slate-100/60 rounded-t-xl">
+            <CardHeader className="grid grid-cols-[auto_1fr_auto] items-center p-4 border-b border-gray-200 bg-white rounded-t-xl">
                 <div className="text-sm font-semibold text-slate-600 whitespace-nowrap">
                     Private calendar / <span className="text-slate-800">Month planning</span>
                 </div>
@@ -520,7 +537,7 @@ export function CalendarMonthPlanning() {
                                                         ? monthPlanningRoutines
                                                         : monthPlanningBigTasks;
                                             const tasksForCell = monthPlanningItems.filter((task) => {
-                                                const { startDate, endDate } = getWeekStartTimeEndTime(week, currentDate);
+                                                const { startDate, endDate } = getWeekStartTimeEndTime(week, currentDate, index);
                                                 const weekStart = startDate.format("YYYY-MM-DD");
                                                 const weekEnd = endDate.format("YYYY-MM-DD");
 
@@ -545,7 +562,7 @@ export function CalendarMonthPlanning() {
                                                 <TableCell
                                                     key={`${category}-${week}`}
                                                     className="relative align-top p-2 border-r-2 w-55"
-                                                    onClick={(e) => { handleCellClick(getType(category), e, scrollContainerRef) }}
+                                                    onClick={(e) => { handleCellClick(getType(category), e, scrollContainerRef, week, index) }}
                                                 >
                                                     <div className="flex-1 overflow-y-auto space-y-1">
                                                         {(currentType === "big-task" ? tasksForCell : tasksForCell.slice(0, MAX_VISIBLE_TASKS)).map((task, i) => {
@@ -760,6 +777,13 @@ export function CalendarMonthPlanning() {
                             editingItem={editingItem as string}
                             setOpenRoutineEditor={setOpenRoutineEditor}
                             updateRoutineList={updateRoutineList}
+                            onClose={() => {
+                                justClosedRef.current = true;
+                                setTimeout(() => { justClosedRef.current = false }, 200);
+
+                                setOpenRoutineEditor(false);
+                                setEditingItem(null);
+                            }}
                         />
                     )}
 
@@ -771,6 +795,9 @@ export function CalendarMonthPlanning() {
                         task={(editingItem as any) || editingTask}
                         setAlertMessage={setAlertMessage}
                         onClose={() => {
+                            justClosedRef.current = true;
+                            setTimeout(() => { justClosedRef.current = false }, 200);
+
                             setEditingItem(null);
                             setEditingTask(null);
                         }}
