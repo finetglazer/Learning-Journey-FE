@@ -22,6 +22,7 @@ export interface Answer {
     isAccepted: boolean;
     createdAt: string;
     updatedAt: string;
+    userVote?: number;
 }
 
 export interface Comment {

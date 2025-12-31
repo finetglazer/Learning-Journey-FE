@@ -7,7 +7,7 @@ import { BaseRepository } from "./base-repository";
 const BASE_API_URL = "/api/forum";
 
 export interface VoteRequest {
-    voteType: "UPVOTE" | "DOWNVOTE" | "UNVOTE";
+    voteType: "UPVOTE" | "DOWNVOTE";
 }
 
 export interface UpdateSavePostStatusRequest {
@@ -72,7 +72,9 @@ export class PostRepository extends BaseRepository {
 
     public votePost = (userId: number, postId: number, request: VoteRequest): Observable<any> => {
         return this.http
-            .post(`${BASE_API_URL}/posts/${postId}/vote`, request, {
+            .post(`${BASE_API_URL}/posts/${postId}/vote`, {
+                voteType: request.voteType === "UPVOTE" ? 1 : -1
+            }, {
                 headers: { "X-User-Id": userId },
             })
             .pipe(map((response) => response?.data));
@@ -160,7 +162,9 @@ export class PostRepository extends BaseRepository {
         request: VoteRequest
     ): Observable<any> => {
         return this.http
-            .post(`${BASE_API_URL}/answers/${answerId}/vote`, request, {
+            .post(`${BASE_API_URL}/answers/${answerId}/vote`, {
+                voteType: request.voteType === "UPVOTE" ? 1 : -1
+            }, {
                 headers: { "X-User-Id": userId },
             })
             .pipe(map((response) => response?.data));

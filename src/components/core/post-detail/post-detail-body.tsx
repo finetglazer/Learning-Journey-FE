@@ -29,7 +29,9 @@ export const PostDetailBody = () => {
         answerSort,
         setAnswerSort,
         userId: currentUserId,
-        setPostDetailData
+        setPostDetailData,
+        onVotePost,
+        onVoteAnswer,
     } = useContext<PostDetailContextProps>(PostDetailContext);
 
     const { postRepository } = useContext(AppContext);
@@ -80,16 +82,26 @@ export const PostDetailBody = () => {
         <div className="flex gap-10 mt-6">
             {/* Left Column: Vote Counter */}
             <div className="flex flex-col items-center gap-1 mt-5">
-                <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 cursor-pointer">
-                    <ChevronUp className="h-8 w-8 text-gray-500" />
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full h-10 w-10 cursor-pointer"
+                    onClick={() => onVotePost('UPVOTE')}
+                >
+                    <ChevronUp className={`h-8 w-8 ${postDetailData.userVote === 1 ? 'text-orange-500' : 'text-gray-500'}`} />
                 </Button>
 
                 <span className="text-2xl font-semibold text-gray-700">
                     {postDetailData.stats.score}
                 </span>
 
-                <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 cursor-pointer">
-                    <ChevronDown className="h-8 w-8 text-gray-500" />
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full h-10 w-10 cursor-pointer"
+                    onClick={() => onVotePost('DOWNVOTE')}
+                >
+                    <ChevronDown className={`h-8 w-8 ${postDetailData.userVote === -1 ? 'text-red-500' : 'text-gray-500'}`} />
                 </Button>
             </div>
 
@@ -189,16 +201,26 @@ export const PostDetailBody = () => {
                             <div key={answer.answerId} className="flex gap-6">
                                 {/* Answer Vote Counter */}
                                 <div className="flex flex-col items-center gap-1">
-                                    <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 cursor-pointer">
-                                        <ChevronUp className="h-8 w-8 text-gray-500" />
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="rounded-full h-10 w-10 cursor-pointer"
+                                        onClick={() => onVoteAnswer(answer.answerId, 'UPVOTE')}
+                                    >
+                                        <ChevronUp className={`h-8 w-8 ${answer.userVote === 1 ? 'text-orange-500' : 'text-gray-500'}`} />
                                     </Button>
 
                                     <span className="text-xl font-semibold text-gray-700">
                                         {answer.score}
                                     </span>
 
-                                    <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 cursor-pointer">
-                                        <ChevronDown className="h-8 w-8 text-gray-500" />
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="rounded-full h-10 w-10 cursor-pointer"
+                                        onClick={() => onVoteAnswer(answer.answerId, 'DOWNVOTE')}
+                                    >
+                                        <ChevronDown className={`h-8 w-8 ${answer.userVote === -1 ? 'text-red-500' : 'text-gray-500'}`} />
                                     </Button>
 
                                     <Button

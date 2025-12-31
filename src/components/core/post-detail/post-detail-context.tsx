@@ -20,6 +20,8 @@ export interface PostDetailContextProps {
     answerSort: 'newest' | 'most_helpful';
     setAnswerSort: (sort: 'newest' | 'most_helpful') => void;
     updateAnswer: (answerId: number, content: any) => Observable<any>;
+    onVotePost: (voteType: "UPVOTE" | "DOWNVOTE") => void;
+    onVoteAnswer: (answerId: number, voteType: "UPVOTE" | "DOWNVOTE") => void;
     userId: number | null;
     email: string;
 }
@@ -37,6 +39,8 @@ export const PostDetailContext = createContext<PostDetailContextProps>({
     answerSort: 'most_helpful',
     setAnswerSort: () => { },
     updateAnswer: () => new Observable(),
+    onVotePost: () => { },
+    onVoteAnswer: () => { },
     userId: null,
     email: "",
 });
@@ -252,6 +256,71 @@ export const usePostDetailHook = (postId: number): PostDetailContextProps => {
         );
     }, [postRepository, userId]);
 
+    const onVotePost = useCallback((voteType: "UPVOTE" | "DOWNVOTE") => {
+        if (!postRepository || !userId || !postId || !postDetailData) return;
+
+        const sub = postRepository.votePost(userId, postId, { voteType }).subscribe({
+            next: (res) => {
+                if (res?.data) {
+                    const { newScore, userVote } = res.data;
+                    setPostDetailData((prev) => {
+                        if (!prev) return null;
+                        return {
+                            ...prev,
+                            userVote: userVote,
+                            stats: {
+                                ...prev.stats,
+                                score: newScore
+                            }
+                        }
+                    });
+                } else {
+                    toast.error(res?.msg || res?.message || "Failed to vote");
+                }
+            },
+            error: (err) => {
+                toast.error("Failed to vote");
+                console.error(err);
+            }
+        });
+        return () => sub.unsubscribe();
+    }, [postRepository, userId, postId, postDetailData]);
+
+    const onVoteAnswer = useCallback((answerId: number, voteType: "UPVOTE" | "DOWNVOTE") => {
+        if (!postRepository || !userId) return;
+
+        const sub = postRepository.voteAnswer(userId, answerId, { voteType }).subscribe({
+            next: (res) => {
+                if (res?.data) {
+                    const { newScore, userVote } = res.data;
+                    setPostDetailData((prev) => {
+                        if (!prev) return null;
+                        return {
+                            ...prev,
+                            answers: (prev.answers || []).map((ans) => {
+                                if (ans.answerId === answerId) {
+                                    return {
+                                        ...ans,
+                                        score: newScore,
+                                        userVote: userVote // Assuming Answer model has userVote
+                                    }
+                                }
+                                return ans;
+                            })
+                        }
+                    });
+                } else {
+                    toast.error(res?.msg || res?.message || "Failed to vote answer");
+                }
+            },
+            error: (err) => {
+                toast.error("Failed to vote answer");
+                console.error(err);
+            }
+        });
+        return () => sub.unsubscribe();
+    }, [postRepository, userId]);
+
     useEffect(() => {
         onHasMoreAnswer(true);
     }, [answerSort]);
@@ -316,6 +385,8 @@ export const usePostDetailHook = (postId: number): PostDetailContextProps => {
         answerSort,
         setAnswerSort,
         updateAnswer,
+        onVotePost,
+        onVoteAnswer,
         userId,
         email
     };
