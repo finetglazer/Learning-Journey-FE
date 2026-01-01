@@ -30,6 +30,7 @@ import { UnscheduledTaskItem } from "./unscheduled-task-item";
 import React from "react";
 import { CollapsibleUnscheduledBufferListPanel } from "./collapsible-unscheduled-buffer-list-panel";
 import { useRouter } from "next/navigation";
+import { CalendarItemSkeleton } from "./calendar-item-skeleton";
 
 export interface WeekViewCalendarProps {
     tasks?: Task[];
@@ -82,6 +83,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
         getSleepBlocks,
         isPanelBufferListDragging,
         handleTaskEditorClose,
+        isLoadingCalendar,
     } = useContext<CalendarContextInterface>(CalendarContext);
 
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -205,6 +207,22 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                     height: `${(24 - startPositionInHours) * CELL_HEIGHT}rem`,
                                 }}
                             />
+                            {/* Loading skeletons - 7-column grid with multiple items per day */}
+                            {isLoadingCalendar && (
+                                <div className="absolute inset-0 z-20 pointer-events-none" style={{ left: '5rem' }}>
+                                    {/* Generate skeleton items for each of the 7 days */}
+                                    {[0, 1, 2, 3, 4, 5, 6].map((dayIndex) => (
+                                        <div key={dayIndex} className="absolute" style={{ left: `${dayIndex * 14.28}%`, width: '14%' }}>
+                                            {/* 4 skeleton items per day at different times */}
+                                            <div className="absolute w-full animate-pulse rounded-lg bg-gray-200" style={{ top: '0rem', height: '4.7rem' }} />
+                                            <div className="absolute w-full animate-pulse rounded-lg bg-gray-200" style={{ top: '4.8rem', height: '9rem' }} />
+                                            <div className="absolute w-full animate-pulse rounded-lg bg-gray-200" style={{ top: '18.3rem', height: '7rem' }} />
+                                            <div className="absolute w-full animate-pulse rounded-lg bg-gray-200" style={{ top: '27.7rem', height: '13.5rem' }} />
+                                            <div className="absolute w-full animate-pulse rounded-lg bg-gray-200" style={{ top: '45.2rem', height: '46.7rem' }} />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                             <Table className="w-full">
                                 <TableBody>
                                     {hours.map((hour) => (
@@ -224,7 +242,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                                         wrapperClassName="w-16.5 h-[4.6rem]"
                                                         onClick={(e) => handleCellClick(e, id, scrollContainerRef)}
                                                     >
-                                                        {(calendarMap[id] || []).map((task: Task, index: number) => {
+                                                        {!isLoadingCalendar && (calendarMap[id] || []).map((task: Task, index: number) => {
                                                             if (task?.type === "memorable_event") {
                                                                 return <></>
                                                             }

@@ -26,6 +26,7 @@ import { BaseTask } from "../task/base-task";
 import { CalendarContext, CalendarContextInterface } from "./calendar-context";
 import { DayTasksPopover } from "./day-tasks-popover";
 import { useRouter } from "next/navigation";
+import { CalendarItemSkeleton } from "./calendar-item-skeleton";
 
 export function CalendarMonthView() {
     const {
@@ -44,6 +45,7 @@ export function CalendarMonthView() {
         alertMessage,
         handleReload,
         onDeleteCalendarItem,
+        isLoadingCalendar,
     } = useContext<CalendarContextInterface>(CalendarContext);
 
     const currentMonthDate = currentDate.toDate();
@@ -115,20 +117,8 @@ export function CalendarMonthView() {
                             const nonRoutines = allTasks.filter((t: any) => t.type !== 'routine');
                             const routines = allTasks.filter((t: any) => t.type === 'routine');
 
-                            // CONSTRUCT DISPLAY LIST
-                            const displayTasks = [...nonRoutines];
-                            if (routines.length > 0) {
-                                displayTasks.push({
-                                    id: `group-routine-${index}`,
-                                    type: 'routine-group',
-                                    name: `${routines.length} Routines`,
-                                    title: `${routines.length} Routines`, // For BaseTask
-                                    startTime: "00:00Z", // Dummy
-                                    endTime: "23:59Z", // Dummy
-                                    status: "todo",
-                                    color: "bg-green-400", // Special color for group
-                                } as any);
-                            }
+                            // Only display non-routine tasks (routines are shown via dot badge in header)
+                            const displayTasks = nonRoutines;
 
                             return (
                                 <div
@@ -138,63 +128,71 @@ export function CalendarMonthView() {
                                         { "bg-gray-50 text-gray-400": !isSameMonth(day, currentMonthDate) }
                                     )}
                                 >
-                                    <span className={cn(
-                                        "text-sm font-medium h-8 w-8 flex items-center justify-center text-[1.2rem]",
-                                        { "bg-blue-600 text-white rounded-full": isToday(day) }
-                                    )}>
-                                        {format(day, "d")}
-                                    </span>
-                                    <div className="flex-1 overflow-y-auto mt-2">
-                                        {displayTasks.slice(0, MAX_VISIBLE_TASKS).map((task: any) => {
-                                            if (task.type === 'routine-group') {
-                                                // Custom Render for Routine Group with Popover
-                                                return (
-                                                    <Popover
-                                                        key="routine-group-popover"
-                                                        open={popoverState.open && isSameDay(day, popoverState.day!) && popoverState.source === 'routine-group'}
-                                                        onOpenChange={(isOpen) => {
-                                                            if (isOpen) {
-                                                                setPopoverState({ open: true, day, tasks: allTasks, source: 'routine-group' });
-                                                            } else {
-                                                                setPopoverState({ open: false, day: null, tasks: [] });
-                                                            }
+                                    <div className="flex items-center justify-between w-full">
+                                        <span className={cn(
+                                            "text-sm font-medium h-8 w-8 flex items-center justify-center text-[1.2rem]",
+                                            { "bg-blue-600 text-white rounded-full": isToday(day) }
+                                        )}>
+                                            {format(day, "d")}
+                                        </span>
+                                        {/* Routine Dot Badge Indicator */}
+                                        {routines.length > 0 && (
+                                            <Popover
+                                                open={popoverState.open && isSameDay(day, popoverState.day!) && popoverState.source === 'routine-group'}
+                                                onOpenChange={(isOpen) => {
+                                                    if (isOpen) {
+                                                        setPopoverState({ open: true, day, tasks: routines, source: 'routine-group' });
+                                                    } else {
+                                                        setPopoverState({ open: false, day: null, tasks: [] });
+                                                    }
+                                                }}
+                                            >
+                                                <PopoverTrigger asChild>
+                                                    <div
+                                                        className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity group"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setPopoverState({ open: true, day, tasks: routines, source: 'routine-group' });
                                                         }}
+                                                        title={`${routines.length} routine${routines.length > 1 ? 's' : ''}`}
                                                     >
-                                                        <PopoverTrigger asChild>
-                                                            <div
-                                                                className="h-[30px] mb-2 mt-1 bg-[#4ade80] text-white rounded-md px-2 flex items-center text-[0.8rem] font-medium cursor-pointer hover:opacity-90 transition-opacity whitespace-nowrap overflow-hidden text-ellipsis"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation(); // Prevent bubbling
-                                                                    setPopoverState({ open: true, day, tasks: allTasks, source: 'routine-group' });
-                                                                }}
-                                                            >
-                                                                {task.name}
-                                                            </div>
-                                                        </PopoverTrigger>
-                                                        <PopoverContent className="w-auto p-0 z-[10001]" side="right" align="start">
-                                                            <DayTasksPopover
-                                                                day={day}
-                                                                setPopoverState={(popoverState) => setPopoverState(popoverState)}
-                                                                tasks={allTasks}
-                                                                selectedTaskId={selectedTaskId}
-                                                                setEditingTask={setEditingTask}
-                                                                setSelectedTaskId={setSelectedTaskId}
-                                                                setEditorPosition={setEditorPosition}
-                                                                onTaskClick={() => {
-                                                                    setPopoverState({
-                                                                        open: false,
-                                                                        day: null,
-                                                                        tasks: [],
-                                                                    });
-                                                                }}
-                                                                scrollContainerRef={scrollContainerRef}
-                                                                editorOffset={{ x: 0, y: 0 }}
-                                                            />
-                                                        </PopoverContent>
-                                                    </Popover>
-                                                )
-                                            }
-                                            return (
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm flex-shrink-0" />
+                                                        <span className="text-[0.85rem] font-semibold text-green-600 group-hover:text-green-700 leading-none">
+                                                            {routines.length}
+                                                        </span>
+                                                    </div>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0 z-[10001]" side="right" align="start">
+                                                    <DayTasksPopover
+                                                        day={day}
+                                                        setPopoverState={(popoverState) => setPopoverState(popoverState)}
+                                                        tasks={routines}
+                                                        selectedTaskId={selectedTaskId}
+                                                        setEditingTask={setEditingTask}
+                                                        setSelectedTaskId={setSelectedTaskId}
+                                                        setEditorPosition={setEditorPosition}
+                                                        onTaskClick={() => {
+                                                            setPopoverState({
+                                                                open: false,
+                                                                day: null,
+                                                                tasks: [],
+                                                            });
+                                                        }}
+                                                        scrollContainerRef={scrollContainerRef}
+                                                        editorOffset={{ x: 0, y: 0 }}
+                                                    />
+                                                </PopoverContent>
+                                            </Popover>
+                                        )}
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto mt-2">
+                                        {isLoadingCalendar ? (
+                                            <>
+                                                <CalendarItemSkeleton variant="month" />
+                                                <CalendarItemSkeleton variant="month" />
+                                            </>
+                                        ) : (
+                                            displayTasks.slice(0, MAX_VISIBLE_TASKS).map((task: any) => (
                                                 <BaseTask
                                                     key={task?.id}
                                                     task={task}
@@ -204,8 +202,8 @@ export function CalendarMonthView() {
                                                     wrapperClassName="h-[30px] mb-2 mt-1"
                                                     titleClassName="text-[0.8rem]"
                                                 />
-                                            )
-                                        })}
+                                            ))
+                                        )}
                                     </div>
                                     <Popover
                                         open={popoverState.open && isSameDay(day, popoverState.day!) && popoverState.source === 'overflow'}

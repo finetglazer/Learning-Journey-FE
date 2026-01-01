@@ -74,6 +74,7 @@ export interface CalendarContextInterface {
         height: string;
     }[];
     handleReload: () => void;
+    isLoadingCalendar: boolean;
     // For EDITING unscheduled and scheduled task
     selectedTaskId: string | number | null;
     setSelectedTaskId: Dispatch<SetStateAction<string | number | null>>;
@@ -178,6 +179,7 @@ export const CalendarContext = createContext<CalendarContextInterface>({
     setPanelPosition: () => { },
 
     handleReload: () => { },
+    isLoadingCalendar: false,
     // Editing state
     selectedTaskId: null,
     setSelectedTaskId: () => { },
@@ -601,11 +603,14 @@ export const useCalendarHooks = () => {
     const [isPanelBufferListDragging, setIsPanelBufferListDragging] = useState<boolean>(false);
     // For editing CREATED task and NEW task 
     const [editingTask, setEditingTask] = useState<Task | Partial<Task> | null>(null);
+    // For calendar loading state (Week/Month views)
+    const [isLoadingCalendar, setIsLoadingCalendar] = useState<boolean>(false);
     const {
         sleepHours, // Using the new sleepHours array: {startTime: "HH:mm", endTime: "HH:mm"}[]
     } = useContext<AppContextProps>(AppContext);
 
     const handleReload = useCallback(() => {
+        setIsLoadingCalendar(true);
         calendarRepository?.getScheduledItems({
             view: getRequestView(),
             date: currentDate.format('YYYY-MM-DD'),
@@ -624,9 +629,11 @@ export const useCalendarHooks = () => {
                     };
                 });
                 setUpdatedTasks([...newUpdatedTasks]);
+                setIsLoadingCalendar(false);
             },
             error: (err: any) => {
                 console.log("Error occurs while fetching scheduled items", err);
+                setIsLoadingCalendar(false);
             }
         });
     }, [calendarRepository, currentDate, getRequestView, calendarId]);
@@ -1393,6 +1400,7 @@ export const useCalendarHooks = () => {
         setPanelPosition,
         getSleepBlocks,
         handleReload,
+        isLoadingCalendar,
         handleTaskDoubleClick,
         selectedTaskId,
         setSelectedTaskId,

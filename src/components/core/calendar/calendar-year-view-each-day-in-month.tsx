@@ -40,7 +40,8 @@ export const DayCell = ({
     ...popoverProps // Passes down setEditingTask, selectedTaskId, etc.
 }: DayCellProps) => {
 
-    const hasTasks = tasks.length > 0;
+    // Only show dot for memorable events (not routines/tasks/regular events)
+    const hasMemorableEvents = tasks.some((t: any) => t.type === "memorable_event");
 
     // This is the visual representation of the day cell
     const dayCell = (
@@ -69,21 +70,22 @@ export const DayCell = ({
         >
             {format(day, "d")}
 
-            {/* Visual dot indicator for tasks */}
-            {hasTasks && isSameMonth(day, monthDate) && (
+            {/* Visual dot indicator - ONLY for memorable events */}
+            {hasMemorableEvents && isSameMonth(day, monthDate) && (
                 <div
                     className={cn(
                         "absolute bottom-0.5 w-1.25 h-1.25 rounded-full",
                         isSameDay(day, selectedDay) || isToday(day)
                             ? "bg-white"
-                            : "bg-orange-600"
+                            : "bg-[#91EEFF]"  // Memorable event cyan color
                     )}
                 ></div>
             )}
         </div>
     );
-    // Only wrap in Popover if the day has tasks and is in the current month
-    if (hasTasks && isSameMonth(day, monthDate)) {
+    // Wrap in Popover if the day has ANY items (tasks, events, routines) in the current month
+    // The dot indicator above is separate - it only shows for memorable events
+    if (tasks.length > 0 && isSameMonth(day, monthDate)) {
         return (
             <Popover
                 open={isOpen}

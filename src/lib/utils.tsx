@@ -622,11 +622,54 @@ export const getTasksForDayInYearView = (tasks: Task[], day: Date): Task[] => {
   if (!tasks || tasks.length === 0) {
     return [];
   }
-  return tasks.filter(task => {
-    if (!task.startTime) return false;
-    // Compare the task's start date with the day
-    return isSameDay(new Date(task.startTime), day);
-  });
+
+  const result: Task[] = [];
+  const dayOfWeek = dayjs(day).format("dddd").toUpperCase(); // e.g., "MONDAY"
+
+  for (const task of tasks) {
+    if (!task.startTime) continue;
+
+    // Handle ROUTINE with recurring pattern
+    if (
+      task.type?.toLowerCase() === "routine" &&
+      task.pattern &&
+      (task.pattern?.daysOfWeek || []).length > 0
+    ) {
+      const patternDays = new Set(task.pattern.daysOfWeek);
+
+      // Check if this day of week is in the routine's pattern
+      if (patternDays.has(dayOfWeek)) {
+        // Check if the day is on or after the routine's start date
+        const routineStart = dayjs(task.startTime).startOf("day");
+        const currentDay = dayjs(day).startOf("day");
+
+        if (currentDay.isBefore(routineStart)) {
+          continue; // Day is before routine started
+        }
+
+        // Check endDate (Split Series Support)
+        if (task.endDate && currentDay.isAfter(dayjs(task.endDate))) {
+          continue; // Day is after routine ended
+        }
+
+        // Check if this specific date is an exception
+        const isException = (task.exceptions || []).some((ex) =>
+          dayjs(ex).isSame(currentDay, "day")
+        );
+
+        if (!isException) {
+          result.push(task);
+        }
+      }
+    } else {
+      // Non-routine items: simple date comparison
+      if (isSameDay(new Date(task.startTime), day)) {
+        result.push(task);
+      }
+    }
+  }
+
+  return result;
 };
 
 /**
