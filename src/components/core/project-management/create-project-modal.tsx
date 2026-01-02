@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { X } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 import React, { useContext, useEffect, useState } from 'react';
 import { AlertMessage, AlertModal } from '../alert-modal/alert-modal';
 import { toast } from 'sonner';
@@ -15,6 +15,7 @@ type CreateProjectModalProps = {
 export const CreateProjectModal = ({ onClose, handleReload }: CreateProjectModalProps) => {
     const [projectName, setProjectName] = useState('');
     const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [ownerInfo, setOwnerInfo] = useState({
         name: '...',
         email: '...',
@@ -31,9 +32,10 @@ export const CreateProjectModal = ({ onClose, handleReload }: CreateProjectModal
 
     const createProject = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!projectRepository) {
+        if (!projectRepository || isSubmitting) {
             return;
         }
+        setIsSubmitting(true);
         projectRepository.createProject({
             name: projectName,
         }).subscribe({
@@ -50,6 +52,7 @@ export const CreateProjectModal = ({ onClose, handleReload }: CreateProjectModal
                         description: res?.data,
                     });
                 }
+                setIsSubmitting(false);
             },
             error: err => {
                 const errors = err?.response?.data?.data;
@@ -59,6 +62,7 @@ export const CreateProjectModal = ({ onClose, handleReload }: CreateProjectModal
                     title: message,
                     description: errors,
                 });
+                setIsSubmitting(false);
             }
         });
     };
@@ -154,8 +158,19 @@ export const CreateProjectModal = ({ onClose, handleReload }: CreateProjectModal
 
                 {/* --- Create Button --- */}
                 <div>
-                    <Button type="submit" className="cursor-pointer bg-blue-500 hover:bg-blue-700">
-                        Create
+                    <Button
+                        type="submit"
+                        className="cursor-pointer bg-blue-500 hover:bg-blue-700"
+                        disabled={isSubmitting}
+                    >
+                        {isSubmitting ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Creating...
+                            </>
+                        ) : (
+                            'Create'
+                        )}
                     </Button>
                 </div>
             </form>

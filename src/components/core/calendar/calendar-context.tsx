@@ -73,7 +73,8 @@ export interface CalendarContextInterface {
         top: string;
         height: string;
     }[];
-    handleReload: () => void;
+    handleReload: (silent?: boolean) => void;
+    isLoadingCalendar: boolean;
     // For EDITING unscheduled and scheduled task
     selectedTaskId: string | number | null;
     setSelectedTaskId: Dispatch<SetStateAction<string | number | null>>;
@@ -122,6 +123,27 @@ export interface CalendarContextInterface {
     handleRemoveUnscheduledTask: (unscheduledTaskId: number | string | null, bigTaskId: number) => void;
     handleRemoveUnscheduledRoutine: (unscheduledRoutineId: number | string | null) => void;
     updateBigTask: (monthData: UnscheduledMonthData[], bigTaskParams: { index: number; item: UnscheduledBigTask; monthDataIndex: number; }) => void;
+    handleTaskEditorClose: () => void;
+
+    // Resize state and handlers
+    resizingItemId: number | null;
+    setResizingItemId: Dispatch<SetStateAction<number | null>>;
+    resizePreviewEndTime: string | null;
+    setResizePreviewEndTime: Dispatch<SetStateAction<string | null>>;
+    isResizeOverlapping: boolean;
+    setIsResizeOverlapping: Dispatch<SetStateAction<boolean>>;
+    onResizeStart: (itemId: number, originalEndTime: string, occurrenceKey?: string) => void;
+    onResizeMove: (itemId: number, newEndTime: string) => void;
+    onResizeEnd: (itemId: number, newEndTime: string) => void;
+    originalResizeEndTime: string | null;
+    resizingOccurrenceKey: string | null;
+
+    // Routine resize confirmation state and handlers
+    pendingRoutineResize: { itemId: number; newEndTime: string; originalStartTime: string } | null;
+    showRoutineResizeConfirm: boolean;
+    onRoutineResizeConfirmUpdate: () => void;
+    onRoutineResizeConfirmDetach: () => void;
+    onRoutineResizeCancel: () => void;
 };
 
 export const CalendarContext = createContext<CalendarContextInterface>({
@@ -177,6 +199,7 @@ export const CalendarContext = createContext<CalendarContextInterface>({
     setPanelPosition: () => { },
 
     handleReload: () => { },
+    isLoadingCalendar: false,
     // Editing state
     selectedTaskId: null,
     setSelectedTaskId: () => { },
@@ -217,6 +240,27 @@ export const CalendarContext = createContext<CalendarContextInterface>({
     handleRemoveUnscheduledRoutine: () => { },
     updateBigTask: () => { },
     getSleepBlocks: () => [],
+    handleTaskEditorClose: () => { },
+
+    // Resize defaults
+    resizingItemId: null,
+    setResizingItemId: () => { },
+    resizePreviewEndTime: null,
+    setResizePreviewEndTime: () => { },
+    isResizeOverlapping: false,
+    setIsResizeOverlapping: () => { },
+    onResizeStart: () => { },
+    onResizeMove: () => { },
+    onResizeEnd: () => { },
+    originalResizeEndTime: null,
+    resizingOccurrenceKey: null,
+
+    // Routine resize confirmation defaults
+    pendingRoutineResize: null,
+    showRoutineResizeConfirm: false,
+    onRoutineResizeConfirmUpdate: () => { },
+    onRoutineResizeConfirmDetach: () => { },
+    onRoutineResizeCancel: () => { },
 });
 
 export const useCalendarHooks = () => {
@@ -277,6 +321,22 @@ export const useCalendarHooks = () => {
     const [editorPosition, setEditorPosition] = useState({ x: 0, y: 0 });
     const [panelPosition, setPanelPosition] = useState({ x: 20, y: 100 });
     const [panelBufferListPosition, setPanelBufferListPosition] = useState({ x: 20, y: 100 });
+
+    // Resize state
+    const [resizingItemId, setResizingItemId] = useState<number | null>(null);
+    const [resizingOccurrenceKey, setResizingOccurrenceKey] = useState<string | null>(null);
+    const [resizePreviewEndTime, setResizePreviewEndTime] = useState<string | null>(null);
+    const [isResizeOverlapping, setIsResizeOverlapping] = useState<boolean>(false);
+    const [originalResizeEndTime, setOriginalResizeEndTime] = useState<string | null>(null);
+
+    // Routine resize confirmation state
+    const [pendingRoutineResize, setPendingRoutineResize] = useState<{ itemId: number; newEndTime: string; originalStartTime: string } | null>(null);
+    const [showRoutineResizeConfirm, setShowRoutineResizeConfirm] = useState<boolean>(false);
+
+    // Ref to store occurrence key (avoids closure issues)
+    const resizingOccurrenceKeyRef = useRef<string | null>(null);
+
+    const justClosedRef = useRef(false);
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -476,13 +536,24 @@ export const useCalendarHooks = () => {
 
     useEffect(() => {
         const newTasks = [...updatedTasks];
-        const updatedCalendarMap = initCalendarMap(newTasks);
+
+        // determine view range for routine generation
+        // default to current month +/- 1 month for safety
+        const viewStart = currentDate.clone().subtract(1, "month").startOf("month");
+        const viewEnd = currentDate.clone().add(1, "month").endOf("month");
+
+        const updatedCalendarMap = initCalendarMap(newTasks, viewStart, viewEnd);
         const newTasksStyle: Record<string, any> = {};
         let currentZIndex = 0;
 
         setCalendarMap(updatedCalendarMap);
 
-        const visited: Record<string, boolean> = {};
+        const calculateWidthAndLeft = (task: Task, tasksVal: Task[], count: number) => {
+            const width = Math.min(95, 95 / tasksVal.length);
+            const left = count * width; // Simple stacking for now, can be improved for complex overlaps
+            return { width, left };
+        };
+
         Object.keys(updatedCalendarMap).forEach(timeKey => {
             const tasksVal = updatedCalendarMap[timeKey];
             tasksVal.forEach((task: Task, count: number) => {
@@ -499,42 +570,52 @@ export const useCalendarHooks = () => {
 
                 const diff = (diffInMinutes / 60) * 100;
 
-                newStyle = {
-                    zIndex: !visited[task?.id as number] ? ++currentZIndex : newStyle?.zIndex,
-                    top: Math.max((!visited[task?.id as number] ? diff : newStyle?.top) - 20, 0),    // %
-                    left: count * 10,    // %
-                    height: getPercentageHeight(task) * CELL_HEIGHT, // rem
-                    width: Math.min(newStyle?.width || 90, 90 / tasksVal.length),   // %
+                if (!newStyle) {
+                    const widthAndLeft = calculateWidthAndLeft(task, tasksVal, count);
+                    newStyle = { zIndex: currentZIndex++, ...widthAndLeft };
+                    newTasksStyle[task?.id as number] = newStyle;
                 }
 
-                newTasksStyle[task?.id as number] = newStyle;
+                newTasksStyle[task?.id as number] = {
+                    ...newTasksStyle[task?.id as number],
+                    top: Math.max((diff) - 20, 0),    // %
+                    height: getPercentageHeight(task) * CELL_HEIGHT, // rem
+                }
             });
         });
 
-        const sortedTasks = [...updatedTasks].sort((a, b) =>
-            toDayJs(a.startTime).diff(toDayJs(b.startTime))
-        );
+        // const sortedKeys = Object.keys(newTasksStyle).sort((a, b) => { // Sort by startTime
+        //     const taskA = newTasks.find(t => t.id === Number(a));
+        //     const taskB = newTasks.find(t => t.id === Number(b));
+        //     return (taskA?.startTime && taskB?.startTime) ? dayjs(taskA.startTime).diff(dayjs(taskB.startTime)) : 0;
+        // });
 
-        for (const task of sortedTasks) {
-            const overlappingTasks = sortedTasks.filter(otherTask =>
-                toDayJs(task.startTime).isBefore(toDayJs(otherTask.endTime)) &&
-                toDayJs(otherTask.startTime).isBefore(toDayJs(task.endTime))
-            );
-            const width = 90 / overlappingTasks.length;
-            overlappingTasks.sort((a, b) => String(a.id).localeCompare(String(b.id)));
-            const columnIndex = overlappingTasks.findIndex(t => t.id === task.id);
-            const left = columnIndex * width;
+        // for (const taskId of sortedKeys) {
+        //     const task = newTasks.find(t => t.id === Number(taskId));
+        //     if (!task) continue;
 
-            newTasksStyle[task?.id as number] = {
-                ...newTasksStyle[task?.id as number],
-                width,
-                left,
-            };
-        }
+        //     // Recalculate based on overlapping
+        //     const overlaps = newTasks.filter(otherTask =>
+        //         otherTask.id !== task.id &&
+        //         toDayJs(task.startTime).isBefore(toDayJs(otherTask.endTime)) &&
+        //         toDayJs(otherTask.startTime).isBefore(toDayJs(task.endTime))
+        //     );
+
+        //     const width = 95 / (overlaps.length + 1); // +1 for the current task
+        //     overlaps.sort((a, b) => String(a.id).localeCompare(String(b.id)));
+        //     const columnIndex = overlaps.findIndex(t => t.id === task.id) === -1 ? overlaps.length : overlaps.findIndex(t => t.id === task.id);
+        //     const left = columnIndex * width;
+
+        //     newTasksStyle[task?.id as number] = {
+        //         ...newTasksStyle[task?.id as number],
+        //         width,
+        //         left,
+        //     };
+        // }
 
         setTasksStyle(newTasksStyle);
 
-    }, [currentMondayTime, updatedTasks]);
+    }, [currentMondayTime, updatedTasks, currentDate]);
 
 
 
@@ -576,11 +657,17 @@ export const useCalendarHooks = () => {
     const [isPanelBufferListDragging, setIsPanelBufferListDragging] = useState<boolean>(false);
     // For editing CREATED task and NEW task 
     const [editingTask, setEditingTask] = useState<Task | Partial<Task> | null>(null);
+    // For calendar loading state (Week/Month views)
+    const [isLoadingCalendar, setIsLoadingCalendar] = useState<boolean>(false);
     const {
         sleepHours, // Using the new sleepHours array: {startTime: "HH:mm", endTime: "HH:mm"}[]
     } = useContext<AppContextProps>(AppContext);
 
-    const handleReload = useCallback(() => {
+    const handleReload = useCallback((silent: boolean = false) => {
+        // Only show loading skeleton for non-silent reloads (page load, view changes)
+        if (!silent) {
+            setIsLoadingCalendar(true);
+        }
         calendarRepository?.getScheduledItems({
             view: getRequestView(),
             date: currentDate.format('YYYY-MM-DD'),
@@ -599,9 +686,11 @@ export const useCalendarHooks = () => {
                     };
                 });
                 setUpdatedTasks([...newUpdatedTasks]);
+                setIsLoadingCalendar(false);
             },
             error: (err: any) => {
                 console.log("Error occurs while fetching scheduled items", err);
+                setIsLoadingCalendar(false);
             }
         });
     }, [calendarRepository, currentDate, getRequestView, calendarId]);
@@ -677,8 +766,8 @@ export const useCalendarHooks = () => {
                         setSelectedTaskId(taskId);
                         setEditingTask({
                             ...res?.data,
-                            startTime: (res?.data?.timeSlot?.startTime as string).concat("Z"),
-                            endTime: (res?.data?.timeSlot?.endTime as string).concat("Z"),
+                            startTime: _task?.startTime ? _task.startTime : (res?.data?.timeSlot?.startTime as string).concat("Z"),
+                            endTime: _task?.endTime ? _task.endTime : (res?.data?.timeSlot?.endTime as string).concat("Z"),
                         });
                     }
                     else {
@@ -738,7 +827,7 @@ export const useCalendarHooks = () => {
                         setSelectedTaskId(null);
                         setSelectedRoutineId(null);
                         setEditingTask(null);
-                        handleReload();
+                        handleReload(true);
                         if (wouldGetUnscheduledItems) {
                             getUnscheduledItems();
                         }
@@ -984,6 +1073,9 @@ export const useCalendarHooks = () => {
     };
 
     const handleCellClick = (event: React.MouseEvent<HTMLTableCellElement>, cellId: string, scrollContainerRef?: any) => {
+        // Prevent opening if we just closed the editor
+        if (justClosedRef.current) return;
+
         if ((event.target as HTMLElement).closest('.cursor-grab')) {
             return;
         }
@@ -1113,7 +1205,7 @@ export const useCalendarHooks = () => {
                 })
                 .pipe(finalize(() => {
                     setDraggingProjectTaskId(null);
-                    handleReload();
+                    handleReload(true);
                 }))
                 .subscribe({
                     next: (res: any) => {
@@ -1193,13 +1285,13 @@ export const useCalendarHooks = () => {
                                 description: res?.data,
                             });
                             setDraggingUnscheduledTaskId(null);
-                            handleReload();
+                            handleReload(true);
                             getUnscheduledItems();
                         }
                     },
                     error: (err: any) => {
                         setDraggingUnscheduledTaskId(null);
-                        handleReload();
+                        handleReload(true);
                         getUnscheduledItems();
                     },
                 });
@@ -1260,13 +1352,13 @@ export const useCalendarHooks = () => {
                                 description: res?.data,
                             });
                             setDraggingUnscheduledRoutineId(null);
-                            handleReload();
+                            handleReload(true);
                             getUnscheduledItems();
                         }
                     },
                     error: (err: any) => {
                         setDraggingUnscheduledRoutineId(null);
-                        handleReload();
+                        handleReload(true);
                         getUnscheduledItems();
                     },
                 });
@@ -1310,7 +1402,8 @@ export const useCalendarHooks = () => {
                     const itemId = res?.data;
                     const success = res?.status;
                     if (success) {
-                        getNewCalendarItem(itemId);
+                        // Just reload calendar data, don't open editor
+                        handleReload(true);
                     }
                     else {
                         setAlertMessage({
@@ -1319,12 +1412,12 @@ export const useCalendarHooks = () => {
                             description: res?.data,
                         });
                         setDraggingScheduledTaskId(null);
-                        handleReload();
+                        handleReload(true);
                     }
                 },
                 error: (err: any) => {
                     setDraggingScheduledTaskId(null);
-                    handleReload();
+                    handleReload(true);
                 },
             });
     };
@@ -1365,6 +1458,7 @@ export const useCalendarHooks = () => {
         setPanelPosition,
         getSleepBlocks,
         handleReload,
+        isLoadingCalendar,
         handleTaskDoubleClick,
         selectedTaskId,
         setSelectedTaskId,
@@ -1402,6 +1496,388 @@ export const useCalendarHooks = () => {
         updateBigTask,
         monthPlanId,
         setMonthPlanId,
+        handleTaskEditorClose: () => {
+            justClosedRef.current = true;
+            setTimeout(() => { justClosedRef.current = false }, 200);
+        },
+
+        // Resize state and handlers
+        resizingItemId,
+        setResizingItemId,
+        resizePreviewEndTime,
+        setResizePreviewEndTime,
+        isResizeOverlapping,
+        setIsResizeOverlapping,
+        originalResizeEndTime,
+        resizingOccurrenceKey,
+        onResizeStart: (itemId: number, originalEndTime: string, occurrenceKey?: string) => {
+            setResizingItemId(itemId);
+            setResizingOccurrenceKey(occurrenceKey || null);
+            resizingOccurrenceKeyRef.current = occurrenceKey || null;  // Also update ref
+            setOriginalResizeEndTime(originalEndTime);
+            setResizePreviewEndTime(originalEndTime);
+            setIsResizeOverlapping(false);
+        },
+        onResizeMove: (itemId: number, newEndTime: string) => {
+            setResizePreviewEndTime(newEndTime);
+            // FE overlap check - find the item being resized
+            const resizingItem = updatedTasks.find(t => t.id === itemId);
+            if (resizingItem) {
+                const newStart = toDayJs(resizingItem.startTime);
+                const newEnd = toDayJs(newEndTime);
+                // Check against all updatedTasks on the same day
+                const dayKey = newStart.format("YYYY-MM-DD");
+                const hasOverlap = updatedTasks.some((item: Task) => {
+                    if (item.id === itemId) return false;
+                    if ((item.type || "").toLowerCase() === "routine") return false;
+                    const itemDay = toDayJs(item.startTime).format("YYYY-MM-DD");
+                    if (itemDay !== dayKey) return false;
+                    const itemStart = toDayJs(item.startTime);
+                    const itemEnd = toDayJs(item.endTime);
+                    return newStart.isBefore(itemEnd) && itemStart.isBefore(newEnd);
+                });
+                setIsResizeOverlapping(hasOverlap);
+            }
+        },
+        onResizeEnd: (itemId: number, newEndTime: string) => {
+            // If overlapping on FE, revert and don't call API
+            if (isResizeOverlapping) {
+                setResizingItemId(null);
+                setResizingOccurrenceKey(null);
+                setResizePreviewEndTime(null);
+                setOriginalResizeEndTime(null);
+                setIsResizeOverlapping(false);
+                return;
+            }
+
+            // Find the item
+            const resizingItem = updatedTasks.find(t => t.id === itemId);
+            if (!resizingItem) {
+                setResizingItemId(null);
+                setResizingOccurrenceKey(null);
+                setResizePreviewEndTime(null);
+                setOriginalResizeEndTime(null);
+                return;
+            }
+
+            // Check if it's a routine - show confirmation dialog
+            const isRoutine = (resizingItem.type || "").toLowerCase() === "routine";
+            if (isRoutine) {
+                // Check if it's a standalone routine (no recurring pattern)
+                const routinePattern = (resizingItem as any).pattern;
+                const isStandalone = !routinePattern ||
+                    !routinePattern.daysOfWeek ||
+                    (Array.isArray(routinePattern.daysOfWeek) && routinePattern.daysOfWeek.length === 0);
+
+                if (isStandalone) {
+                    // For standalone routines, directly update (no confirmation needed)
+                    // Temporarily update UI
+                    const newUpdatedTasks = [...updatedTasks];
+                    const taskIndex = newUpdatedTasks.findIndex(t => t.id === itemId);
+                    if (taskIndex !== -1) {
+                        newUpdatedTasks[taskIndex] = { ...resizingItem, endTime: newEndTime };
+                        setUpdatedTasks(newUpdatedTasks);
+                    }
+
+                    // Call BE API to update standalone routine
+                    calendarRepository?.updateCalendarItem(
+                        itemId,
+                        {
+                            ...resizingItem,
+                            type: (resizingItem.type as string).toUpperCase(),
+                            name: resizingItem.name,
+                            calendarId: calendarId || 0,
+                            timeSlot: {
+                                startTime: resizingItem.startTime,
+                                endTime: newEndTime,
+                            },
+                            ...getDetails(resizingItem),
+                        }
+                    ).subscribe({
+                        next: (res: any) => {
+                            const success = res?.status;
+                            if (success) {
+                                handleReload(true);
+                                toast.success("Duration updated");
+                            } else {
+                                setAlertMessage({
+                                    type: "warning",
+                                    title: res?.msg || "Update failed",
+                                    description: res?.data,
+                                });
+                                handleReload(true);
+                            }
+                        },
+                        error: (err: any) => {
+                            const message = err?.response?.data?.msg || err?.response?.data?.message || "Update failed";
+                            setAlertMessage({
+                                type: "warning",
+                                title: message,
+                                description: err?.response?.data?.data,
+                            });
+                            handleReload(true);
+                        },
+                    });
+
+                    // Reset resize state
+                    setResizingItemId(null);
+                    setResizingOccurrenceKey(null);
+                    setResizePreviewEndTime(null);
+                    setOriginalResizeEndTime(null);
+                    setIsResizeOverlapping(false);
+                    return;
+                }
+
+                // For recurring routines, show confirmation dialog
+                // Store pending resize data and show dialog
+                // Use ref for occurrence key to avoid closure issues
+                const occurrenceStartTime = resizingOccurrenceKeyRef.current || (resizingItem.startTime as string);
+                setPendingRoutineResize({
+                    itemId,
+                    newEndTime,
+                    originalStartTime: occurrenceStartTime,
+                });
+                setShowRoutineResizeConfirm(true);
+                // Reset resize state
+                setResizingItemId(null);
+                setResizingOccurrenceKey(null);
+                resizingOccurrenceKeyRef.current = null;  // Also reset ref
+                setResizePreviewEndTime(null);
+                setOriginalResizeEndTime(null);
+                setIsResizeOverlapping(false);
+                return;
+            }
+
+            // For non-routines (tasks/events), proceed with immediate update
+            // Temporarily update UI
+            const newUpdatedTasks = [...updatedTasks];
+            const taskIndex = newUpdatedTasks.findIndex(t => t.id === itemId);
+            if (taskIndex !== -1) {
+                newUpdatedTasks[taskIndex] = { ...resizingItem, endTime: newEndTime };
+                setUpdatedTasks(newUpdatedTasks);
+            }
+
+            // Call BE API
+            calendarRepository?.updateCalendarItem(
+                itemId,
+                {
+                    ...resizingItem,
+                    type: (resizingItem.type as string).toUpperCase(),
+                    name: resizingItem.name,
+                    calendarId: calendarId || 0,
+                    timeSlot: {
+                        startTime: resizingItem.startTime,
+                        endTime: newEndTime,
+                    },
+                    ...getDetails(resizingItem),
+                }
+            ).subscribe({
+                next: (res: any) => {
+                    const success = res?.status;
+                    if (success) {
+                        handleReload(true);
+                        toast.success("Duration updated");
+                    } else {
+                        setAlertMessage({
+                            type: "warning",
+                            title: res?.msg || "Update failed",
+                            description: res?.data,
+                        });
+                        handleReload(true);
+                    }
+                },
+                error: (err: any) => {
+                    const message = err?.response?.data?.msg || err?.response?.data?.message || "Update failed";
+                    setAlertMessage({
+                        type: "warning",
+                        title: message,
+                        description: err?.response?.data?.data,
+                    });
+                    handleReload(true);
+                },
+            });
+
+            // Reset resize state
+            setResizingItemId(null);
+            setResizingOccurrenceKey(null);
+            setResizePreviewEndTime(null);
+            setOriginalResizeEndTime(null);
+            setIsResizeOverlapping(false);
+        },
+
+        // Routine resize confirmation state (must be exported for views to access)
+        showRoutineResizeConfirm,
+        pendingRoutineResize,
+
+        // Routine resize confirmation handlers
+        onRoutineResizeConfirmUpdate: () => {
+            if (!pendingRoutineResize || !calendarRepository) {
+                setShowRoutineResizeConfirm(false);
+                setPendingRoutineResize(null);
+                return;
+            }
+
+            // For "All Current & Future", we need to calculate the new duration
+            // The user resized an occurrence, so we need to find how much the duration changed
+            // and apply that to the master routine's endTime
+            const { itemId, newEndTime, originalStartTime } = pendingRoutineResize;
+            const resizingItem = updatedTasks.find(t => t.id === itemId);
+            if (!resizingItem) {
+                setShowRoutineResizeConfirm(false);
+                setPendingRoutineResize(null);
+                return;
+            }
+
+            // Calculate the new duration from the occurrence's resize
+            // originalStartTime is the occurrence's start (e.g., 2026-01-08T07:00:00Z)
+            // newEndTime is the occurrence's new end after resize (e.g., 2026-01-08T08:00:00Z)
+            const occurrenceStart = new Date(originalStartTime).getTime();
+            const occurrenceNewEnd = new Date(newEndTime).getTime();
+            const newDurationMs = occurrenceNewEnd - occurrenceStart;
+
+            // Apply the new duration to the master routine's start time
+            const masterStartMs = new Date(resizingItem.startTime || '').getTime();
+            const newMasterEndTime = new Date(masterStartMs + newDurationMs).toISOString();
+
+            // Calculate the new end time for the occurrence date
+            // Use originalStartTime (occurrence date) + new duration
+            const occurrenceNewEndTime = new Date(new Date(originalStartTime).getTime() + newDurationMs).toISOString();
+
+            // Call updateCalendarItem API (All Current & Future)
+            // Note: We must use the OCCURRENCE's date (originalStartTime) to match TaskEditor format
+            // The backend will update the routine's time pattern based on the occurrence date provided
+            calendarRepository.updateCalendarItem(
+                itemId,
+                {
+                    ...resizingItem,
+                    type: (resizingItem.type as string).toUpperCase(),
+                    name: resizingItem.name,
+                    calendarId: calendarId || 0,
+                    // Use occurrence's date (originalStartTime) - this matches how form editing works
+                    startTime: originalStartTime,
+                    endTime: occurrenceNewEndTime,
+                    // Also set timeSlot with occurrence times
+                    timeSlot: {
+                        startTime: originalStartTime,
+                        endTime: occurrenceNewEndTime,
+                    },
+                    ...getDetails(resizingItem),
+                }
+            ).subscribe({
+                next: (res: any) => {
+                    const success = res?.status;
+                    if (success) {
+                        handleReload(true);
+                        toast.success("Routine duration updated for all occurrences");
+                    } else {
+                        setAlertMessage({
+                            type: "warning",
+                            title: res?.msg || "Update failed",
+                            description: res?.data,
+                        });
+                        handleReload(true);
+                    }
+                    setShowRoutineResizeConfirm(false);
+                    setPendingRoutineResize(null);
+                },
+                error: (err: any) => {
+                    const message = err?.response?.data?.msg || err?.response?.data?.message || "Update failed";
+                    setAlertMessage({
+                        type: "warning",
+                        title: message,
+                        description: err?.response?.data?.data,
+                    });
+                    handleReload(true);
+                    setShowRoutineResizeConfirm(false);
+                    setPendingRoutineResize(null);
+                },
+            });
+        },
+
+        onRoutineResizeConfirmDetach: () => {
+            if (!pendingRoutineResize || !calendarRepository) {
+                setShowRoutineResizeConfirm(false);
+                setPendingRoutineResize(null);
+                return;
+            }
+
+            const { itemId, newEndTime, originalStartTime } = pendingRoutineResize;
+            const resizingItem = updatedTasks.find(t => t.id === itemId);
+            if (!resizingItem) {
+                setShowRoutineResizeConfirm(false);
+                setPendingRoutineResize(null);
+                return;
+            }
+
+            // Build detach payload
+            // For "This Occurrence Only", use the OCCURRENCE's times (not master routine's)
+            // Calculate occurrence end time based on original duration of routine
+            const masterStartMs = new Date(resizingItem.startTime || '').getTime();
+            const masterEndMs = new Date(resizingItem.endTime || '').getTime();
+            const originalDurationMs = masterEndMs - masterStartMs;
+
+            // The occurrence's newEndTime was calculated during drag
+            // originalStartTime is the occurrence's start time
+            const newDetails = {
+                calendarId: calendarId || 0,
+                type: (resizingItem.type as string).toUpperCase(),
+                name: resizingItem.name,
+                note: resizingItem.note,
+                // Top-level times for the new standalone item
+                startTime: originalStartTime,
+                endTime: newEndTime,
+                // Also set timeSlot
+                timeSlot: {
+                    startTime: originalStartTime,  // Use occurrence's start time, not master's
+                    endTime: newEndTime,           // Use the resized end time
+                },
+                color: resizingItem.color,
+                ...getDetails(resizingItem),
+            };
+
+            // Call detachRoutineInstance API (This Occurrence Only)
+            calendarRepository.detachRoutineInstance(
+                itemId,
+                {
+                    exceptionDate: originalStartTime,
+                    newDetails: newDetails,
+                }
+            ).subscribe({
+                next: (res: any) => {
+                    const success = res?.status;
+                    if (success) {
+                        handleReload(true);
+                        toast.success("This occurrence updated");
+                    } else {
+                        setAlertMessage({
+                            type: "warning",
+                            title: res?.msg || "Update failed",
+                            description: res?.data,
+                        });
+                        handleReload(true);
+                    }
+                    setShowRoutineResizeConfirm(false);
+                    setPendingRoutineResize(null);
+                },
+                error: (err: any) => {
+                    const message = err?.response?.data?.msg || err?.response?.data?.message || "Update failed";
+                    setAlertMessage({
+                        type: "warning",
+                        title: message,
+                        description: err?.response?.data?.data,
+                    });
+                    handleReload(true);
+                    setShowRoutineResizeConfirm(false);
+                    setPendingRoutineResize(null);
+                },
+            });
+        },
+
+        onRoutineResizeCancel: () => {
+            setShowRoutineResizeConfirm(false);
+            setPendingRoutineResize(null);
+            handleReload(true);
+        },
     };
 };
 

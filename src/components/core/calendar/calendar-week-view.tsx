@@ -28,8 +28,19 @@ import { DraggableTask } from "./draggable-task";
 import { UnscheduledRoutineItem } from "./unscheduled-routine-item";
 import { UnscheduledTaskItem } from "./unscheduled-task-item";
 import React from "react";
+import {
+    AlertDialog,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { CollapsibleUnscheduledBufferListPanel } from "./collapsible-unscheduled-buffer-list-panel";
 import { useRouter } from "next/navigation";
+import { CalendarItemSkeleton } from "./calendar-item-skeleton";
 
 export interface WeekViewCalendarProps {
     tasks?: Task[];
@@ -81,6 +92,21 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
         handleCellClick,
         getSleepBlocks,
         isPanelBufferListDragging,
+        handleTaskEditorClose,
+        isLoadingCalendar,
+        // Resize state and handlers
+        resizingItemId,
+        resizingOccurrenceKey,
+        resizePreviewEndTime,
+        isResizeOverlapping,
+        onResizeStart,
+        onResizeMove,
+        onResizeEnd,
+        // Routine resize confirmation
+        showRoutineResizeConfirm,
+        onRoutineResizeConfirmUpdate,
+        onRoutineResizeConfirmDetach,
+        onRoutineResizeCancel,
     } = useContext<CalendarContextInterface>(CalendarContext);
 
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -162,7 +188,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                                             }
                                                             return (
                                                                 <DraggableTask
-                                                                    key={task.id?.toString() || "draggable-task-".concat(index.toString())}
+                                                                    key={`${id}-${index}`}
                                                                     task={{ ...task, type: (task?.type || "").toLowerCase() }}
                                                                     draggable={false}
                                                                     wrapperClassName="truncate rounded-lg pl-2 mt-1 mb-1"
@@ -204,6 +230,22 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                     height: `${(24 - startPositionInHours) * CELL_HEIGHT}rem`,
                                 }}
                             />
+                            {/* Loading skeletons - 7-column grid with multiple items per day */}
+                            {isLoadingCalendar && (
+                                <div className="absolute inset-0 z-20 pointer-events-none" style={{ left: '5rem' }}>
+                                    {/* Generate skeleton items for each of the 7 days */}
+                                    {[0, 1, 2, 3, 4, 5, 6].map((dayIndex) => (
+                                        <div key={dayIndex} className="absolute" style={{ left: `${dayIndex * 14.28}%`, width: '14%' }}>
+                                            {/* 4 skeleton items per day at different times */}
+                                            <div className="absolute w-full animate-pulse rounded-lg bg-gray-200" style={{ top: '0rem', height: '4.7rem' }} />
+                                            <div className="absolute w-full animate-pulse rounded-lg bg-gray-200" style={{ top: '4.8rem', height: '9rem' }} />
+                                            <div className="absolute w-full animate-pulse rounded-lg bg-gray-200" style={{ top: '18.3rem', height: '7rem' }} />
+                                            <div className="absolute w-full animate-pulse rounded-lg bg-gray-200" style={{ top: '27.7rem', height: '13.5rem' }} />
+                                            <div className="absolute w-full animate-pulse rounded-lg bg-gray-200" style={{ top: '45.2rem', height: '46.7rem' }} />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                             <Table className="w-full">
                                 <TableBody>
                                     {hours.map((hour) => (
@@ -223,26 +265,57 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                                         wrapperClassName="w-16.5 h-[4.6rem]"
                                                         onClick={(e) => handleCellClick(e, id, scrollContainerRef)}
                                                     >
-                                                        {(calendarMap[id] || []).map((task: Task) => {
+                                                        {!isLoadingCalendar && (calendarMap[id] || []).map((task: Task, index: number) => {
                                                             if (task?.type === "memorable_event") {
                                                                 return <></>
                                                             }
+                                                            // Only override startTime/endTime for ROUTINES (for split series support)
+                                                            // Tasks and Events should keep their original API times
+                                                            const isRoutine = (task?.type || "").toLowerCase() === "routine";
+                                                            let taskStartTime = task.startTime;
+                                                            let taskEndTime = task.endTime;
+
+                                                            if (isRoutine) {
+                                                                const duration = (toDayJs(task.endTime || "").diff(toDayJs(task.startTime || "")));
+                                                                taskStartTime = id; // Use occurrence date from map key
+                                                                taskEndTime = dayJsToISOString(toDayJs(id).add(duration, 'millisecond'));
+                                                            }
+
                                                             return (
                                                                 <DraggableTask
-                                                                    key={id}
+                                                                    key={task.id?.toString() || `${id}-${index}`}
                                                                     handleTaskDoubleClick={handleTaskDoubleClick}
-                                                                    task={{ ...task, type: (task?.type || "").toLowerCase() }}
-                                                                    draggable={!((task?.type || "").toLowerCase() === "routine")}
+                                                                    task={{ ...task, type: (task?.type || "").toLowerCase(), startTime: taskStartTime, endTime: taskEndTime }}
+                                                                    draggable={!isRoutine}
                                                                     wrapperClassName="truncate absolute rounded-lg pl-2"
                                                                     wrapperStyle={{
                                                                         ...tasksStyle[task.id as number],
                                                                         top: `${tasksStyle[task.id as number].top}%`,
                                                                         left: `${tasksStyle[task.id as number].left}%`,
-                                                                        height: `${tasksStyle[task.id as number].height}rem`,
+                                                                        height: resizingItemId === task.id && resizePreviewEndTime
+                                                                            ? undefined  // Height will be overridden by previewHeight
+                                                                            : `${tasksStyle[task.id as number].height}rem`,
                                                                         width: `${tasksStyle[task.id as number].width}%`,
                                                                     }}
                                                                     scrollContainerRef={scrollContainerRef}
                                                                     badgeWrapperClassName="-mt-2.5"
+                                                                    // Resize props - enable for all items including routines
+                                                                    resizable={true}
+                                                                    cellHeightPx={CELL_HEIGHT * 16}  // Convert rem to px (1rem = 16px)
+                                                                    onResizeStart={(itemId, endTime) => onResizeStart(itemId, endTime, id)}  // Pass occurrence key (map key)
+                                                                    onResizeMove={onResizeMove}
+                                                                    onResizeEnd={onResizeEnd}
+                                                                    isResizing={resizingItemId === task.id && (isRoutine ? resizingOccurrenceKey === id : true)}
+                                                                    isOverlapping={resizingItemId === task.id && (isRoutine ? resizingOccurrenceKey === id : true) && isResizeOverlapping}
+                                                                    previewHeight={resizingItemId === task.id && (isRoutine ? resizingOccurrenceKey === id : true) && resizePreviewEndTime
+                                                                        ? (() => {
+                                                                            const startMs = new Date(taskStartTime || '').getTime();
+                                                                            const endMs = new Date(resizePreviewEndTime).getTime();
+                                                                            const durationHours = (endMs - startMs) / (1000 * 60 * 60);
+                                                                            return `${durationHours * CELL_HEIGHT}rem`;
+                                                                        })()
+                                                                        : undefined
+                                                                    }
                                                                 />
                                                             );
                                                         })}
@@ -317,6 +390,8 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                 task={{ ...editingTask, type: (editingTask?.type || "").toLowerCase() }}
                                 setAlertMessage={setAlertMessage}
                                 onClose={() => {
+                                    handleTaskEditorClose();
+
                                     setEditingTask(null);
                                     setSelectedTaskId(null);
                                 }}
@@ -336,6 +411,34 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                             onClose={() => setAlertMessage(null)}
                         />
                     )}
+                    {/* Routine Resize Confirmation Dialog */}
+                    <AlertDialog open={showRoutineResizeConfirm} onOpenChange={onRoutineResizeCancel}>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Edit Routine Duration</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This is a recurring routine. Do you want to save the new duration for this occurrence only or for all occurrences in the series?
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                                <Button
+                                    type="button"
+                                    onClick={onRoutineResizeConfirmUpdate}
+                                    className="bg-[#33BFFF] hover:bg-[#33BFFF]/90 text-white border-none"
+                                >
+                                    All Current & Future
+                                </Button>
+                                <Button
+                                    type="button"
+                                    onClick={onRoutineResizeConfirmDetach}
+                                    className="bg-[#4ade80] hover:bg-[#4ade80]/90 text-white border-none"
+                                >
+                                    This Occurrence Only
+                                </Button>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </CardContent>
             </Card>
         </>
