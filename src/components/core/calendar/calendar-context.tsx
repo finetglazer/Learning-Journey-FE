@@ -1012,7 +1012,7 @@ export const useCalendarHooks = () => {
         updateRoutineList(monthPlanId as number, newRoutineList, true);
     };
 
-    const getNewCalendarItem = (itemId: number, isNew?: boolean) => {
+    const getNewCalendarItem = (itemId: number, isNew?: boolean, openEditor: boolean = true) => {
         calendarRepository?.getCalendarItem({ itemId: itemId })
             .subscribe({
                 next: (res: any) => {
@@ -1024,7 +1024,9 @@ export const useCalendarHooks = () => {
                             startTime: (updatedCalendarItem?.timeSlot?.startTime as string).concat("Z"),
                             endTime: (updatedCalendarItem?.timeSlot?.endTime as string).concat("Z"),
                         };
-                        setEditingTask(newCalendarItem);
+                        if (openEditor) {
+                            setEditingTask(newCalendarItem);
+                        }
 
                         const newUpdatedTasks = [...updatedTasks];
                         const itemType = (newCalendarItem?.type || "").toLowerCase();
@@ -1304,6 +1306,10 @@ export const useCalendarHooks = () => {
                 return;
             }
             const cellId = String(event.over?.id);
+            // Derive day of week from the actual drop date
+            const dropDate = toDayJs(cellId);
+            const dayOfWeek = dropDate.format('dddd').toUpperCase(); // "MONDAY", "TUESDAY", etc.
+
             const newRoutine: Task = {
                 ...unscheduledRoutine,
                 id: unscheduledRoutine?.id as number,
@@ -1313,55 +1319,105 @@ export const useCalendarHooks = () => {
                 type: "routine",
                 status: 'incomplete',
                 pattern: {
-                    daysOfWeek: ["MONDAY"]
+                    daysOfWeek: [dayOfWeek]
                 },
                 exceptions: [],
             };
+
 
             // Temporarily update updatedTasks
             setUpdatedTasks([...updatedTasks, newRoutine]);
             // Temporarily remove unscheduled task
             handleRemoveUnscheduledRoutine(draggingUnscheduledRoutineId);
 
-            calendarRepository?.createCalendarItem(
-                {
-                    ...newRoutine,
-                    type: (newRoutine?.type as string).toUpperCase(),
-                    name: newRoutine?.name,
-                    calendarId: calendarId || 0,
-                    monthPlanId: monthPlanId || 0,
-                    timeSlot: {
-                        startTime: newRoutine?.startTime,
-                        endTime: newRoutine?.endTime,
-                    },
-                    routineDetails: {
-                        pattern: newRoutine.pattern,
-                    },
-                }).subscribe({
-                    next: (res: any) => {
-                        const itemId = res?.data?.itemId;
-                        const success = res?.status;
-                        if (success) {
-                            getNewCalendarItem(itemId, true);
-                            getUnscheduledItems();
-                        }
-                        else {
-                            setAlertMessage({
-                                type: "warning",
-                                title: res?.msg || res?.message,
-                                description: res?.data,
-                            });
+            // Check if this is an existing routine (has numeric ID from DB)
+            const isExistingRoutine = typeof unscheduledRoutine?.id === 'number';
+
+            if (isExistingRoutine) {
+                // UPDATE existing unscheduled routine instead of creating a duplicate
+                // Only send the fields that need updating
+                calendarRepository?.updateCalendarItem(
+                    unscheduledRoutine.id as number,
+                    {
+                        timeSlot: {
+                            startTime: newRoutine?.startTime,
+                            endTime: newRoutine?.endTime,
+                        },
+                        routineDetails: {
+                            pattern: newRoutine.pattern,
+                        },
+                    }).subscribe({
+
+                        next: (res: any) => {
+                            const success = res?.status;
+                            if (success) {
+                                // Use the known routine ID since this is an update operation
+                                getNewCalendarItem(unscheduledRoutine.id as number, false, false); // false = updating existing item, false = don't open editor
+                                getUnscheduledItems();
+                            }
+                            else {
+                                setAlertMessage({
+                                    type: "warning",
+                                    title: res?.msg || res?.message,
+                                    description: res?.data,
+                                });
+                                setDraggingUnscheduledRoutineId(null);
+                                handleReload(true);
+                                getUnscheduledItems();
+                            }
+                        },
+                        error: (err: any) => {
                             setDraggingUnscheduledRoutineId(null);
                             handleReload(true);
                             getUnscheduledItems();
-                        }
-                    },
-                    error: (err: any) => {
-                        setDraggingUnscheduledRoutineId(null);
-                        handleReload(true);
-                        getUnscheduledItems();
-                    },
-                });
+                        },
+                    });
+            } else {
+                // CREATE new routine (fallback for edge cases like uuid-based IDs)
+                calendarRepository?.createCalendarItem(
+                    {
+                        ...newRoutine,
+                        type: (newRoutine?.type as string).toUpperCase(),
+                        name: newRoutine?.name,
+                        calendarId: calendarId || 0,
+                        monthPlanId: monthPlanId || 0,
+                        timeSlot: {
+                            startTime: newRoutine?.startTime,
+                            endTime: newRoutine?.endTime,
+                        },
+                        routineDetails: {
+                            pattern: newRoutine.pattern,
+                        },
+                    }).subscribe({
+                        next: (res: any) => {
+                            // Handle both response formats:
+                            // 1. CreateItemResponse: res.data = { itemId: number, ... }
+                            // 2. Direct ID (fallback path): res.data = number
+                            const itemId = typeof res?.data === 'object' ? res?.data?.itemId : res?.data;
+                            const success = res?.status;
+                            if (success) {
+                                getNewCalendarItem(itemId, true, false); // true = new item, false = don't open editor
+                                getUnscheduledItems();
+                            }
+                            else {
+                                setAlertMessage({
+                                    type: "warning",
+                                    title: res?.msg || res?.message,
+                                    description: res?.data,
+                                });
+                                setDraggingUnscheduledRoutineId(null);
+                                handleReload(true);
+                                getUnscheduledItems();
+                            }
+                        },
+                        error: (err: any) => {
+                            setDraggingUnscheduledRoutineId(null);
+                            handleReload(true);
+                            getUnscheduledItems();
+                        },
+                    });
+            }
+
             return;
         }
         if (!droppedCellId) {
