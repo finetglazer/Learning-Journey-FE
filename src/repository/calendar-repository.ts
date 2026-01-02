@@ -82,6 +82,11 @@ export class CalendarRepository extends BaseRepository {
             .pipe(map(res => res?.data));
     };
 
+    public detachRoutineInstance = (itemId: number, body: any): Observable<any> => {
+        return this.http.post(API_UPDATE_CALENDAR_ITEM + `/${itemId}/detach`, body)
+            .pipe(map(res => res?.data));
+    };
+
     public getMonthPlaningItems = (params: any): Observable<any> => {
         return this.http.get(API_GET_MONTH_PLANNING_ITEMS + `/${params?.monthPlanId}`)
             .pipe(map(res => res?.data));

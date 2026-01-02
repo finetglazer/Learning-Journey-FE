@@ -126,6 +126,8 @@ export const getMondayOfThisWeek = (currentDate?: Dayjs): Dayjs => {
   return dateToProcess.subtract(adjustment, 'day').startOf('day');
 };
 
+
+
 export const getTasksForDay = (
   calendarMap: Record<string, Task[]>,
   curDayAsDate: Date
@@ -143,7 +145,7 @@ export const getTasksForDay = (
   return tasksForDay;
 };
 
-export const initCalendarMap = (tasks?: Task[]) => {
+export const initCalendarMap = (tasks?: Task[], viewStart?: Dayjs, viewEnd?: Dayjs) => {
   const map: Record<string, Task[]> = {};
   if (!tasks || tasks.length === 0) {
     return map;
@@ -162,28 +164,49 @@ export const initCalendarMap = (tasks?: Task[]) => {
       const patternDays = new Set(task.pattern.daysOfWeek);
 
       // Define loop boundaries
+      // Iterate from max(taskStartTime, viewStart) to viewEnd (or end of month if not provided)
       let currentDay = taskStartTime.clone().startOf("day");
-      const endOfMonth = taskStartTime.clone().endOf("month");
+      if (viewStart && viewStart.isAfter(currentDay)) {
+        currentDay = viewStart.clone().startOf("day");
+      }
 
-      // Iterate from the task's start day to the end of the month
-      while (currentDay.isBefore(endOfMonth) || currentDay.isSame(endOfMonth, "day")) {
+      // If viewEnd is provided, use it. Otherwise default to end of the start month (fallback)
+      // Ideally, viewEnd should always be passed for correct rendering across months.
+      const endLoop = viewEnd ? viewEnd.clone().endOf("day") : taskStartTime.clone().endOf("month");
+
+      // Iterate
+      while (currentDay.isBefore(endLoop) || currentDay.isSame(endLoop, "day")) {
 
         const dayName = currentDay.format("dddd").toUpperCase(); // e.g., "TUESDAY"
 
         // Check if the current day is in the routine's pattern
         if (patternDays.has(dayName)) {
-          // If it matches, create the key for this day at the target time
-          const keyTime = currentDay
-            .hour(targetTime.hour())
-            .minute(targetTime.minute())
-            .second(0).millisecond(0);
+          // Check if this specific date is an exception
+          const isException = (task.exceptions || []).some((ex) =>
+            dayjs(ex).isSame(currentDay, "day")
+          );
 
-          const key = dayJsToISOString(keyTime);
+          if (!isException) {
+            // If it matches and is NOT an exception, create the key
+            // We use the DATE from currentDay, but TIME from taskStartTime
+            const keyTime = currentDay
+              .hour(targetTime.hour())
+              .minute(targetTime.minute())
+              .second(0)
+              .millisecond(0);
 
-          if (!map[key]) {
-            map[key] = [];
+            // Check endDate (Split Series Support)
+            if (task.endDate && !keyTime.isBefore(dayjs(task.endDate))) {
+              break;
+            }
+
+            const key = dayJsToISOString(keyTime);
+
+            if (!map[key]) {
+              map[key] = [];
+            }
+            map[key].push(task);
           }
-          map[key].push(task);
         }
 
         // Move to the next day
@@ -418,7 +441,7 @@ export const getWeeksInMonth = (month: number, year?: number) => {
 
   let currentWeekStart = startOfWeek(firstDayOfMonth, { weekStartsOn: 1 });
 
-  while (isBefore(currentWeekStart, lastDayOfMonth)) {
+  while (isBefore(currentWeekStart, lastDayOfMonth) || isSameDay(currentWeekStart, lastDayOfMonth)) {
     const currentWeekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 1 });
 
     const startDay = format(currentWeekStart, 'd');
@@ -536,7 +559,7 @@ export const getDetails = (model: Task | Omit<Task, "id">) => {
 };
 
 // Week: "31-06", "02-09"
-export const getWeekStartTimeEndTime = (week: string, currentDate: Dayjs) => {
+export const getWeekStartTimeEndTime = (week: string, currentDate: Dayjs, weekIndex?: number) => {
   const weekParts = week.split("-");
   const weekStartDateNum = Number(weekParts[0]); // 31
   const weekEndDateNum = Number(weekParts[1]);   // 7
@@ -545,25 +568,20 @@ export const getWeekStartTimeEndTime = (week: string, currentDate: Dayjs) => {
 
   // Check if the week spans across two different months (e.g., start date 31, end date 7)
   if (weekStartDateNum > weekEndDateNum) {
-
-    const currentDayOfMonth = currentDate.date(); // 3
-
-    // Check if the current date is in the *first* part of the week (e.g., Oct 31st)
-    // or the *second* part (e.g., Nov 3rd)
-    if (currentDayOfMonth >= weekStartDateNum) {
-      // We are in the first month (e.g., October)
-      // e.g., if currentDate was Oct 31st, currentDayOfMonth (31) >= weekStartDateNum (31)
-      startDate = currentDate.date(weekStartDateNum);
-      // The end date must be in the *next* month
-      endDate = currentDate.add(1, 'month').date(weekEndDateNum);
-    } else {
-      // We are in the second month (e.g., November)
-      // e.g., if currentDate is Nov 3rd, currentDayOfMonth (3) < weekStartDateNum (31)
-      // The start date must be in the *previous* month
+    // CRITICAL FIX: Distinguish between "Start of View" vs "End of View"
+    // If it is the VERY first week of the month view (weekIndex === 0), 
+    // AND it is split (e.g. 29-4), then the start date MUST be from the PREVIOUS month.
+    // Example: Jan 2026 View. First week is "29-4". This is Dec 29 - Jan 4.
+    if (weekIndex === 0) {
       startDate = currentDate.subtract(1, 'month').date(weekStartDateNum);
       endDate = currentDate.date(weekEndDateNum);
     }
-
+    // Otherwise, we assume it is the END of the current month bridging to the NEXT.
+    // Example: Dec 2025 View. Last week is "29-4". This is Dec 29 - Jan 4.
+    else {
+      startDate = currentDate.date(weekStartDateNum);
+      endDate = currentDate.add(1, 'month').date(weekEndDateNum);
+    }
   } else {
     // The week is fully within the current month (e.g., "10-17")
     startDate = currentDate.date(weekStartDateNum);
@@ -607,11 +625,54 @@ export const getTasksForDayInYearView = (tasks: Task[], day: Date): Task[] => {
   if (!tasks || tasks.length === 0) {
     return [];
   }
-  return tasks.filter(task => {
-    if (!task.startTime) return false;
-    // Compare the task's start date with the day
-    return isSameDay(new Date(task.startTime), day);
-  });
+
+  const result: Task[] = [];
+  const dayOfWeek = dayjs(day).format("dddd").toUpperCase(); // e.g., "MONDAY"
+
+  for (const task of tasks) {
+    if (!task.startTime) continue;
+
+    // Handle ROUTINE with recurring pattern
+    if (
+      task.type?.toLowerCase() === "routine" &&
+      task.pattern &&
+      (task.pattern?.daysOfWeek || []).length > 0
+    ) {
+      const patternDays = new Set(task.pattern.daysOfWeek);
+
+      // Check if this day of week is in the routine's pattern
+      if (patternDays.has(dayOfWeek)) {
+        // Check if the day is on or after the routine's start date
+        const routineStart = dayjs(task.startTime).startOf("day");
+        const currentDay = dayjs(day).startOf("day");
+
+        if (currentDay.isBefore(routineStart)) {
+          continue; // Day is before routine started
+        }
+
+        // Check endDate (Split Series Support)
+        if (task.endDate && currentDay.isAfter(dayjs(task.endDate))) {
+          continue; // Day is after routine ended
+        }
+
+        // Check if this specific date is an exception
+        const isException = (task.exceptions || []).some((ex) =>
+          dayjs(ex).isSame(currentDay, "day")
+        );
+
+        if (!isException) {
+          result.push(task);
+        }
+      }
+    } else {
+      // Non-routine items: simple date comparison
+      if (isSameDay(new Date(task.startTime), day)) {
+        result.push(task);
+      }
+    }
+  }
+
+  return result;
 };
 
 /**
