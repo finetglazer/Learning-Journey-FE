@@ -360,7 +360,8 @@ export const PostDetailBody = () => {
                     initialData={{
                         title: postDetailData.title,
                         content: postDetailData.content,
-                        tags: postDetailData.tags
+                        tags: postDetailData.tags,
+                        files: postDetailData.files as any
                     }}
                     onSubmit={handleUpdatePost}
                 />

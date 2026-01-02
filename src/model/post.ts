@@ -59,9 +59,11 @@ export interface Post {
 
     // Optional fields for Post Detail
     content?: Record<string, any>;
-    attachments?: {
+    files?: {
+        fileId?: number;
         name: string;
         url: string;
+        size: number;
         type: string;
         isAdded?: boolean;
     }[];

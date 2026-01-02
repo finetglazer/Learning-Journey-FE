@@ -7,10 +7,26 @@ import { useContext, useState } from "react";
 import { PostDetailContext, PostDetailContextProps } from "./post-detail-context";
 import { SelectFolderModal } from "./select-folder-modal";
 import { RichTextRenderer } from "../rich-text/rich-text-renderer";
+import { FilePreviewModal } from "../file-preview/file-preview-modal";
+import { FILE_PREVIEWABLE } from "@/const/consts";
 
 export const PostDetailQuestion = () => {
     const { postDetailData } = useContext<PostDetailContextProps>(PostDetailContext);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [previewFile, setPreviewFile] = useState<{ url: string; name: string; extension: string } | null>(null);
+
+    const handleFileClick = (file: { name: string; url: string }) => {
+        const extension = file.name.split('.').pop()?.toLowerCase() || '';
+        if (FILE_PREVIEWABLE.includes(extension)) {
+            setPreviewFile({
+                url: file.url,
+                name: file.name,
+                extension: extension
+            });
+        } else {
+            window.open(file.url, '_blank');
+        }
+    };
 
     if (!postDetailData) return null;
 
@@ -20,13 +36,18 @@ export const PostDetailQuestion = () => {
                 <RichTextRenderer content={postDetailData.content} />
             </div>
 
-            {postDetailData.attachments && postDetailData.attachments.length > 0 && (
+            {postDetailData.files && postDetailData.files.length > 0 && (
                 <div className="flex flex-col gap-3">
-                    {postDetailData.attachments.map((file, index) => (
-                        <div key={index} className="flex items-center gap-4 group">
-                            <div className="flex items-center gap-3 text-muted-foreground">
+                    {postDetailData.files.map((file, index) => (
+                        <div key={index} className="flex cursor-pointer items-center gap-4 group">
+                            <div
+                                className="flex items-center gap-3 text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+                                onClick={() => handleFileClick(file)}
+                            >
                                 <FileCode className="size-8" />
-                                <span className="text-lg font-medium text-foreground">{file.name}</span>
+                                <span className="text-lg font-medium text-foreground max-w-[200px] sm:max-w-[300px] md:max-w-[400px] lg:max-w-[500px] truncate" title={file.name}>
+                                    {file.name}
+                                </span>
                             </div>
 
                             {file.isAdded ? (
@@ -92,6 +113,16 @@ export const PostDetailQuestion = () => {
                 projectsOnly={true}
                 onSelect={(project) => console.log("Added file(s) to project:", project)}
             />
+
+            {previewFile && (
+                <FilePreviewModal
+                    isOpen={!!previewFile}
+                    onClose={() => setPreviewFile(null)}
+                    fileUrl={previewFile.url}
+                    fileName={previewFile.name}
+                    fileExtension={previewFile.extension}
+                />
+            )}
         </div>
     );
 };

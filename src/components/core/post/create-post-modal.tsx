@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
+import { cn, getFileIcon, getFileSize } from "@/lib/utils";
 import { CreatePostModel } from "@/model/create-post-model";
 import { formService } from "@/service/form-service";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -27,7 +27,7 @@ import { isEqual, debounce } from "lodash";
 export interface CreatePostModalProps {
     open: boolean;
     onClose: () => void;
-    initialData?: { title: string; content: any; tags: string[] };
+    initialData?: { title: string; content: any; tags: string[]; files: any[] };
     onSubmit?: (model: CreatePostModel) => void;
 }
 
@@ -42,7 +42,7 @@ export function CreatePostModal({ open, onClose, initialData, onSubmit }: Create
 
     const { model, updateModel, onSubmitForm, loading } = formService.useForm(
         CreatePostModel,
-        onSubmit,
+        onSubmit || onCreatePost as any,
         undefined,
         new CreatePostModel()
     );
@@ -52,10 +52,12 @@ export function CreatePostModal({ open, onClose, initialData, onSubmit }: Create
             updateModel("title", initialData.title);
             updateModel("content", initialData.content);
             updateModel("tags", initialData.tags);
+            updateModel("files", initialData.files);
         } else if (open && !initialData) {
             updateModel("title", "");
             updateModel("content", "");
             updateModel("tags", []);
+            updateModel("files", []);
         }
     }, [open, initialData]);
 
@@ -210,6 +212,58 @@ export function CreatePostModal({ open, onClose, initialData, onSubmit }: Create
                             Should include all necessary information for your question.
                         </p>
                         <EditorContent editor={editor} />
+                    </div>
+
+                    {/* Attachments Section */}
+                    <div className="flex flex-col gap-2">
+                        <Label className="text-base font-semibold">Attachments</Label>
+                        <div className="flex flex-wrap gap-2">
+                            {model.files.map((file, index) => (
+                                <div
+                                    key={index}
+                                    className="flex items-center gap-2 rounded-md border bg-muted px-2 py-1 text-sm"
+                                >
+                                    {/* File Icon */}
+                                    <div className="flex-shrink-0">
+                                        {getFileIcon(file.name.split('.').pop() || '', 'STATIC_FILE', 16)}
+                                    </div>
+                                    <span className="max-w-[150px] truncate" title={file.name}>
+                                        {file.name}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                        {getFileSize(file.size)}
+                                    </span>
+                                    <X
+                                        className="h-4 w-4 cursor-pointer hover:text-red-500"
+                                        onClick={() => {
+                                            const newFiles = [...model.files];
+                                            newFiles.splice(index, 1);
+                                            updateModel("files", newFiles);
+                                            if ((file as any)?.fileId) {
+                                                updateModel("filesToRemove", [...model.filesToRemove, (file as any).fileId]);
+                                            }
+                                        }}
+                                    />
+                                </div>
+                            ))}
+                            <label className="flex cursor-pointer items-center gap-1 rounded-md border border-dashed px-3 py-1 text-sm hover:bg-muted/50">
+                                <Plus className="h-4 w-4" />
+                                <span>Add File</span>
+                                <input
+                                    type="file"
+                                    multiple
+                                    className="hidden"
+                                    onChange={(e) => {
+                                        if (e.target.files) {
+                                            updateModel("files", [
+                                                ...model.files,
+                                                ...Array.from(e.target.files),
+                                            ]);
+                                        }
+                                    }}
+                                />
+                            </label>
+                        </div>
                     </div>
 
                     {/* Tags Section */}

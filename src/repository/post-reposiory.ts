@@ -53,8 +53,25 @@ export class PostRepository extends BaseRepository {
     };
 
     public createPost = (userId: number, request: CreatePostModel): Observable<Post> => {
+        const formData = new FormData();
+
+        const postRequest = {
+            title: request.title,
+            content: request.content, // content is likely an object (Tiptap JSON)
+            tags: request.tags
+        };
+
+        // Append 'request' part as JSON Blob with filename
+        formData.append("request", new Blob([JSON.stringify(postRequest)], { type: "application/json" }), "request.json");
+
+        if (request.files && request.files.length > 0) {
+            request.files.forEach((file: any) => {
+                formData.append("files", file);
+            });
+        }
+
         return this.http
-            .post(`${BASE_API_URL}/posts`, request, {
+            .post(`${BASE_API_URL}/posts`, formData, {
                 headers: { "X-User-Id": userId },
             })
             .pipe(map((response) => response?.data));
@@ -99,8 +116,25 @@ export class PostRepository extends BaseRepository {
     };
 
     public updatePost = (userId: number, postId: number, request: CreatePostModel): Observable<Post> => {
+        const formData = new FormData();
+
+        const postRequest = {
+            title: request.title,
+            content: request.content,
+            tags: request.tags,
+            filesToRemove: request.filesToRemove
+        };
+
+        formData.append("request", new Blob([JSON.stringify(postRequest)], { type: "application/json" }), "request.json");
+
+        if (request.files && request.files.length > 0) {
+            request.files.forEach((file: any) => {
+                formData.append("files", file);
+            });
+        }
+
         return this.http
-            .put(`${BASE_API_URL}/posts/${postId}`, request, {
+            .put(`${BASE_API_URL}/posts/${postId}`, formData, {
                 headers: { "X-User-Id": userId },
             })
             .pipe(map((response) => response?.data));
