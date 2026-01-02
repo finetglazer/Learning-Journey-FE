@@ -50,7 +50,9 @@ export const RoutineEditor = ({
                 className="font-bold text-slate-700 text-lg text-left truncate bg-white border border-gray-300 rounded px-2 py-1"
                 autoFocus
                 onKeyDown={(e) => {
-                    if (e.key === 'Escape') {
+                    if (e.key === 'Enter') {
+                        updateRoutineList?.(editingItem, routineName);
+                    } else if (e.key === 'Escape') {
                         onClose?.();
                     }
                 }}

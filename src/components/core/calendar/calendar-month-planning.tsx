@@ -97,6 +97,8 @@ export function CalendarMonthPlanning() {
     const [selectedItemId, setSelectedItemId] = useState<number | string | null>(null);
     // For discriminate edit and create routine case
     const [openRoutineEditor, setOpenRoutineEditor] = useState<boolean>(false);
+    // Loading state for month planning
+    const [isLoadingMonthPlanning, setIsLoadingMonthPlanning] = useState<boolean>(true);
 
     const getType = (category: string): TaskType => {
         switch (category) {
@@ -216,6 +218,7 @@ export function CalendarMonthPlanning() {
     };
 
     const loadMonthPlanningItems = (monthPlanId?: number) => {
+        setIsLoadingMonthPlanning(true);
         calendarRepository?.getMonthPlaningItems({ monthPlanId }).subscribe({
             next: (res: any) => {
                 if (res?.status) {
@@ -228,8 +231,9 @@ export function CalendarMonthPlanning() {
                 } else {
                     toast.error(res?.msg || res?.message);
                 }
+                setIsLoadingMonthPlanning(false);
             },
-            error: () => { },
+            error: () => { setIsLoadingMonthPlanning(false); },
         });
     };
 
@@ -518,7 +522,39 @@ export function CalendarMonthPlanning() {
                             </TableRow>
                         </TableHeader>
                         <TableBody className="relative">
-                            {categories.map((category) => {
+                            {/* ====== SKELETON LOADING - Edit values here to adjust sizes ====== */}
+                            {isLoadingMonthPlanning && (
+                                <>
+                                    {/* Event Row Skeletons */}
+                                    <TableRow className="h-[28vh]">
+                                        <TableCell className="font-semibold text-gray-700 align-top pt-4 w-15 border-r-2">Event</TableCell>
+                                        {weeks.map((_, i) => (
+                                            <TableCell key={`skel-event-${i}`} className="relative align-top p-2 border-r-2">
+                                                <div className="animate-pulse rounded-lg bg-gray-200" style={{ height: '50px', marginBottom: '8px' }} />
+                                                <div className="animate-pulse rounded-lg bg-gray-200" style={{ height: '50px' }} />
+                                            </TableCell>
+                                        ))}
+                                    </TableRow>
+                                    {/* Routine Row Skeleton */}
+                                    <TableRow className="h-[28vh]">
+                                        <TableCell className="font-semibold text-gray-700 align-top pt-4 w-15 border-r-2">Routine</TableCell>
+                                        <TableCell colSpan={weeks.length} className="relative align-top p-2">
+                                            <div className="animate-pulse rounded-lg bg-gray-200" style={{ height: '50px', width: '100%', marginBottom: '16px' }} />
+                                            <div className="animate-pulse rounded-lg bg-gray-200" style={{ height: '50px', width: '80%' }} />
+                                        </TableCell>
+                                    </TableRow>
+                                    {/* Big Task Row Skeleton */}
+                                    <TableRow className="h-[28vh]">
+                                        <TableCell className="font-semibold text-gray-700 align-top pt-4 w-15 border-r-2">Big Task</TableCell>
+                                        <TableCell colSpan={weeks.length} className="relative align-top p-2">
+                                            <div className="animate-pulse rounded-lg bg-gray-200" style={{ height: '50px', width: '60%', marginBottom: '16px' }} />
+                                            <div className="animate-pulse rounded-lg bg-gray-200" style={{ height: '50px', width: '45%', marginLeft: '30%' }} />
+                                        </TableCell>
+                                    </TableRow>
+                                </>
+                            )}
+                            {/* ====== END SKELETON ====== */}
+                            {!isLoadingMonthPlanning && categories.map((category) => {
                                 const bigTaskVisited: Record<number, boolean> = {};
                                 const bigTaskRendered: Record<number, boolean> = {};
                                 let currentBigTaskIndex = -1;

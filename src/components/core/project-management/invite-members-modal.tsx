@@ -93,6 +93,7 @@ export const InviteMembersModal = ({
     const [inviteEmail, setInviteEmail] = useState<string>('');
     const [searchResults, setSearchResults] = useState<FetchedUser[]>([]);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const debouncedSearchQuery = useDebounce(inviteEmail || '', 300);
 
     const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
@@ -182,18 +183,21 @@ export const InviteMembersModal = ({
 
     const handleInvite = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!projectRepository || !inviteUser) {
+        if (!projectRepository || !inviteUser || isLoading) {
             return;
         }
+        setIsLoading(true);
         projectRepository.addMemberToProject({
             projectId: currentSelectedProject?.id,
         }, {
             email: inviteUser?.email,
         }).subscribe({
             next: res => {
+                setIsLoading(false);
                 if (res?.status) {
                     toast.success(res?.message || res?.msg);
                     setInviteUser(null);
+                    setInviteEmail('');
                     setIsDropdownOpen(false);
                     setMembers(prev => [...prev, {
                         userId: inviteUser?.userId,
@@ -213,6 +217,7 @@ export const InviteMembersModal = ({
                 }
             },
             error: err => {
+                setIsLoading(false);
                 const errors = err?.response?.data?.data;
                 const message = err?.response?.data?.msg || err?.response?.data?.message;
                 setAlertMessage({
@@ -313,16 +318,19 @@ export const InviteMembersModal = ({
                             placeholder="name@company.com"
                             className="w-full px-4 py-2.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm
                                          focus:outline-none focus:ring-2 focus:ring-blue-500
-                                         pr-20"
+                                         pr-20 disabled:bg-gray-100 disabled:cursor-not-allowed"
                             autoComplete="off"
+                            disabled={isLoading}
                         />
                         <button
                             type="submit"
-                            className="absolute cursor-pointer right-2 top-1/2 -translate-y-1/2 px-4 py-1.5 text-sm font-medium
+                            disabled={isLoading || !inviteUser}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-1.5 text-sm font-medium
                                          text-green-800 bg-green-100 rounded-lg
-                                         hover:bg-green-200"
+                                         hover:bg-green-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed
+                                         cursor-pointer"
                         >
-                            Invite
+                            {isLoading ? 'Sending...' : 'Invite'}
                         </button>
 
                         {/* --- 7. Search Results Dropdown --- */}

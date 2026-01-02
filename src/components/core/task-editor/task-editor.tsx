@@ -57,7 +57,7 @@ export interface TaskEditorProps {
     setSelectedRoutineId?: Dispatch<SetStateAction<string | number | null>>;
     setEditingTask?: Dispatch<SetStateAction<Task | Partial<Task> | null>>;
     setEditingItem?: Dispatch<SetStateAction<MonthPlanningEvent | UnscheduledTask | null>>;
-    handleReload?: () => void;
+    handleReload?: (silent?: boolean) => void;
     onDelete?: () => void;
     onClose?: () => void;
     style?: CSSProperties;
@@ -204,7 +204,7 @@ export const TaskEditor = ({
                     setSelectedTaskId?.(null);
                     setSelectedRoutineId?.(null);
                     setEditingTask?.(null);
-                    handleReload?.();
+                    handleReload?.(true);
                     onClose?.();
                 } else {
                     setAlertMessage({
@@ -255,7 +255,7 @@ export const TaskEditor = ({
                     setSelectedTaskId?.(null);
                     setSelectedRoutineId?.(null);
                     setEditingTask?.(null);
-                    handleReload?.();
+                    handleReload?.(true);
                     onClose?.();
                 } else {
                     setAlertMessage({
@@ -280,6 +280,15 @@ export const TaskEditor = ({
             model?.type === "big-task" ? [...(model?.subtasks || []), new Task] : [...(model?.steps || []), { id: uuid4() }]
         );
     };
+    // Helper to check if routine is standalone (no recurring pattern)
+    const isStandaloneRoutine = () => {
+        const taskPattern = (task as Task)?.pattern;
+        const hasPattern = taskPattern &&
+            Array.isArray(taskPattern.daysOfWeek) &&
+            taskPattern.daysOfWeek.length > 0;
+        return !hasPattern;
+    };
+
     // For currentView !== 'month-planning' or model is an instance of Task
     const onSaveEditingTask = () => {
         // Update case
@@ -287,8 +296,14 @@ export const TaskEditor = ({
             return;
         }
         if (!isNil(model?.id)) {
-            // If it is a routine, show confirmation dialog
+            // If it is a routine, check if it's standalone or has recurring pattern
             if (model?.type === 'routine' || (model as Task)?.type === 'routine') {
+                // If standalone routine (no pattern), directly update without confirmation
+                if (isStandaloneRoutine()) {
+                    executeUpdate();
+                    return;
+                }
+                // Otherwise show confirmation dialog for recurring routine
                 setShowDetachConfirm(true);
                 setIsLoading(false);
                 return;
@@ -316,7 +331,7 @@ export const TaskEditor = ({
                     setSelectedTaskId?.(null);
                     setSelectedRoutineId?.(null);
                     setEditingTask?.(null);
-                    handleReload?.();
+                    handleReload?.(true);
                     onClose?.();
                 } else {
                     setAlertMessage({
@@ -366,7 +381,7 @@ export const TaskEditor = ({
                             toast.success(res?.message || res?.msg);
                             setEditingItem?.(null);
                             setEditingTask?.(null);
-                            handleReload?.();
+                            handleReload?.(true);
                             onClose?.();
                         }
                         else {
@@ -407,7 +422,7 @@ export const TaskEditor = ({
                             toast.success(res?.msg || res?.message);
                             setEditingItem?.(null);
                             setEditingTask?.(null);
-                            handleReload?.();
+                            handleReload?.(true);
                             onClose?.();
                         }
                         else {
@@ -443,7 +458,7 @@ export const TaskEditor = ({
                             toast.success(res?.msg || res?.message);
                             setEditingItem?.(null);
                             setEditingTask?.(null);
-                            handleReload?.();
+                            handleReload?.(true);
                             onClose?.();
                         }
                         else {
@@ -485,7 +500,7 @@ export const TaskEditor = ({
                             toast.success(res?.msg || res?.message);
                             setEditingItem?.(null);
                             setEditingTask?.(null);
-                            handleReload?.();
+                            handleReload?.(true);
                             onClose?.();
                         }
                         else {
@@ -525,7 +540,7 @@ export const TaskEditor = ({
                             toast.success(res?.msg || res?.message);
                             setEditingItem?.(null);
                             setEditingTask?.(null);
-                            handleReload?.();
+                            handleReload?.(true);
                             onClose?.();
                         }
                         else {
@@ -854,7 +869,8 @@ export const TaskEditor = ({
                     {/* {isNotChooseRoutinePattern && (
                         <ValidationError tooltip="Please choose the routine pattern" />
                     )} */}
-                    {model?.type !== 'event' && currentView !== 'month-planning' && (
+                    {/* Hide this section ONLY for editing standalone routines (has id and no pattern) */}
+                    {model?.type !== 'event' && currentView !== 'month-planning' && !(model?.id && model?.type === 'routine' && isStandaloneRoutine()) && (
                         <>
                             <Collapsible defaultOpen className="px-2">
                                 <div className="flex items-center justify-between">

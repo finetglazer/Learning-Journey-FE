@@ -10,6 +10,7 @@ import { RoundedButton } from "../button/rounded-button";
 import { DateRangeNavigator } from "../date-range-navigator/date-range-navigator";
 import { SegmentedControl } from "../segmented-control/segmented-control";
 import { TaskEditor } from "../task-editor/task-editor";
+import { AlertModal } from "../alert-modal/alert-modal";
 import { CalendarContext, CalendarContextInterface } from "./calendar-context";
 import { CalendarDayViewDroppableCell } from "./calendar-day-view-droppable-cell";
 import { CollapsibleUnscheduledPanel } from "./collapsible-unscheduled-items-panel";
@@ -19,6 +20,16 @@ import { UnscheduledTaskItem } from "./unscheduled-task-item";
 import { CollapsibleUnscheduledBufferListPanel } from "./collapsible-unscheduled-buffer-list-panel";
 import { BufferListProjectTask } from "./buffer-list-project-task";
 import { useRouter } from "next/navigation";
+import {
+    AlertDialog,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 export const CalendarDayView = () => {
     const {
         tasksStyle,
@@ -66,6 +77,21 @@ export const CalendarDayView = () => {
         draggingProjectTaskId,
         getDraggingProjectTask,
         handleTaskEditorClose,
+        // Resize state and handlers
+        resizingItemId,
+        resizingOccurrenceKey,
+        resizePreviewEndTime,
+        isResizeOverlapping,
+        onResizeStart,
+        onResizeMove,
+        onResizeEnd,
+        CELL_HEIGHT,
+        isLoadingCalendar,
+        // Routine resize confirmation
+        showRoutineResizeConfirm,
+        onRoutineResizeConfirmUpdate,
+        onRoutineResizeConfirmDetach,
+        onRoutineResizeCancel,
     } = useContext<CalendarContextInterface>(CalendarContext);
 
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -146,22 +172,71 @@ export const CalendarDayView = () => {
                                             >
                                                 <CalendarDayViewDroppableCell key={id} id={id} bordered={false}>
                                                     {(calendarMap[id] || []).filter(task => task?.type !== "memorable_event").map((task: Task, index: number) => {
+                                                        const isRoutine = (task?.type || "").toLowerCase() === "routine";
+
+                                                        // For routines, calculate occurrence-specific start and end times
+                                                        // The task object contains master routine times, but we need occurrence times
+                                                        // The occurrence date comes from the cell key (id), combined with master's time-of-day
+                                                        let occurrenceTask = { ...task, type: (task?.type || "").toLowerCase() };
+                                                        if (isRoutine && task.startTime && task.endTime) {
+                                                            const masterStart = new Date(task.startTime);
+                                                            const masterEnd = new Date(task.endTime);
+                                                            const durationMs = masterEnd.getTime() - masterStart.getTime();
+
+                                                            // id is the cell key (occurrence date + hour slot, e.g., "2026-01-19T09:00:00.000Z")
+                                                            // We use the occurrence date but keep the master's exact time-of-day
+                                                            const cellDate = new Date(id);
+                                                            const occurrenceStart = new Date(cellDate);
+                                                            occurrenceStart.setUTCHours(masterStart.getUTCHours());
+                                                            occurrenceStart.setUTCMinutes(masterStart.getUTCMinutes());
+                                                            occurrenceStart.setUTCSeconds(0);
+                                                            occurrenceStart.setUTCMilliseconds(0);
+
+                                                            const occurrenceEnd = new Date(occurrenceStart.getTime() + durationMs);
+
+                                                            occurrenceTask = {
+                                                                ...occurrenceTask,
+                                                                startTime: occurrenceStart.toISOString(),
+                                                                endTime: occurrenceEnd.toISOString(),
+                                                            };
+                                                        }
+
                                                         return (
                                                             <DraggableTask
-                                                                key={task.id?.toString() || "draggable-task-".concat(index.toString())} // Use task.id for a stable key
+                                                                key={task.id?.toString() || "draggable-task-".concat(index.toString())}
                                                                 handleTaskDoubleClick={handleTaskDoubleClick}
-                                                                task={{ ...task, type: (task?.type || "").toLowerCase() }}
-                                                                draggable={!((task?.type || "").toLowerCase() === "routine")}
+                                                                task={occurrenceTask}
+                                                                draggable={!isRoutine}
                                                                 wrapperClassName="truncate absolute rounded-lg pl-2"
                                                                 wrapperStyle={{
                                                                     ...tasksStyle[task.id as number],
                                                                     top: `${tasksStyle[task.id as number].top}%`,
                                                                     left: `${tasksStyle[task.id as number].left}%`,
-                                                                    height: `${tasksStyle[task.id as number].height}rem`,
+                                                                    height: resizingItemId === task.id && resizePreviewEndTime
+                                                                        ? undefined
+                                                                        : `${tasksStyle[task.id as number].height}rem`,
                                                                     width: `${tasksStyle[task.id as number].width}%`,
                                                                 }}
                                                                 badgeWrapperClassName="-mt-2.5"
                                                                 scrollContainerRef={scrollContainerRef}
+                                                                // Resize props - enable for all items including routines
+                                                                resizable={true}
+                                                                cellHeightPx={CELL_HEIGHT * 16}
+                                                                onResizeStart={(itemId, endTime) => onResizeStart(itemId, endTime, id)}  // Pass occurrence key
+                                                                onResizeMove={onResizeMove}
+                                                                onResizeEnd={onResizeEnd}
+                                                                isResizing={resizingItemId === task.id && (isRoutine ? resizingOccurrenceKey === id : true)}
+                                                                isOverlapping={resizingItemId === task.id && (isRoutine ? resizingOccurrenceKey === id : true) && isResizeOverlapping}
+                                                                previewHeight={resizingItemId === task.id && (isRoutine ? resizingOccurrenceKey === id : true) && resizePreviewEndTime
+                                                                    ? (() => {
+                                                                        // Use occurrence-specific start time for preview height calculation
+                                                                        const startMs = new Date(occurrenceTask.startTime || '').getTime();
+                                                                        const endMs = new Date(resizePreviewEndTime).getTime();
+                                                                        const durationHours = (endMs - startMs) / (1000 * 60 * 60);
+                                                                        return `${durationHours * CELL_HEIGHT}rem`;
+                                                                    })()
+                                                                    : undefined
+                                                                }
                                                             />
                                                         );
                                                     })}
@@ -250,6 +325,40 @@ export const CalendarDayView = () => {
                         setSelectedTaskId={setSelectedTaskId}
                         setSelectedRoutineId={setSelectedRoutineId}
                         setEditingTask={setEditingTask} />
+                    {alertMessage && (
+                        <AlertModal
+                            alertMessage={alertMessage}
+                            onClose={() => setAlertMessage(null)}
+                        />
+                    )}
+                    {/* Routine Resize Confirmation Dialog */}
+                    <AlertDialog open={showRoutineResizeConfirm} onOpenChange={onRoutineResizeCancel}>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Edit Routine Duration</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This is a recurring routine. Do you want to save the new duration for this occurrence only or for all occurrences in the series?
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                                <Button
+                                    type="button"
+                                    onClick={onRoutineResizeConfirmUpdate}
+                                    className="bg-[#33BFFF] hover:bg-[#33BFFF]/90 text-white border-none"
+                                >
+                                    All Current & Future
+                                </Button>
+                                <Button
+                                    type="button"
+                                    onClick={onRoutineResizeConfirmDetach}
+                                    className="bg-[#4ade80] hover:bg-[#4ade80]/90 text-white border-none"
+                                >
+                                    This Occurrence Only
+                                </Button>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </div>
 
             </CardContent>
