@@ -105,7 +105,7 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
     if (calendarType === 'month-planning') {
         if (type === 'routine' && isEditing) {
             return (
-                <div className={cn("h-[105px]! z-[99999] grid grid-cols-[1fr,auto,auto] cursor-default items-center gap-2 rounded-lg border-3 border-[#68DE79] bg-stone-50 p-4 w-full",
+                <div className={cn("h-[50px]! z-[99999] grid grid-cols-[1fr,auto,auto] cursor-default items-center gap-2 rounded-lg border-3 border-[#68DE79] bg-stone-50 p-4 w-full",
                     wrapperClassName
                 )}
                     style={{ ...wrapperStyle }}
@@ -144,7 +144,7 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
         return (
             <Tooltip title={getTooltipTitle()} placement="top">
                 <div className={cn(
-                    "h-auto sm:h-[105px]! overflow-hidden flex justify-between sm:grid cursor-pointer items-center gap-2 sm:gap-4 rounded-lg border-3 border-[#E62E7B] bg-stone-50 p-4 w-full",
+                    "h-auto sm:h-[50px]! overflow-hidden flex justify-between sm:grid cursor-pointer items-center gap-2 sm:gap-4 rounded-lg border-3 border-[#E62E7B] bg-stone-50 p-4 w-full",
                     type === "big-task" ? "sm:grid-cols-2" : "sm:grid-cols-2",
                     { "border-sky-300": type === "event" },
                     { "border-[#68DE79]": type === "routine" },

@@ -162,7 +162,7 @@ export default function RootPage() {
           icon: <Users size={16} />,
           onClick: (e: any) => {
             e.stopPropagation();
-            router.push(  getProjectDetailRoute(project.id, "summary"));
+            router.push(getProjectDetailRoute(project.id, "summary"));
           },
         }
       })
@@ -170,10 +170,13 @@ export default function RootPage() {
     {
       title: "Community",
       items: [
-        { id: "my-community", label: "My community", icon: <Users size={16} />, onClick: () => {
-          router.push(COMMUNITY_ROUTE);
-          setActiveItem("my-community");
-        } },
+        {
+          id: "my-community", label: "My community", icon: <Users size={16} />, onClick: (e: any) => {
+            // e.stopPropagation();
+            router.push(COMMUNITY_ROUTE);
+            setActiveItem("my-community");
+          }
+        },
       ],
     },
     {
