@@ -16,7 +16,7 @@ import {
   User,
   Users
 } from "lucide-react";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { CalendarContext, useCalendarHooks } from "@/components/core/calendar/calendar-context";
@@ -32,11 +32,9 @@ import { TeamProjectContext, useTeamProjectHooks } from "@/components/core/sideb
 import { PublicProfile } from "@/components/core/sidebar/pages/public-profile/public-profile";
 import { TeamProjectSection } from "@/components/core/sidebar/sections/team-project-section";
 import { Button } from "@/components/ui/button";
-import { SIGN_IN_ROUTE, CALENDAR_ROUTE, CALENDAR_PLANNING_ROUTE, getProjectDetailRoute, SETTINGS_ROUTE, getSettingsRoute, COMMUNITY_ROUTE } from "@/const/routes-const";
-import { NotificationFilter } from "@/model/notification";
+import { CALENDAR_PLANNING_ROUTE, CALENDAR_ROUTE, getProjectDetailRoute, getSettingsRoute, SIGN_IN_ROUTE } from "@/const/routes-const";
 import { Project } from "@/model/project-management";
 import { useRouter } from "next/navigation";
-import { useNotificationStream } from "@/hooks/use-notification-stream";
 
 export default function RootPage() {
   const router = useRouter();
@@ -168,18 +166,6 @@ export default function RootPage() {
       })
     },
     {
-      title: "Community",
-      items: [
-        {
-          id: "my-community", label: "My community", icon: <Users size={16} />, onClick: (e: any) => {
-            // e.stopPropagation();
-            router.push(COMMUNITY_ROUTE);
-            setActiveItem("my-community");
-          }
-        },
-      ],
-    },
-    {
       title: "",
       items: [
         {
@@ -190,7 +176,7 @@ export default function RootPage() {
         }
       ]
     }
-  ], [isSidebarCollapse, teamProjects]);
+  ], [isSidebarCollapse, teamProjects, router, setActiveItem]);
 
   const settingsSections: SidebarSectionConfig[] = [
     {

@@ -35,6 +35,8 @@ export interface SharedSourceContextProps {
     onMoveFile: (nodeId: number, targetFolderId: number) => void;
     selectedNodeId: number | null;
     setSelectedNodeId: Dispatch<SetStateAction<number | null>>;
+    cutNodeId: number | null;
+    setCutNodeId: Dispatch<SetStateAction<number | null>>;
 };
 
 export const SharedSourceContext = createContext<SharedSourceContextProps>({
@@ -65,6 +67,8 @@ export const SharedSourceContext = createContext<SharedSourceContextProps>({
     onMoveFile: () => { },
     selectedNodeId: null,
     setSelectedNodeId: () => { },
+    cutNodeId: null,
+    setCutNodeId: () => { },
 });
 
 export const useSharedSourceHook = (): SharedSourceContextProps => {
@@ -77,6 +81,7 @@ export const useSharedSourceHook = (): SharedSourceContextProps => {
     const [currentFolderId, setCurrentFolderId] = useState<number | null>(null);
     const [currentPath, setCurrentPath] = useState<FileNode[]>([]);
     const [selectedNodeId, setSelectedNodeId] = useState<number | null>(null);
+    const [cutNodeId, setCutNodeId] = useState<number | null>(null);
     const {
         files: originalFiles,
         selectedProject,
@@ -392,5 +397,7 @@ export const useSharedSourceHook = (): SharedSourceContextProps => {
         onMoveFile,
         selectedNodeId,
         setSelectedNodeId,
+        cutNodeId,
+        setCutNodeId,
     }
 };

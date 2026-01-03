@@ -68,6 +68,8 @@ export const FileNodeRow = ({
         setAlertMessage,
         selectedNodeId,
         setSelectedNodeId,
+        cutNodeId,
+        setCutNodeId,
     } = useContext<SharedSourceContextProps>(SharedSourceContext);
 
     const menu: any = [
@@ -116,6 +118,7 @@ export const FileNodeRow = ({
     }
 
     const isSelected = selectedNodeId === node.nodeId;
+    const isCut = cutNodeId === node.nodeId;
 
     return (
         <TableRow
@@ -129,7 +132,8 @@ export const FileNodeRow = ({
                 isFolder && !isUploading && "cursor-pointer hover:bg-gray-100",
                 isUploading && "opacity-50 pointer-events-none bg-gray-100",
                 isOver && "bg-blue-50 border-2 border-blue-500",
-                isSelected && !isSticky && "bg-blue-100 hover:bg-blue-100"
+                isSelected && !isSticky && "bg-blue-100 hover:bg-blue-100",
+                isCut && "opacity-50 border-dashed border-2 border-gray-300"
             )}
             onClick={(e) => {
                 // Single click to select
@@ -141,6 +145,13 @@ export const FileNodeRow = ({
             onDoubleClick={(e) => {
                 // Double click to open
                 e.stopPropagation();
+
+                // If this node is currently cut, cancel the cut
+                if (isCut) {
+                    setCutNodeId(null);
+                    return;
+                }
+
                 if (isFolder && !isSticky && !isUploading) onOpenFolder(node);
                 else if (!isFolder && !isUploading && !isPreviewOpen) onClickFile();
             }}

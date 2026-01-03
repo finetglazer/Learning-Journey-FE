@@ -3,7 +3,7 @@
 import { AppContext } from '@/hooks/app-context';
 import { useNotificationStream } from '@/hooks/use-notification-stream';
 import { InvitationStatus, Notification, NotificationFilter } from '@/model/notification';
-import { Search, Settings } from 'lucide-react';
+import { Search, Settings, Users } from 'lucide-react';
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { finalize } from 'rxjs';
 import { toast } from 'sonner';
@@ -11,6 +11,8 @@ import { NotificationBox } from '../notification/notification-box';
 import { TeamProjectContext, TeamProjectContextProps } from '../sidebar/pages/project/team-project-context';
 import { ProjectMembershipRole } from '@/model/project-management';
 import { isNil } from 'lodash';
+import { useRouter } from 'next/navigation';
+import { COMMUNITY_ROUTE } from '@/const/routes-const';
 
 export interface HeaderBarProps {
     onSettingsClick?: () => void;
@@ -24,6 +26,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
     onView = (url) => { console.log(url) },
 }) => {
     const { notificationRepository, userId } = useContext(AppContext);
+    const router = useRouter();
 
     const [unreadNotifications, setUnreadNotifications] = useState<Notification[]>([]);
     const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
@@ -247,6 +250,13 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
 
             {/* Right Section: Icons and Avatar */}
             <div className="flex items-center gap-3">
+                <button
+                    onClick={() => router.push(COMMUNITY_ROUTE)}
+                    className="p-2 rounded-full cursor-pointer text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    aria-label="Community"
+                >
+                    <Users size={20} />
+                </button>
                 <div className="relative">
                     <NotificationBox
                         unreadNotifications={unreadNotifications}

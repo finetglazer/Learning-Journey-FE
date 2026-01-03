@@ -25,7 +25,10 @@ export const SidebarItem = React.forwardRef<HTMLDivElement, SidebarItemProps>(
         return (
             <div
                 ref={ref}
-                onClick={(e) => onClick?.(e)}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    return onClick?.(e);
+                }}
                 className={cn(
                     "flex items-center py-2 mx-2 rounded-md cursor-pointer",
                     isActive
@@ -57,7 +60,7 @@ export const SidebarItem = React.forwardRef<HTMLDivElement, SidebarItemProps>(
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
                                 {menu.map((item, index) => (
-                                    <DropdownMenuItem key={index} className="p-2 cursor-pointer" onClick={(e) => {(item.onClick as any)(e)}}>
+                                    <DropdownMenuItem key={index} className="p-2 cursor-pointer" onClick={(e) => { (item.onClick as any)(e) }}>
                                         {item.icon}
                                     </DropdownMenuItem>
                                 ))}

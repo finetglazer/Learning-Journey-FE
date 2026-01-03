@@ -16,6 +16,7 @@ import { SharedSourceContext, SharedSourceContextProps } from "./shared-source-c
 import { FileNode } from "@/model/project-management";
 
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
+import { toast } from "sonner";
 
 export const SharedSourceTabContent = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -51,6 +52,8 @@ export const SharedSourceTabContent = () => {
         selectedNodeId,
         setAlertMessage,
         onConfirmDeleteFile,
+        cutNodeId,
+        setCutNodeId,
     } = useContext<SharedSourceContextProps>(SharedSourceContext);
 
     // Configure sensors to differentiate between click and drag
@@ -65,17 +68,14 @@ export const SharedSourceTabContent = () => {
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            const activeTag = document.activeElement?.tagName.toLowerCase();
+            if (activeTag === 'input' || activeTag === 'textarea') return;
+            if (editingFile) return;
+
+            // Delete
             if (e.key === 'Delete') {
-                if (editingFile) return;
-
-                // Check if focused element is an input (like search)
-                const activeTag = document.activeElement?.tagName.toLowerCase();
-                if (activeTag === 'input' || activeTag === 'textarea') return;
-
                 if (selectedNodeId) {
                     const node = files.find(f => f.nodeId === selectedNodeId);
-                    // Check if node exists and is not a SHARED_FOLDER (Shared posts)
-                    // Also excluding sticky nodes (nodeId < 0 usually, specifically -1 is sticky header often)
                     if (node && node.type !== 'SHARED_FOLDER' && !isEqual(node.nodeId, -1)) {
                         const isFolder = node.type === 'FOLDER';
                         setAlertMessage({
@@ -86,6 +86,25 @@ export const SharedSourceTabContent = () => {
                             useCancel: true,
                         });
                     }
+                }
+            }
+
+            // Cut (Ctrl+X)
+            if ((e.ctrlKey || e.metaKey) && e.key === 'x') {
+                if (selectedNodeId) {
+                    const node = files.find(f => f.nodeId === selectedNodeId);
+                    if (node && node.type !== 'SHARED_FOLDER' && !isEqual(node.nodeId, -1)) {
+                        setCutNodeId(selectedNodeId);
+                        toast.info("File cut " + node.name);
+                    }
+                }
+            }
+
+            // Paste (Ctrl+V)
+            if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+                if (cutNodeId) {
+                    onMoveFile(cutNodeId, currentFolderId || -1);
+                    setCutNodeId(null);
                 }
             }
         };
