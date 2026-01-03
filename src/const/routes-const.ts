@@ -27,6 +27,9 @@ export const getProjectDetailRoute = (projectId: number, tab?: string, taskId?: 
     return queryString ? `${url}?${queryString}` : url;
 };
 
+// Community routes
+export const COMMUNITY_ROUTE = "/posts";
+
 // Settings routes
 export const SETTINGS_ROUTE = "/settings";
 export const getSettingsRoute = (tab: string) => `/settings?tab=${tab}`;

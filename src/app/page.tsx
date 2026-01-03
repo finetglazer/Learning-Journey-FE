@@ -32,7 +32,7 @@ import { TeamProjectContext, useTeamProjectHooks } from "@/components/core/sideb
 import { PublicProfile } from "@/components/core/sidebar/pages/public-profile/public-profile";
 import { TeamProjectSection } from "@/components/core/sidebar/sections/team-project-section";
 import { Button } from "@/components/ui/button";
-import { SIGN_IN_ROUTE, CALENDAR_ROUTE, CALENDAR_PLANNING_ROUTE, getProjectDetailRoute, SETTINGS_ROUTE, getSettingsRoute } from "@/const/routes-const";
+import { SIGN_IN_ROUTE, CALENDAR_ROUTE, CALENDAR_PLANNING_ROUTE, getProjectDetailRoute, SETTINGS_ROUTE, getSettingsRoute, COMMUNITY_ROUTE } from "@/const/routes-const";
 import { NotificationFilter } from "@/model/notification";
 import { Project } from "@/model/project-management";
 import { useRouter } from "next/navigation";
@@ -170,7 +170,10 @@ export default function RootPage() {
     {
       title: "Community",
       items: [
-        { id: "my-community", label: "My community", icon: <Users size={16} />, onClick: () => setActiveItem("my-community") },
+        { id: "my-community", label: "My community", icon: <Users size={16} />, onClick: () => {
+          router.push(COMMUNITY_ROUTE);
+          setActiveItem("my-community");
+        } },
       ],
     },
     {
