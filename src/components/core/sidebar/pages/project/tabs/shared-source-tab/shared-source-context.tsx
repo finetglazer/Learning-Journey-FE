@@ -13,9 +13,13 @@ export interface SharedSourceContextProps {
     files: FileNode[];
     setFiles: Dispatch<SetStateAction<FileNode[]>>;
     isAddingFolder: boolean;
+    isAddingDocument: boolean;
     setIsAddingFolder: (isAddingFolder: boolean) => void;
+    setIsAddingDocument: (isAddingDocument: boolean) => void;
     onAddFolder: () => void;
-    onCancelAddOrEditFolder: () => void;
+    onAddDocument: () => void;
+    onConfirmAddDocument: (name: string) => void;
+    onCancelAddOrEdit: () => void;
     onConfirmAddFolder: (folderName: string) => void;
     onConfirmEditFileName: (fileName: string) => void;
     onConfirmDeleteFile: (selectedNodeId: number) => void;
@@ -28,6 +32,9 @@ export interface SharedSourceContextProps {
     setCurrentFolderId: Dispatch<SetStateAction<number | null>>;
     currentPath: FileNode[];
     setCurrentPath: Dispatch<SetStateAction<FileNode[]>>;
+    onMoveFile: (nodeId: number, targetFolderId: number) => void;
+    selectedNodeId: number | null;
+    setSelectedNodeId: Dispatch<SetStateAction<number | null>>;
 };
 
 export const SharedSourceContext = createContext<SharedSourceContextProps>({
@@ -36,9 +43,13 @@ export const SharedSourceContext = createContext<SharedSourceContextProps>({
     files: [],
     setFiles: () => { },
     isAddingFolder: false,
+    isAddingDocument: false,
     setIsAddingFolder: () => { },
+    setIsAddingDocument: () => { },
     onAddFolder: () => { },
-    onCancelAddOrEditFolder: () => { },
+    onAddDocument: () => { },
+    onConfirmAddDocument: () => { },
+    onCancelAddOrEdit: () => { },
     onConfirmAddFolder: () => { },
     onUploadFile: () => { },
     isLoading: false,
@@ -51,16 +62,21 @@ export const SharedSourceContext = createContext<SharedSourceContextProps>({
     setCurrentFolderId: () => { },
     currentPath: [],
     setCurrentPath: () => { },
+    onMoveFile: () => { },
+    selectedNodeId: null,
+    setSelectedNodeId: () => { },
 });
 
 export const useSharedSourceHook = (): SharedSourceContextProps => {
     const [editingFile, setEditingFile] = useState<FileNode | null>(null);
     const [files, setFiles] = useState<FileNode[]>([]);
     const [isAddingFolder, setIsAddingFolder] = useState<boolean>(false);
+    const [isAddingDocument, setIsAddingDocument] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
     const [currentFolderId, setCurrentFolderId] = useState<number | null>(null);
     const [currentPath, setCurrentPath] = useState<FileNode[]>([]);
+    const [selectedNodeId, setSelectedNodeId] = useState<number | null>(null);
     const {
         files: originalFiles,
         selectedProject,
@@ -83,11 +99,32 @@ export const useSharedSourceHook = (): SharedSourceContextProps => {
             parentNodeId: currentFolderId,
             extension: null,
             storageReference: null,
-            createdByUserId: null
+            createdByUserId: null,
+            createdBy: "",
         };
         setFiles([newFolder, ...files]);
         setEditingFile(newFolder);
         setIsAddingFolder(true);
+    }, [files, currentFolderId]);
+
+    const onAddDocument = useCallback(() => {
+        const newDoc: FileNode = {
+            nodeId: -98,
+            name: "New Document",
+            type: 'NOTION_DOC',
+            sizeBytes: 0,
+            createdAt: dayJsToISOString(toDayJs(undefined, 0)),
+            updatedAt: dayJsToISOString(toDayJs(undefined, 0)),
+            projectId: 0,
+            parentNodeId: currentFolderId,
+            extension: null,
+            storageReference: null,
+            createdByUserId: null,
+            createdBy: "",
+        };
+        setFiles([newDoc, ...files]);
+        setEditingFile(newDoc);
+        setIsAddingDocument(true);
     }, [files, currentFolderId]);
 
     const onConfirmEditFileName = useCallback((fileName: string) => {
@@ -106,7 +143,7 @@ export const useSharedSourceHook = (): SharedSourceContextProps => {
                 next: res => {
                     if (res?.status) {
                         toast.success(res?.msg || res?.message);
-                        onCancelAddOrEditFolder();
+                        onCancelAddOrEdit();
                     }
                     else {
                         setAlertMessage({
@@ -132,11 +169,12 @@ export const useSharedSourceHook = (): SharedSourceContextProps => {
         }
     }, [editingFile, projectRepository, getFiles, currentFolderId]);
 
-    const onCancelAddOrEditFolder = useCallback(() => {
+    const onCancelAddOrEdit = useCallback(() => {
         setIsAddingFolder(false);
+        setIsAddingDocument(false);
         setEditingFile(null);
         // Remove the temporary folder from the list
-        setFiles(files.filter(f => f.nodeId !== -99));
+        setFiles(files.filter(f => f.nodeId !== -99 && f.nodeId !== -98));
     }, [files]);
 
     const onConfirmAddFolder = useCallback((folderName: string) => {
@@ -185,13 +223,59 @@ export const useSharedSourceHook = (): SharedSourceContextProps => {
         }
     }, [projectRepository, selectedProject, getFiles, currentFolderId]);
 
-    const onConfirmDeleteFile = useCallback((selectedNodeId: number) => {
+    const onConfirmAddDocument = useCallback((name: string) => {
+        if (!projectRepository || !selectedProject) {
+            return;
+        }
+
+        if (!name.trim()) {
+            return;
+        }
+
+        const subscription = projectRepository.createNotionDocument(
+            { projectId: selectedProject.id },
+            { name: name.trim(), parentNodeId: currentFolderId }
+        )
+            .pipe(finalize(() => {
+                getFiles?.("", currentFolderId);
+            }))
+            .subscribe({
+                next: (res) => {
+                    if (res?.status) {
+                        toast.success(res?.message || res?.msg || "Document created successfully");
+                        setIsAddingDocument(false);
+                        setEditingFile(null);
+                    } else {
+                        setAlertMessage({
+                            type: "error",
+                            title: res?.msg || res?.message,
+                            description: res?.data,
+                        });
+                    }
+                },
+                error: (err) => {
+                    const errors = err?.response?.data?.data;
+                    const message = err?.response?.data?.msg || err?.response?.data?.message;
+                    setAlertMessage({
+                        type: "error",
+                        title: message,
+                        description: errors,
+                    });
+                }
+            });
+
+        return () => {
+            subscription.unsubscribe();
+        }
+    }, [projectRepository, selectedProject, getFiles, currentFolderId]);
+
+    const onConfirmDeleteFile = useCallback((deleteNodeId: number) => {
         if (!projectRepository || !selectedProject) {
             return;
         }
         const subscription = projectRepository.deleteFileNode({
             projectId: selectedProject.id,
-            nodeId: selectedNodeId,
+            nodeId: deleteNodeId,
         })
             .pipe(finalize(() => {
                 getFiles?.("", currentFolderId);
@@ -200,6 +284,9 @@ export const useSharedSourceHook = (): SharedSourceContextProps => {
                 next: (res) => {
                     if (res?.status) {
                         toast.success(res?.message || res?.msg || "File deleted successfully");
+                        if (deleteNodeId === selectedNodeId) {
+                            setSelectedNodeId(null);
+                        }
                     } else {
                         toast.error(res?.message || res?.msg);
                     }
@@ -240,6 +327,38 @@ export const useSharedSourceHook = (): SharedSourceContextProps => {
 
     }, [projectRepository, selectedProject, currentFolderId]);
 
+    const onMoveFile = useCallback((nodeId: number, targetFolderId: number) => {
+        if (!projectRepository || !selectedProject) {
+            return;
+        }
+
+        const subscription = projectRepository.moveFileNode({
+            projectId: selectedProject.id,
+            nodeId: nodeId
+        }, {
+            new_parent_id: targetFolderId < 0 ? null : targetFolderId
+        })
+            .pipe(finalize(() => {
+                getFiles?.("", currentFolderId);
+            }))
+            .subscribe({
+                next: (res) => {
+                    if (res?.status) {
+                        toast.success(res?.message || res?.msg || "Moved file successfully");
+                    } else {
+                        toast.error(res?.message || res?.msg || "Failed to move file");
+                    }
+                },
+                error: (err) => {
+                    toast.error("Failed to move file");
+                }
+            });
+
+        return () => {
+            subscription.unsubscribe();
+        }
+    }, [projectRepository, selectedProject, currentFolderId, getFiles]);
+
     useEffect(() => {
         setFiles(originalFiles);
         setIsLoading(false);
@@ -253,7 +372,11 @@ export const useSharedSourceHook = (): SharedSourceContextProps => {
         isAddingFolder,
         setIsAddingFolder,
         onAddFolder,
-        onCancelAddOrEditFolder,
+        onAddDocument,
+        onConfirmAddDocument,
+        isAddingDocument,
+        setIsAddingDocument,
+        onCancelAddOrEdit,
         onConfirmAddFolder,
         isLoading,
         setIsLoading,
@@ -266,5 +389,8 @@ export const useSharedSourceHook = (): SharedSourceContextProps => {
         setCurrentFolderId,
         currentPath,
         setCurrentPath,
+        onMoveFile,
+        selectedNodeId,
+        setSelectedNodeId,
     }
 };

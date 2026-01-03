@@ -281,6 +281,7 @@ export const useTeamProjectHooks = (currentSelectedProject: Project | null): Tea
             createdByUserId: -1,
             createdAt: '2025-12-01T00:00:00Z',
             updatedAt: '2025-12-01T00:00:00Z',
+            createdBy: "Community",
         };
         const subscription = projectRepository.getFiles({
             projectId: currentSelectedProject?.id,

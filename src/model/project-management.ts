@@ -254,6 +254,7 @@ export interface FileNode {
     extension: string | null;
     sizeBytes: number | null;
     storageReference: string | null;
+    createdBy: string | null;
     createdByUserId: number | null;
     createdAt: string;
     updatedAt: string;
@@ -289,4 +290,9 @@ export interface PM_TaskDetail {
     taskInfo: PM_Task;
     attachments: TaskAttachmentDetail[];
     comments: TaskComment[];
+};
+
+export interface CreateNotionDocRequest {
+    parentNodeId: number | null;
+    name: string;
 };

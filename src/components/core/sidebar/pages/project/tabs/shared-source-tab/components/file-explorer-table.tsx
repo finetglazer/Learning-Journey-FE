@@ -28,6 +28,7 @@ export const FileExplorerTable = ({
         files: allNodes,
         alertMessage,
         setAlertMessage,
+        setSelectedNodeId,
     } = useContext<SharedSourceContextProps>(SharedSourceContext);
 
     const visibleNodes = useMemo(() => {
@@ -48,6 +49,7 @@ export const FileExplorerTable = ({
 
     const handleOpenFolder = useCallback((folder: FileNode) => {
         setCurrentFolderId(folder.nodeId);
+        setSelectedNodeId(null);
         setCurrentPath(prev => [...prev, folder]);
     }, []);
 

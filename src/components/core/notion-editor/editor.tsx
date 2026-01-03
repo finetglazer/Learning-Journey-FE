@@ -378,7 +378,9 @@ export function NotionEditor({
             threadId,
             userId: currentUser.id,
             userName: currentUser.name,
+            name: currentUser.name,
             userAvatar: currentUser.avatar,
+            avatar: currentUser.avatar,
             content: commentText,
             replies: [],
             resolved: false,
@@ -434,10 +436,19 @@ export function NotionEditor({
             if (!thread) return;
 
             const newReply = {
+                // replyId: uuidv4(),
+                // userId: currentUser.id,
+                // userName: currentUser.name,
+                // name: currentUser.name,
+                // userAvatar: currentUser.avatar,
+                // avatar: currentUser.avatar,
+                // content,
+                // createdAt: new Date().toISOString(),
+
                 replyId: uuidv4(),
-                userId: currentUser.id,
-                userName: currentUser.name,
-                userAvatar: currentUser.avatar,
+                authorId: currentUser.id, // Match DB authorId
+                authorName: currentUser.name, // Match DB authorName
+                authorAvatar: currentUser.avatar, // Match DB authorAvatar
                 content,
                 createdAt: new Date().toISOString(),
             };
@@ -827,13 +838,13 @@ export function NotionEditor({
                                                         {/* Main Comment */}
                                                         <div className="flex items-start gap-2">
                                                             <div className="h-6 w-6 rounded-full overflow-hidden shrink-0 border border-gray-200 mt-0.5">
-                                                                <img src={thread.userAvatar} alt={thread.userName} className="h-full w-full object-cover" />
+                                                                <img src={thread.avatar || thread.userAvatar} alt={thread.name || thread.userName} className="h-full w-full object-cover" />
                                                             </div>
 
                                                             <div className="min-w-0 flex-1 relative">
                                                                 <div className="flex items-center justify-between mb-0.5">
                                                                     <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate pr-2">
-                                                                        {thread.userName}
+                                                                        {thread.name || thread.userName}
                                                                     </span>
                                                                 </div>
 
@@ -873,11 +884,11 @@ export function NotionEditor({
                                                                 {thread.replies.map((reply) => (
                                                                     <div key={reply.replyId} className="flex items-start gap-2 group/reply">
                                                                         <div className="h-5 w-5 rounded-full overflow-hidden shrink-0 border border-gray-200">
-                                                                            <img src={reply.userAvatar} alt={reply.userName} className="h-full w-full object-cover" />
+                                                                            <img src={(reply as any).authorAvatar || reply.userAvatar || reply.avatar} alt={(reply as any).authorName || reply.userName || reply.name} className="h-full w-full object-cover" />
                                                                         </div>
                                                                         <div className="flex-1 min-w-0">
                                                                             <div className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                                                                                {reply.userName}
+                                                                                {(reply as any).authorName || reply.userName || reply.name}
                                                                             </div>
                                                                             <p className="text-sm text-gray-600 dark:text-gray-400 break-words">
                                                                                 {reply.content}

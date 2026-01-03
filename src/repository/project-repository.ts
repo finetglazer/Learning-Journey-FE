@@ -1,5 +1,6 @@
 import { map, Observable } from "rxjs";
 import { BaseRepository } from "./base-repository";
+import { CreateNotionDocRequest } from "../model/project-management";
 
 const BASE_API_URL = process.env.NEXT_PUBLIC_API_URL + "/pm/projects";
 
@@ -439,12 +440,17 @@ export class ProjectRepository extends BaseRepository {
             .pipe(map(res => res?.data));
     };
 
+    public moveFileNode = (params: { projectId: number | string, nodeId: number | string }, body: { new_parent_id: number | string | null }): Observable<any> => {
+        return this.http.patch(`/${params.projectId}/files/${params.nodeId}/move`, body)
+            .pipe(map(res => res?.data));
+    };
+
     public searchFiles = (params: { projectId: number | string, keyword: string }): Observable<any> => {
         return this.http.get(`/${params.projectId}/files/search?keyword=${encodeURIComponent(params.keyword)}`)
             .pipe(map(res => res?.data));
     };
 
-    public createNotionDocument = (params: { projectId: number | string }, body: any): Observable<any> => {
+    public createNotionDocument = (params: { projectId: number | string }, body: CreateNotionDocRequest): Observable<any> => {
         return this.http.post(`/${params.projectId}/files/document`, body)
             .pipe(map(res => res?.data));
     };

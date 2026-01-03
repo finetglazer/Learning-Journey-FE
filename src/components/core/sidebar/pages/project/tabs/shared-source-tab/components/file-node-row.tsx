@@ -4,11 +4,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { TableCell, TableRow } from "@/components/ui/table";
 import { cn, getFileIcon } from "@/lib/utils";
 import { FileNode, ProjectMembershipRole } from "@/model/project-management";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { isEqual } from "lodash";
 import { Loader2, MoreVerticalIcon } from "lucide-react";
 import { useContext, useState } from "react";
 import { TeamProjectContext, TeamProjectContextProps } from "../../../team-project-context";
 import { SharedSourceContext, SharedSourceContextProps } from "../shared-source-context";
+import { useRouter } from "next/navigation";
+import { CSS } from "@dnd-kit/utilities";
 
 export const FileNodeRow = ({
     node,
@@ -19,26 +22,52 @@ export const FileNodeRow = ({
     onOpenFolder: (node: FileNode) => void,
     isSticky?: boolean,
 }) => {
-    const isFolder = node.type === 'FOLDER';
+    const router = useRouter();
+    const isFolder = node.type === 'FOLDER' || node.type === 'SHARED_FOLDER'; // Treat SHARED_FOLDER as folder visually
     const isUploading = node.uploadingId !== undefined;
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
+    const isSharedPosts = node.type === 'SHARED_FOLDER';
+    const isDraggable = !isSticky && !isUploading && !isSharedPosts && node.nodeId > 0;
+    const isDroppable = !isSticky && !isUploading && node.type === 'FOLDER' && !isSharedPosts && node.nodeId > 0;
+
+    const { attributes, listeners, setNodeRef: setDraggableRef, transform, isDragging } = useDraggable({
+        id: node.nodeId.toString(),
+        disabled: !isDraggable,
+    });
+
+    const { setNodeRef: setDroppableRef, isOver } = useDroppable({
+        id: node.nodeId.toString(),
+        disabled: !isDroppable,
+    });
+
+    const style = {
+        transform: CSS.Translate.toString(transform),
+        opacity: isDragging ? 0.5 : 1,
+        zIndex: isDragging ? 100 : "auto",
+        position: isDragging ? "relative" as const : undefined,
+    };
+
     // File types that support preview
-    const isPreviewable = !isFolder;
+    const isPreviewable = !isFolder && node.type !== 'NOTION_DOC';
 
     const {
         currentMember,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
     const {
-        onCancelAddOrEditFolder,
+        onCancelAddOrEdit,
         onConfirmAddFolder,
+        onConfirmAddDocument,
         editingFile,
         setEditingFile,
         isAddingFolder,
+        isAddingDocument,
         onConfirmEditFileName,
         onConfirmDeleteFile,
         setAlertMessage,
+        selectedNodeId,
+        setSelectedNodeId,
     } = useContext<SharedSourceContextProps>(SharedSourceContext);
 
     const menu: any = [
@@ -58,7 +87,7 @@ export const FileNodeRow = ({
                     useCancel: true,
                 })
             },
-            isShow: (isEqual(node.createdByUserId, currentMember?.userId) || isEqual(currentMember?.role, ProjectMembershipRole.OWNER))
+            isShow: (isEqual(node.createdBy, currentMember?.userId) || isEqual(currentMember?.role, ProjectMembershipRole.OWNER))
                 && !isEqual(node.nodeId, -1),
         },
         {
@@ -67,20 +96,51 @@ export const FileNodeRow = ({
             isShow: !isEqual(node.nodeId, -1),
         },
     ];
-    
+
     const onClickFile = () => {
-        setIsPreviewOpen(true);
+        if (isPreviewable) {
+            setIsPreviewOpen(true);
+            return;
+        }
+        // For NOTION_DOC, open in new tab
+        if (node.type === 'NOTION_DOC') {
+            router.push(`/projects/files?id=${node.nodeId}`);
+            return;
+        }
     };
+
+    // Combine refs
+    const setNodeRef = (element: HTMLTableRowElement | null) => {
+        setDraggableRef(element);
+        setDroppableRef(element);
+    }
+
+    const isSelected = selectedNodeId === node.nodeId;
 
     return (
         <TableRow
+            ref={setNodeRef}
+            style={style}
+            {...attributes}
+            {...listeners}
             className={cn(
                 "bg-white border-b border-gray-100 h-12 transition-colors cursor-pointer",
                 isSticky ? "sticky top-0 z-10 font-semibold" : "hover:bg-gray-50",
                 isFolder && !isUploading && "cursor-pointer hover:bg-gray-100",
-                isUploading && "opacity-50 pointer-events-none bg-gray-100"
+                isUploading && "opacity-50 pointer-events-none bg-gray-100",
+                isOver && "bg-blue-50 border-2 border-blue-500",
+                isSelected && !isSticky && "bg-blue-100 hover:bg-blue-100"
             )}
-            onClick={() => {
+            onClick={(e) => {
+                // Single click to select
+                if (!isSticky && !isUploading) {
+                    e.stopPropagation();
+                    setSelectedNodeId(node.nodeId);
+                }
+            }}
+            onDoubleClick={(e) => {
+                // Double click to open
+                e.stopPropagation();
                 if (isFolder && !isSticky && !isUploading) onOpenFolder(node);
                 else if (!isFolder && !isUploading && !isPreviewOpen) onClickFile();
             }}
@@ -109,15 +169,21 @@ export const FileNodeRow = ({
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                                 e.preventDefault();
-                                isAddingFolder ? onConfirmAddFolder(e.currentTarget.value) : onConfirmEditFileName(e.currentTarget.value);
+                                if (isAddingFolder) {
+                                    onConfirmAddFolder(e.currentTarget.value);
+                                } else if (isAddingDocument) {
+                                    onConfirmAddDocument(e.currentTarget.value);
+                                } else {
+                                    onConfirmEditFileName(e.currentTarget.value);
+                                }
                             } else if (e.key === 'Escape') {
                                 e.preventDefault();
-                                onCancelAddOrEditFolder();
+                                onCancelAddOrEdit();
                             }
                         }}
                         onBlur={(e) => {
                             // If the user clicks outside, cancel the add folder
-                            onCancelAddOrEditFolder();
+                            onCancelAddOrEdit();
                         }}
                     />
                 ) : (
@@ -131,7 +197,7 @@ export const FileNodeRow = ({
 
             <TableCell className={cn("text-gray-500", isUploading && "text-gray-300")}>
                 {/* Logic for shared row author */}
-                {isSticky ? "Community" : (node.createdByUserId ? `User ${node.createdByUserId}` : 'N/A')}
+                {isSticky ? "Community" : (node.createdBy || 'N/A')}
             </TableCell>
 
             <TableCell className={cn("text-gray-500", isUploading && "text-gray-300")}>

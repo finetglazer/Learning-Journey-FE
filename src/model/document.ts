@@ -21,8 +21,10 @@ export interface TiptapDocument {
 export interface CommentReply {
     replyId: string;
     userId: string;
+    name?: string;
     userName: string;
     userAvatar?: string;
+    avatar?: string;
     content: string;
     createdAt: string;
     updatedAt?: string;
@@ -31,8 +33,10 @@ export interface CommentReply {
 export interface CommentThread {
     threadId: string;
     userId: string;
+    name?: string;
     userName: string;
     userAvatar?: string;
+    avatar?: string;
     content: string;
     replies: CommentReply[];
     resolved: boolean;
