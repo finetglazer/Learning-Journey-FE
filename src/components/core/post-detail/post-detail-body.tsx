@@ -1,4 +1,4 @@
-"use client";
+import { useRouter } from "next/navigation";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -17,9 +17,11 @@ import { CreatePostModal } from "../post/create-post-modal";
 import { CreatePostModel } from "@/model/create-post-model";
 import { toast } from "sonner";
 import { AppContext } from "@/hooks/app-context";
+import { AlertMessage, AlertModal } from "../alert-modal/alert-modal";
 
 
 export const PostDetailBody = () => {
+    const router = useRouter();
     const {
         postDetailData,
         updateAnswerAcceptedStatus,
@@ -41,6 +43,7 @@ export const PostDetailBody = () => {
     const [commentContent, setCommentContent] = useState("");
     const [editingAnswerId, setEditingAnswerId] = useState<number | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState<AlertMessage | null>(null);
 
     const handleUpdatePost = (model: CreatePostModel) => {
         if (!postRepository || !currentUserId || !postDetailData) return;
@@ -65,6 +68,65 @@ export const PostDetailBody = () => {
                 console.error(err);
                 toast.error("Failed to update post");
             }
+        });
+    };
+
+    const handleConfirmDeletePost = () => {
+        if (!postRepository || !currentUserId || !postDetailData) return;
+
+        postRepository.deletePost(currentUserId, postDetailData.postId).subscribe({
+            next: (res: any) => {
+                if (res?.status) {
+                    toast.success(res?.message || res?.msg || "Post deleted successfully");
+                    router.push("/posts");
+                } else {
+                    toast.error(res?.message || res?.msg || "Failed to delete post");
+                }
+            },
+            error: (err) => {
+                toast.error("Failed to delete post");
+            }
+        });
+    };
+
+    const handleDeletePost = () => {
+        setAlertMessage({
+            type: "warning",
+            title: "Are you sure you want to delete this post?",
+            proceedAnyway: handleConfirmDeletePost
+        });
+    };
+
+    const handleConfirmDeleteAnswer = (answerId: number) => {
+        if (!postRepository || !currentUserId) return;
+
+        postRepository.deleteAnswer(currentUserId, answerId).subscribe({
+            next: (res: any) => {
+                if (res?.status) {
+                    toast.success(res?.msg || "Answer deleted successfully");
+                    setPostDetailData({
+                        ...postDetailData!,
+                        answers: (postDetailData?.answers || [])?.filter((a) => a.answerId !== answerId),
+                        stats: {
+                            ...postDetailData!.stats,
+                            answerCount: postDetailData!.stats.answerCount - 1
+                        }
+                    });
+                } else {
+                    toast.error(res?.msg || "Failed to delete answer");
+                }
+            },
+            error: (err) => {
+                toast.error("Failed to delete answer");
+            }
+        });
+    };
+
+    const handleDeleteAnswer = (answerId: number) => {
+        setAlertMessage({
+            type: "warning",
+            title: "Are you sure you want to delete this answer?",
+            proceedAnyway: () => handleConfirmDeleteAnswer(answerId)
         });
     };
 
@@ -127,9 +189,11 @@ export const PostDetailBody = () => {
                             Edit
                         </button>
                     )}
-                    <button className="text-gray-500 text-sm font-medium hover:text-red-500 cursor-pointer">
-                        Delete
-                    </button>
+                    {currentUserId === postDetailData.authorId && (
+                        <button className="text-gray-500 text-sm font-medium hover:text-red-500 cursor-pointer" onClick={handleDeletePost}>
+                            Delete
+                        </button>
+                    )}
                 </div>
 
                 {/* Comment Input */}
@@ -276,7 +340,10 @@ export const PostDetailBody = () => {
                                                         >
                                                             Edit
                                                         </button>
-                                                        <button className="text-gray-400 text-sm hover:text-red-500 hover:underline cursor-pointer">
+                                                        <button
+                                                            className="text-gray-400 text-sm hover:text-red-500 hover:underline cursor-pointer"
+                                                            onClick={() => handleDeleteAnswer(answer.answerId)}
+                                                        >
                                                             Delete
                                                         </button>
                                                     </>
@@ -364,6 +431,13 @@ export const PostDetailBody = () => {
                         files: postDetailData.files as any
                     }}
                     onSubmit={handleUpdatePost}
+                />
+            )}
+
+            {alertMessage && (
+                <AlertModal
+                    alertMessage={alertMessage}
+                    onClose={() => setAlertMessage(null)}
                 />
             )}
         </div>

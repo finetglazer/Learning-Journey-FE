@@ -17,10 +17,12 @@ import { formService } from "@/service/form-service";
 import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import Image from "@tiptap/extension-image";
 import { Plus, X } from "lucide-react";
 import { useContext, useEffect, useRef, useState, useCallback } from "react";
 import { SlashCommands } from "../notion-editor/extensions/slash-commands";
 import { PostPageContext, PostPageContextInterface } from "./post-page-context";
+import { ImageUploadWrapper } from "../notion-editor/extensions/image-upload-wrapper";
 import { AlertModal } from "../alert-modal/alert-modal";
 import { isEqual, debounce } from "lodash";
 
@@ -101,10 +103,15 @@ export function CreatePostModal({ open, onClose, initialData, onSubmit }: Create
         immediatelyRender: false,
         extensions: [
             StarterKit,
+            Image,
             Placeholder.configure({
                 placeholder: 'Click "/" to choose commands',
             }),
-            SlashCommands,
+            SlashCommands.configure({
+                suggestion: {
+                    hiddenCommands: ["File"],
+                } as any,
+            }),
         ],
         content: model.content,
         onUpdate: ({ editor }) => {
@@ -182,7 +189,7 @@ export function CreatePostModal({ open, onClose, initialData, onSubmit }: Create
 
     return (
         <Dialog open={open} onOpenChange={(val) => !val && onClose()}>
-            <DialogContent className="sm:max-w-2xl">
+            <DialogContent className="max-h-[90vh] overflow-scroll">
                 <DialogHeader>
                     <DialogTitle>{initialData ? "Edit Post" : "Create Post"}</DialogTitle>
                 </DialogHeader>
@@ -362,6 +369,8 @@ export function CreatePostModal({ open, onClose, initialData, onSubmit }: Create
                     />
                 )}
             </DialogContent>
+            <ImageUploadWrapper editor={editor} projectId={-1} />
         </Dialog>
     );
 }
+

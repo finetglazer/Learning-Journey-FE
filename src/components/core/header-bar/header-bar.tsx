@@ -250,13 +250,6 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
 
             {/* Right Section: Icons and Avatar */}
             <div className="flex items-center gap-3">
-                <button
-                    onClick={() => router.push(COMMUNITY_ROUTE)}
-                    className="p-2 rounded-full cursor-pointer text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                    aria-label="Community"
-                >
-                    <Users size={20} />
-                </button>
                 <div className="relative">
                     <NotificationBox
                         unreadNotifications={unreadNotifications}

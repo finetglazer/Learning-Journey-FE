@@ -5,7 +5,7 @@ import { AppContext } from "@/hooks/app-context";
 import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useContext, useState } from "react";
+import { useContext, useState, useRef } from "react";
 import { finalize } from "rxjs";
 import { toast } from "sonner";
 import { SlashCommands } from "../notion-editor/extensions/slash-commands";
@@ -20,17 +20,30 @@ export function PostDetailAnswerEditor({ }: PostDetailAnswerEditorProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [content, setContent] = useState<any>(null);
 
+    const isFocusedRef = useRef(false);
+
     const editor = useEditor({
         immediatelyRender: false,
         extensions: [
             StarterKit,
             Placeholder.configure({
-                placeholder: "Write your answer here...",
+                placeholder: () => {
+                    return isFocusedRef.current ? 'Click "/" to choose commands' : "Write your answer here...";
+                },
             }),
             SlashCommands,
         ],
         onUpdate: ({ editor }) => {
             setContent(editor.getJSON());
+        },
+        onFocus: ({ editor }) => {
+            isFocusedRef.current = true;
+            // Force re-render by dispatching a transaction
+            editor?.view?.dispatch(editor.state.tr);
+        },
+        onBlur: ({ editor }) => {
+            isFocusedRef.current = false;
+            editor?.view?.dispatch(editor.state.tr);
         },
         content: "",
         editorProps: {

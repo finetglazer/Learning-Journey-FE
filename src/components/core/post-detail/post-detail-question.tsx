@@ -9,11 +9,17 @@ import { SelectFolderModal } from "./select-folder-modal";
 import { RichTextRenderer } from "../rich-text/rich-text-renderer";
 import { FilePreviewModal } from "../file-preview/file-preview-modal";
 import { FILE_PREVIEWABLE } from "@/const/consts";
+import { toast } from "sonner";
+import { AppContext } from "@/hooks/app-context";
+import { SaveFileToProjectRequest } from "@/repository/post-reposiory";
+import { getFileIcon } from "@/lib/utils";
 
 export const PostDetailQuestion = () => {
     const { postDetailData } = useContext<PostDetailContextProps>(PostDetailContext);
+    const { postRepository, userId } = useContext(AppContext);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [previewFile, setPreviewFile] = useState<{ url: string; name: string; extension: string } | null>(null);
+    const [selectedFileForProject, setSelectedFileForProject] = useState<{ fileId: number, fileSize: number, storageRef: string, name: string, extension: string } | null>(null);
 
     const handleFileClick = (file: { name: string; url: string }) => {
         const extension = file.name.split('.').pop()?.toLowerCase() || '';
@@ -44,7 +50,7 @@ export const PostDetailQuestion = () => {
                                 className="flex items-center gap-3 text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
                                 onClick={() => handleFileClick(file)}
                             >
-                                <FileCode className="size-8" />
+                                {getFileIcon(file.name.split('.').pop()?.toLowerCase() || '', 'STATIC_FILE')}
                                 <span className="text-lg font-medium text-foreground max-w-[200px] sm:max-w-[300px] md:max-w-[400px] lg:max-w-[500px] truncate" title={file.name}>
                                     {file.name}
                                 </span>
@@ -67,7 +73,18 @@ export const PostDetailQuestion = () => {
                                 <Button
                                     variant="secondary"
                                     className="h-10 text-sm cursor-pointer font-medium bg-secondary/50 hover:bg-secondary transition-colors"
-                                    onClick={() => setIsModalOpen(true)}
+                                    onClick={() => {
+                                        if (file.fileId) {
+                                            setSelectedFileForProject({
+                                                fileId: file.fileId,
+                                                fileSize: file.size,
+                                                storageRef: file.url,
+                                                name: file.name,
+                                                extension: file.name.split('.').pop()?.toLowerCase() || '',
+                                            });
+                                            setIsModalOpen(true);
+                                        }
+                                    }}
                                 >
                                     Add to your project
                                 </Button>
@@ -111,7 +128,45 @@ export const PostDetailQuestion = () => {
                 open={isModalOpen}
                 onOpenChange={setIsModalOpen}
                 projectsOnly={true}
-                onSelect={(project) => console.log("Added file(s) to project:", project)}
+                onSelect={(project: any) => {
+                    if (!selectedFileForProject || !postRepository || !userId) return;
+
+                    let projectId: number;
+
+                    if (project.projectId) {
+                        projectId = project.projectId;
+                    } else {
+                        projectId = project.id;
+                    }
+
+                    const req: Omit<SaveFileToProjectRequest, "userId" | "fileId"> = {
+                        projectId,
+                        folderId: undefined,
+                        fileSize: selectedFileForProject.fileSize,
+                        storageRef: selectedFileForProject.storageRef,
+                        name: selectedFileForProject.name,
+                        extension: selectedFileForProject.extension,
+                    };
+
+                    postRepository.saveAttachmentToProject(
+                        userId,
+                        selectedFileForProject.fileId,
+                        req
+                    ).subscribe({
+                        next: (res) => {
+                            if (res?.status) {
+                                toast.success(res?.msg || "File saved successfully");
+                                setIsModalOpen(false);
+                            } else {
+                                toast.error(res?.msg || "Failed to save file");
+                            }
+                        },
+                        error: (err) => {
+                            toast.error("Failed to save file");
+                            console.error(err);
+                        }
+                    });
+                }}
             />
 
             {previewFile && (

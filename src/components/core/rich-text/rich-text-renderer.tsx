@@ -2,6 +2,7 @@
 
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import Image from "@tiptap/extension-image";
 import { SlashCommands } from "../notion-editor/extensions/slash-commands";
 import Placeholder from "@tiptap/extension-placeholder";
 import React, { useEffect } from "react";
@@ -17,6 +18,7 @@ export const RichTextRenderer = ({ content, className }: RichTextRendererProps) 
         immediatelyRender: false,
         extensions: [
             StarterKit,
+            Image,
             // Include other extensions if needed to match the creation editor
             SlashCommands,
             Placeholder.configure({

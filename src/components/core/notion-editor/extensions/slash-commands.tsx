@@ -297,6 +297,7 @@ export const SlashCommands = Extension.create({
         return {
             suggestion: {
                 char: "/",
+                hiddenCommands: [] as string[], // Added hiddenCommands option
 
                 allow: ({ state, range }: { state: any; range: any }) => {
                     const $pos = state.doc.resolve(range.from);
@@ -340,7 +341,7 @@ export const SlashCommands = Extension.create({
                         props.command({ editor, range });
                     }
                 },
-            } as Partial<SuggestionOptions>,
+            } as Partial<SuggestionOptions & { hiddenCommands: string[] }>,
         };
     },
 
@@ -350,10 +351,17 @@ export const SlashCommands = Extension.create({
                 editor: this.editor,
                 ...this.options.suggestion,
                 items: ({ query }: { query: string }) => {
+                    const hiddenCommands = this.options.suggestion.hiddenCommands || [] as string[];
+
                     return commandGroups
                         .map((group) => ({
                             ...group,
                             items: group.items.filter((item) => {
+                                // Check if item is hidden
+                                if (hiddenCommands.includes(item.title)) {
+                                    return false;
+                                }
+
                                 const lowerQuery = query.toLowerCase();
 
                                 return (

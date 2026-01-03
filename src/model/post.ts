@@ -66,6 +66,7 @@ export interface Post {
         size: number;
         type: string;
         isAdded?: boolean;
+        storageRef: string;
     }[];
     answers?: Answer[];
     comments?: Comment[];

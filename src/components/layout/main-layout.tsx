@@ -25,7 +25,7 @@ import { useContext, useEffect, useMemo, useState } from "react";
 import { Project } from "@/model/project-management";
 import { toast } from "sonner";
 import { MainLayoutContext } from "./main-layout-context";
-import { CALENDAR_PLANNING_ROUTE, CALENDAR_ROUTE, getProjectDetailRoute, getSettingsRoute, SIGN_IN_ROUTE } from "@/const/routes-const";
+import { CALENDAR_PLANNING_ROUTE, CALENDAR_ROUTE, COMMUNITY_ROUTE, getProjectDetailRoute, getSettingsRoute, SIGN_IN_ROUTE } from "@/const/routes-const";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
@@ -211,7 +211,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         {
             title: "Community",
             items: [
-                { id: "my-community", label: "My community", icon: <Users size={16} />, onClick: () => { /* No Route yet? */ } },
+                { id: "my-community", label: "My community", icon: <Users size={16} />, onClick: () => {
+                    router.push(COMMUNITY_ROUTE);
+                }},
             ],
         },
         {

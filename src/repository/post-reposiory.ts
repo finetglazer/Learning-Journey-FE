@@ -16,6 +16,17 @@ export interface UpdateSavePostStatusRequest {
     wannaSave: boolean;
 }
 
+export interface SaveFileToProjectRequest {
+    userId: number;
+    fileId: number;
+    projectId: number;
+    folderId?: number;
+    fileSize: number;
+    storageRef: string;
+    name?: string;
+    extension?: string;
+}
+
 export interface CreateAnswerRequest {
     content: any;
 }
@@ -148,6 +159,23 @@ export class PostRepository extends BaseRepository {
     ): Observable<any> => {
         return this.http
             .put(`${BASE_API_URL}/posts/${postId}/save`, request, {
+                headers: { "X-User-Id": userId },
+            })
+            .pipe(map((response) => response?.data));
+    };
+
+    public saveAttachmentToProject = (
+        userId: number,
+        fileId: number,
+        request: Omit<SaveFileToProjectRequest, "userId" | "fileId">
+    ): Observable<any> => {
+        const payload: SaveFileToProjectRequest = {
+            ...request,
+            userId,
+            fileId,
+        };
+        return this.http
+            .post(`${BASE_API_URL}/attachments/${fileId}/save-to-project`, payload, {
                 headers: { "X-User-Id": userId },
             })
             .pipe(map((response) => response?.data));
