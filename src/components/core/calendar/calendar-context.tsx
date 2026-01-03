@@ -1274,10 +1274,10 @@ export const useCalendarHooks = () => {
                     },
                 }).subscribe({
                     next: (res: any) => {
-                        const itemId = res?.data;
                         const success = res?.status;
                         if (success) {
-                            getNewCalendarItem(itemId, true);
+                            // Use the known task ID since this is an update operation, and don't open editor
+                            getNewCalendarItem(draggingUnscheduledTaskId as number, true, false);
                             getUnscheduledItems();
                         }
                         else {
