@@ -23,6 +23,7 @@ interface DayTasksPopoverProps {
     setEditingMonthPlanItem?: Dispatch<SetStateAction<MonthPlanningBigTask | MonthPlanningEvent | UnscheduledTask | string | null>>;
     editorOffset?: { x: number, y: number };
     onAddTaskClick?: (event: React.MouseEvent<HTMLDivElement>) => void;
+    onQuickAddTask?: (taskName: string) => void;
     onTaskClick?: () => void;
     setPopoverState?: (prev: any) => void;
     scrollContainerRef?: any;
@@ -44,6 +45,7 @@ export function DayTasksPopover({
     scrollContainerRef,
     onTaskClick,
     onAddTaskClick,
+    onQuickAddTask,
     setPopoverState,
 }: DayTasksPopoverProps) {
     const [bigTaskMenuOpen, setBigTaskMenuOpen] = useState<number | string | null>(null);
@@ -208,14 +210,25 @@ export function DayTasksPopover({
                 </div>
             </ScrollArea>
 
-            {/* Add new task button (month-planning + unscheduled-task type) */}
+            {/* Quick add task input (month-planning + unscheduled-task type) */}
             {(type === 'month-planning' && currentTaskType === 'unscheduled-task') && (
-                <div
-                    className="flex items-center gap-2 p-2 mt-1 border-t border-gray-100 text-sm text-gray-500 cursor-pointer rounded-md hover:bg-gray-100"
-                    onClick={onAddTaskClick}
-                >
-                    <PlusCircle className="h-4 w-4 text-gray-400" />
-                    <span>Add new task</span>
+                <div className="flex items-center gap-2 p-2 mt-1 border-t border-gray-100">
+                    <PlusCircle className="h-4 w-4 text-gray-400 shrink-0" />
+                    <input
+                        type="text"
+                        placeholder="Add new task..."
+                        className="flex-1 text-sm text-gray-700 placeholder-gray-400 border-none outline-none bg-transparent focus:ring-0"
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                const inputValue = (e.target as HTMLInputElement).value.trim();
+                                if (inputValue && onQuickAddTask) {
+                                    onQuickAddTask(inputValue);
+                                    (e.target as HTMLInputElement).value = '';
+                                }
+                            }
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    />
                 </div>
             )}
         </div>

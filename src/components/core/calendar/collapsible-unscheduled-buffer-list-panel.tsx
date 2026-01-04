@@ -85,18 +85,25 @@ export function CollapsibleUnscheduledBufferListPanel({
         return () => {
             window.removeEventListener('resize', calculateBounds);
         };
-    }, [headerRef, sidebarRef]);
+    }, [headerRef, sidebarRef, isCollapsed]); // Recalculate when panel opens/closes
 
     const clampedPosition = useMemo(() => {
-        const size = isCollapsed ? COLLAPSED_SIZE : PANEL_WIDTH;
+        // When expanded, use actual panel dimensions
+        const panelWidth = isCollapsed ? COLLAPSED_SIZE : PANEL_WIDTH;
+        // Expanded panel height: header (~140px for this panel with checkbox) + ScrollArea (45vh)
+        const panelHeight = isCollapsed ? COLLAPSED_SIZE : Math.min(window.innerHeight * 0.45 + 140, window.innerHeight * 0.8);
 
-        // Clamp X
+        // Use current viewport dimensions for accurate clamping
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        // Clamp X - ensure panel stays within horizontal bounds
         let newX = Math.max(position.x, bounds.minX);
-        newX = Math.min(newX, bounds.maxX - size);
+        newX = Math.min(newX, viewportWidth - panelWidth - 16); // 16px padding from edge
 
-        // Clamp Y
+        // Clamp Y - ensure panel stays within vertical bounds
         let newY = Math.max(position.y, bounds.minY);
-        newY = Math.min(newY, bounds.maxY - size);
+        newY = Math.min(newY, viewportHeight - panelHeight - 16); // 16px padding from edge
 
         return { x: newX, y: newY };
     }, [position, isCollapsed, bounds]);
@@ -126,8 +133,8 @@ export function CollapsibleUnscheduledBufferListPanel({
                             )}
                         >
                             {/* This matches the visual style in the image */}
-                            <div className="flex h-full w-full items-center justify-center rounded-full bg-sky-300">
-                                <Users className="h-8 w-8 text-black" />
+                            <div className="flex h-full w-full items-center justify-center rounded-full bg-[#91EEFF]">
+                                <Users style={{ width: 30, height: 30, color: '#57606A' }} />
                             </div>
                         </Button>
                     </motion.div>

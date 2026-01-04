@@ -53,6 +53,7 @@ interface NotionEditorProps {
     onLoadVersions: () => void;
     onRestoreVersion: (versionId: string) => void;
     isRestoringVersion: boolean;
+    canRestore?: boolean; // Only file creator or project owner can restore
     documentTitle?: string;
     onTitleChange?: (title: string) => void;
     createdBy?: string;
@@ -77,6 +78,7 @@ export function NotionEditor({
     onLoadVersions,
     onRestoreVersion,
     isRestoringVersion,
+    canRestore = false,
     documentTitle = "",
     onTitleChange,
     createdBy = "Jane Doe",
@@ -985,6 +987,7 @@ export function NotionEditor({
                 isLoading={isLoadingVersions}
                 onRestore={onRestoreVersion}
                 isRestoring={isRestoringVersion}
+                canRestore={canRestore}
             />
 
             {/* File Picker Wrapper */}

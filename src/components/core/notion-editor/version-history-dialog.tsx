@@ -23,6 +23,7 @@ interface VersionHistoryDialogProps {
     isLoading?: boolean;
     onRestore: (versionId: string) => void;
     isRestoring?: boolean;
+    canRestore?: boolean; // Only show restore button if user is file creator or project owner
 }
 
 const reasonLabels: Record<string, { label: string; icon: React.ReactNode }> = {
@@ -45,13 +46,14 @@ const reasonLabels: Record<string, { label: string; icon: React.ReactNode }> = {
 };
 
 export function VersionHistoryDialog({
-                                         open,
-                                         onOpenChange,
-                                         versions = [],
-                                         isLoading,
-                                         onRestore,
-                                         isRestoring,
-                                     }: VersionHistoryDialogProps) {
+    open,
+    onOpenChange,
+    versions = [],
+    isLoading,
+    onRestore,
+    isRestoring,
+    canRestore = true,
+}: VersionHistoryDialogProps) {
     const [selectedVersion, setSelectedVersion] = useState<string | null>(null);
 
     const handleRestore = () => {
@@ -170,24 +172,26 @@ export function VersionHistoryDialog({
 
                         <div className="flex justify-end gap-2 pt-4 border-t">
                             <Button variant="outline" onClick={() => onOpenChange(false)}>
-                                Cancel
+                                {canRestore ? "Cancel" : "Close"}
                             </Button>
-                            <Button
-                                onClick={handleRestore}
-                                disabled={selectedVersion === null || isRestoring}
-                            >
-                                {isRestoring ? (
-                                    <>
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                                        Restoring...
-                                    </>
-                                ) : (
-                                    <>
-                                        <RotateCcw className="h-4 w-4 mr-2" />
-                                        Restore Selected
-                                    </>
-                                )}
-                            </Button>
+                            {canRestore && (
+                                <Button
+                                    onClick={handleRestore}
+                                    disabled={selectedVersion === null || isRestoring}
+                                >
+                                    {isRestoring ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                                            Restoring...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <RotateCcw className="h-4 w-4 mr-2" />
+                                            Restore Selected
+                                        </>
+                                    )}
+                                </Button>
+                            )}
                         </div>
                     </>
                 )}

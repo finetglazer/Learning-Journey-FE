@@ -104,8 +104,8 @@ export const UnscheduledItemsForMonth = ({
                         <CollapsibleContent className="overflow-hidden data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up">
                             <ScrollArea className="h-60 rounded-md border p-2">
                                 <div className="space-y-1">
-                                    {(unscheduledBigTasks || []).map((bigTask: UnscheduledBigTask) => (
-                                        <Collapsible key={bigTask?.bigTaskId} open={openTasks[bigTask?.bigTaskId] ?? true} onOpenChange={() => toggleBigTask(bigTask?.bigTaskId)}>
+                                    {(unscheduledBigTasks || []).map((bigTask: UnscheduledBigTask, index: number) => (
+                                        <Collapsible key={`${monthName}-${bigTask?.bigTaskId}-${index}`} open={openTasks[bigTask?.bigTaskId] ?? true} onOpenChange={() => toggleBigTask(bigTask?.bigTaskId)}>
                                             <div className="flex items-center">
                                                 <UnscheduledTaskItem
                                                     bigTask={bigTask}

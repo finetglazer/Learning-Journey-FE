@@ -19,6 +19,7 @@ import { UnscheduledRoutineItem } from "./unscheduled-routine-item";
 import { UnscheduledTaskItem } from "./unscheduled-task-item";
 import { CollapsibleUnscheduledBufferListPanel } from "./collapsible-unscheduled-buffer-list-panel";
 import { BufferListProjectTask } from "./buffer-list-project-task";
+import { DragCancelZone } from "./drag-cancel-zone";
 import { useRouter } from "next/navigation";
 import {
     AlertDialog,
@@ -77,6 +78,7 @@ export const CalendarDayView = () => {
         draggingProjectTaskId,
         getDraggingProjectTask,
         handleTaskEditorClose,
+        isDraggingItem,
         // Resize state and handlers
         resizingItemId,
         resizingOccurrenceKey,
@@ -265,6 +267,9 @@ export const CalendarDayView = () => {
                             headerRef={headerRef}
                         />
 
+                        {/* Cancel Drop Zone - shows when dragging items */}
+                        <DragCancelZone isVisible={isDraggingItem} />
+
                         {/* @ts-ignore */}
                         <DragOverlay>
                             <>{/* For scheduled items */}
@@ -388,9 +393,9 @@ const PanelDragOverlay = (
                 style={innerStyle}
                 className="h-16 w-16 rounded-full bg-gray-700 border-4 border-white p-0 shadow-lg cursor-grabbing"
             >
-                <div className="flex h-full w-full items-center justify-center rounded-full bg-sky-300">
-                    {type === 'unscheduled-task-panel' && <ClipboardList className="h-8 w-8 text-black" />}
-                    {type === 'buffer-list-panel' && <Users className="h-8 w-8 text-black" />}
+                <div className="flex h-full w-full items-center justify-center rounded-full bg-[#91EEFF]">
+                    {type === 'unscheduled-task-panel' && <ClipboardList size={48} className="text-black" />}
+                    {type === 'buffer-list-panel' && <Users size={48} className="text-black" />}
                 </div>
             </div>
         </div>

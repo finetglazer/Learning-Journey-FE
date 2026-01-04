@@ -15,6 +15,7 @@ export class Task extends Model {
     public color?: string;
     // For task
     public parentBigTaskId?: number;
+    public parentBigTaskName?: string;
     public estimatedHours?: number;
     public actualHours?: number;
     public dueDate?: string; // YYYY-MM-DD
