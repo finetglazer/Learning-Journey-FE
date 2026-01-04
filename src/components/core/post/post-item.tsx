@@ -7,35 +7,38 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { MoreHorizontal } from "lucide-react";
-    import { useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 interface PostItemProps {
     post: Post;
+    showStats?: boolean;
 }
 
-export function PostItem({ post }: PostItemProps) {
+export function PostItem({ post, showStats = true }: PostItemProps) {
     const router = useRouter();
-   
+
     return (
         <div className="flex flex-col sm:flex-row gap-4 p-4 rounded-lg hover:bg-muted/50 transition-colors">
             {/* Left Column: Stats */}
-            <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 sm:gap-1 w-full sm:w-28 shrink-0 text-xs sm:text-sm text-muted-foreground">
-                <div className="whitespace-nowrap">
-                    <span className="font-medium text-foreground">{post.score}</span> votes
+            {showStats && (
+                <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 sm:gap-1 w-full sm:w-28 shrink-0 text-xs sm:text-sm text-muted-foreground">
+                    <div className="whitespace-nowrap">
+                        <span className="font-medium text-foreground">{post.score}</span> votes
+                    </div>
+                    <div
+                        className={cn(
+                            "whitespace-nowrap px-2 py-0.5 rounded border",
+                            post.answerCount > 0 && "border-transparent",
+                            post.isSolved && "border-green-500 text-green-600 bg-green-50/50",
+                        )}
+                    >
+                        <span className="font-medium">{post.answerCount}</span> answers
+                    </div>
+                    <div className="whitespace-nowrap">
+                        <span className="font-medium text-foreground">{post.viewCount}</span> views
+                    </div>
                 </div>
-                <div
-                    className={cn(
-                        "whitespace-nowrap px-2 py-0.5 rounded border",
-                        post.answerCount > 0 && "border-transparent",
-                        post.isSolved && "border-green-500 text-green-600 bg-green-50/50",
-                    )}
-                >
-                    <span className="font-medium">{post.answerCount}</span> answers
-                </div>
-                <div className="whitespace-nowrap">
-                    <span className="font-medium text-foreground">{post.viewCount}</span> views
-                </div>
-            </div>
+            )}
 
             {/* Right Column: Main Content */}
             <div className="flex flex-col gap-1 flex-1 min-w-0">

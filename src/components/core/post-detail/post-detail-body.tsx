@@ -268,10 +268,10 @@ export const PostDetailBody = () => {
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className={`rounded-full h-8 w-8 cursor-pointer ${answer.userVote === 1 ? 'bg-green-100 ring-1 ring-green-500' : ''}`}
+                                        className={`rounded-full h-8 w-8 cursor-pointer ${answer.voteType === 1 ? 'bg-green-100 ring-1 ring-green-500' : ''}`}
                                         onClick={() => onVoteAnswer(answer.answerId, 'UPVOTE')}
                                     >
-                                        <ChevronUp className={`h-8 w-8 ${answer.userVote === 1 ? 'text-green-500' : 'text-gray-500'}`} strokeWidth={answer.userVote === 1 ? 3 : 2} />
+                                        <ChevronUp className={`h-8 w-8 ${answer.voteType === 1 ? 'text-green-500' : 'text-gray-500'}`} strokeWidth={answer.voteType === 1 ? 3 : 2} />
                                     </Button>
 
                                     <span className="text-xl font-semibold text-gray-700">
@@ -281,10 +281,10 @@ export const PostDetailBody = () => {
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className={`rounded-full h-8 w-8 cursor-pointer ${answer.userVote === -1 ? 'bg-red-100 ring-1 ring-red-500' : ''}`}
+                                        className={`rounded-full h-8 w-8 cursor-pointer ${answer.voteType === -1 ? 'bg-red-100 ring-1 ring-red-500' : ''}`}
                                         onClick={() => onVoteAnswer(answer.answerId, 'DOWNVOTE')}
                                     >
-                                        <ChevronDown className={`h-8 w-8 ${answer.userVote === -1 ? 'text-red-500' : 'text-gray-500'}`} strokeWidth={answer.userVote === -1 ? 3 : 2} />
+                                        <ChevronDown className={`h-8 w-8 ${answer.voteType === -1 ? 'text-red-500' : 'text-gray-500'}`} strokeWidth={answer.voteType === -1 ? 3 : 2} />
                                     </Button>
 
                                     <Button

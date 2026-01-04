@@ -14,9 +14,9 @@ import { TeamProjectContext, TeamProjectContextProps } from "../../team-project-
 import { FileExplorerTable } from "./components/file-explorer-table";
 import { SharedSourceContext, SharedSourceContextProps } from "./shared-source-context";
 import { FileNode } from "@/model/project-management";
-
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import { toast } from "sonner";
+import { SharedPostList } from "./components/shared-post-list";
 
 export const SharedSourceTabContent = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -54,6 +54,7 @@ export const SharedSourceTabContent = () => {
         onConfirmDeleteFile,
         cutNodeId,
         setCutNodeId,
+        savedPosts,
     } = useContext<SharedSourceContextProps>(SharedSourceContext);
 
     // Configure sensors to differentiate between click and drag
@@ -118,8 +119,10 @@ export const SharedSourceTabContent = () => {
     }, [getFiles, searchQuery, currentFolderId]);
 
     useEffect(() => {
-        setIsLoading(true);
-        debouncedGetFiles();
+        if (currentFolderId !== -1) {
+            setIsLoading(true);
+            debouncedGetFiles();
+        }
 
         return () => {
             debouncedGetFiles.cancel();
@@ -210,92 +213,101 @@ export const SharedSourceTabContent = () => {
         }
     };
 
+    const isSharedSourceFolder = currentFolderId === -1;
+
     return (
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
             <div className="w-full h-full bg-slate-50 flex flex-col p-6 font-sans">
                 {/* Header: Search and New File Button */}
-                <div className="flex justify-between items-center mb-4">
-                    <div className="relative w-96">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Search file"
-                            className="pl-10 bg-white shadow-sm"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
+                {!isSharedSourceFolder && (
+                    <div className="flex justify-between items-center mb-4">
+                        <div className="relative w-96">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Search file"
+                                className="pl-10 bg-white shadow-sm"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {(!isLoading) && (
+                                <Button
+                                    className={cn("bg-teal-500 hover:bg-teal-600 flex gap-2 items-center text-white cursor-pointer shadow-md",
+                                        !!editingFile && "opacity-50 cursor-not-allowed"
+                                    )}
+                                    disabled={!!editingFile}
+                                    onClick={handleUploadClick}
+                                >
+                                    <Upload className="h-4 w-4 mr-2" />
+                                    <span>Upload file</span>
+                                </Button>
+                            )}
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFilesChange}
+                                className="hidden"
+                                multiple
+                                max={5}
+                                accept={FILE_EXTENSION.map(ext => `.${ext}`).join(",")}
+                            />
+                            {(!isLoading) && (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            className={cn("bg-purple-600 hover:bg-purple-700 flex gap-2 items-center text-white cursor-pointer shadow-md",
+                                                !!editingFile && "opacity-50 cursor-not-allowed"
+                                            )}
+                                            disabled={!!editingFile}
+                                        >
+                                            <Plus className="h-4 w-4 mr-2" />
+                                            <span>New</span>
+                                            <ChevronDown className="h-4 w-4 ml-2" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-[160px]">
+                                        <DropdownMenuItem
+                                            className="cursor-pointer"
+                                            onClick={() => onAddFolder()}
+                                        >
+                                            <Folder className="h-4 w-4 mr-2" />
+                                            Folder
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            className="cursor-pointer"
+                                            onClick={() => onAddDocument()}
+                                        >
+                                            <FileIcon className="h-4 w-4 mr-2" />
+                                            Document Note
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            )}
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        {(!isLoading) && (
-                            <Button
-                                className={cn("bg-teal-500 hover:bg-teal-600 flex gap-2 items-center text-white cursor-pointer shadow-md",
-                                    !!editingFile && "opacity-50 cursor-not-allowed"
-                                )}
-                                disabled={!!editingFile}
-                                onClick={handleUploadClick}
-                            >
-                                <Upload className="h-4 w-4 mr-2" />
-                                <span>Upload file</span>
-                            </Button>
-                        )}
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleFilesChange}
-                            className="hidden"
-                            multiple
-                            max={5}
-                            accept={FILE_EXTENSION.map(ext => `.${ext}`).join(",")}
-                        />
-                        {(!isLoading) && (
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button
-                                        className={cn("bg-purple-600 hover:bg-purple-700 flex gap-2 items-center text-white cursor-pointer shadow-md",
-                                            !!editingFile && "opacity-50 cursor-not-allowed"
-                                        )}
-                                        disabled={!!editingFile}
-                                    >
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        <span>New</span>
-                                        <ChevronDown className="h-4 w-4 ml-2" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-[160px]">
-                                    <DropdownMenuItem
-                                        className="cursor-pointer"
-                                        onClick={() => onAddFolder()}
-                                    >
-                                        <Folder className="h-4 w-4 mr-2" />
-                                        Folder
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        className="cursor-pointer"
-                                        onClick={() => onAddDocument()}
-                                    >
-                                        <FileIcon className="h-4 w-4 mr-2" />
-                                        Document Note
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        )}
-                    </div>
-                </div>
+                )}
+
                 {(isLoading) && (
-                    <div className="flex justify-center items-center w-full">
+                    <div className="flex justify-center items-center w-full h-full">
                         <SpinnerLoader
                             sizeClass="24"
-                            message="Getting files & folders..."
+                            message="Getting contents..."
                         />
                     </div>
                 )}
 
                 {(!isLoading) && (
-                    <FileExplorerTable
-                        currentFolderId={currentFolderId}
-                        setCurrentFolderId={setCurrentFolderId}
-                        setCurrentPath={setCurrentPath}
-                        currentPath={currentPath}
-                    />
+                    isSharedSourceFolder ? (
+                        <SharedPostList posts={savedPosts} />
+                    ) : (
+                        <FileExplorerTable
+                            currentFolderId={currentFolderId}
+                            setCurrentFolderId={setCurrentFolderId}
+                            setCurrentPath={setCurrentPath}
+                            currentPath={currentPath}
+                        />
+                    )
                 )}
             </div>
         </DndContext>

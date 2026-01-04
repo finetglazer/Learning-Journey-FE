@@ -22,7 +22,7 @@ export interface Answer {
     isAccepted: boolean;
     createdAt: string;
     updatedAt: string;
-    userVote?: number;
+    voteType?: number;
 }
 
 export interface Comment {
@@ -68,6 +68,10 @@ export interface Post {
         isAdded?: boolean;
         storageRef: string;
     }[];
+    score: number;
+    viewCount: number;
+    answerCount: number;
+    isSolved: boolean;
     answers?: Answer[];
     comments?: Comment[];
     userVote?: number;

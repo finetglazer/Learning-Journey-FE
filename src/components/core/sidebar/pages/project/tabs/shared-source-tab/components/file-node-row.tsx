@@ -23,7 +23,7 @@ export const FileNodeRow = ({
     isSticky?: boolean,
 }) => {
     const router = useRouter();
-    const isFolder = node.type === 'FOLDER' || node.type === 'SHARED_FOLDER'; // Treat SHARED_FOLDER as folder visually
+    const isFolder = node.type === 'FOLDER' || node.type === 'SHARED_FOLDER';
     const isUploading = node.uploadingId !== undefined;
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
@@ -100,6 +100,12 @@ export const FileNodeRow = ({
     ];
 
     const onClickFile = () => {
+        if (node.type === 'SHARED_FILE') {
+            const originalId = -10000 - node.nodeId;
+            router.push(`/posts/${originalId}`);
+            return;
+        }
+
         if (isPreviewable) {
             setIsPreviewOpen(true);
             return;
@@ -152,7 +158,7 @@ export const FileNodeRow = ({
                     return;
                 }
 
-                if (isFolder && !isSticky && !isUploading) onOpenFolder(node);
+                if (isFolder && !isUploading) onOpenFolder(node);
                 else if (!isFolder && !isUploading && !isPreviewOpen) onClickFile();
             }}
         >
@@ -199,9 +205,9 @@ export const FileNodeRow = ({
                     />
                 ) : (
                     <div className="flex items-center gap-2 group mt-1 group">
-                        <span className={cn("text-gray-800 truncate", isFolder && "font-medium", isUploading && "text-gray-400")}>
+                        <button className={cn("text-gray-800 truncate cursor-pointer", isFolder && "font-medium", isUploading && "text-gray-400")}>
                             {node.name}
-                        </span>
+                        </button>
                     </div>
                 )}
             </TableCell>

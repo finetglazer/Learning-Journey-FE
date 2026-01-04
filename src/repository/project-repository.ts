@@ -7,6 +7,13 @@ const BASE_API_URL = process.env.NEXT_PUBLIC_API_URL + "/pm/projects";
 export class ProjectRepository extends BaseRepository {
     constructor(userId: number) {
         super(userId, BASE_API_URL);
+        (this as any).userId = userId;
+    };
+
+    public getSharedPosts = (params: { projectId: number | string }): Observable<any> => {
+        return this.http.get(`/${params.projectId}/shared-posts`, {
+            headers: { "X-User-Id": (this as any).userId }
+        }).pipe(map(res => res?.data));
     };
 
     public getProjects = (): Observable<any> => {

@@ -164,7 +164,8 @@ export const PostDetailHeader = () => {
             <SelectFolderModal
                 open={isFolderModalOpen}
                 onOpenChange={setIsFolderModalOpen}
-                onSave={handleToggleSaveStatusToProject}
+                projectsOnly={true}
+                onSelect={handleToggleSaveStatusToProject}
                 savedProjectIds={postDetailData.savedToProjectIds}
             />
         </>

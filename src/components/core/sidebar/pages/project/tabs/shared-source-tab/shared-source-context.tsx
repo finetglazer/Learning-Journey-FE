@@ -1,5 +1,5 @@
 import { dayJsToISOString, toDayJs } from "@/lib/utils";
-import { FileNode } from "@/model/project-management";
+import { FileNode, PostFeedDTO } from "@/model/project-management";
 import { createContext, Dispatch, SetStateAction, useCallback, useContext, useEffect, useState } from "react";
 import { TeamProjectContext, TeamProjectContextProps } from "../../team-project-context";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
@@ -37,6 +37,8 @@ export interface SharedSourceContextProps {
     setSelectedNodeId: Dispatch<SetStateAction<number | null>>;
     cutNodeId: number | null;
     setCutNodeId: Dispatch<SetStateAction<number | null>>;
+    savedPosts: PostFeedDTO[];
+    setSavedPosts: Dispatch<SetStateAction<PostFeedDTO[]>>;
 };
 
 export const SharedSourceContext = createContext<SharedSourceContextProps>({
@@ -69,6 +71,8 @@ export const SharedSourceContext = createContext<SharedSourceContextProps>({
     setSelectedNodeId: () => { },
     cutNodeId: null,
     setCutNodeId: () => { },
+    savedPosts: [],
+    setSavedPosts: () => { },
 });
 
 export const useSharedSourceHook = (): SharedSourceContextProps => {
@@ -82,6 +86,7 @@ export const useSharedSourceHook = (): SharedSourceContextProps => {
     const [currentPath, setCurrentPath] = useState<FileNode[]>([]);
     const [selectedNodeId, setSelectedNodeId] = useState<number | null>(null);
     const [cutNodeId, setCutNodeId] = useState<number | null>(null);
+    const [savedPosts, setSavedPosts] = useState<PostFeedDTO[]>([]);
     const {
         files: originalFiles,
         selectedProject,
@@ -369,6 +374,31 @@ export const useSharedSourceHook = (): SharedSourceContextProps => {
         setIsLoading(false);
     }, [originalFiles]);
 
+    useEffect(() => {
+        if (currentFolderId === -1 && selectedProject && projectRepository) {
+            setIsLoading(true);
+            const subscription = projectRepository.getSharedPosts({ projectId: selectedProject.id })
+                .pipe(finalize(() => setIsLoading(false)))
+                .subscribe({
+                    next: (res) => {
+                        if (res?.data) {
+                            setSavedPosts(res.data);
+                        } else {
+                            setSavedPosts([]);
+                        }
+                    },
+                    error: () => {
+                        toast.error("Failed to load shared posts");
+                        setSavedPosts([]);
+                    }
+                });
+
+            return () => subscription.unsubscribe();
+        } else {
+            setSavedPosts([]);
+        }
+    }, [currentFolderId, selectedProject, projectRepository]);
+
     return {
         editingFile,
         setEditingFile,
@@ -399,5 +429,7 @@ export const useSharedSourceHook = (): SharedSourceContextProps => {
         setSelectedNodeId,
         cutNodeId,
         setCutNodeId,
+        savedPosts,
+        setSavedPosts,
     }
 };

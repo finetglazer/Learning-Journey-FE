@@ -239,7 +239,7 @@ export interface ProjectDependency {
     toId: number;
 };
 
-export type NodeType = 'STATIC_FILE' | 'FOLDER' | 'NOTION_DOC' | 'SHARED_FOLDER';
+export type NodeType = 'STATIC_FILE' | 'FOLDER' | 'NOTION_DOC' | 'SHARED_FOLDER' | 'SHARED_FILE';
 
 /**
  * Represents a file or folder node in the project management system.
@@ -295,4 +295,27 @@ export interface PM_TaskDetail {
 export interface CreateNotionDocRequest {
     parentNodeId: number | null;
     name: string;
+};
+
+export type PostStatus = string;
+
+export interface PostFeedDTO {
+    postId: number;
+    userId: number;
+    title: string;
+    preview: string;
+
+    authorId: number;
+    authorName: string;
+    authorAvatar: string;
+
+    tags: string[];
+
+    score: number;
+    viewCount: number;
+    answerCount: number;
+    isSolved: boolean;
+
+    createdAt: string;
+    status: PostStatus;
 };

@@ -302,7 +302,7 @@ export const usePostDetailHook = (postId: number): PostDetailContextProps => {
                                     return {
                                         ...ans,
                                         score: newScore,
-                                        userVote: userVote // Assuming Answer model has userVote
+                                        voteType: userVote // Assuming Answer model has userVote
                                     }
                                 }
                                 return ans;
