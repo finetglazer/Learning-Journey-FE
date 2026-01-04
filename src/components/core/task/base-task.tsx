@@ -60,10 +60,21 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
     // Helper function to build the tooltip title
     const getTooltipTitle = () => {
         if (typeof task === 'string') return task;
-        if ((task as Task)?.note) {
-            return `${(task as Task).name}: ${(task as Task).note}`;
+
+        const taskObj = task as Task;
+        let title = taskObj.name || '';
+
+        // Add note if exists
+        if (taskObj.note) {
+            title += `: ${taskObj.note}`;
         }
-        return (task as Task).name;
+
+        // Add parent big task name for sub-tasks
+        if (taskObj.parentBigTaskName) {
+            title += ` • From: "${taskObj.parentBigTaskName}"`;
+        }
+
+        return title;
     };
 
     const isBigTask = (task: any): task is MonthPlanningBigTask => {
@@ -144,7 +155,7 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
         return (
             <Tooltip title={getTooltipTitle()} placement="top">
                 <div className={cn(
-                    "h-auto sm:h-[50px]! overflow-hidden flex justify-between sm:grid cursor-pointer items-center gap-2 sm:gap-4 rounded-lg border-3 border-[#E62E7B] bg-stone-50 p-4 w-full",
+                    "h-auto sm:h-[50px]! overflow-hidden flex justify-between sm:grid cursor-pointer items-center gap-2 sm:gap-4 rounded-lg border-3 border-[#E62E7B] bg-stone-50 p-1 w-full",
                     type === "big-task" ? "sm:grid-cols-2" : "sm:grid-cols-2",
                     { "border-sky-300": type === "event" },
                     { "border-[#68DE79]": type === "routine" },

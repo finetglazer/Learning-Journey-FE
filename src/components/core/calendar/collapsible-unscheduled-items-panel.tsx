@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn, uuid4 } from "@/lib/utils";
 import { UnscheduledBigTask, UnscheduledMonthData, UnscheduledRoutine, UnscheduledTask } from "@/model/task";
-import { useDraggable } from "@dnd-kit/core";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { AnimatePresence, motion } from "framer-motion";
 import {
     ClipboardList,
@@ -46,6 +46,10 @@ export function CollapsibleUnscheduledPanel({
     const [bounds, setBounds] = useState({ minX: 0, minY: 0, maxX: window.innerWidth, maxY: window.innerHeight });
     const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
         id: 'draggable-panel',
+    });
+    // Add droppable to capture drop events on the panel (prevents dropping through to calendar)
+    const { setNodeRef: setDroppableRef, isOver } = useDroppable({
+        id: 'unscheduled-panel-dropzone',
     });
     const PANEL_WIDTH = 350;
     const COLLAPSED_SIZE = 64;
@@ -187,18 +191,25 @@ export function CollapsibleUnscheduledPanel({
         return () => {
             window.removeEventListener('resize', calculateBounds);
         };
-    }, [headerRef, sidebarRef]);
+    }, [headerRef, sidebarRef, isCollapsed]); // Recalculate when panel opens/closes
 
     const clampedPosition = useMemo(() => {
-        const size = isCollapsed ? COLLAPSED_SIZE : PANEL_WIDTH;
+        // When expanded, use actual panel dimensions
+        const panelWidth = isCollapsed ? COLLAPSED_SIZE : PANEL_WIDTH;
+        // Expanded panel height: header (~72px) + ScrollArea (50vh)
+        const panelHeight = isCollapsed ? COLLAPSED_SIZE : Math.min(window.innerHeight * 0.5 + 72, window.innerHeight * 0.8);
 
-        // Clamp X
+        // Use current viewport dimensions for accurate clamping
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        // Clamp X - ensure panel stays within horizontal bounds
         let newX = Math.max(position.x, bounds.minX);
-        newX = Math.min(newX, bounds.maxX - size);
+        newX = Math.min(newX, viewportWidth - panelWidth - 16); // 16px padding from edge
 
-        // Clamp Y
+        // Clamp Y - ensure panel stays within vertical bounds
         let newY = Math.max(position.y, bounds.minY);
-        newY = Math.min(newY, bounds.maxY - size);
+        newY = Math.min(newY, viewportHeight - panelHeight - 16); // 16px padding from edge
 
         return { x: newX, y: newY };
     }, [position, isCollapsed, bounds]);
@@ -226,47 +237,50 @@ export function CollapsibleUnscheduledPanel({
                                 { "opacity-[0.4]": isDragging }
                             )}
                         >
-                            <div className="flex h-full w-full items-center justify-center rounded-full bg-sky-300">
-                                <ClipboardList className="h-8 w-8 text-black" />
+                            <div className="flex h-full w-full items-center justify-center rounded-full bg-[#91EEFF]">
+                                <ClipboardList style={{ width: 30, height: 30, color: '#57606A' }} />
                             </div>
                         </Button>
                     </motion.div>
                 ) : (
                     // 4. The Expanded View (Full Panel)
-                    <motion.div
-                        // --- 4. Apply draggable props to the expanded panel as well ---
-                        key={"panel"}
-                        initial={{ opacity: 0, scale: 0.8, zIndex: 99999 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        transition={{ duration: 0.2 }}
-                        // --- 5. Use flex-col and remove padding ---
-                        className="w-[350px] bg-white shadow-lg rounded-lg font-sans flex flex-col"
-                    >
-                        <div
-                            className="flex justify-between items-center p-4 border-b cursor-grab active:cursor-grabbing bg-gray-50 rounded-t-lg"
-                            {...listeners}
-                            {...attributes}
-                            ref={setNodeRef}
+                    // Wrap in a div with droppable ref to capture drop events
+                    <div ref={setDroppableRef} className="relative z-[9999]" style={{ pointerEvents: 'auto' }}>
+                        <motion.div
+                            // --- 4. Apply draggable props to the expanded panel as well ---
+                            key={"panel"}
+                            initial={{ opacity: 0, scale: 0.8, zIndex: 99999 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            transition={{ duration: 0.2 }}
+                            // --- 5. Use flex-col and remove padding ---
+                            className="w-[350px] bg-white shadow-lg rounded-lg font-sans flex flex-col"
                         >
-                            <h3 className="font-semibold text-lg text-gray-700">Unscheduled Items</h3>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={(e) => {
-                                    e.stopPropagation(); // Prevent drag start when clicking close
-                                    setIsCollapsed(true);
-                                }}
-                                className="h-8 w-8 hover:bg-gray-200"
+                            <div
+                                className="flex justify-between items-center p-4 border-b cursor-grab active:cursor-grabbing bg-gray-50 rounded-t-lg"
+                                {...listeners}
+                                {...attributes}
+                                ref={setNodeRef}
                             >
-                                <X className="h-4 w-4" />
-                            </Button>
-                        </div>
-                        {/* --- 6. Add padding to ScrollArea and render memoized content --- */}
-                        <ScrollArea className="h-[50vh] p-4">
-                            {memoizedPanelContent}
-                        </ScrollArea>
-                    </motion.div>
+                                <h3 className="font-semibold text-lg text-gray-700">Unscheduled Items</h3>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={(e) => {
+                                        e.stopPropagation(); // Prevent drag start when clicking close
+                                        setIsCollapsed(true);
+                                    }}
+                                    className="h-8 w-8 hover:bg-gray-200"
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                            {/* --- 6. Add padding to ScrollArea and render memoized content --- */}
+                            <ScrollArea className="h-[50vh] p-4">
+                                {memoizedPanelContent}
+                            </ScrollArea>
+                        </motion.div>
+                    </div>
                 )}
             </AnimatePresence>
         </div>

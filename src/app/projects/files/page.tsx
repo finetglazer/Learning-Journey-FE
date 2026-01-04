@@ -230,8 +230,10 @@ export default function DocumentPage() {
     }, [nodeId, documentRepository, provider]);
 
 
-
     const canEdit = document?.role === "OWNER" || document?.role === "MEMBER";
+
+    // Only file creator or project owner can restore document versions
+    const canRestore = document?.role === "OWNER" || document?.createdByUserId === userId;
 
     // Check if editor is ready
     const isEditorReady = !!(provider && ydoc && document?.storageReference);
@@ -297,6 +299,7 @@ export default function DocumentPage() {
                         onLoadVersions={handleLoadVersions}
                         onRestoreVersion={handleRestoreVersion}
                         isRestoringVersion={isRestoringVersion}
+                        canRestore={canRestore}
 
                         documentTitle={document.name}
                         createdBy={document.createdBy}

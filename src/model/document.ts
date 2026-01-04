@@ -65,6 +65,7 @@ export interface NotionDocDTO {
     role: "OWNER" | "MEMBER";
     createdAt: string;
     updatedAt: string;
+    createdByUserId: number; // User ID of creator (for permission checks)
     createdBy: string;
 }
 

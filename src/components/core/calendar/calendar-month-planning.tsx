@@ -42,6 +42,7 @@ import {
     CalendarContextInterface,
 } from "./calendar-context";
 import { DayTasksPopover } from "./day-tasks-popover";
+import { BigTaskSubtasksPopover, ScheduledTask, UnscheduledTask as PopoverUnscheduledTask } from "./big-task-subtasks-popover";
 import { RoutineEditor } from "./routine-editor";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
 import { useRouter } from "next/navigation";
@@ -62,7 +63,7 @@ export function CalendarMonthPlanning() {
 
     const categories = ["Event", "Routine", "Big Task"];
     const weeks = getWeeksInMonth(currentDate.get("month"), currentDate.get("year"));
-    const MAX_VISIBLE_TASKS = 2;
+    const MAX_VISIBLE_TASKS = 3;
 
     const scrollContainerRef = useRef(null);
     const router = useRouter();
@@ -71,7 +72,10 @@ export function CalendarMonthPlanning() {
         open: boolean;
         id: string | null;
         tasks: (MonthPlanningBigTask | MonthPlanningEvent | string)[];
+        scheduledTasks?: ScheduledTask[];
+        unscheduledTasks?: PopoverUnscheduledTask[];
         bigTaskId?: number;
+        bigTaskName?: string;
         type?: string;
     }>({ open: false, id: null, tasks: [] });
     const [weekBigTaskPopoverState, setWeekBigTaskPopoverState] = useState<{
@@ -196,16 +200,28 @@ export function CalendarMonthPlanning() {
             .subscribe({
                 next: (res: any) => {
                     if (res?.status) {
+                        // Parse scheduled tasks from API response
+                        const scheduledTasks = (res?.data?.scheduledTasks || []).map((task: any) => ({
+                            ...task,
+                            type: "task",
+                            bigTaskId: bigTask?.id,
+                        }));
+                        // Parse unscheduled tasks from API response
+                        const unscheduledTasks = (res?.data?.unscheduledTasks || []).map((task: any) => ({
+                            ...task,
+                            type: "task",
+                            bigTaskId: bigTask?.id,
+                        }));
+
                         setPopoverState({
                             open: true,
                             id: "big-task-popover",
-                            tasks: (res?.data?.unscheduledTasks || []).map((unscheduledTask: any) => ({
-                                ...unscheduledTask,
-                                type: "task",
-                                bigTaskId: bigTask?.id,
-                            })),
+                            tasks: unscheduledTasks, // Keep for backward compatibility
+                            scheduledTasks: scheduledTasks,
+                            unscheduledTasks: unscheduledTasks,
                             bigTaskId: bigTask?.id,
-                            type: "unscheduled-task",
+                            bigTaskName: bigTask?.name,
+                            type: "big-task-subtasks",
                         });
 
                     } else {
@@ -540,7 +556,7 @@ export function CalendarMonthPlanning() {
                                         <TableCell className="font-semibold text-gray-700 align-top pt-4 w-15 border-r-2">Routine</TableCell>
                                         <TableCell colSpan={weeks.length} className="relative align-top p-2">
                                             <div className="animate-pulse rounded-lg bg-gray-200" style={{ height: '50px', width: '100%', marginBottom: '16px' }} />
-                                            <div className="animate-pulse rounded-lg bg-gray-200" style={{ height: '50px', width: '80%' }} />
+                                            <div className="animate-pulse rounded-lg bg-gray-200" style={{ height: '50px', width: '100%' }} />
                                         </TableCell>
                                     </TableRow>
                                     {/* Big Task Row Skeleton */}
@@ -629,16 +645,16 @@ export function CalendarMonthPlanning() {
                                                                         handleDoubleClick={handleDoubleClick as any}
                                                                         handleCellClick={handleBigTaskClick as any}
                                                                         calendarType="month-planning"
-                                                                        wrapperClassName={cn("h-[50px] mb-5 mt-4 z-[9]")}
+                                                                        wrapperClassName={cn("h-[50px] mb-2 mt-0.5 z-[9]")}
                                                                         wrapperStyle={{
                                                                             ...(currentType === "routine" && {
                                                                                 width: `${weeks.length * 100}%`,
                                                                                 position: "absolute",
-                                                                                top: `${i * 40}%`,
+                                                                                top: `${4 + i * 27}%`,
                                                                             }),
                                                                             ...(currentType === "big-task" && {
                                                                                 position: "absolute",
-                                                                                top: `${currentBigTaskIndex * 40}%`,
+                                                                                top: `${4 + currentBigTaskIndex * 27}%`,
                                                                                 left: `${bigTaskStyles[
                                                                                     (task as MonthPlanningBigTask).id as number
                                                                                 ]?.left || 0
@@ -776,30 +792,67 @@ export function CalendarMonthPlanning() {
                             />
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0 z-[999]" side="bottom" align="start">
-                            <DayTasksPopover
-                                tasks={popoverState.tasks}
-                                currentTaskType={popoverState.type}
-                                type="month-planning"
-                                scrollContainerRef={scrollContainerRef}
-                                setPopoverState={(popoverState) => setPopoverState(popoverState)}
+                            <BigTaskSubtasksPopover
+                                bigTaskName={popoverState.bigTaskName}
+                                bigTaskId={popoverState.bigTaskId}
+                                scheduledTasks={popoverState.scheduledTasks || []}
+                                unscheduledTasks={popoverState.unscheduledTasks || []}
                                 selectedTaskId={selectedItemId}
-                                setOpenRoutineEditor={setOpenRoutineEditor}
                                 setSelectedTaskId={setSelectedItemId}
                                 setEditingMonthPlanItem={setEditingItem}
                                 setEditorPosition={setEditorPosition}
-                                handleBigTaskClick={handleBigTaskClick as any} // Pass through
-                                editorOffset={{ x: 0, y: 0 }} // Offset from the invisible trigger
-                                onAddTaskClick={() => {
-                                    setEditingItem({
-                                        ...new UnscheduledTask(),
-                                        type: "task",
-                                        startTime: dayJsToISOString(toDayJs()),
-                                        endTime: dayJsToISOString(toDayJs()),
-                                        parentBigTaskId: popoverState?.bigTaskId,
-                                    });
-                                    // Close this popover when opening editor
+                                scrollContainerRef={scrollContainerRef}
+                                onClose={() => {
                                     setPopoverState({ open: false, id: null, tasks: [] });
-                                    // Also set editor position for the new task
+                                }}
+                                onQuickAddTask={(taskName) => {
+                                    // Directly create the unscheduled task via API
+                                    calendarRepository?.createUnscheduledTask({
+                                        monthPlanId: monthPlanId || 0,
+                                        bigTaskId: popoverState?.bigTaskId,
+                                    }, {
+                                        name: taskName,
+                                        note: "",
+                                    }).subscribe({
+                                        next: (res: any) => {
+                                            if (res?.status) {
+                                                toast.success(res?.msg || res?.message || "Task added!");
+                                                // Reload the big task's tasks to update the list
+                                                calendarRepository?.getBigTask({
+                                                    monthPlanId: monthPlanId || 0,
+                                                    bigTaskId: popoverState?.bigTaskId,
+                                                }).subscribe({
+                                                    next: (refreshRes: any) => {
+                                                        if (refreshRes?.status) {
+                                                            const scheduledTasks = (refreshRes?.data?.scheduledTasks || []).map((task: any) => ({
+                                                                ...task,
+                                                                type: "task",
+                                                                bigTaskId: popoverState?.bigTaskId,
+                                                            }));
+                                                            const unscheduledTasks = (refreshRes?.data?.unscheduledTasks || []).map((task: any) => ({
+                                                                ...task,
+                                                                type: "task",
+                                                                bigTaskId: popoverState?.bigTaskId,
+                                                            }));
+                                                            setPopoverState({
+                                                                ...popoverState,
+                                                                tasks: unscheduledTasks,
+                                                                scheduledTasks: scheduledTasks,
+                                                                unscheduledTasks: unscheduledTasks,
+                                                            });
+                                                        }
+                                                    },
+                                                    error: () => { },
+                                                });
+                                            } else {
+                                                toast.error(res?.msg || res?.message || "Failed to add task");
+                                            }
+                                        },
+                                        error: (err: any) => {
+                                            const message = err?.response?.data?.msg || err?.response?.data?.message || "Failed to add task";
+                                            toast.error(message);
+                                        },
+                                    });
                                 }}
                                 onTaskClick={() => {
                                     // Close this popover when a task inside is clicked

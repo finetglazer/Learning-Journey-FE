@@ -105,6 +105,9 @@ export interface CalendarContextInterface {
     isPanelBufferListDragging: boolean;
     setIsPanelBufferListDragging: Dispatch<SetStateAction<boolean>>;
 
+    // For showing cancel drop zone when dragging items
+    isDraggingItem: boolean;
+
     // For editing CREATED task and NEW task 
     editingTask: Task | Partial<Task> | null;
     setEditingTask: Dispatch<SetStateAction<Task | Partial<Task> | null>>;
@@ -221,6 +224,9 @@ export const CalendarContext = createContext<CalendarContextInterface>({
     setIsPanelDragging: () => { },
     isPanelBufferListDragging: false,
     setIsPanelBufferListDragging: () => { },
+
+    // For showing cancel drop zone when dragging items
+    isDraggingItem: false,
 
     // Editor state for new/created tasks
     editingTask: null,
@@ -655,6 +661,8 @@ export const useCalendarHooks = () => {
     const [isPanelDragging, setIsPanelDragging] = useState<boolean>(false);
     // For DRAGGING unscheduled buffer list panel
     const [isPanelBufferListDragging, setIsPanelBufferListDragging] = useState<boolean>(false);
+    // For showing cancel drop zone when dragging items
+    const [isDraggingItem, setIsDraggingItem] = useState<boolean>(false);
     // For editing CREATED task and NEW task 
     const [editingTask, setEditingTask] = useState<Task | Partial<Task> | null>(null);
     // For calendar loading state (Week/Month views)
@@ -859,6 +867,7 @@ export const useCalendarHooks = () => {
             setDraggingScheduledTaskId(null);
             setIsPanelDragging(false);
             setIsPanelBufferListDragging(false);
+            setIsDraggingItem(true); // Show cancel drop zone
         }
         if (event.active?.data?.current?.type === "project-task") {
             setDraggingUnscheduledTaskId(null);
@@ -867,6 +876,7 @@ export const useCalendarHooks = () => {
             setDraggingScheduledTaskId(null);
             setIsPanelDragging(false);
             setIsPanelBufferListDragging(false);
+            setIsDraggingItem(true); // Show cancel drop zone
         }
         else if (event.active?.data?.current?.type === "unscheduled-routine") {
             setDraggingUnscheduledTaskId(null);
@@ -875,6 +885,7 @@ export const useCalendarHooks = () => {
             setDraggingScheduledTaskId(null);
             setIsPanelDragging(false);
             setIsPanelBufferListDragging(false);
+            setIsDraggingItem(true); // Show cancel drop zone
         }
         else if (event.active?.id === "draggable-panel") {
             setDraggingUnscheduledTaskId(null);
@@ -1142,7 +1153,21 @@ export const useCalendarHooks = () => {
     };
 
     const onDragEnd = (event: DragEndEvent, forceToProceed?: boolean) => {
+        // Reset isDraggingItem state
+        setIsDraggingItem(false);
+
         const droppedCellId = String(event.over?.id || null);
+
+        // Check if dropped on cancel zone - cancel the drag for all item types
+        if (event.over?.id === 'drag-cancel-zone') {
+            // Reset all dragging states without performing any action
+            setDraggingProjectTaskId(null);
+            setDraggingUnscheduledTaskId(null);
+            setDraggingUnscheduledRoutineId(null);
+            setDraggingScheduledTaskId(null);
+            return;
+        }
+
         // For unscheduled tasks panel
         if (event.active.id === 'draggable-panel') {
             setPanelPosition(prev => ({
@@ -1235,11 +1260,22 @@ export const useCalendarHooks = () => {
         }
         // For unscheduled task
         if (!isNil(draggingUnscheduledTaskId)) {
-            const unscheduledTask = getTaskById(unscheduledMonthData, draggingUnscheduledTaskId, []);
-            if (!unscheduledTask) {
+            // Check if drop target is valid - if not, reset state and keep task in list
+            // Also check if dropped back onto the unscheduled panel - should cancel and keep in list
+            if (!event.over || !event.over.id ||
+                event.over.id === 'draggable-panel' ||
+                event.over.id === 'draggable-panel-buffer-list' ||
+                event.over.id === 'unscheduled-panel-dropzone' ||
+                String(event.over.id).startsWith('unscheduled-')) {
+                setDraggingUnscheduledTaskId(null);
                 return;
             }
-            const cellId = String(event.over?.id);
+            const unscheduledTask = getTaskById(unscheduledMonthData, draggingUnscheduledTaskId, []);
+            if (!unscheduledTask) {
+                setDraggingUnscheduledTaskId(null);
+                return;
+            }
+            const cellId = String(event.over.id);
             const newTask: Task = {
                 ...unscheduledTask,
                 id: draggingUnscheduledTaskId,
@@ -1301,11 +1337,22 @@ export const useCalendarHooks = () => {
         }
         // For unscheduled routine
         if (!isNil(draggingUnscheduledRoutineId)) {
-            const unscheduledRoutine = getRoutineById(unscheduledMonthData, draggingUnscheduledRoutineId, []);
-            if (!unscheduledRoutine) {
+            // Check if drop target is valid - if not, reset state and keep routine in list
+            // Also check if dropped back onto the unscheduled panel - should cancel and keep in list
+            if (!event.over || !event.over.id ||
+                event.over.id === 'draggable-panel' ||
+                event.over.id === 'draggable-panel-buffer-list' ||
+                event.over.id === 'unscheduled-panel-dropzone' ||
+                String(event.over.id).startsWith('unscheduled-')) {
+                setDraggingUnscheduledRoutineId(null);
                 return;
             }
-            const cellId = String(event.over?.id);
+            const unscheduledRoutine = getRoutineById(unscheduledMonthData, draggingUnscheduledRoutineId, []);
+            if (!unscheduledRoutine) {
+                setDraggingUnscheduledRoutineId(null);
+                return;
+            }
+            const cellId = String(event.over.id);
             // Derive day of week from the actual drop date
             const dropDate = toDayJs(cellId);
             const dayOfWeek = dropDate.format('dddd').toUpperCase(); // "MONDAY", "TUESDAY", etc.
@@ -1528,6 +1575,7 @@ export const useCalendarHooks = () => {
         setDraggingUnscheduledRoutineId,
         isPanelDragging,
         isPanelBufferListDragging,
+        isDraggingItem,
         setIsPanelDragging,
         setIsPanelBufferListDragging,
         panelBufferListPosition,
