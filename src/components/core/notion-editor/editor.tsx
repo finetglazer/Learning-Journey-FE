@@ -973,6 +973,7 @@ export function NotionEditor({
                     onResolveThread={handleResolveThread}
                     onDeleteThread={handleDeleteThread}
                     onReopenThread={handleReopenThread}
+                    onEditThread={(threadId, newContent) => updateThread(threadId, { content: newContent, updatedAt: new Date().toISOString() })}
                     onAddReply={handleAddReply}
                     onDeleteReply={handleDeleteReply}
                     currentUserId={currentUser.id}

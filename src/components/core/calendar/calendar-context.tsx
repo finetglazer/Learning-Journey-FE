@@ -119,6 +119,9 @@ export interface CalendarContextInterface {
     onDeleteCalendarItem: (itemId?: number | string | null) => void;
     getUserProjectTasks: () => void;
 
+    // Refresh key to force draggable re-registration after successful drops
+    bufferListRefreshKey: number;
+
     onDragStart: (event: DragStartEvent) => void;
     onDragEnd: (event: DragEndEvent) => void;
     handleCellClick: (event: React.MouseEvent<HTMLTableCellElement>, cellId: string, scrollContainerRef?: any) => void;
@@ -147,6 +150,7 @@ export interface CalendarContextInterface {
     onRoutineResizeConfirmUpdate: () => void;
     onRoutineResizeConfirmDetach: () => void;
     onRoutineResizeCancel: () => void;
+    justClosedRef: any;
 };
 
 export const CalendarContext = createContext<CalendarContextInterface>({
@@ -236,6 +240,7 @@ export const CalendarContext = createContext<CalendarContextInterface>({
     getDraggingProjectTask: () => { },
     getDraggableTaskOverlay: () => { },
     getUserProjectTasks: () => { },
+    bufferListRefreshKey: 0,
     onDeleteCalendarItem: () => { },
 
     onDragStart: () => { },
@@ -267,6 +272,8 @@ export const CalendarContext = createContext<CalendarContextInterface>({
     onRoutineResizeConfirmUpdate: () => { },
     onRoutineResizeConfirmDetach: () => { },
     onRoutineResizeCancel: () => { },
+
+    justClosedRef: null,
 });
 
 export const useCalendarHooks = () => {
@@ -323,6 +330,7 @@ export const useCalendarHooks = () => {
     }, [currentView, pathname, router, searchParams]);
     const [updatedTasks, setUpdatedTasks] = useState<Task[]>(reId([]));
     const [projectGroups, setProjectGroups] = useState<ProjectGroup[]>([]);
+    const [bufferListRefreshKey, setBufferListRefreshKey] = useState<number>(0);
     const [activeDragId, setActiveDragId] = useState<string | null>(null);
     const [editorPosition, setEditorPosition] = useState({ x: 0, y: 0 });
     const [panelPosition, setPanelPosition] = useState({ x: 20, y: 100 });
@@ -341,8 +349,8 @@ export const useCalendarHooks = () => {
 
     // Ref to store occurrence key (avoids closure issues)
     const resizingOccurrenceKeyRef = useRef<string | null>(null);
-
     const justClosedRef = useRef(false);
+    const justClosedTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -1086,8 +1094,9 @@ export const useCalendarHooks = () => {
     };
 
     const handleCellClick = (event: React.MouseEvent<HTMLTableCellElement>, cellId: string, scrollContainerRef?: any) => {
-        // Prevent opening if we just closed the editor
+        // Prevent opening if we just closed the editor OR if a form is already open
         if (justClosedRef.current) return;
+        if (editingTask) return; // Don't open a new form if one is already open
 
         if ((event.target as HTMLElement).closest('.cursor-grab')) {
             return;
@@ -1232,12 +1241,17 @@ export const useCalendarHooks = () => {
                 })
                 .pipe(finalize(() => {
                     setDraggingProjectTaskId(null);
+                    // Always increment refresh key to allow re-dragging, even after errors
+                    setBufferListRefreshKey(prev => prev + 1);
                     handleReload(true);
                 }))
                 .subscribe({
                     next: (res: any) => {
                         const success = res?.status;
-                        if (success) { }
+                        if (success) {
+                            // Refresh buffer list to get updated data
+                            getUserProjectTasks();
+                        }
                         else {
                             setAlertMessage({
                                 type: "warning",
@@ -1474,12 +1488,19 @@ export const useCalendarHooks = () => {
             setDraggingScheduledTaskId(null);
             return;
         }
-        // For scheduled items
+        // For scheduled items - guard against missing draggingScheduledTaskId or scheduledItem
+        if (isNil(draggingScheduledTaskId)) {
+            return;
+        }
         const scheduledItem = updatedTasks.find(task => task.id === draggingScheduledTaskId);
+        if (!scheduledItem) {
+            setDraggingScheduledTaskId(null);
+            return;
+        }
         const newEndTime = toDayJs(droppedCellId).add(toDayJs(scheduledItem?.endTime).diff(toDayJs(scheduledItem?.startTime)));
         // Temporarily update updatedTasks
         const newUpdatedTasks = [...updatedTasks];
-        const removeIndex = updatedTasks.findIndex(task => task.id === (scheduledItem as Task).id);
+        const removeIndex = updatedTasks.findIndex(task => task.id === scheduledItem.id);
         if (removeIndex !== -1) {
             newUpdatedTasks.splice(removeIndex, 1);
         }
@@ -1539,6 +1560,7 @@ export const useCalendarHooks = () => {
         onNextDateRangeNavigatorClick,
         onPreviousDateRangeNavigatorClick,
         getUserProjectTasks,
+        bufferListRefreshKey,
         updatedTasks,
         setUpdatedTasks,
         editorPosition,
@@ -1601,8 +1623,15 @@ export const useCalendarHooks = () => {
         monthPlanId,
         setMonthPlanId,
         handleTaskEditorClose: () => {
+            // Cancel any pending timeout to prevent race condition
+            if (justClosedTimeoutRef.current) {
+                clearTimeout(justClosedTimeoutRef.current);
+            }
             justClosedRef.current = true;
-            setTimeout(() => { justClosedRef.current = false }, 200);
+            justClosedTimeoutRef.current = setTimeout(() => {
+                justClosedRef.current = false;
+                justClosedTimeoutRef.current = null;
+            }, 700);
         },
 
         // Resize state and handlers
@@ -1982,6 +2011,8 @@ export const useCalendarHooks = () => {
             setPendingRoutineResize(null);
             handleReload(true);
         },
+
+        justClosedRef,
     };
 };
 

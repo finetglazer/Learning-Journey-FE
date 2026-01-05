@@ -20,10 +20,13 @@ export interface TiptapDocument {
 // Comment system
 export interface CommentReply {
     replyId: string;
-    userId: string;
+    userId?: string;
+    authorId?: string;       // Alternative field name from backend
     name?: string;
-    userName: string;
+    userName?: string;
+    authorName?: string;     // Alternative field name from backend
     userAvatar?: string;
+    authorAvatar?: string;   // Alternative field name from backend
     avatar?: string;
     content: string;
     createdAt: string;

@@ -79,18 +79,46 @@ export function TaskDetailDrawer({ task, members }: { task: PM_Task, members: Te
         getFiles,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
-    // 1. Resolve Task Owner (first assignee)
-    const ownerId = (taskDetail?.taskInfo?.assignees || []).length > 0 ? taskDetail?.taskInfo?.assignees[0].userId : null;
-    const taskOwner = members.find(member => member.userId === ownerId);
+    // 1. Resolve Task Assignees (supports multiple assignees)
+    const assignees = taskDetail?.taskInfo?.assignees || [];
+    const taskAssignees = assignees
+        .map(assignee => members.find(member => member.userId === assignee.userId))
+        .filter((member): member is TeamMember => member !== undefined);
 
-    const ownerDisplay = taskOwner
+    const MAX_VISIBLE_AVATARS = 3;
+    const visibleAssignees = taskAssignees.slice(0, MAX_VISIBLE_AVATARS);
+    const remainingCount = taskAssignees.length - MAX_VISIBLE_AVATARS;
+
+    const ownerDisplay = taskAssignees.length > 0
         ? (
             <div className="flex items-center space-x-2">
-                <Avatar className="w-5 h-5">
-                    <AvatarImage src={taskOwner.avatarUrl} />
-                    <AvatarFallback>{taskOwner.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <span>{taskOwner.name}</span>
+                {/* Stacked Avatars */}
+                <div className="flex items-center -space-x-2">
+                    {visibleAssignees.map((assignee, index) => (
+                        <Avatar
+                            key={assignee.userId}
+                            className="w-6 h-6 border-2 border-white ring-1 ring-gray-200"
+                            style={{ zIndex: MAX_VISIBLE_AVATARS - index }}
+                        >
+                            <AvatarImage src={assignee.avatarUrl} />
+                            <AvatarFallback className="text-xs bg-gray-100">{assignee.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                    ))}
+                    {remainingCount > 0 && (
+                        <div
+                            className="w-6 h-6 rounded-full bg-gray-200 border-2 border-white ring-1 ring-gray-200 flex items-center justify-center text-xs font-medium text-gray-600"
+                            style={{ zIndex: 0 }}
+                        >
+                            +{remainingCount}
+                        </div>
+                    )}
+                </div>
+                {/* Display first assignee name, or count if multiple */}
+                <span className="text-sm">
+                    {taskAssignees.length === 1
+                        ? taskAssignees[0].name
+                        : `${taskAssignees[0].name} +${taskAssignees.length - 1}`}
+                </span>
             </div>
         )
         : <span className="text-gray-400">Unassigned</span>;

@@ -20,7 +20,9 @@ import { formService } from "@/service/form-service"
 import { isNil } from "lodash"
 import {
     Calendar,
+    Calendar1,
     ChevronDown,
+    Clock,
     ListCheck,
     Pencil,
     Plus,
@@ -81,11 +83,15 @@ export const TaskEditor = ({
     const [openStartTimePicker, setOpenStartTimePicker] = useState<boolean>(false);
     const [openEndTimePicker, setOpenEndTimePicker] = useState<boolean>(false);
     const [openSpecificDatePicker, setOpenSpecificDatePicker] = useState<boolean>(false);
+    const [openDatePicker, setOpenDatePicker] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isTitleEmpty, setIsTitleEmpty] = useState<boolean>(false);
     const [showDetachConfirm, setShowDetachConfirm] = useState<boolean>(false);
     const editorRef = useRef<HTMLDivElement>(null);
 
+    const {
+        handleCellClick
+    } = useContext(CalendarContext);
     // Click outside handler
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -111,7 +117,11 @@ export const TaskEditor = ({
                 return;
             }
 
+            // Call handleTaskEditorClose FIRST on mousedown to set the "just closed" flag
+            // This prevents handleCellClick (which fires on click event) from opening a new form
+            // handleTaskEditorClose?.();
             onClose?.();
+            // handleCellClick();
         };
 
         // Use mousedown to capture the event before click (often better for outside click detection)
@@ -144,6 +154,7 @@ export const TaskEditor = ({
     const {
         monthPlanId,
         currentDate,
+        handleTaskEditorClose,
     } = useContext(CalendarContext);
 
     // ... existing useEffect ...
@@ -731,6 +742,43 @@ export const TaskEditor = ({
 
                     <div className="border-t border-gray-200 my-4"></div>
 
+                    {/* Date Display Section: Editable date picker for task, event, and routine (both creation and editing) */}
+                    {['task', 'event', 'routine', 'project_work'].includes(model?.type || '') && currentView !== 'month-planning' && (
+                        <>
+                            <div className="relative flex items-center space-x-3 text-gray-500 px-2 mb-4 cursor-pointer" onClick={() => setOpenDatePicker(!openDatePicker)}>
+                                <Calendar1 size={17} className="text-gray-500" />
+                                <span className="text-sm text-gray-500 hover:text-gray-700">
+                                    {toDayJs(model?.startTime).format('dddd, MMMM D, YYYY')}
+                                </span>
+                                <DateTimePicker
+                                    isOpen={openDatePicker}
+                                    setIsOpen={setOpenDatePicker}
+                                    model={model}
+                                    updateModel={(fieldName, value) => {
+                                        // When date changes, update both startTime and endTime to the same day
+                                        if (fieldName === 'startTime') {
+                                            const newDate = toDayJs(value, 0);
+                                            const oldEndTime = toDayJs(model?.endTime, 0);
+                                            // Preserve the time from endTime but set the date to the new date
+                                            const newEndTime = newDate
+                                                .hour(oldEndTime.hour())
+                                                .minute(oldEndTime.minute())
+                                                .second(oldEndTime.second());
+                                            updateModel('startTime', value);
+                                            updateModel('endTime', dayJsToISOString(newEndTime, 0));
+                                        } else {
+                                            updateModel(fieldName, value);
+                                        }
+                                    }}
+                                    taskType={model?.type}
+                                    fieldName={"startTime"}
+                                    type={'date-only'}
+                                />
+                            </div>
+                            <div className="border-t border-gray-200 my-4"></div>
+                        </>
+                    )}
+
                     {/* Status Dropdown Section: Only show for tasks (not routines or events) */}
                     {(currentView !== 'month-planning') && model?.type !== 'routine' && model?.type !== 'event' && (
                         <>
@@ -746,17 +794,14 @@ export const TaskEditor = ({
                     )}
 
                     {/* Time Inputs Section */}
-                    {/* Create new event in MONTH-PLANNING MODE */}
-                    {currentView === 'month-planning' && currentTaskType === 'event' && !model?.id && (
+                    {/* Create/Edit event in MONTH-PLANNING MODE */}
+                    {currentView === 'month-planning' && currentTaskType === 'event' && (
                         <>
-                            <div className="relative flex items-center space-x-3 text-gray-500 px-2 cursor-pointer">
-                                <Calendar size={20} onClick={() => setOpenSpecificDatePicker(!openSpecificDatePicker)} />
-                                <Input
-                                    placeholder="Start hour"
-                                    className="border-none mt-0.25 focus:ring-0 shadow-none text-sm bg-transparent p-0"
-                                    value={isoToStandardTime(model?.specificDate).substring(0, 5)}
-                                    readOnly
-                                />
+                            <div className="relative flex items-center space-x-3 text-gray-500 px-2 cursor-pointer mb-4" onClick={() => setOpenSpecificDatePicker(!openSpecificDatePicker)}>
+                                <Calendar1 size={17} className="text-gray-500" />
+                                <span className="text-sm text-gray-500 hover:text-gray-700">
+                                    {toDayJs(model?.specificDate).format('dddd, MMMM D, YYYY')}
+                                </span>
                                 <DateTimePicker
                                     isOpen={openSpecificDatePicker}
                                     setIsOpen={setOpenSpecificDatePicker}
@@ -772,7 +817,7 @@ export const TaskEditor = ({
 
                             <div className="grid grid-cols-2">
                                 <div className="relative flex items-center space-x-3 text-gray-500 px-2 cursor-pointer">
-                                    <Calendar size={20} onClick={() => setOpenStartTimePicker(!openStartTimePicker)} />
+                                    <Clock size={20} onClick={() => setOpenStartTimePicker(!openStartTimePicker)} />
                                     <Input
                                         placeholder="Start hour"
                                         className="border-none mt-0.25 focus:ring-0 shadow-none text-sm bg-transparent p-0"
@@ -790,7 +835,7 @@ export const TaskEditor = ({
                                     />
                                 </div>
                                 <div className="relative flex items-center space-x-3 text-gray-500 px-2 border-l border-gray-200 cursor-pointer">
-                                    <Calendar size={20} onClick={() => setOpenEndTimePicker(!openEndTimePicker)} />
+                                    <Clock size={20} onClick={() => setOpenEndTimePicker(!openEndTimePicker)} />
                                     <Input
                                         placeholder="End hour"
                                         className="border-none focus:ring-0 shadow-none text-sm bg-transparent p-0"
@@ -812,18 +857,18 @@ export const TaskEditor = ({
                             <div className="border-t border-gray-200 my-4"></div>
                         </>
                     )}
-                    {(currentView === 'month-planning' && (['task', 'event'].includes(currentTaskType || ""))) && !(model?.id && currentTaskType === 'event') ? null : (
+                    {(currentView === 'month-planning' && currentTaskType === 'event') ? null : (
                         <>
                             <div className="grid grid-cols-2">
                                 <div className="relative flex items-center space-x-3 text-gray-500 px-2 cursor-pointer">
-                                    <Calendar size={20} onClick={() => setOpenStartTimePicker(!openStartTimePicker)} />
+                                    {model.type === 'big-task' && currentView === 'month-planning' ? <Calendar1 size={20} onClick={() => setOpenStartTimePicker(!openStartTimePicker)} /> : <Clock size={20} onClick={() => setOpenStartTimePicker(!openStartTimePicker)} />}
                                     <Input
                                         placeholder="Start hour"
                                         className="border-none mt-0.25 focus:ring-0 shadow-none text-sm bg-transparent p-0"
                                         value={
-                                            model.type === 'routine'
-                                                ? isoToHHMM(model.startTime)
-                                                : (currentTaskType === 'big-task' ? isoToStandardTime(model.startTime).substring(0, 5) : isoToStandardTime(model.startTime))
+                                            currentTaskType === 'big-task'
+                                                ? isoToStandardTime(model.startTime).substring(0, 5)
+                                                : isoToHHMM(model.startTime)
                                         }
                                         readOnly
                                     />
@@ -834,18 +879,18 @@ export const TaskEditor = ({
                                         updateModel={updateModel}
                                         taskType={model?.type}
                                         fieldName={"startTime"}
-                                        type={currentTaskType === 'big-task' ? 'date-only' : (model.type === 'routine' ? 'time-only' : 'date-time')}
+                                        type={currentTaskType === 'big-task' ? 'date-only' : 'time-only'}
                                     />
                                 </div>
                                 <div className="relative flex items-center space-x-3 text-gray-500 px-2 border-l border-gray-200 cursor-pointer">
-                                    <Calendar size={20} onClick={() => setOpenEndTimePicker(!openEndTimePicker)} />
+                                    {model.type === 'big-task' && currentView === 'month-planning' ? <Calendar1 size={20} onClick={() => setOpenEndTimePicker(!openEndTimePicker)} /> : <Clock size={20} onClick={() => setOpenEndTimePicker(!openEndTimePicker)} />}
                                     <Input
                                         placeholder="End hour"
                                         className="border-none focus:ring-0 shadow-none text-sm bg-transparent p-0"
                                         value={
-                                            model.type === 'routine'
-                                                ? isoToHHMM(model.endTime)
-                                                : (currentTaskType === 'big-task' ? isoToStandardTime(model.endTime).substring(0, 5) : isoToStandardTime(model.endTime))
+                                            currentTaskType === 'big-task'
+                                                ? isoToStandardTime(model.endTime).substring(0, 5)
+                                                : isoToHHMM(model.endTime)
                                         }
                                         readOnly
                                     />
@@ -854,9 +899,9 @@ export const TaskEditor = ({
                                         setIsOpen={setOpenEndTimePicker}
                                         model={model}
                                         updateModel={updateModel}
-                                        taskType={model?.type}  // Handle changing time of routines (scheduled)
+                                        taskType={model?.type}
                                         fieldName={"endTime"}
-                                        type={currentTaskType === 'big-task' ? 'date-only' : (model.type === 'routine' ? 'time-only' : 'date-time')}
+                                        type={currentTaskType === 'big-task' ? 'date-only' : 'time-only'}
                                     />
                                 </div>
                             </div>

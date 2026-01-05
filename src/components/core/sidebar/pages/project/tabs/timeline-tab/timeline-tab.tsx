@@ -939,6 +939,18 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         };
     }, []);
 
+    // Auto-scroll to "Today" when the timeline is first loaded
+    useEffect(() => {
+        if (!fetching && timelineScrollRef.current) {
+            // Small delay to ensure layout is stable before scrolling
+            const timer = setTimeout(() => {
+                jumpToToday();
+            }, 100);
+
+            return () => clearTimeout(timer);
+        }
+    }, [fetching]);
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (dependencyBeingHovered && (e.key === 'Delete' || e.key === 'Backspace')) {

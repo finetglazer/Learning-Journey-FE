@@ -671,7 +671,7 @@ export function CalendarMonthPlanning() {
                                                             )
                                                         })}
 
-                                                        {(tasksForCell.length > MAX_VISIBLE_TASKS || (currentType === "big-task" && monthPlanningBigTasks.length > MAX_VISIBLE_TASKS && !index)) && (
+                                                        {((currentType !== "big-task" && tasksForCell.length > MAX_VISIBLE_TASKS) || (currentType === "big-task" && monthPlanningBigTasks.length > MAX_VISIBLE_TASKS && index === 0)) && (
                                                             <Popover
                                                                 open={currentType === 'event' ? weekEventPopoverState.open : currentType === 'big-task' ? weekBigTaskPopoverState.open : weekRoutinePopoverState.open}
                                                             >
@@ -868,7 +868,7 @@ export function CalendarMonthPlanning() {
                             updateRoutineList={updateRoutineList}
                             onClose={() => {
                                 justClosedRef.current = true;
-                                setTimeout(() => { justClosedRef.current = false }, 200);
+                                setTimeout(() => { justClosedRef.current = false }, 700);
 
                                 setOpenRoutineEditor(false);
                                 setEditingItem(null);
@@ -885,7 +885,7 @@ export function CalendarMonthPlanning() {
                         setAlertMessage={setAlertMessage}
                         onClose={() => {
                             justClosedRef.current = true;
-                            setTimeout(() => { justClosedRef.current = false }, 200);
+                            setTimeout(() => { justClosedRef.current = false }, 700);
 
                             setEditingItem(null);
                             setEditingTask(null);

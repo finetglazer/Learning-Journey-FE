@@ -126,22 +126,38 @@ export const CalendarDayView = () => {
                     />
                 </div>
             </CardHeader>
-            {/* ====== Calendar Table ====== */}
-            <CardContent className="p-0 h-full">
-                <div className="-mt-6">
-                    {Object.keys(calendarMap).map((id: string) => {
-                        return (calendarMap[id] || []).filter(task => task?.type === "memorable_event").map((task: Task, index: number) => {
-                            return (
+
+            {/* ====== All-Day / Memorable Events Section (Google Calendar Style) ====== */}
+            {(() => {
+                const memorableEvents = Object.keys(calendarMap).flatMap((id: string) =>
+                    (calendarMap[id] || []).filter(task => task?.type === "memorable_event")
+                );
+                // Remove duplicates by id
+                const uniqueEvents = memorableEvents.filter((task, index, self) =>
+                    index === self.findIndex((t) => t.id === task.id)
+                );
+
+                if (uniqueEvents.length === 0) return null;
+
+                return (
+                    <div className="sticky top-0 z-30 bg-white border-b border-gray-200 px-4">
+                        <div className="py-1 space-y-1 ml-[70px]">
+                            {uniqueEvents.map((task: Task, index: number) => (
                                 <DraggableTask
-                                    key={task.id?.toString() || "draggable-task-".concat(index.toString())} // Use task.id for a stable key
+                                    key={task.id?.toString() || "memorable-event-".concat(index.toString())}
                                     task={{ ...task, type: (task?.type || "").toLowerCase() }}
                                     draggable={false}
-                                    wrapperClassName="truncate rounded-lg pl-2 mt-1 mb-1"
+                                    wrapperClassName="truncate rounded-md px-2 py-1 pt-2"
+                                    wrapperStyle={{ width: '92.3%' }}
                                 />
-                            );
-                        })
-                    })}
-                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            })()}
+
+            {/* ====== Calendar Table ====== */}
+            <CardContent className="p-0 h-full">
                 {/* Scroll container */}
                 <div ref={scrollContainerRef} className="relative h-[85vh] overflow-y-scroll overflow-x-hidden">
                     {/* --- START: New Dynamic Sleep Time Rectangles --- */}
@@ -319,8 +335,9 @@ export const CalendarDayView = () => {
                         task={{ ...editingTask, type: (editingTask?.type || "").toLowerCase() }}
                         setAlertMessage={setAlertMessage}
                         onClose={() => {
+                            // Set flag to prevent handleCellClick from opening a new form
                             handleTaskEditorClose();
-
+                            // Close the form immediately
                             setEditingTask(null);
                             setSelectedTaskId(null);
                         }}
