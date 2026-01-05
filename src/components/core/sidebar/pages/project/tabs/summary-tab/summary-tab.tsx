@@ -3,7 +3,7 @@
 import { ActiveRiskSummary, DeliverableProgress, ProjectTimelineType, TaskStats, TeammateWorkload } from "@/model/project-management";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
 import { isNil } from "lodash";
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { TeamProjectContext, TeamProjectContextProps } from "../../team-project-context";
 import { ActiveRisksList } from "./active-list-risk";
@@ -18,11 +18,19 @@ export interface SummaryTabProps {
 };
 
 export const SummaryTab = ({ }: SummaryTabProps) => {
-    const [taskStats, setTaskStats] = useState<TaskStats | null>(null);
-    const [projectTimeline, setProjectTimeline] = useState<ProjectTimelineType | null>(null);
-    const [activeRiskSummary, setActiveRiskSummary] = useState<ActiveRiskSummary | null>(null);
-    const [deliverableProgresses, setDeliverableProgresses] = useState<DeliverableProgress[]>([]);
-    const [teammateWorkloads, setTeammateWorkloads] = useState<TeammateWorkload[]>([]);
+    const [summaryData, setSummaryData] = useState<{
+        taskStats: TaskStats | null,
+        projectTimeline: ProjectTimelineType | null,
+        activeRiskSummary: ActiveRiskSummary | null,
+        deliverableProgresses: DeliverableProgress[],
+        teammateWorkloads: TeammateWorkload[]
+    }>({
+        taskStats: null,
+        projectTimeline: null,
+        activeRiskSummary: null,
+        deliverableProgresses: [],
+        teammateWorkloads: []
+    });
 
     const {
         selectedProject,
@@ -32,128 +40,45 @@ export const SummaryTab = ({ }: SummaryTabProps) => {
         projectRepository,
     } = useContext<AppContextProps>(AppContext);
 
-    const getTaskStats = useCallback(() => {
-        if (!projectRepository) return;
-        projectRepository.getTaskStats({
-            projectId: selectedProject?.id as number,
+    useEffect(() => {
+        if (!selectedProject || !projectRepository) return;
+
+        const sub = projectRepository.getProjectDashboardSummary({
+            projectId: selectedProject.id
         }).subscribe({
-            next: res => {
-                if (res?.status) {
-                    setTaskStats({
-                        byStatus: res?.data?.by_status,
-                        byDeadline: res?.data?.by_deadline,
+            next: (res) => {
+                if (res?.status) { // derived from map(res => res?.data) in repo
+                    setSummaryData({
+                        taskStats: {
+                            by_status: res?.data?.taskStats?.by_status,
+                            by_deadline: res?.data?.taskStats?.by_deadline
+                        },
+                        projectTimeline: res?.data?.timeline,
+                        activeRiskSummary: res?.data?.riskSummary,
+                        deliverableProgresses: res?.data?.deliverableProgress || [],
+                        teammateWorkloads: res?.data?.teammateWorkload || []
                     });
                 }
-                else {
-                    toast.error(res?.message || res?.msg);
-                }
             },
-            error: err => { },
+            error: (err) => {
+                console.error("Failed to fetch dashboard summary", err);
+                toast.error("Failed to load dashboard summary");
+            }
         });
-    }, [
-        selectedProject,
-        projectRepository,
-    ]);
 
-    const getProjectTimeline = useCallback(() => {
-        if (!projectRepository) return;
-        projectRepository.getProjectTimeline({
-            projectId: selectedProject?.id as number,
-        }).subscribe({
-            next: res => {
-                if (res?.status) {
-                    setProjectTimeline(res?.data);
-                }
-                else {
-                    toast.error(res?.message || res?.msg);
-                }
-            },
-            error: err => { },
-        });
-    }, [
-        selectedProject,
-        projectRepository,
-    ]);
+        return () => sub.unsubscribe();
+    }, [selectedProject, projectRepository]);
 
-    const getActiveRiskSummary = useCallback(() => {
-        if (!projectRepository) return;
-        projectRepository.getActiveRisks({
-            projectId: selectedProject?.id as number,
-        }).subscribe({
-            next: res => {
-                if (res?.status) {
-                    setActiveRiskSummary(res?.data);
-                }
-                else {
-                    toast.error(res?.message || res?.msg);
-                }
-            },
-            error: err => { },
-        });
-    }, [
-        selectedProject,
-        projectRepository,
-    ]);
-
-    const getDeliverableProgress = useCallback(() => {
-        if (!projectRepository) return;
-        projectRepository.getDeliverableProgress({
-            projectId: selectedProject?.id as number,
-        }).subscribe({
-            next: res => {
-                if (res?.status) {
-                    setDeliverableProgresses(res?.data?.progress || []);
-                }
-                else {
-                    toast.error(res?.message || res?.msg);
-                }
-            },
-            error: err => { },
-        });
-    }, [
-        selectedProject,
-        projectRepository,
-    ]);
-
-    const getTeammateWorkload = useCallback(() => {
-        if (!projectRepository) return;
-        projectRepository.getTeammateWorkload({
-            projectId: selectedProject?.id as number,
-        }).subscribe({
-            next: res => {
-                if (res?.status) {
-                    setTeammateWorkloads(res?.data?.workload || []);
-                }
-                else {
-                    toast.error(res?.message || res?.msg);
-                }
-            },
-            error: err => { },
-        });
-    }, [
-        selectedProject,
-        projectRepository,
-    ]);
-
-    // Get metrics
-    useEffect(() => {
-        if (!selectedProject) {
-            return;
-        }
-        getTaskStats();
-        getProjectTimeline();
-        getActiveRiskSummary();
-        getDeliverableProgress();
-        getTeammateWorkload();
-    }, [selectedProject]);
+    // Destructure for render
+    const { taskStats, projectTimeline, activeRiskSummary, deliverableProgresses, teammateWorkloads } = summaryData;
 
     return (
         <div className="mt-5">
             <TaskMetricsDashboard
-                tasksCompleted={!isNil(taskStats?.byDeadline.completed) ? taskStats?.byDeadline.completed : "---"}
-                tasksDueSoon={!isNil(taskStats?.byDeadline.dueSoon) ? taskStats?.byDeadline.dueSoon : "---"}
-                tasksOverdue={!isNil(taskStats?.byDeadline.overdue) ? taskStats?.byDeadline.overdue : "---"}
-                unassignedTasks={!isNil(taskStats?.byDeadline.unassigned) ? taskStats?.byDeadline.unassigned : "---"}
+                tasksCompleted={!isNil(taskStats?.by_deadline.completed) ? taskStats?.by_deadline.completed : "---"}
+                tasksDueSoon={!isNil(taskStats?.by_deadline.dueSoon) ? taskStats?.by_deadline.dueSoon : "---"}
+                tasksOverdue={!isNil(taskStats?.by_deadline.overdue) ? taskStats?.by_deadline.overdue : "---"}
+                unassignedTasks={!isNil(taskStats?.by_deadline.unassigned) ? taskStats?.by_deadline.unassigned : "---"}
             />
 
             <ProjectTimeline
@@ -162,10 +87,10 @@ export const SummaryTab = ({ }: SummaryTabProps) => {
 
             <div className="grid grid-cols-[48%_51%] items-center gap-4 mt-7">
                 <OverallStatusChart
-                    todo={!isNil(taskStats?.byStatus.toDo) ? taskStats.byStatus.toDo : "---"}
-                    inReview={!isNil(taskStats?.byStatus.inReview) ? taskStats.byStatus.inReview : "---"}
-                    inProgress={!isNil(taskStats?.byStatus.inProgress) ? taskStats.byStatus.inProgress : "---"}
-                    done={!isNil(taskStats?.byStatus.done) ? taskStats.byStatus.done : "---"}
+                    todo={!isNil(taskStats?.by_status.toDo) ? taskStats.by_status.toDo : "---"}
+                    inReview={!isNil(taskStats?.by_status.inReview) ? taskStats.by_status.inReview : "---"}
+                    inProgress={!isNil(taskStats?.by_status.inProgress) ? taskStats.by_status.inProgress : "---"}
+                    done={!isNil(taskStats?.by_status.done) ? taskStats.by_status.done : "---"}
                 />
 
                 <ActiveRisksList

@@ -109,8 +109,8 @@ export type TaskStatsByStatus = {
 };
 
 export type TaskStats = {
-    byStatus: TaskStatsByStatus;
-    byDeadline: TaskStatsByDeadline;
+    by_status: TaskStatsByStatus;
+    by_deadline: TaskStatsByDeadline;
 };
 
 export type TimelineMilestone = {

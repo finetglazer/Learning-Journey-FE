@@ -214,6 +214,16 @@ export class ProjectRepository extends BaseRepository {
             .pipe(map(res => res?.data));
     };
 
+
+    /**
+     * Retrieves consolidated dashboard summary including stats, timeline, risks, progress, and workload.
+     * Corresponds to: GET /{projectId}/summary/dashboard
+     */
+    public getProjectDashboardSummary = (params: { projectId: number | string }): Observable<any> => {
+        return this.http.get(`/${params.projectId}/summary/dashboard`)
+            .pipe(map(res => res?.data));
+    };
+
     // RISK FUNCTIONS
 
     /**
