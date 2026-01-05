@@ -4,7 +4,7 @@ import { cn, isoToHHMM, toDayJs } from '@/lib/utils';
 import { MonthPlanningBigTask, MonthPlanningEvent, Task } from '@/model/task';
 import { Tooltip } from 'antd';
 import { Bookmark } from 'lucide-react';
-import React, { CSSProperties, Dispatch, SetStateAction, useEffect, useState } from 'react';
+import React, { CSSProperties, Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 
 export interface BaseTaskProps {
     task: Task | MonthPlanningBigTask | MonthPlanningEvent | string;
@@ -56,6 +56,7 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
     // Get the ID, whether it's a string or number
     const taskId = typeof task === 'string' ? task : task?.id;
     const [routineNewName, setRoutineNewName] = useState<string>(typeof task === "string" ? task : "");
+    const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     // Helper function to build the tooltip title
     const getTooltipTitle = () => {
@@ -164,10 +165,24 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                 )}
                     style={{ ...wrapperStyle }}
                     onDoubleClick={(e) => {
+                        // Cancel any pending single-click timer
+                        if (clickTimerRef.current) {
+                            clearTimeout(clickTimerRef.current);
+                            clickTimerRef.current = null;
+                        }
                         setOpenRoutineEditor?.(false);
                         handleDoubleClick?.(e, typeof task === "string" ? "" : task?.id as number, task as any, scrollContainerRef);
                     }}
-                    onClick={(e) => handleCellClick?.(e, task as MonthPlanningBigTask, scrollContainerRef)}
+                    onClick={(e) => {
+                        // Only trigger single-click after a short delay to check for double-click
+                        if (clickTimerRef.current) {
+                            clearTimeout(clickTimerRef.current);
+                        }
+                        clickTimerRef.current = setTimeout(() => {
+                            handleCellClick?.(e, task as MonthPlanningBigTask, scrollContainerRef);
+                            clickTimerRef.current = null;
+                        }, 300);
+                    }}
                 >
                     {typeof task !== "string" && (
                         <span className={cn("font-bold text-slate-700 text-[0.9rem]! text-base text-center sm:text-left truncate w-[110%]", titleClassName)}>
@@ -205,7 +220,7 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                 className={cn("border-3 relative border-sky-300 bg-stone-50 cursor-pointer rounded-lg p-4 w-full",
                     { "border-[#E62E7B]": type === "task" || type === "big-task" || type === "project_work" },
                     { "border-[#68DE79]": type === "routine" },
-                    { "border-[#91EEFF] !h-[50px]": type === "memorable_event" },
+                    { "border-[#91EEFF] !h-[25px]": type === "memorable_event" },
                     wrapperClassName,
                 )}
                 style={{ ...wrapperStyle }}
@@ -241,7 +256,7 @@ export const BaseTask: React.FC<BaseTaskProps> = ({
                         </div>
                     </div>
                 )}
-                <div className={cn("mt-3 pb-2 text-slate-600 font-bold", { "text-center text-xl -mt-2": type === "memorable_event" }, titleClassName)}>
+                <div className={cn("mt-3 pb-2 text-slate-600 font-bold", { "text-center text-sm -mt-2": type === "memorable_event" }, titleClassName)}>
                     <span>{(task as Task)?.name}</span>
                 </div>
                 <div className={cn("mt-2 text-slate-600", descriptionClassName)}>

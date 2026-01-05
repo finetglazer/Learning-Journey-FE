@@ -17,8 +17,9 @@ interface CommentSidebarProps {
     selectedThreadId?: string;
     onSelectThread: (threadId: string) => void;
     onResolveThread: (threadId: string) => void;
-    onReopenThread: (threadId: string) => void; // ✅ NEW
+    onReopenThread: (threadId: string) => void;
     onDeleteThread: (threadId: string) => void;
+    onEditThread: (threadId: string, newContent: string) => void; // ✅ ADD THIS
     onAddReply: (threadId: string, content: string) => void;
     onDeleteReply: (threadId: string, replyId: string) => void;
     currentUserId: string;
@@ -26,17 +27,18 @@ interface CommentSidebarProps {
 }
 
 export function CommentSidebar({
-                                   threads,
-                                   selectedThreadId,
-                                   onSelectThread,
-                                   onResolveThread,
-                                   onReopenThread, // ✅ NEW
-                                   onDeleteThread,
-                                   onAddReply,
-                                   onDeleteReply,
-                                   currentUserId,
-                                   canEdit = true,
-                               }: CommentSidebarProps) {
+    threads,
+    selectedThreadId,
+    onSelectThread,
+    onResolveThread,
+    onReopenThread,
+    onDeleteThread,
+    onEditThread, // ✅ ADD THIS
+    onAddReply,
+    onDeleteReply,
+    currentUserId,
+    canEdit = true,
+}: CommentSidebarProps) {
     const [showResolved, setShowResolved] = useState(false);
 
     const activeThreads = threads.filter((t) => !t.resolved && !t.orphaned);
@@ -53,8 +55,8 @@ export function CommentSidebar({
                         Comments
                     </h3>
                     <span className="text-sm text-gray-500">
-            {activeThreads.length} active
-          </span>
+                        {activeThreads.length} active
+                    </span>
                 </div>
 
                 {/* Toggle buttons */}
@@ -98,7 +100,8 @@ export function CommentSidebar({
                                 onResolve={() => onResolveThread(thread.threadId)}
                                 onReopen={() => onReopenThread(thread.threadId)}
                                 onDelete={() => onDeleteThread(thread.threadId)}
-                                onAddReply={(content) => onAddReply(thread.threadId, content)}  // ✅ UNCOMMENT THIS
+                                onEdit={(newContent) => onEditThread(thread.threadId, newContent)} // ✅ ADD THIS
+                                onAddReply={(content) => onAddReply(thread.threadId, content)}
                                 onDeleteReply={(replyId) =>
                                     onDeleteReply(thread.threadId, replyId)
                                 }
@@ -120,34 +123,45 @@ interface ThreadCardProps {
     onResolve: () => void;
     onReopen: () => void;
     onDelete: () => void;
-    onAddReply: (content: string) => void;  // ✅ ADD THIS
+    onEdit: (newContent: string) => void; // ✅ ADD THIS
+    onAddReply: (content: string) => void;
     onDeleteReply: (replyId: string) => void;
     currentUserId: string;
     canEdit: boolean;
 }
 
 function ThreadCard({
-                        thread,
-                        isSelected,
-                        onSelect,
-                        onResolve,
-                        onReopen,
-                        onDelete,
-                        onAddReply,  // ✅ ADD THIS
-                        onDeleteReply,
-                        currentUserId,
-                        canEdit,
-                    }: ThreadCardProps) {
+    thread,
+    isSelected,
+    onSelect,
+    onResolve,
+    onReopen,
+    onDelete,
+    onEdit, // ✅ ADD THIS
+    onAddReply,
+    onDeleteReply,
+    currentUserId,
+    canEdit,
+}: ThreadCardProps) {
     const isOwner = thread.userId === currentUserId;
-    const [isReplying, setIsReplying] = useState(false);  // ✅ ADD THIS
-    const [replyContent, setReplyContent] = useState("");  // ✅ ADD THIS
+    const [isReplying, setIsReplying] = useState(false);
+    const [replyContent, setReplyContent] = useState("");
+    const [isEditing, setIsEditing] = useState(false); // ✅ ADD THIS
+    const [editContent, setEditContent] = useState(thread.content); // ✅ ADD THIS
 
-    const handleSubmitReply = () => {  // ✅ ADD THIS
+    const handleSubmitReply = () => {
         if (replyContent.trim()) {
             onAddReply(replyContent.trim());
             setReplyContent("");
             setIsReplying(false);
         }
+    };
+
+    const handleSubmitEdit = () => { // ✅ ADD THIS
+        if (editContent.trim() && editContent.trim() !== thread.content) {
+            onEdit(editContent.trim());
+        }
+        setIsEditing(false);
     };
 
     return (
@@ -182,17 +196,58 @@ function ThreadCard({
                             canEditDoc={canEdit}
                             onResolve={onResolve}
                             onReopen={onReopen}
-                            onReply={() => setIsReplying(true)}  // ✅ ADD THIS
+                            onEdit={() => { setIsEditing(true); setEditContent(thread.content); }} // ✅ ADD THIS
+                            onReply={() => setIsReplying(true)}
                             onDelete={onDelete}
                             variant="sidebar"
                         />
                     </div>
 
 
-                    {/* ✅ FIX: Added 'break-all' to force long strings to wrap */}
-                    <p className="text-sm text-gray-700 dark:text-gray-300 mt-1 break-words break-all whitespace-pre-wrap">
-                        {thread.content}
-                    </p>
+                    {/* Comment content - show input when editing, text otherwise */}
+                    {isEditing ? (
+                        <div className="mt-2 space-y-2" onClick={(e) => e.stopPropagation()}>
+                            <textarea
+                                autoFocus
+                                value={editContent}
+                                onChange={(e) => setEditContent(e.target.value)}
+                                className="w-full text-sm p-2 border border-gray-300 dark:border-gray-600 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                rows={2}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter" && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleSubmitEdit();
+                                    } else if (e.key === "Escape") {
+                                        setIsEditing(false);
+                                        setEditContent(thread.content);
+                                    }
+                                }}
+                            />
+                            <div className="flex justify-end gap-2">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                        setIsEditing(false);
+                                        setEditContent(thread.content);
+                                    }}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    onClick={handleSubmitEdit}
+                                    disabled={!editContent.trim()}
+                                >
+                                    Save
+                                </Button>
+                            </div>
+                        </div>
+                    ) : (
+                        <p className="text-sm text-gray-700 dark:text-gray-300 mt-1 break-words break-all whitespace-pre-wrap">
+                            {thread.content}
+                        </p>
+                    )}
                 </div>
             </div>
 
@@ -201,13 +256,13 @@ function ThreadCard({
                 <div className="flex gap-2 mb-2">
                     {thread.resolved && (
                         <span className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-              Resolved
-            </span>
+                            Resolved
+                        </span>
                     )}
                     {thread.orphaned && (
                         <span className="text-xs px-2 py-0.5 rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
-              Text deleted
-            </span>
+                            Text deleted
+                        </span>
                     )}
                 </div>
             )}
@@ -278,15 +333,16 @@ interface ReplyCardProps {
 }
 
 function ReplyCard({ reply, canDelete, onDelete }: ReplyCardProps) {
-    // ✅ Fix: Ensure userName exists, fallback to "Anonymous" if undefined
-    const safeName = reply.userName || "Anonymous";
+    // ✅ Fix: Support both field naming conventions (userName/userAvatar vs authorName/authorAvatar)
+    const safeName = reply.userName || reply.authorName || "Anonymous";
+    const safeAvatar = reply.userAvatar || reply.authorAvatar;
     const initial = safeName.charAt(0).toUpperCase();
 
     return (
         <div className="group">
             <div className="flex items-start gap-2">
                 <Avatar className="h-6 w-6 flex-shrink-0">
-                    <AvatarImage src={reply.userAvatar} />
+                    <AvatarImage src={safeAvatar} />
                     <AvatarFallback className="text-xs">
                         {/* ✅ Fix: Use the safe initial here */}
                         {initial}

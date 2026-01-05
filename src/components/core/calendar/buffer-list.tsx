@@ -24,6 +24,7 @@ export function BufferList({ showAllTasks, }: BufferListProps) {
     const {
         projectGroups: projects,
         getUserProjectTasks,
+        bufferListRefreshKey,
     } = useContext<CalendarContextInterface>(CalendarContext);
 
     const allTasks = useMemo(() => {
@@ -54,7 +55,7 @@ export function BufferList({ showAllTasks, }: BufferListProps) {
             initialRender.current = false;
             return;
         }
-        
+
         getUserProjectTasks();
     }, []);
 
@@ -91,7 +92,8 @@ export function BufferList({ showAllTasks, }: BufferListProps) {
                                     if (!showAllTasks && hiddenTasks[task.pmTaskId]) return null;
 
                                     return (
-                                        <BufferListProjectTask 
+                                        <BufferListProjectTask
+                                            key={`${task.pmTaskId}-${bufferListRefreshKey}`}
                                             task={task}
                                             hiddenTasks={hiddenTasks}
                                             setHiddenTasks={setHiddenTasks}

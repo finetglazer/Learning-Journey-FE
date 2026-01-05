@@ -27,6 +27,7 @@ import { CollapsibleUnscheduledPanel } from "./collapsible-unscheduled-items-pan
 import { DraggableTask } from "./draggable-task";
 import { UnscheduledRoutineItem } from "./unscheduled-routine-item";
 import { UnscheduledTaskItem } from "./unscheduled-task-item";
+import { BufferListProjectTask } from "./buffer-list-project-task";
 import React from "react";
 import {
     AlertDialog,
@@ -94,6 +95,8 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
         getSleepBlocks,
         isPanelBufferListDragging,
         isDraggingItem,
+        draggingProjectTaskId,
+        getDraggingProjectTask,
         handleTaskEditorClose,
         isLoadingCalendar,
         // Resize state and handlers
@@ -109,6 +112,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
         onRoutineResizeConfirmUpdate,
         onRoutineResizeConfirmDetach,
         onRoutineResizeCancel,
+        justClosedRef,
     } = useContext<CalendarContextInterface>(CalendarContext);
 
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -179,7 +183,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                                 className="text-left max-w-16.5 min-w-16.5 p-1 align-top border-b border-gray-200"
                                                 style={{ minHeight: "2.5rem" }}
                                             >
-                                                <div>
+                                                <div className="w-full">
                                                     {Object.keys(calendarMap).map((id: string) => {
                                                         return (calendarMap[id] || []).map((task: Task, index: number) => {
                                                             const currentCalendarMapDay = toDayJs(id, 0).get("day");
@@ -193,7 +197,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                                                     key={`${id}-${index}`}
                                                                     task={{ ...task, type: (task?.type || "").toLowerCase() }}
                                                                     draggable={false}
-                                                                    wrapperClassName="truncate rounded-lg pl-2 mt-1 mb-1"
+                                                                    wrapperClassName="truncate rounded-lg -mt-1 mb-1 ml-4.5"
                                                                 />
                                                             );
                                                         })
@@ -269,7 +273,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                                     >
                                                         {!isLoadingCalendar && (calendarMap[id] || []).map((task: Task, index: number) => {
                                                             if (task?.type === "memorable_event") {
-                                                                return <></>
+                                                                return null;
                                                             }
                                                             // Only override startTime/endTime for ROUTINES (for split series support)
                                                             // Tasks and Events should keep their original API times
@@ -377,6 +381,11 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                         <UnscheduledRoutineItem
                                             routine={getDraggingRoutine() as UnscheduledRoutine}
                                         />
+                                    )}
+                                    {!isNil(draggingProjectTaskId) && (
+                                        <BufferListProjectTask
+                                            task={getDraggingProjectTask()}
+                                        />
                                     )}</>
                             </DragOverlay>
                         </DndContext>
@@ -395,8 +404,14 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                                 task={{ ...editingTask, type: (editingTask?.type || "").toLowerCase() }}
                                 setAlertMessage={setAlertMessage}
                                 onClose={() => {
-                                    handleTaskEditorClose();
-
+                                    if (!justClosedRef) return;
+                                    // Set flag to prevent handleCellClick from opening a new form
+                                    justClosedRef.current = true;
+                                    // Reset the flag after 200ms to allow normal cell clicks
+                                    setTimeout(() => {
+                                        justClosedRef.current = false;
+                                    }, 700);
+                                    // Close the form immediately
                                     setEditingTask(null);
                                     setSelectedTaskId(null);
                                 }}

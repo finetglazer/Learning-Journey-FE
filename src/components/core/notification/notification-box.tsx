@@ -7,6 +7,7 @@ import { AppContext } from "@/hooks/app-context";
 import { Notification, NotificationType, InvitationStatus } from "@/model/notification";
 import { Bell, Check, Loader2, Trash2 } from "lucide-react";
 import React, { useCallback, useContext, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import InfiniteScrollComponent from "react-infinite-scroll-component";
 const InfiniteScroll = InfiniteScrollComponent as any;
 import { toast } from "sonner";
@@ -40,7 +41,8 @@ export const NotificationBox: React.FC<NotificationBoxProps> = ({
     onLoadMoreAll,
     onView,
 }) => {
-    const { notificationRepository, projectRepository } = useContext(AppContext);
+    const { notificationRepository, projectRepository, getProjects } = useContext(AppContext);
+    const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
     const [activeTab, setActiveTab] = useState("inbox");
     const [loadingNotificationId, setLoadingNotificationId] = useState<number | null>(null);
@@ -169,6 +171,12 @@ export const NotificationBox: React.FC<NotificationBoxProps> = ({
                         // Remove invitation notification
                         setUnreadNotifications(prev => prev.filter(n => n.id !== notification.id));
                         setAllNotifications(prev => prev.filter(n => n.id !== notification.id));
+                        // Reload the team projects list
+                        getProjects();
+                        // Close the notification popover
+                        setIsOpen(false);
+                        // Navigate to the project summary page
+                        router.push(`/projects/${notification.referenceId}?tab=summary`);
                     }
                     else {
                         toast.error(res?.message || res?.msg);
@@ -182,6 +190,8 @@ export const NotificationBox: React.FC<NotificationBoxProps> = ({
         projectRepository,
         unreadNotifications,
         allNotifications,
+        getProjects,
+        router,
     ]);
 
     const handleDeclineInvitation = useCallback((notification: Notification) => {
