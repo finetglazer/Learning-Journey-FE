@@ -39,6 +39,10 @@ export function SharedPostList({ posts }: SharedPostListProps) {
                 answerCount: dto.answerCount,
                 isSolved: dto.isSolved,
             },
+            score: dto.score,
+            viewCount: Number(dto.viewCount),
+            answerCount: dto.answerCount,
+            isSolved: dto.isSolved,
             createdAt: dto.createdAt,
             status: dto.status,
             // Defaults as these are detail fields not needed for list item
@@ -70,7 +74,7 @@ export function SharedPostList({ posts }: SharedPostListProps) {
             <div className="flex-1 overflow-y-auto space-y-4 pr-2">
                 {posts.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                        <EmptyData 
+                        <EmptyData
                             title="No shared posts found"
                             message="Start sharing your posts with the community"
                         />
