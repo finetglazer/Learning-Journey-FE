@@ -102,6 +102,7 @@ export function NotionEditor({
     const [isMounted, setIsMounted] = useState(false);
     const [containerMounted, setContainerMounted] = useState(false);
     const editorContainerRef = useRef<HTMLDivElement>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [title, setTitle] = useState(documentTitle);
     const [replyingToThreadId, setReplyingToThreadId] = useState<string | null>(null);  // ✅ ADD THIS
     const [replyText, setReplyText] = useState("");  // ✅ ADD THIS
@@ -230,7 +231,7 @@ export function NotionEditor({
             editorProps: {
                 attributes: {
                     // Padding is handled by the parent container now
-                    class: "prose prose-lg dark:prose-invert focus:outline-none max-w-none min-h-[500px]",
+                    class: "prose prose-lg dark:prose-invert focus:outline-none max-w-none min-h-[70vh]",
                 },
                 handlePaste: (view, event, slice) => {
                     // Check for image files in clipboard
@@ -275,6 +276,49 @@ export function NotionEditor({
     // Track when editor is ready - simplified
     // Simplified readiness check - simply existence of editor
     // With immediatelyRender: true, editor.view is guaranteed to exist if editor exists
+
+    // Auto-scroll to keep cursor visible with margin from bottom (like Google Docs)
+    useEffect(() => {
+        if (!editor || !scrollContainerRef.current) return;
+
+        const handleSelectionUpdate = () => {
+            if (!editor.view || editor.isDestroyed || !scrollContainerRef.current) return;
+
+            try {
+                const { from } = editor.state.selection;
+                const coords = editor.view.coordsAtPos(from);
+                const scrollContainer = scrollContainerRef.current;
+                const containerRect = scrollContainer.getBoundingClientRect();
+
+                // Calculate cursor position relative to the scroll container
+                const cursorRelativeTop = coords.top - containerRect.top;
+                const containerHeight = containerRect.height;
+
+                // Define the "comfort zone" - keep cursor in upper 60% of the visible area
+                const bottomMargin = containerHeight * 0.4; // 40% from bottom
+                const scrollThreshold = containerHeight - bottomMargin;
+
+                // If cursor is below the comfort zone, scroll down
+                if (cursorRelativeTop > scrollThreshold) {
+                    const scrollAmount = cursorRelativeTop - scrollThreshold + 50; // Extra 50px padding
+                    scrollContainer.scrollBy({
+                        top: scrollAmount,
+                        behavior: 'smooth'
+                    });
+                }
+            } catch (error) {
+                // Silently ignore coordinate errors
+            }
+        };
+
+        editor.on('selectionUpdate', handleSelectionUpdate);
+        editor.on('update', handleSelectionUpdate);
+
+        return () => {
+            editor.off('selectionUpdate', handleSelectionUpdate);
+            editor.off('update', handleSelectionUpdate);
+        };
+    }, [editor]);
 
 
     // Close comment form when clicking outside
@@ -673,7 +717,7 @@ export function NotionEditor({
                 </div>
 
                 {/* Main Scrollable Content Area */}
-                <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-900">
+                <div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-white dark:bg-gray-900">
 
                     {/* ✅ NEW LAYOUT: Balanced 3-Column Flex */}
                     <div className="flex justify-center min-h-full">
@@ -683,7 +727,7 @@ export function NotionEditor({
                         <div className="hidden xl:block w-[300px] shrink-0" aria-hidden="true" />
 
                         {/* 2. The Document Column (Centered) */}
-                        <div className="w-full max-w-4xl px-12 py-12 shrink-0">
+                        <div className="w-full max-w-4xl px-12 py-12 pb-[50vh] shrink-0">
 
                             {/* Header Section */}
                             <div className="group mb-8">
@@ -730,7 +774,7 @@ export function NotionEditor({
                             )}
 
                             {/* Editor Content */}
-                            <div ref={editorContainerRef}>
+                            <div ref={editorContainerRef} className="pb-[60vh]">
                                 {editor ? (
                                     <>
                                         <EditorContent editor={editor} />
