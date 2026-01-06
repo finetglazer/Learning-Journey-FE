@@ -16,6 +16,10 @@ import SpinnerLoader from '../loader/spinner-loader';
 import { EmptyData } from './empty-data';
 import { AppContext, AppContextProps } from '@/hooks/app-context';
 
+// Workaround for React 19 type incompatibility with @dnd-kit/core
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const TypedDragOverlay = DragOverlay as any;
+
 export interface KanbanBoardProps {
 };
 
@@ -74,7 +78,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = () => {
                         toast.error(res?.message || res?.msg);
                     }
                 },
-                error: err => {
+                error: _err => {
                     toast.error("Failed to update status.");
                 },
             });
@@ -82,7 +86,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = () => {
         return () => {
             subscription.unsubscribe();
         };
-    }, [selectedProject, activeTask, getProjectStructure, projectRepository]);
+    }, [selectedProject, getProjectStructure, projectRepository]);
 
     const handleDragStart = useCallback((event: any) => {
         const task: PM_Task = event.active.data.current.task;
@@ -90,7 +94,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = () => {
         if (!columnId) return;
         // const task = columns[columnId].tasks.find(t => t.taskIdStr === taskId);
         setActiveTask(task || null);
-    }, [columns, findColumn]);
+    }, [findColumn]);
 
 
     const handleDragEnd = useCallback((event: DragEndEvent) => {
@@ -124,7 +128,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = () => {
 
         handleSaveTaskStatusOnly(active.data.current?.task.taskId, over.id as TaskStatus);
 
-    }, [findColumn]);
+    }, [findColumn, handleSaveTaskStatusOnly]);
 
     // Helper to find data needed for TaskCard in DragOverlay
     const getTaskCardProps = () => {
@@ -188,7 +192,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = () => {
                         toast.error(res?.msg || res?.message);
                     }
                 },
-                error: err => { },
+                error: _err => { },
             });
 
         return () => {
@@ -293,13 +297,9 @@ const KanbanBoard: React.FC<KanbanBoardProps> = () => {
                             <KanbanColumn key={column.id} column={column} />
                         ))}
 
-                        <DragOverlay dropAnimation={null}>
-                            {taskCardProps && (
-                                <TaskCard
-                                    task={taskCardProps.task}
-                                />
-                            )}
-                        </DragOverlay>
+                        <TypedDragOverlay dropAnimation={null}>
+                            {activeTask ? <TaskCard task={activeTask} /> : null}
+                        </TypedDragOverlay>
                     </DndContext>
                 </div>
             ) : null}
