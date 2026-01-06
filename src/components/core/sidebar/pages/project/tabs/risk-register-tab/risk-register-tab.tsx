@@ -62,8 +62,8 @@ export default function RiskRegisterTab({
 
     const pageSizeUrlParam = Number(urlParams.get("pageSize")) || 20;
 
-    const getRiskItems = useCallback((useCustomPageSize?: boolean, customPageSize?: number) => {
-        if (!projectRepository) return;
+    const getRiskItems = useCallback((useCustomPageSize?: boolean, customPageSize?: number): () => void => {
+        if (!projectRepository) return () => { };
         const subscription = projectRepository.getRisks({
             projectId: selectedProject?.id as number,
             page: currentPage,
