@@ -26,8 +26,9 @@ import { Project } from "@/model/project-management";
 import { toast } from "sonner";
 import { MainLayoutContext } from "./main-layout-context";
 import { CALENDAR_PLANNING_ROUTE, CALENDAR_ROUTE, COMMUNITY_ROUTE, getProjectDetailRoute, getSettingsRoute, SIGN_IN_ROUTE } from "@/const/routes-const";
+import { Suspense } from "react";
 
-export default function MainLayout({ children }: { children: React.ReactNode }) {
+function MainLayoutContent({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -341,5 +342,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 </MainLayoutContext.Provider>
             </CalendarContext.Provider>
         </TeamProjectContext.Provider>
+    );
+}
+
+export default function MainLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+            <MainLayoutContent>{children}</MainLayoutContent>
+        </Suspense>
     );
 }
