@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Task, TaskStep } from "@/model/task";
+import { Subtask, Task } from "@/model/task";
 import { closestCenter, DndContext, DragEndEvent } from "@dnd-kit/core";
 import {
     arrayMove,
@@ -13,24 +13,28 @@ import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, MinusCircle } from "lucide-react";
 import { Model } from "react-3layer-common";
 
-function SortableSubTask({ subtask, model, updateModel }: { subtask: Task | TaskStep, model: Model, updateModel: (fieldName: string, value: any) => void }) {
+// Workaround for React 19 type incompatibility with @dnd-kit/sortable
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const TypedSortableContext = SortableContext as any;
+
+function SortableSubTask({ subtask, model, updateModel }: { subtask: Task | Subtask, model: Model, updateModel: (fieldName: string, value: any) => void }) {
     const {
         attributes,
         listeners,
         setNodeRef,
         transform,
         transition,
-    } = useSortable({ id: subtask.id });
+    } = useSortable({ id: String(subtask.id ?? '') });
 
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
     };
 
-    const onDelete = (id: string) => {
+    const onDelete = (id: string | number | null | undefined) => {
         updateModel(model?.type === "big-task" ? "subtasks" : "steps",
             [...((model?.type === "big-task" ? model?.subtasks : model?.steps) || []).filter(
-                (item: Task | TaskStep) => item.id !== id
+                (item: Task | Subtask) => item.id !== id
             )]
         );
     };
@@ -45,7 +49,7 @@ function SortableSubTask({ subtask, model, updateModel }: { subtask: Task | Task
                 <button {...attributes} {...listeners} className="cursor-grab text-gray-400">
                     <GripVertical size={20} />
                 </button>
-                <span className="text-sm">{(subtask as Task)?.title || (subtask as TaskStep)?.description}</span>
+                <span className="text-sm">{(subtask as Task)?.title || (subtask as Subtask)?.description}</span>
             </div>
             <Button variant="ghost" size="icon" className="text-gray-400 hover:text-red-500" onClick={() => onDelete(subtask.id)}>
                 <MinusCircle size={20} />
@@ -56,7 +60,7 @@ function SortableSubTask({ subtask, model, updateModel }: { subtask: Task | Task
 
 
 interface SubTaskListProps {
-    subtasks: Task[] | TaskStep[];
+    subtasks: Task[] | Subtask[];
     fieldName: string;
     onSubtasksChange: (fieldName: string, value: any) => void;
     model: Model;
@@ -75,7 +79,7 @@ export const SubTaskList = ({ subtasks, fieldName, onSubtasksChange, model }: Su
 
     return (
         <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={subtasks} strategy={verticalListSortingStrategy}>
+            <TypedSortableContext items={subtasks.map(s => String(s.id ?? ''))} strategy={verticalListSortingStrategy}>
                 <div className="space-y-2">
                     {subtasks.map((subtask) => (
                         <SortableSubTask
@@ -86,7 +90,7 @@ export const SubTaskList = ({ subtasks, fieldName, onSubtasksChange, model }: Su
                         />
                     ))}
                 </div>
-            </SortableContext>
+            </TypedSortableContext>
         </DndContext>
     );
 };
