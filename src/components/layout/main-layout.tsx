@@ -85,6 +85,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         if (pathname?.startsWith(CALENDAR_PLANNING_ROUTE)) return "month-planning";
         if (pathname === CALENDAR_ROUTE) return "private-calendar";
         if (pathname?.startsWith("/projects")) return `project-${projectIdFromUrl}`;
+        if (pathname?.startsWith(COMMUNITY_ROUTE)) return "my-community";
 
         if (pathname?.startsWith("/settings")) {
             const tab = searchParams?.get("tab");
@@ -211,9 +212,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         {
             title: "Community",
             items: [
-                { id: "my-community", label: "My community", icon: <Users size={16} />, onClick: () => {
-                    router.push(COMMUNITY_ROUTE);
-                }},
+                {
+                    id: "my-community", label: "My community", icon: <Users size={16} />, onClick: () => {
+                        router.push(COMMUNITY_ROUTE);
+                    }
+                },
             ],
         },
         {
