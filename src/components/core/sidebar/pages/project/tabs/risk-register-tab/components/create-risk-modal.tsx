@@ -73,6 +73,7 @@ const CreateRiskModal: React.FC<CreateRiskModalProps> = ({
                 <RiskLevelDropdown
                     value={value}
                     onChange={(val) => handleInputChange(field, val)}
+                    canEdit={true}
                 />
                 {/* 'X' Button to clear the selection */}
                 {value && (
@@ -145,6 +146,7 @@ const CreateRiskModal: React.FC<CreateRiskModalProps> = ({
                             <RiskLevelDropdown
                                 value={newRisk.probability}
                                 onChange={(val) => handleInputChange('probability', val)}
+                                canEdit={true}
                             />
                         </div>
 
@@ -154,6 +156,7 @@ const CreateRiskModal: React.FC<CreateRiskModalProps> = ({
                             <RiskLevelDropdown
                                 value={newRisk.impact}
                                 onChange={(val) => handleInputChange('impact', val)}
+                                canEdit={true}
                             />
                         </div>
 
