@@ -18,7 +18,7 @@ interface UnscheduledTaskItemProps {
 
 export function UnscheduledTaskItem({ task, bigTask, onRemove, onTitleChange, draggable = true }: UnscheduledTaskItemProps) {
     const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-        id: task?.id,
+        id: task?.id ?? bigTask?.bigTaskId ?? '',
         data: { type: 'unscheduled-task', task }
     });
 
@@ -34,7 +34,9 @@ export function UnscheduledTaskItem({ task, bigTask, onRemove, onTitleChange, dr
     }, [isEditing]);
 
     const handleSave = () => {
-        onTitleChange?.(task.id, title);
+        if (task?.id) {
+            onTitleChange?.(String(task.id), title);
+        }
         setIsEditing(false);
     };
 
@@ -94,7 +96,7 @@ export function UnscheduledTaskItem({ task, bigTask, onRemove, onTitleChange, dr
             <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => onRemove?.(task.id)}
+                onClick={() => task?.id && onRemove?.(String(task.id))}
                 className="h-6 w-6 text-gray-400 hover:text-red-500 cursor-pointer shrink-0"
             >
                 {task && (
