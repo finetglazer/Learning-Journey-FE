@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { AlertMessage, AlertModal } from '@/components/core/alert-modal/alert-modal';
 import { toDayJs } from '@/lib/utils';
 import { AppContext, AppContextProps } from '@/hooks/app-context';
+import Image from "next/image";
 
 const Button = ({ children, className, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
     <button
@@ -182,7 +183,14 @@ export const PublicProfile = () => {
                         {/* Profile Picture Display */}
                         <div className="w-full h-full rounded-full bg-gradient-to-br from-teal-300 to-cyan-500 flex items-center justify-center overflow-hidden">
                             {profilePic ? (
-                                <img src={profilePic} alt="Profile" className="w-full h-full object-cover" />
+                                <Image
+                                    src={profilePic}
+                                    alt="Profile"
+                                    width={160}
+                                    height={160}
+                                    className="w-full h-full object-cover"
+                                    unoptimized
+                                />
                             ) : (
                                 <User className="w-20 h-20 text-white opacity-70" />
                             )}

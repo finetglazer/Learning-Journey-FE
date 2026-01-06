@@ -9,6 +9,7 @@ import { AlertMessage, AlertModal } from "../alert-modal/alert-modal";
 import { TeamProjectContext, TeamProjectContextProps } from "../sidebar/pages/project/team-project-context";
 import { cn } from "@/lib/utils";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
+import Image from "next/image";
 
 // --- 1. Debounce Hook ---
 /**
@@ -63,10 +64,13 @@ const SearchResultItem = ({ user, onSelect }: { user: FetchedUser, onSelect: (us
         // Use onMouseDown to fire before the input's onBlur
         onMouseDown={() => onSelect(user)}
     >
-        <img
+        <Image
             src={user.avatarUrl || `https://placehold.co/40x40/E0E0E0/707070?text=${user.name[0] || '..'}`}
             alt={user.name}
+            width={32}
+            height={32}
             className="w-8 h-8 rounded-full object-cover"
+            unoptimized
         />
         <div>
             <div className="font-semibold text-sm text-gray-900">{user.name}</div>
@@ -367,13 +371,17 @@ export const InviteMembersModal = ({
                             <div key={member.userId} className="flex items-center justify-between">
                                 {/* Left part: Avatar and Info */}
                                 <div className="flex items-center space-x-3 flex-1 min-w-0 mr-5">
-                                    <img
+                                    <Image
                                         src={member.avatarUrl || `https://placehold.co/40x40/E0E0E0/707070?text=${member.name[0] || 'A'}`}
                                         alt={member.name}
+                                        width={40}
+                                        height={40}
                                         className="w-10 h-10 rounded-full object-cover"
+                                        unoptimized
                                         onError={(e: any) => {
-                                            e.target.onerror = null;
-                                            e.target.src = `https://placehold.co/40x40/E0E0E0/707070?text=${member.name[0] || 'A'}`;
+                                            const target = e.target as HTMLImageElement;
+                                            target.onerror = null;
+                                            target.srcset = `https://placehold.co/40x40/E0E0E0/707070?text=${member.name[0] || 'A'}`;
                                         }}
                                     />
                                     <div>

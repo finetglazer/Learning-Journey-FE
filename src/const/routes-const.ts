@@ -19,7 +19,7 @@ export const CALENDAR_PLANNING_ROUTE = "/calendar/planning";
 // Project routes
 export const PROJECT_ROUTE = "/projects";
 export const getProjectDetailRoute = (projectId: number, tab?: string, taskId?: number) => {
-    let url = `/projects/${projectId}`;
+    const url = `/projects/${projectId}`;
     const params = new URLSearchParams();
     if (tab) params.set("tab", tab);
     if (taskId) params.set("taskId", String(taskId));

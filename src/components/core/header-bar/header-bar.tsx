@@ -3,7 +3,7 @@
 import { AppContext } from '@/hooks/app-context';
 import { useNotificationStream } from '@/hooks/use-notification-stream';
 import { InvitationStatus, Notification, NotificationFilter } from '@/model/notification';
-import { Search, Settings, Users } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { finalize } from 'rxjs';
 import { toast } from 'sonner';
@@ -11,8 +11,7 @@ import { NotificationBox } from '../notification/notification-box';
 import { TeamProjectContext, TeamProjectContextProps } from '../sidebar/pages/project/team-project-context';
 import { ProjectMembershipRole } from '@/model/project-management';
 import { isNil } from 'lodash';
-import { useRouter } from 'next/navigation';
-import { COMMUNITY_ROUTE } from '@/const/routes-const';
+import Image from "next/image";
 
 export interface HeaderBarProps {
     onSettingsClick?: () => void;
@@ -26,7 +25,6 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
     onView = (url) => { console.log(url) },
 }) => {
     const { notificationRepository, userId } = useContext(AppContext);
-    const router = useRouter();
 
     const [unreadNotifications, setUnreadNotifications] = useState<Notification[]>([]);
     const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
@@ -235,13 +233,16 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
     return (
         <header className="relative flex h-16 w-full items-center justify-between border-b border-gray-200 bg-white px-5 shadow-sm">
 
+
             {/* Left Section: Menu and Logo */}
             <div className="flex items-center gap-3">
                 <button className="h-8 w-8 cursor-pointer overflow-hidden" aria-label="View profile">
-                    <img
+                    <Image
                         // Uses the avatarUrl prop, or a placeholder if not provided
-                        src={`iconpng.png`}
+                        src={`/iconpng.png`}
                         alt="Home Icon"
+                        width={32}
+                        height={32}
                         className="h-full w-full object-cover"
                     />
                 </button>
@@ -275,11 +276,14 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
 
                 {/* Avatar */}
                 <button className="h-8 w-8 rounded-full overflow-hidden border border-gray-300" aria-label="View profile">
-                    <img
+                    <Image
                         // Uses the avatarUrl prop, or a placeholder if not provided
                         src={avatarUrl || `https://placehold.co/32x32/E2E8F0/64748B?text=U`}
                         alt="User Avatar"
+                        width={32}
+                        height={32}
                         className="h-full w-full object-cover"
+                        unoptimized // Safe for external URLs
                     />
                 </button>
             </div>

@@ -201,7 +201,7 @@ export function CreatePostModal({ open, onClose, initialData, onSubmit }: Create
                             Title
                         </Label>
                         <p className="text-xs text-muted-foreground">
-                            Be explicit and imagine you're asking a question to another person.
+                            Be explicit and imagine you&apos;re asking a question to another person.
                         </p>
                         <Input
                             id="title"

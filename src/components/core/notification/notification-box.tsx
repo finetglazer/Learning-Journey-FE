@@ -5,7 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppContext } from "@/hooks/app-context";
 import { Notification, NotificationType, InvitationStatus } from "@/model/notification";
-import { Bell, Check, Loader2, Trash2 } from "lucide-react";
+import { Bell, Loader2 } from "lucide-react";
 import React, { useCallback, useContext, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import InfiniteScrollComponent from "react-infinite-scroll-component";

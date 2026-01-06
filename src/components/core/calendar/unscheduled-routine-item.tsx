@@ -10,13 +10,13 @@ import React, { useEffect, useRef, useState } from "react";
 interface UnscheduledRoutineItemProps {
     routine: UnscheduledRoutine;
     onRemove?: (unscheduledRoutineId: string | number) => void;
-    onTitleChange?: (routineId: string, newTitle: string) => void;
+    onTitleChange?: (routineId: string | number, newTitle: string) => void;
     draggable?: boolean;
 }
 
 export function UnscheduledRoutineItem({ routine, onRemove, onTitleChange, draggable = true }: UnscheduledRoutineItemProps) {
     const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-        id: routine.id,
+        id: routine.id!,
         data: { type: 'unscheduled-routine', routine }
     });
 
@@ -32,7 +32,9 @@ export function UnscheduledRoutineItem({ routine, onRemove, onTitleChange, dragg
     }, [isEditing]);
 
     const handleSave = () => {
-        onTitleChange?.(routine.id, title);
+        if (routine.id !== undefined && routine.id !== null) {
+            onTitleChange?.(routine.id, title);
+        }
         setIsEditing(false);
     };
 

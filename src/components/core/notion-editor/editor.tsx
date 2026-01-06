@@ -9,6 +9,7 @@ import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import Collaboration from "@tiptap/extension-collaboration";
 import Image from "@tiptap/extension-image";
+import NextImage from "next/image";
 import { HocuspocusProvider } from "@hocuspocus/provider";
 import * as Y from "yjs";
 import BubbleMenuExtension from "@tiptap/extension-bubble-menu";
@@ -840,7 +841,7 @@ export function NotionEditor({
                                                         {/* Main Comment */}
                                                         <div className="flex items-start gap-2">
                                                             <div className="h-6 w-6 rounded-full overflow-hidden shrink-0 border border-gray-200 mt-0.5">
-                                                                <img src={thread.avatar || thread.userAvatar} alt={thread.name || thread.userName} className="h-full w-full object-cover" />
+                                                                <NextImage src={thread.avatar || thread.userAvatar} alt={thread.name || thread.userName} width={24} height={24} className="h-full w-full object-cover" unoptimized />
                                                             </div>
 
                                                             <div className="min-w-0 flex-1 relative">
@@ -886,7 +887,7 @@ export function NotionEditor({
                                                                 {thread.replies.map((reply) => (
                                                                     <div key={reply.replyId} className="flex items-start gap-2 group/reply">
                                                                         <div className="h-5 w-5 rounded-full overflow-hidden shrink-0 border border-gray-200">
-                                                                            <img src={(reply as any).authorAvatar || reply.userAvatar || reply.avatar} alt={(reply as any).authorName || reply.userName || reply.name} className="h-full w-full object-cover" />
+                                                                            <NextImage src={(reply as any).authorAvatar || reply.userAvatar || reply.avatar} alt={(reply as any).authorName || reply.userName || reply.name} width={20} height={20} className="h-full w-full object-cover" unoptimized />
                                                                         </div>
                                                                         <div className="flex-1 min-w-0">
                                                                             <div className="text-xs font-medium text-gray-700 dark:text-gray-300">

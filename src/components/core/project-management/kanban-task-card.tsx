@@ -7,7 +7,7 @@ import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Edit } from 'lucide-react';
 import React, { useContext } from 'react';
-import { TeamProjectContext, TeamProjectContextProps, TeamProjectTab } from '../sidebar/pages/project/team-project-context';
+import { TeamProjectContext, TeamProjectContextProps } from '../sidebar/pages/project/team-project-context';
 import { PRIORITY_CONFIG } from './task-detail-drawer';
 import { cn, getFallbackName } from '@/lib/utils';
 

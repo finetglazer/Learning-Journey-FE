@@ -90,7 +90,7 @@ export function AlertModal({
             return (errorDescriptions || []).map(descriptionItem => {
                 const keys = Object.keys(descriptionItem);
                 return keys.map(key => (
-                    <div className="flex align-center gap-2">
+                    <div key={key} className="flex align-center gap-2">
                         <p className="font-bold">{key}</p>
                         <p className="font-normal">{formatStringDates(descriptionItem[key])}</p>
                     </div>

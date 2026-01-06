@@ -248,7 +248,7 @@ function PM_PhaseItemBase({
                     {/* Conditionally render SortableContext based on permission */}
                     {canEditStructure ? (
                         <>
-                            {/* @ts-ignore - React 19 type incompatibility with @dnd-kit/sortable v10.0.0 */}
+                            {/* @ts-expect-error - React 19 type incompatibility with @dnd-kit/sortable v10.0.0 */}
                             <SortableContext
                                 items={phase.tasks.map((t) => t.taskIdStr)}
                                 strategy={verticalListSortingStrategy}

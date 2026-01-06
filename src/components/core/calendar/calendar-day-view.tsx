@@ -286,7 +286,7 @@ export const CalendarDayView = () => {
                         {/* Cancel Drop Zone - shows when dragging items */}
                         <DragCancelZone isVisible={isDraggingItem} />
 
-                        {/* @ts-ignore */}
+                        {/* @ts-expect-error: DragOverlay children type definition mismatch with conditional rendering */}
                         <DragOverlay>
                             <>{/* For scheduled items */}
                                 {!isNil(draggingScheduledTaskId) ? (

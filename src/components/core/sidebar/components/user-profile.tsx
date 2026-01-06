@@ -6,6 +6,7 @@ import { Tooltip } from "antd";
 import { PanelLeft, User } from "lucide-react";
 import { useContext } from "react";
 import { AppContext, AppContextProps } from "@/hooks/app-context";
+import Image from "next/image";
 
 export const UserProfile = ({ isCollapsed = false, onToggleCollapse }: { isCollapsed: boolean, onToggleCollapse: (e: any) => void }) => {
     const {
@@ -22,7 +23,7 @@ export const UserProfile = ({ isCollapsed = false, onToggleCollapse }: { isColla
             <div className={cn("flex items-center", isCollapsed ? "space-x-0" : "space-x-3")}>
                 <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center shrink-0 overflow-hidden">
                     {avatarUrl ? (
-                        <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                        <Image src={avatarUrl} alt="Avatar" width={40} height={40} className="w-full h-full object-cover" unoptimized />
                     ) : (
                         <User className="w-6 h-6 text-gray-600" />
                     )}

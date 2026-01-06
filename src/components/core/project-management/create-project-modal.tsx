@@ -6,6 +6,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { AlertMessage, AlertModal } from '../alert-modal/alert-modal';
 import { toast } from 'sonner';
 import { AppContext, AppContextProps } from '@/hooks/app-context';
+import Image from "next/image";
 
 type CreateProjectModalProps = {
     onClose: () => void;
@@ -123,14 +124,18 @@ export const CreateProjectModal = ({ onClose, handleReload }: CreateProjectModal
                     {/* --- Member List Item --- */}
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
-                            <img
+                            <Image
                                 src={ownerInfo.avatarUrl}
                                 alt={ownerInfo.name}
+                                width={40}
+                                height={40}
                                 className="w-10 h-10 rounded-full object-cover"
+                                unoptimized
                                 // Handle image loading error
-                                onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                                    e.currentTarget.onerror = null;
-                                    e.currentTarget.src = 'https://placehold.co/40x40/E0E0E0/707070?text=..';
+                                onError={(e: any) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.onerror = null;
+                                    target.srcset = 'https://placehold.co/40x40/E0E0E0/707070?text=..';
                                 }}
                             />
                             <div>
@@ -152,7 +157,7 @@ export const CreateProjectModal = ({ onClose, handleReload }: CreateProjectModal
                 {/* --- Description Text --- */}
                 <p className="text-sm text-gray-600 leading-relaxed mb-8">
                     Creating a shared space for a team whose space is in form of Kanban board.
-                    Kanban (the Japanese word for "visual signal") is all about helping teams visualize their work, limit
+                    Kanban (the Japanese word for &quot;visual signal&quot;) is all about helping teams visualize their work, limit
                     work currently in progress, and maximize efficiency.
                 </p>
 

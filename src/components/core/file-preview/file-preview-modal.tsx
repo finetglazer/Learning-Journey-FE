@@ -34,7 +34,7 @@ const CustomNoRenderer = ({ fileName }: { fileName: string }) => (
         <div className="text-center">
             <h3 className="text-lg font-medium text-gray-800 mb-2">Preview not available</h3>
             <p className="text-gray-500 text-sm max-w-md">
-                Unable to preview "{fileName}". This file type may not be supported for preview.
+                Unable to preview &quot;{fileName}&quot;. This file type may not be supported for preview.
                 You can download the file to view it locally.
             </p>
         </div>

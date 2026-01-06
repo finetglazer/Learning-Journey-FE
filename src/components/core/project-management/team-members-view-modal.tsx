@@ -10,6 +10,7 @@ import { AppContext, AppContextProps } from '@/hooks/app-context';
 import { TeamProjectContext, TeamProjectContextProps } from '../sidebar/pages/project/team-project-context';
 import { AlertMessage, AlertModal } from '../alert-modal/alert-modal';
 import { toast } from 'sonner';
+import Image from "next/image";
 
 export interface TeamMembersViewModalProps {
     onClose: () => void;
@@ -117,14 +118,18 @@ export const TeamMembersViewModal = ({
 
                         {/* Left part: Avatar and Info */}
                         <div className="flex items-center space-x-3 flex-1 min-w-0">
-                            <img
+                            <Image
                                 // 4. Use 'avatarUrl'
                                 src={member.avatarUrl || `https://placehold.co/40x40/E0E0E0/707070?text=${member.name[0] || 'A'}`}
                                 alt={member.name}
+                                width={40}
+                                height={40}
                                 className="w-10 h-10 rounded-full object-cover"
-                                onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                                    e.currentTarget.onerror = null;
-                                    e.currentTarget.src = `https://placehold.co/40x40/E0E0E0/707070?text=${member.name[0] || 'A'}`;
+                                unoptimized
+                                onError={(e: any) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.onerror = null;
+                                    target.srcset = `https://placehold.co/40x40/E0E0E0/707070?text=${member.name[0] || 'A'}`;
                                 }}
                             />
                             <div>

@@ -471,3 +471,5 @@ export const RiskItemRow = memo(({
         </Popover>
     );
 }, arePropsEqual);
+
+RiskItemRow.displayName = 'RiskItemRow';

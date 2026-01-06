@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useState, useMemo, useContext, useEffect } from "react";
-import { ChevronRight, Folder, Users, Lock, Briefcase, Loader2, Check } from "lucide-react";
+import { ChevronRight, Folder, Users, Loader2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AppContext } from "@/hooks/app-context";
 import { isNil } from "lodash";

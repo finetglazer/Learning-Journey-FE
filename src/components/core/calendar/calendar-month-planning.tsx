@@ -33,7 +33,6 @@ import { toast } from "sonner";
 import { AlertModal } from "../alert-modal/alert-modal";
 import { RoundedButton } from "../button/rounded-button";
 import { DateRangeNavigator } from "../date-range-navigator/date-range-navigator";
-import { SegmentedControl } from "../segmented-control/segmented-control";
 import { TaskEditor } from "../task-editor/task-editor";
 import { TaskType } from "../task-editor/task-type-dropdown";
 import { BaseTask } from "../task/base-task";

@@ -5,7 +5,7 @@ import { CalendarMonthPlanning } from "@/components/core/calendar/calendar-month
 import { CalendarMonthView } from "@/components/core/calendar/calendar-month-view";
 import { CalendarWeekView } from "@/components/core/calendar/calendar-week-view";
 import { CalendarYearView } from "@/components/core/calendar/calendar-year-view";
-import { useContext, useEffect } from "react";
+import { useContext } from "react";
 
 export default function CalendarPage() {
   const { currentView, setCurrentView } = useContext(CalendarContext);

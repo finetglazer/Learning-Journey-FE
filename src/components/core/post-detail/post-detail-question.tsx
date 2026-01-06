@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Check, FileCode, MoreHorizontal } from "lucide-react";
+import { Check, MoreHorizontal } from "lucide-react";
 import { useContext, useState } from "react";
 import { PostDetailContext, PostDetailContextProps } from "./post-detail-context";
 import { SelectFolderModal } from "./select-folder-modal";

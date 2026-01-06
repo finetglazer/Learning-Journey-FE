@@ -729,7 +729,7 @@ export const ListTab = ({ }: ListTabProps) => {
                         collisionDetection={closestCenter}
                         onDragEnd={handleDragEnd}
                     >
-                        {/* @ts-ignore - React 19 type incompatibility with @dnd-kit/sortable v10.0.0 */}
+                        {/* @ts-expect-error - React 19 type incompatibility with @dnd-kit/sortable v10.0.0 */}
                         <SortableContext
                             items={mergedDeliverables.map(d => d.deliverableIdStr)}
                             strategy={verticalListSortingStrategy}

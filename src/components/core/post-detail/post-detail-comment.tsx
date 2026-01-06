@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { AppContext } from "@/hooks/app-context";
-import { Comment, PostAuthor } from "@/model/post";
+import { Comment } from "@/model/post";
 import { formatDistanceToNow } from "date-fns";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useContext, useEffect, useState } from "react";
@@ -122,7 +122,7 @@ const CommentItem = ({ comment, onUpdate }: { comment: Comment, onUpdate: (id: n
                         <span>created {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}</span>
                         {comment.replyPreview && (
                             <span className="truncate max-w-[200px] text-gray-400" title={comment.replyPreview}>
-                                reply to "{comment.replyPreview.length > 30 ? comment.replyPreview.substring(0, 30) + '...' : comment.replyPreview}"
+                                reply to &quot;{comment.replyPreview.length > 30 ? comment.replyPreview.substring(0, 30) + '...' : comment.replyPreview}&quot;
                             </span>
                         )}
                     </div>

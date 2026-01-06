@@ -42,7 +42,6 @@ import { Button } from "@/components/ui/button";
 import { CollapsibleUnscheduledBufferListPanel } from "./collapsible-unscheduled-buffer-list-panel";
 import { DragCancelZone } from "./drag-cancel-zone";
 import { useRouter } from "next/navigation";
-import { CalendarItemSkeleton } from "./calendar-item-skeleton";
 
 export interface WeekViewCalendarProps {
     tasks?: Task[];
@@ -352,7 +351,7 @@ export const CalendarWeekView = ({ tasks, ...props }: WeekViewCalendarProps) => 
                             {/* Cancel Drop Zone - shows when dragging items */}
                             <DragCancelZone isVisible={isDraggingItem} />
 
-                            {/* @ts-ignore */}
+                            {/* @ts-expect-error: DragOverlay children type definition mismatch with conditional rendering */}
                             <DragOverlay>
                                 <>{/* For scheduled items */}
                                     {!isNil(draggingScheduledTaskId) ? (
