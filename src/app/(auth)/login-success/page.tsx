@@ -34,7 +34,7 @@ export default function AuthSuccess() {
             setEmail(email as string);
             setTimeout(() => router.push(CALENDAR_ROUTE), 1200);
         }
-    }, [router, window.location.search]);
+    }, [router, setEmail, setUserId, setDisplayName]);
 
     return (
         <div
