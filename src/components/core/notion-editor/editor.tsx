@@ -841,7 +841,7 @@ export function NotionEditor({
                                                         {/* Main Comment */}
                                                         <div className="flex items-start gap-2">
                                                             <div className="h-6 w-6 rounded-full overflow-hidden shrink-0 border border-gray-200 mt-0.5">
-                                                                <NextImage src={thread.avatar || thread.userAvatar} alt={thread.name || thread.userName} width={24} height={24} className="h-full w-full object-cover" unoptimized />
+                                                                <NextImage src={thread.avatar || thread.userAvatar || ''} alt={thread.name || thread.userName || ''} width={24} height={24} className="h-full w-full object-cover" unoptimized />
                                                             </div>
 
                                                             <div className="min-w-0 flex-1 relative">
@@ -887,7 +887,7 @@ export function NotionEditor({
                                                                 {thread.replies.map((reply) => (
                                                                     <div key={reply.replyId} className="flex items-start gap-2 group/reply">
                                                                         <div className="h-5 w-5 rounded-full overflow-hidden shrink-0 border border-gray-200">
-                                                                            <NextImage src={(reply as any).authorAvatar || reply.userAvatar || reply.avatar} alt={(reply as any).authorName || reply.userName || reply.name} width={20} height={20} className="h-full w-full object-cover" unoptimized />
+                                                                            <NextImage src={(reply as any).authorAvatar || reply.userAvatar || reply.avatar || ''} alt={(reply as any).authorName || reply.userName || reply.name || ''} width={20} height={20} className="h-full w-full object-cover" unoptimized />
                                                                         </div>
                                                                         <div className="flex-1 min-w-0">
                                                                             <div className="text-xs font-medium text-gray-700 dark:text-gray-300">
