@@ -96,24 +96,20 @@ export function FilePickerWrapper({ editor, projectId }: FilePickerWrapperProps)
 
         // 🛑 TEMPORARY FIX: Cast to 'any' to read snake_case properties
         // because your TypeScript interface likely defines them as camelCase.
-        const rawFile = file as any;
-
         editor
             .chain()
             .focus()
             .setFileNode({
-                name: rawFile.name,
-                extension: rawFile.extension,
+                name: file.name,
+                extension: file.extension,
+                sizeBytes: file.sizeBytes,
 
-                // ✅ FIX 1: Use 'size_bytes' instead of 'sizeBytes'
-                sizeBytes: rawFile.size_bytes,
+                // ✅ FIX: Use 'nodeId' for NOTION_DOC, 'storageReference' for STATIC_FILE
+                storageReference: file.type === 'NOTION_DOC'
+                    ? String(file.nodeId)
+                    : (file.storageReference || ""),
 
-                // ✅ FIX 2: For NOTION_DOC, use node_id; for STATIC_FILE, use storage_reference
-                storageReference: rawFile.type === 'NOTION_DOC'
-                    ? String(rawFile.node_id)
-                    : (rawFile.storage_reference || ""),
-
-                nodeType: rawFile.type,
+                nodeType: file.type,
             })
             .run();
 
