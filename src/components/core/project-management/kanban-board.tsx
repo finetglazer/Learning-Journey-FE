@@ -40,9 +40,9 @@ const KanbanBoard: React.FC<KanbanBoardProps> = () => {
         selectedProject,
     } = useContext<TeamProjectContextProps>(TeamProjectContext);
 
-        const {
-            projectRepository,
-        } = useContext<AppContextProps>(AppContext);
+    const {
+        projectRepository,
+    } = useContext<AppContextProps>(AppContext);
 
     const findColumn = useCallback((id: string) => {
         if (columns && Object.keys(columns).includes(id)) {
@@ -293,12 +293,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = () => {
                             <KanbanColumn key={column.id} column={column} />
                         ))}
 
-                        <DragOverlay>
-                            {taskCardProps ? (
+                        <DragOverlay dropAnimation={null}>
+                            {taskCardProps && (
                                 <TaskCard
                                     task={taskCardProps.task}
                                 />
-                            ) : null}
+                            )}
                         </DragOverlay>
                     </DndContext>
                 </div>
