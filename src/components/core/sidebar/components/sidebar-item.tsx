@@ -8,6 +8,12 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export interface SidebarItemProps {
     id: string;
@@ -38,15 +44,24 @@ export const SidebarItem = React.forwardRef<HTMLDivElement, SidebarItemProps>(
                     isCollapsed ? "justify-center px-2" : "justify-between px-4"
                 )}
             >
-                <div className={cn("flex items-center", isCollapsed ? "space-x-0" : "space-x-3")}>
-                    {icon}
-                    <span className={cn(
-                        "text-sm truncate transition-all duration-200 ease-in-out",
-                        isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto"
-                    )}>
-                        {label}
-                    </span>
-                </div>
+                <TooltipProvider delayDuration={200}>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div className={cn("flex items-center !w-[200px]", isCollapsed ? "space-x-0" : "space-x-3")}>
+                                {icon}
+                                <span className={cn(
+                                    "text-sm truncate transition-all duration-200 ease-in-out",
+                                    isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto"
+                                )}>
+                                    {label}
+                                </span>
+                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                            <p>{label}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
 
                 {/* 4. Updated logic to render either a button or a dropdown menu */}
                 {!isCollapsed && actionIcon && (

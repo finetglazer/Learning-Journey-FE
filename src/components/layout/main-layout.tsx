@@ -202,7 +202,7 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                 return {
                     id: `project-${project?.id}`,
                     label: project?.name,
-                    icon: <Users size={16} />,
+                    icon: <Users size={project?.name.length > 36 ? 24 : 16} />,
                     onClick: (e: any) => {
                         e.stopPropagation();
                         router.push(getProjectDetailRoute(project.id, "summary"));

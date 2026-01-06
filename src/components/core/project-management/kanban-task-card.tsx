@@ -103,13 +103,13 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
             <div className="flex justify-between items-start mb-2">
 
                 {/* Priority Icon and Task Name */}
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 flex-1 min-w-0">
                     {/* Render the Priority Icon component with the size and color class */}
                     <h4 className="font-semibold text-gray-800 text-md truncate">
                         {task.name}
                     </h4>
                 </div>
-                <div className="flex justify-between items-center gap-3 mb-2">
+                <div className="flex justify-between items-center gap-3 mb-2 shrink-0 ml-2">
                     <button
                         onClick={handleEditClick}
                         className="p-1 rounded-sm text-gray-400 group-hover:text-gray-600 hover:bg-yellow-500 transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
