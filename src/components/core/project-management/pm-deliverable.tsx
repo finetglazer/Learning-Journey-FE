@@ -18,6 +18,10 @@ import { TeamProjectContext, TeamProjectContextProps } from '../sidebar/pages/pr
 import { PM_PhaseItem } from './pm-phase-item';
 import { PM_DraggableItemData } from './type';
 
+// Workaround for React 19 type incompatibility with @dnd-kit/sortable
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const TypedSortableContext = SortableContext as any;
+
 type DeliverableItemProps = {
     deliverable: PM_Deliverable;
     isExpanded: boolean;
@@ -184,12 +188,12 @@ function PM_DeliverableItemBase({
                     className="p-1 mr-2 rounded-full hover:bg-gray-200"
                 >
 
-                        <ChevronDown
-                            className={cn(
-                                "h-4 w-4 transition-transform duration-200",
-                                isExpanded ? "rotate-0" : "-rotate-90"
-                            )}
-                        />
+                    <ChevronDown
+                        className={cn(
+                            "h-4 w-4 transition-transform duration-200",
+                            isExpanded ? "rotate-0" : "-rotate-90"
+                        )}
+                    />
 
                 </button>
 
@@ -248,7 +252,7 @@ function PM_DeliverableItemBase({
             >
                 <div className="overflow-hidden">
                     {canEditStructure ? (
-                        <SortableContext
+                        <TypedSortableContext
                             items={deliverable.phases.map((p) => p.phaseIdStr)}
                             strategy={verticalListSortingStrategy}
                         >
@@ -265,7 +269,7 @@ function PM_DeliverableItemBase({
                                     onDeleteTask={onDeleteTask}
                                 />
                             ))}
-                        </SortableContext>
+                        </TypedSortableContext>
                     ) : (
                         <>
                             {deliverable.phases.map((phase) => (

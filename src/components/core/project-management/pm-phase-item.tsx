@@ -19,6 +19,10 @@ import { PM_TaskItem } from './pm-task-item';
 import { PM_DraggableItemData } from './type';
 import { TaskItemSkeleton } from '../sidebar/pages/project/tabs/list-tab/task-item-skeleton';
 
+// Workaround for React 19 type incompatibility with @dnd-kit/sortable
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const TypedSortableContext = SortableContext as any;
+
 type PhaseItemProps = {
     phase: PM_Phase;
     isExpanded: boolean;
@@ -248,8 +252,7 @@ function PM_PhaseItemBase({
                     {/* Conditionally render SortableContext based on permission */}
                     {canEditStructure ? (
                         <>
-                            {/* @ts-expect-error - React 19 type incompatibility with @dnd-kit/sortable v10.0.0 */}
-                            <SortableContext
+                            <TypedSortableContext
                                 items={phase.tasks.map((t) => t.taskIdStr)}
                                 strategy={verticalListSortingStrategy}
                             >
@@ -270,7 +273,7 @@ function PM_PhaseItemBase({
                                         onDeleteTask={onDeleteTask}
                                     />
                                 ))}
-                            </SortableContext>
+                            </TypedSortableContext>
                         </>
                     ) : (
                         <>
