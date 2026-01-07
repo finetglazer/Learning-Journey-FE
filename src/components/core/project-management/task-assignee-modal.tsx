@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { PM_TaskAssignee, TeamMember } from "@/model/project-management";
+import { PM_TaskAssignee, ProjectMembershipRole, TeamMember } from "@/model/project-management";
 import { Check } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
@@ -73,7 +73,7 @@ const TaskAssigneeModal = ({ isOpen, onClose, onSave, currentAssignees, teamMemb
                     {(modalDraftAssignees.length > 1) && (<p className="text-xs text-yellow-600 border border-yellow-300 bg-yellow-50 p-2 rounded">
                         Tip: For clear ownership, try to assign to only one person
                     </p>)}
-                    {teamMembers.map((user) => {
+                    {(teamMembers || []).filter(member => member.role !== ProjectMembershipRole.INVITED).map((user) => {
                         const isAssigned = modalDraftAssignees.some(a => a.userId === user.userId);
 
                         return (
