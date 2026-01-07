@@ -500,13 +500,20 @@ export const useCalendarHooks = () => {
                 setCurrentDate(currentDate.add(1, 'week'));
                 break;
             case 'month-view':
-            case 'month-planning':
-                const nextMonth = currentDate.add(1, 'month');
-                // Max for 6 months
-                if (nextMonth.diff(toDayJs(), "month") >= 6) {
+                const nextMonthView = currentDate.add(1, 'month');
+                // Max for 5 years (60 months) to match year view range
+                if (nextMonthView.diff(toDayJs(), "month") >= 60) {
                     break;
                 }
-                setCurrentDate(nextMonth);
+                setCurrentDate(nextMonthView);
+                break;
+            case 'month-planning':
+                const nextMonthPlanning = currentDate.add(1, 'month');
+                // Max for 6 months
+                if (nextMonthPlanning.diff(toDayJs(), "month") >= 6) {
+                    break;
+                }
+                setCurrentDate(nextMonthPlanning);
                 break;
             case 'year':
                 setCurrentDate(currentDate.add(1, 'year'));

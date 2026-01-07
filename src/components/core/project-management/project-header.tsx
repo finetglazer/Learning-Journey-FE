@@ -193,9 +193,6 @@ export const ProjectHeader = ({
                         >
                             <KanbanSquare className="h-4 w-4 mr-2" />
                             Task board
-                            {(role !== ProjectMembershipRole.OWNER && tab === TeamProjectTab.TASK_BOARD) && (
-                                <span className="text-gray-400 ml-1.5" style={{ color: 'blue' }}>(View only)</span>
-                            )}
                         </TabsTrigger>
 
                         {/* Timeline */}
@@ -205,6 +202,9 @@ export const ProjectHeader = ({
                         >
                             <GanttChartSquare className="h-4 w-4 mr-2" />
                             Timeline
+                            {(role !== ProjectMembershipRole.OWNER && tab === TeamProjectTab.TIMELINE) && (
+                                <span className="text-gray-400 ml-1.5" style={{ color: 'blue' }}>(View only)</span>
+                            )}
                         </TabsTrigger>
 
                         {/* Shared source */}
