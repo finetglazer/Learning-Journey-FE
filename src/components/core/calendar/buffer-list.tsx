@@ -48,14 +48,7 @@ export function BufferList({ showAllTasks, }: BufferListProps) {
         }));
     };
 
-    const initialRender = useRef(true);
     useEffect(() => {
-        // If it is the first re-render, dont getUserProjectTasks(), call it on the second re-render
-        if (initialRender.current) {
-            initialRender.current = false;
-            return;
-        }
-
         getUserProjectTasks();
     }, []);
 
