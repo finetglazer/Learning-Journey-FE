@@ -31,6 +31,9 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
     const hierarchyScrollRef = useRef<HTMLDivElement>(null);
     const [expandedDeliverables, setExpandedDeliverables] = useState<Set<number>>(new Set());
     const [expandedPhases, setExpandedPhases] = useState<Set<number>>(new Set());
+    // Refs to preserve expand/collapse state during timeline refresh
+    const preservedExpandedDeliverablesRef = useRef<Set<number> | null>(null);
+    const preservedExpandedPhasesRef = useRef<Set<number> | null>(null);
     const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
     const [timelineStructure, setTimelineStructure] = useState<ProjectTimelineStructure | null>(null);
     const [selectedItem, setSelectedItem] = useState<TimelineItem | null>(null);
@@ -313,6 +316,9 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
                         setGanttBarOffset(null);
                         setUnsavedTimelineItem(null);
                         setSelectedItem(null);
+                        // Preserve expand/collapse state before refresh
+                        preservedExpandedDeliverablesRef.current = new Set(expandedDeliverables);
+                        preservedExpandedPhasesRef.current = new Set(expandedPhases);
                         getProjectTimeline();
                     }
                     else {
@@ -337,7 +343,7 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
         return () => {
             subscription.unsubscribe();
         }
-    }, [selectedProject, timelineStructure, ganttBarOffset, projectRepository]);
+    }, [selectedProject, timelineStructure, ganttBarOffset, projectRepository, expandedDeliverables, expandedPhases]);
 
     const relatedIds = useMemo(() => {
         // If nothing is selected, the set is empty (logic handled in render)
@@ -898,6 +904,16 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
             milestones: [...(originalTimelineStructure?.milestones || [])],
         });
         setFetching(false);
+
+        // Restore preserved expand/collapse state after timeline refresh
+        if (preservedExpandedDeliverablesRef.current) {
+            setExpandedDeliverables(preservedExpandedDeliverablesRef.current);
+            preservedExpandedDeliverablesRef.current = null;
+        }
+        if (preservedExpandedPhasesRef.current) {
+            setExpandedPhases(preservedExpandedPhasesRef.current);
+            preservedExpandedPhasesRef.current = null;
+        }
     }, [originalTimelineStructure]);
 
     useEffect(() => {
@@ -938,6 +954,25 @@ export function GanttTimelineBoard({ }: GanttTimelineBoardProps) {
             resizeObserver.disconnect();
         };
     }, []);
+
+    // Listen for Enter key to trigger Update action
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Only trigger if Update button is visible and not already updating
+            if (e.key === 'Enter' && unsavedTimelineItem && !isUpdating) {
+                // Avoid triggering when focus is on an input/textarea
+                const activeElement = document.activeElement;
+                if (activeElement?.tagName !== 'INPUT' &&
+                    activeElement?.tagName !== 'TEXTAREA') {
+                    e.preventDefault();
+                    handleUpdateTimelineDates();
+                }
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [unsavedTimelineItem, isUpdating, handleUpdateTimelineDates]);
 
     // Auto-scroll to "Today" when the timeline is first loaded
     useEffect(() => {

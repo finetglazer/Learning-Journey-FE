@@ -918,7 +918,7 @@ export const useCalendarHooks = () => {
             setIsPanelDragging(false);
             setIsPanelBufferListDragging(true);
         }
-        else if (["task", "event"].includes((event.active?.data?.current?.type || "").toLowerCase())) {
+        else if (["task", "event", "project_work"].includes((event.active?.data?.current?.type || "").toLowerCase())) {
             setDraggingUnscheduledTaskId(null);
             setDraggingProjectTaskId(null);
             setDraggingUnscheduledRoutineId(null);

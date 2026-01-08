@@ -14,6 +14,7 @@ import { closestCenter, DndContext, DragEndEvent, PointerSensor, useSensor, useS
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Check, Plus, Search, X } from "lucide-react";
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { finalize } from "rxjs";
 import { toast } from "sonner";
 import { TeamProjectContext, TeamProjectContextProps } from "../../team-project-context";
@@ -57,6 +58,11 @@ export const ListTab = ({ }: ListTabProps) => {
 
     // 🆕 Track loading state per phase for skeleton UI
     const [phaseLoadingStates, setPhaseLoadingStates] = useState<Record<number, boolean>>({});
+
+    // 🔗 URL-based task deep-linking
+    const searchParams = useSearchParams();
+    const urlTaskId = searchParams.get("taskId");
+    const deepLinkProcessedRef = useRef<string | null>(null);
 
     // Merge skeleton deliverables with lazily-loaded tasks for rendering
     const mergedDeliverables = useMemo(() => {
@@ -109,6 +115,112 @@ export const ListTab = ({ }: ListTabProps) => {
         // LAZY MODE: React Query auto-handles skeleton fetch (no manual refetch needed)
         console.log('⚡ Lazy mode - React Query handles skeleton');
     }, [search, selectedProject?.id, getProjectStructure]);
+
+    // 🔗 Task Deep-Linking: When taskId is in URL, fetch task detail to get phaseId, then expand tree
+    useEffect(() => {
+        if (!urlTaskId || !selectedProject?.id || !projectRepository) return;
+
+        // Wait for skeleton data to be loaded
+        if (deliverables.length === 0) {
+            console.log('🔗 Waiting for deliverables to load...');
+            return;
+        }
+
+        // Prevent processing the same taskId multiple times
+        if (deepLinkProcessedRef.current === urlTaskId) return;
+        deepLinkProcessedRef.current = urlTaskId;
+
+        console.log('🔗 Task deep-link detected, taskId:', urlTaskId);
+
+        // Call getTaskDetail API to get the task's phase and deliverable info
+        projectRepository.getTaskDetail({
+            projectId: selectedProject.id,
+            taskId: Number(urlTaskId),
+        }).subscribe({
+            next: (res) => {
+                console.log('🔗 getTaskDetail API response:', res);
+                if (res?.status && res?.data) {
+                    const taskDetail = res.data.taskInfo || res.data; // Handle nested taskInfo
+                    console.log('🔗 Task detail data:', taskDetail);
+                    const phaseId = taskDetail.phaseId || taskDetail.phase_id;
+
+                    if (!phaseId) {
+                        console.warn('🔗 Task detail missing phaseId, available keys:', Object.keys(taskDetail));
+                        return;
+                    }
+
+                    console.log('🔗 Task belongs to phaseId:', phaseId);
+
+                    // Find the deliverable that contains this phase from skeleton data
+                    const phaseIdStr = String(phaseId);
+                    let deliverableIdStr: string | null = null;
+
+                    for (const deliverable of deliverables) {
+                        const foundPhase = (deliverable.phases || []).find(
+                            (p: any) => p.phaseId === phaseId || p.id === phaseId
+                        );
+                        if (foundPhase) {
+                            deliverableIdStr = deliverable.deliverableIdStr;
+                            break;
+                        }
+                    }
+
+                    if (!deliverableIdStr) {
+                        console.warn('🔗 Could not find deliverable for phase:', phaseId);
+                        return;
+                    }
+
+                    console.log('🔗 Expanding deliverable:', deliverableIdStr, 'and phase:', phaseIdStr);
+
+                    // 1. Fetch tasks for this phase FIRST (before expanding)
+                    setPhaseLoadingStates(prev => ({ ...prev, [phaseId]: true }));
+
+                    projectRepository.getTasksByPhase({
+                        projectId: selectedProject.id.toString(),
+                        phaseId: phaseId,
+                    }).subscribe({
+                        next: (tasksRes) => {
+                            if (tasksRes?.status) {
+                                const tasks = tasksRes.data?.data || tasksRes.data || [];
+                                const transformedTasks = tasks.map((task: any) => ({
+                                    ...task,
+                                    taskId: task.id,
+                                    taskIdStr: `task-${task.id}`,
+                                    phaseId: phaseId,
+                                    phaseIdStr: phaseIdStr,
+                                    status: task.status?.toUpperCase().split(/\s+/).join("_"),
+                                    priority: task.priority?.toUpperCase(),
+                                }));
+
+                                // 2. Set phaseTasks BEFORE expanding - this prevents handleTogglePhase from re-fetching
+                                setPhaseTasks(prev => ({
+                                    ...prev,
+                                    [phaseId]: transformedTasks,
+                                }));
+                                setPhaseLoadingStates(prev => ({ ...prev, [phaseId]: false }));
+
+                                // 3. NOW expand deliverable and phase (after tasks are loaded)
+                                setExpandedDeliverables(prev => new Set(prev).add(deliverableIdStr!));
+                                setExpandedPhases(prev => new Set(prev).add(phaseIdStr));
+
+                                // 4. Set scroll target to highlight the task (with delay for DOM to update)
+                                setTimeout(() => {
+                                    setScrollToItem(`task-${urlTaskId}`);
+                                }, 300);
+                            }
+                        },
+                        error: (err) => {
+                            console.error('🔗 Failed to fetch phase tasks:', err);
+                            setPhaseLoadingStates(prev => ({ ...prev, [phaseId]: false }));
+                        },
+                    });
+                }
+            },
+            error: (err) => {
+                console.error('🔗 Failed to fetch task detail for deep-link:', err);
+            },
+        });
+    }, [urlTaskId, selectedProject?.id, projectRepository, deliverables, isFetchingSkeleton, setExpandedDeliverables, setExpandedPhases, setScrollToItem]);
 
     // RBAC Check
     const canEditStructure = currentMember?.role === ProjectMembershipRole.OWNER;
