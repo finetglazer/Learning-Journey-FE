@@ -6,7 +6,9 @@ export const VERIFY_EMAIL_ROUTE = "/verify-email";
 export const FORGOT_PASSWORD_ROUTE = "/forgot-password";
 export const RESET_PASSWORD_ROUTE = "/reset-password";
 export const LOGIN_SUCCESS_ROUTE = "/login-success";
-export const GOOGLE_OAUTH2_ROUTE = "http://localhost:8080/oauth2/authorization/google";
+export const GOOGLE_OAUTH2_ROUTE = process.env.NEXT_PUBLIC_API_URL
+    ? `${process.env.NEXT_PUBLIC_API_URL.replace('/api', '')}/oauth2/authorization/google`
+    : "http://localhost:8080/oauth2/authorization/google";
 
 // Home page routes
 export const ROOT_ROUTE = "/";
