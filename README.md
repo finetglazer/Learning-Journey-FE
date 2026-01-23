@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎓 Graduation Project: Learning Journey System
 
-## Getting Started
+## 🚀 Access the Application
 
-First, run the development server:
+**URL:** [http://152.42.184.216.nip.io:3000](http://152.42.184.216.nip.io:3000)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ⚠️ Important Demo Instructions
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+To ensure a smooth testing experience, please follow these guidelines regarding authentication.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 1. Do NOT use "Sign in with Google" (OAuth2)
 
-## Learn More
+* **Status:** Disabled for this Demo Environment.
+* **Reason:** Google's strict OAuth 2.0 security policies do not allow production redirects to raw IP addresses or dynamic DNS services (like `nip.io`). A purchased Top-Level Domain (TLD) with SSL (HTTPS) is required for this feature to function in a live environment.
 
-To learn more about Next.js, take a look at the following resources:
+### 2. Do NOT use "Sign Up" (Create New Account)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+* **Status:** Disabled for this Demo Environment.
+* **Reason:** The system requires email verification to activate new accounts. Currently, the Cloud Provider (DigitalOcean) blocks outbound SMTP traffic (Ports 587/465) on new instances to prevent spam. Therefore, verification emails cannot be delivered to new users at this time.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 🔑 Demo Account Credentials
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Please use the following **pre-verified administrator account** to access and evaluate all system features (Project Management, Calendar, Real-time Collaboration).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Field | Value |
+| --- | --- |
+| **Email** | `tranhung174303@gmail.com` |
+| **Password** | `Sktt1faker@` |
+
+---
+
+### ✅ Recommended Testing Flow
+
+1. Navigate to the URL provided above.
+2. Enter the **Demo Account Credentials** in the login form.
+3. Click **"Sign In"**.
+4. You will be redirected to the main dashboard to begin your review.
+
+---
