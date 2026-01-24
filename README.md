@@ -6,6 +6,19 @@
 
 ---
 
+## 📚 Project Documentation
+
+For a deeper understanding of the project, please refer to the following documents located in the `docs` folder:
+
+1.  **[Full report.pdf](docs/Full%20report.pdf)**
+    *   **Description:** A comprehensive report covering the reason for choosing this topic, detailed analysis, system design, and implementation specifics.
+2.  **[Demo-a-core-function.mp4](https://drive.google.com/drive/u/0/folders/1lfI118VVToYAOW3AtMkHgpbGrLaxtVbO)**
+    *   **Description:** A video demonstration showcasing a core function of the system. (Hosted on Google Drive)
+3.  **[Presentation Slides](docs/BUILDING%20A%20COLLABORATIVE%20SYSTEM%20TO%20SUPPORT%20LEARNING%20USING%20JAVA%20AND%20NEXTJS.pptx)**
+    *   **Description:** The presentation slides used to defend the project, summarizing key aspects and technologies.
+
+---
+
 ## ⚠️ Important Demo Instructions
 
 To ensure a smooth testing experience, please follow these guidelines regarding authentication.
@@ -24,12 +37,12 @@ To ensure a smooth testing experience, please follow these guidelines regarding 
 
 ## 🔑 Demo Account Credentials
 
-Please use the following **pre-verified administrator account** to access and evaluate all system features (Project Management, Calendar, Real-time Collaboration).
+Please use the following **pre-verified accounts** to access and evaluate all system features (Project Management, Calendar, Real-time Collaboration).
 
-| Field | Value |
+| Email | Password |
 | --- | --- |
-| **Email** | `tranhung174303@gmail.com` |
-| **Password** | `Sktt1faker@` |
+| `tranhung174303@gmail.com` | `Sktt1faker@` |
+| `vinhhiep201222003bn.work@gmail.com` | `123@123Aa` |
 
 ---
 
