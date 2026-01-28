@@ -4,7 +4,7 @@ import { Post } from "@/model/post";
 import { Observable, map } from "rxjs";
 import { BaseRepository } from "./base-repository";
 
-const BASE_API_URL = "/api/forum";
+const BASE_API_URL = process.env.NEXT_PUBLIC_API_URL + "/forum";
 
 export interface VoteRequest {
     voteType: "UPVOTE" | "DOWNVOTE";
