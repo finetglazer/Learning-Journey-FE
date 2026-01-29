@@ -135,30 +135,36 @@ export const PostDetailHeader = () => {
                 </div>
 
                 <div className="flex items-center gap-1">
-                    <Button
-                        variant="ghost"
-                        disabled={!userId}
-                        onClick={handleTogglePrivateSaveStatus}
-                        className={cn("text-muted-foreground cursor-pointer hover:text-foreground h-14 w-14 p-0", postDetailData.isSaved && "text-blue-500")}
-                    >
-                        <Bookmark className={cn("size-6", postDetailData.isSaved && "fill-current")} />
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                disabled={!userId}
+                                onClick={handleTogglePrivateSaveStatus}
+                                className={cn("text-muted-foreground cursor-pointer hover:text-foreground h-14 w-14 p-0", postDetailData.isSaved && "text-blue-500")}
+                            >
+                                <Bookmark className={cn("size-6", postDetailData.isSaved && "fill-current")} />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">
+                            Save this post privately
+                        </TooltipContent>
+                    </Tooltip>
 
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="text-muted-foreground cursor-pointer hover:text-foreground h-14 w-14 p-0">
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                className="text-muted-foreground cursor-pointer hover:text-foreground h-14 w-14 p-0"
+                                onClick={() => setIsFolderModalOpen(true)}
+                            >
                                 <Briefcase className="size-6" />
                             </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem onClick={() => setIsFolderModalOpen(true)} className="text-md cursor-pointer">
-                                Save to your project
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={handleTogglePrivateSaveStatus} className="text-md cursor-pointer">
-                                {postDetailData.isSaved ? "Unsave privately" : "Save privately"}
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">
+                            Save to project
+                        </TooltipContent>
+                    </Tooltip>
                 </div>
             </div>
             <SelectFolderModal

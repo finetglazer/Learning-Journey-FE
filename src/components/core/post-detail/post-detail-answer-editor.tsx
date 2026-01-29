@@ -5,10 +5,12 @@ import { AppContext } from "@/hooks/app-context";
 import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import Image from "@tiptap/extension-image";
 import { useContext, useState, useRef } from "react";
 import { finalize } from "rxjs";
 import { toast } from "sonner";
 import { SlashCommands } from "../notion-editor/extensions/slash-commands";
+import { ImageUploadWrapper } from "../notion-editor/extensions/image-upload-wrapper";
 import { PostDetailContext } from "./post-detail-context";
 import { CreateAnswerRequest } from "@/repository/post-reposiory";
 
@@ -26,12 +28,17 @@ export function PostDetailAnswerEditor({ }: PostDetailAnswerEditorProps) {
         immediatelyRender: false,
         extensions: [
             StarterKit,
+            Image,
             Placeholder.configure({
                 placeholder: () => {
                     return isFocusedRef.current ? 'Click "/" to choose commands' : "Write your answer here...";
                 },
             }),
-            SlashCommands,
+            SlashCommands.configure({
+                suggestion: {
+                    hiddenCommands: ["File"],
+                } as any,
+            }),
         ],
         onUpdate: ({ editor }) => {
             setContent(editor.getJSON());
@@ -96,6 +103,7 @@ export function PostDetailAnswerEditor({ }: PostDetailAnswerEditorProps) {
                     {isSubmitting ? "Posting..." : "Post Answer"}
                 </Button>
             </div>
+            <ImageUploadWrapper editor={editor} projectId={-1} />
         </div>
     );
 }

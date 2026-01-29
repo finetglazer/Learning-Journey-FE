@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import Image from "@tiptap/extension-image";
 import { useContext, useState } from "react";
 import { finalize } from "rxjs";
 import { toast } from "sonner";
 import { SlashCommands } from "../notion-editor/extensions/slash-commands";
+import { ImageUploadWrapper } from "../notion-editor/extensions/image-upload-wrapper";
 import { PostDetailContext } from "./post-detail-context";
 
 export interface PostDetailAnswerEditFormProps {
@@ -28,10 +30,15 @@ export function PostDetailAnswerEditForm({
         immediatelyRender: false,
         extensions: [
             StarterKit,
+            Image,
             Placeholder.configure({
                 placeholder: "Write your answer here...",
             }),
-            SlashCommands,
+            SlashCommands.configure({
+                suggestion: {
+                    hiddenCommands: ["File"],
+                } as any,
+            }),
         ],
         content: initialContent,
         editorProps: {
@@ -85,6 +92,7 @@ export function PostDetailAnswerEditForm({
                     {isSubmitting ? "Saving..." : "Save"}
                 </Button>
             </div>
+            <ImageUploadWrapper editor={editor} projectId={-1} />
         </div>
     );
 }

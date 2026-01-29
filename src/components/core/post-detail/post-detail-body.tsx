@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatDistanceToNow } from "date-fns";
 import { ArrowUp, ChevronDown, ChevronUp, Flag } from "lucide-react";
 import { useContext, useState } from "react";
@@ -144,27 +145,41 @@ export const PostDetailBody = () => {
         <div className="flex gap-10 mt-6">
             {/* Left Column: Vote Counter */}
             <div className="flex flex-col items-center gap-1 mt-5">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className={`rounded-full h-8 w-8 cursor-pointer ${postDetailData.userVote === 1 ? 'bg-green-100 ring-1 ring-green-500' : ''}`}
-                    onClick={() => onVotePost('UPVOTE')}
-                >
-                    <ChevronUp className={`h-8 w-8 ${postDetailData.userVote === 1 ? 'text-green-500' : 'text-gray-500'}`} strokeWidth={postDetailData.userVote === 1 ? 3 : 2} />
-                </Button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className={`rounded-full h-8 w-8 cursor-pointer ${postDetailData.userVote === 1 ? 'bg-green-100 ring-1 ring-green-500' : ''}`}
+                            onClick={() => onVotePost('UPVOTE')}
+                        >
+                            <ChevronUp className={`h-8 w-8 ${postDetailData.userVote === 1 ? 'text-green-500' : 'text-gray-500'}`} strokeWidth={postDetailData.userVote === 1 ? 3 : 2} />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                        If you see this useful
+                    </TooltipContent>
+                </Tooltip>
 
                 <span className="text-2xl font-semibold text-gray-700">
                     {postDetailData.stats.score}
                 </span>
 
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className={`rounded-full h-8 w-8 cursor-pointer ${postDetailData.userVote === -1 ? 'bg-red-100 ring-1 ring-red-500' : ''}`}
-                    onClick={() => onVotePost('DOWNVOTE')}
-                >
-                    <ChevronDown className={`h-8 w-8 ${postDetailData.userVote === -1 ? 'text-red-500' : 'text-gray-500'}`} strokeWidth={postDetailData.userVote === -1 ? 3 : 2} />
-                </Button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className={`rounded-full h-8 w-8 cursor-pointer ${postDetailData.userVote === -1 ? 'bg-red-100 ring-1 ring-red-500' : ''}`}
+                            onClick={() => onVotePost('DOWNVOTE')}
+                        >
+                            <ChevronDown className={`h-8 w-8 ${postDetailData.userVote === -1 ? 'text-red-500' : 'text-gray-500'}`} strokeWidth={postDetailData.userVote === -1 ? 3 : 2} />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                        If you see this not useful for everyone
+                    </TooltipContent>
+                </Tooltip>
             </div>
 
             {/* Right Column: Question Content + Comments */}
@@ -265,27 +280,41 @@ export const PostDetailBody = () => {
                             <div key={answer.answerId} className="flex gap-6">
                                 {/* Answer Vote Counter */}
                                 <div className="flex flex-col items-center gap-1">
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className={`rounded-full h-8 w-8 cursor-pointer ${answer.voteType === 1 ? 'bg-green-100 ring-1 ring-green-500' : ''}`}
-                                        onClick={() => onVoteAnswer(answer.answerId, 'UPVOTE')}
-                                    >
-                                        <ChevronUp className={`h-8 w-8 ${answer.voteType === 1 ? 'text-green-500' : 'text-gray-500'}`} strokeWidth={answer.voteType === 1 ? 3 : 2} />
-                                    </Button>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className={`rounded-full h-8 w-8 cursor-pointer ${answer.voteType === 1 ? 'bg-green-100 ring-1 ring-green-500' : ''}`}
+                                                onClick={() => onVoteAnswer(answer.answerId, 'UPVOTE')}
+                                            >
+                                                <ChevronUp className={`h-8 w-8 ${answer.voteType === 1 ? 'text-green-500' : 'text-gray-500'}`} strokeWidth={answer.voteType === 1 ? 3 : 2} />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="right">
+                                            If you see this useful
+                                        </TooltipContent>
+                                    </Tooltip>
 
                                     <span className="text-xl font-semibold text-gray-700">
                                         {answer.score}
                                     </span>
 
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className={`rounded-full h-8 w-8 cursor-pointer ${answer.voteType === -1 ? 'bg-red-100 ring-1 ring-red-500' : ''}`}
-                                        onClick={() => onVoteAnswer(answer.answerId, 'DOWNVOTE')}
-                                    >
-                                        <ChevronDown className={`h-8 w-8 ${answer.voteType === -1 ? 'text-red-500' : 'text-gray-500'}`} strokeWidth={answer.voteType === -1 ? 3 : 2} />
-                                    </Button>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className={`rounded-full h-8 w-8 cursor-pointer ${answer.voteType === -1 ? 'bg-red-100 ring-1 ring-red-500' : ''}`}
+                                                onClick={() => onVoteAnswer(answer.answerId, 'DOWNVOTE')}
+                                            >
+                                                <ChevronDown className={`h-8 w-8 ${answer.voteType === -1 ? 'text-red-500' : 'text-gray-500'}`} strokeWidth={answer.voteType === -1 ? 3 : 2} />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="right">
+                                            If you see this not useful for everyone
+                                        </TooltipContent>
+                                    </Tooltip>
 
                                     <Button
                                         variant="ghost"
@@ -420,26 +449,30 @@ export const PostDetailBody = () => {
                 </div>
             </div>
 
-            {isEditModalOpen && (
-                <CreatePostModal
-                    open={isEditModalOpen}
-                    onClose={() => setIsEditModalOpen(false)}
-                    initialData={{
-                        title: postDetailData.title,
-                        content: postDetailData.content,
-                        tags: postDetailData.tags,
-                        files: postDetailData.files as any
-                    }}
-                    onSubmit={handleUpdatePost}
-                />
-            )}
+            {
+                isEditModalOpen && (
+                    <CreatePostModal
+                        open={isEditModalOpen}
+                        onClose={() => setIsEditModalOpen(false)}
+                        initialData={{
+                            title: postDetailData.title,
+                            content: postDetailData.content,
+                            tags: postDetailData.tags,
+                            files: postDetailData.files as any
+                        }}
+                        onSubmit={handleUpdatePost}
+                    />
+                )
+            }
 
-            {alertMessage && (
-                <AlertModal
-                    alertMessage={alertMessage}
-                    onClose={() => setAlertMessage(null)}
-                />
-            )}
-        </div>
+            {
+                alertMessage && (
+                    <AlertModal
+                        alertMessage={alertMessage}
+                        onClose={() => setAlertMessage(null)}
+                    />
+                )
+            }
+        </div >
     );
 };
