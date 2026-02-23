@@ -2,6 +2,7 @@ import React from "react";
 import { SidebarItem, SidebarItemProps } from "./components/sidebar-item";
 import { SidebarSection } from "./components/sidebar-section";
 import { UserProfile } from "./components/user-profile";
+import { CarbonBadge } from "./components/carbon-badge";
 
 export interface SidebarSectionConfig {
     title: string;
@@ -19,25 +20,28 @@ export const HomePanel = ({ sections, activeItem, isCollapsed, onToggleCollapse 
     return (
         <div className="w-full h-full flex-shrink-0 flex flex-col">
             <UserProfile isCollapsed={isCollapsed} onToggleCollapse={onToggleCollapse} />
-            <div className="py-2 overflow-y-auto overflow-x-hidden h-[calc(100vh-81px)]">
-                {sections.map((section, index: number) => (
-                    <React.Fragment key={section.title || index}>
-                        <SidebarSection title={section.title} action={section.action} isCollapsed={isCollapsed} />
-                        {section.items.map(item => (
-                            <SidebarItem
-                                key={item.id}
-                                id={item.id}
-                                icon={item.icon}
-                                label={item.label}
-                                onClick={item.onClick}
-                                actionIcon={item.actionIcon}
-                                isActive={activeItem === item.id}
-                                isCollapsed={isCollapsed}
-                                menu={item.menu}
-                            />
-                        ))}
-                    </React.Fragment>
-                ))}
+            <div className="flex-1 min-h-0 flex flex-col">
+                <div className="py-2 overflow-y-auto overflow-x-hidden flex-1">
+                    {sections.map((section, index: number) => (
+                        <React.Fragment key={section.title || index}>
+                            <SidebarSection title={section.title} action={section.action} isCollapsed={isCollapsed} />
+                            {section.items.map(item => (
+                                <SidebarItem
+                                    key={item.id}
+                                    id={item.id}
+                                    icon={item.icon}
+                                    label={item.label}
+                                    onClick={item.onClick}
+                                    actionIcon={item.actionIcon}
+                                    isActive={activeItem === item.id}
+                                    isCollapsed={isCollapsed}
+                                    menu={item.menu}
+                                />
+                            ))}
+                        </React.Fragment>
+                    ))}
+                </div>
+                <CarbonBadge isCollapsed={isCollapsed} />
             </div>
         </div>
     );
